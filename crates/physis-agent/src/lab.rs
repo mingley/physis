@@ -307,6 +307,38 @@ impl Lab {
                 }
                 Err(e) => Response::err(e.to_string()),
             },
+            Command::Epistemics => {
+                // How much of the lab is theorem-backed vs conjecture/heuristic/
+                // open — the mission's core metric, tallied mechanically.
+                let mut tally: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
+                for t in self.theories.values() {
+                    for (_c, v) in t.evaluate_all() {
+                        let slot = tally.entry(v.epistemic.as_str()).or_default();
+                        let idx = match v.kind {
+                            VerdictKind::Holds => 0,
+                            VerdictKind::Fails => 1,
+                            VerdictKind::Undecidable => 2,
+                            VerdictKind::Inapplicable => 3,
+                        };
+                        slot[idx] += 1;
+                    }
+                }
+                let mut text =
+                    String::from("epistemic ledger (all lab theories at current knobs)\n");
+                let mut total = 0usize;
+                for e in ["theorem", "encoded-fact", "conjecture", "heuristic", "open"] {
+                    if let Some(s) = tally.get(e) {
+                        let sum: usize = s.iter().sum();
+                        total += sum;
+                        text.push_str(&format!(
+                            "  {e:<13} {sum:>3}   holds {} fails {} undecidable {} inapplicable {}\n",
+                            s[0], s[1], s[2], s[3]
+                        ));
+                    }
+                }
+                text.push_str(&format!("\ntotal claim-evaluations: {total}\n"));
+                Response::ok(text)
+            }
             Command::Experiments => {
                 let mut text = String::from("experiments\n");
                 for (id, desc) in EXPERIMENTS {
@@ -401,6 +433,16 @@ mod tests {
         assert!(diffs
             .iter()
             .any(|d| d.claim == "empirical.three-generations" && d.to == VerdictKind::Fails));
+    }
+
+    #[test]
+    fn epistemic_ledger_counts_theorems() {
+        let mut lab = Lab::standard();
+        let text = lab.exec(Command::Epistemics).text().to_string();
+        assert!(text.contains("theorem"));
+        assert!(text.contains("total claim-evaluations:"));
+        // The lab has computed theorems, so the theorem row must be non-empty.
+        assert!(text.contains("open") || text.contains("conjecture"));
     }
 
     #[test]

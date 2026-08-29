@@ -96,6 +96,7 @@ fn parse(args: &[String]) -> Result<Command, String> {
             })
         }
         "experiments" => Ok(Command::Experiments),
+        "epistemics" => Ok(Command::Epistemics),
         "experiment" => {
             let id = args
                 .get(1)
@@ -127,6 +128,7 @@ USAGE:
     physis run <theory>
     physis set <theory> <knob> <value>
     physis score <theory>
+    physis epistemics
     physis experiments
     physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice]
     physis journal

@@ -30,6 +30,8 @@ pub enum Command {
         /// Raw value (parsed against the knob domain).
         value: String,
     },
+    /// Tally every verdict across the lab by epistemic tag (the knowledge ledger).
+    Epistemics,
     /// List the available experiments.
     Experiments,
     /// Run a named experiment.

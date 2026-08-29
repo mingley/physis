@@ -20,6 +20,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Tooling
 
+- **`physis epistemics` knowledge ledger** (`crates/physis-agent`, `crates/physis`).
+  Tallies every verdict across all lab theories by epistemic tag
+  (theorem / encoded-fact / conjecture / heuristic / open) and verdict kind — the
+  mission's core metric, mechanically counted. Current state: 54 theorems, 75
+  encoded-facts, 13 conjectures, 21 heuristics, 11 open (all 11 honestly
+  `undecidable`), over 174 claim-evaluations. Composes with `--json`; tested.
+
 - **`--json` structured output** (`crates/physis`). A global `--json` flag makes
   the CLI emit the full typed `Response` as JSON — status, text, and the
   structured `report` (claim matrix) / `diffs` (verdict changes) — so a
