@@ -1,0 +1,25 @@
+# Theories
+
+A theory is not a PDF. It is an object that can be wrong *inside the lab*.
+
+## Controls
+
+**Standard Model.** The thing that actually describes collider physics. Fails gravity. Fails UV-completion. Holds three generations (until you turn the knob).
+
+**General relativity.** The thing that actually describes gravity. Fails SM matter. Fails perturbative UV-completion.
+
+## String constructions
+
+`StringTheory` is parameterized by `StringKind`. Critical dimension is a theorem of the construction. Landscape uniqueness is a heuristic that grows with extra dimensions and `flux_bits`.
+
+The bosonic string is included because it is the cleanest *theorem-level* failure mode we have (tachyon, no fermions). Superstrings are the serious candidates; they should not be confused with it.
+
+## Observer geometry
+
+A scaffold for programs that say: start from geometry, demand uniqueness, try to derive the gauge group. Default `total_dim=14` echoes public discussion of 4D plus a 10D fibre. It is **not** a derivation and **not** Geometric Unity.
+
+This object exists so uniqueness can sit on the same matrix as the string landscape without anyone pretending a podcast is a proof.
+
+## Adding one
+
+Implement `Knobbed + Theory`, reuse claim ids, add a knob-diff test, register in `Lab::standard` only if it belongs in the default comparison.
