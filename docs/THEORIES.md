@@ -24,6 +24,10 @@ This object exists so uniqueness can sit on the same matrix as the string landsc
 
 **Rayleigh–Jeans** is classical equipartition applied to electromagnetic cavity modes — a standing 19th-century theory. It holds its axiom (`thermo.mode-equipartition`) and fails the observations (finite energy, Stefan–Boltzmann T⁴, Wien peak). **Planck** replaces the mode energy with Bose occupation; the same typed integrals then hold those observations and fail classical equipartition. `set planck quantum false` is the 1900 revolution run backwards.
 
+## Solid heat capacity
+
+**Dulong–Petit** is classical equipartition applied to 3N lattice oscillators — an 1819 standing theory. It holds `C_V = 3 N k` at every T and fails the third law. **Einstein** (1907) uses the same Bose factor as Planck; `C_V → 0` as T → 0, and `C_V → 3 N k` only for `T ≫ Θ_E`. `set einstein-solid temperature 4000` is the correspondence as a knob turn.
+
 ## Adding one
 
 Implement `Knobbed + Theory`, reuse claim ids, add a knob-diff test, register in `Lab::standard` only if it belongs in the default comparison.

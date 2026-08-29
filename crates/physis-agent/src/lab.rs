@@ -14,6 +14,7 @@ use physis_theory::dec::DeRham;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
 use physis_theory::gauge_field::{WilsonSun, WilsonU1};
 use physis_theory::quantum::BellTest;
+use physis_theory::solid::EinsteinSolid;
 use physis_theory::thermo::IdealGas;
 use physis_theory::{
     string_critique, ExperimentReport, GeneralRelativity, ObserverGeometry, SpecialRelativity,
@@ -53,6 +54,10 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
     (
         "blackbody",
         "cavity radiation: Rayleigh–Jeans vs Planck (ultraviolet catastrophe)",
+    ),
+    (
+        "solid",
+        "solid heat capacity: Dulong–Petit vs Einstein (third law)",
     ),
     (
         "bell",
@@ -110,6 +115,9 @@ impl Lab {
         // Standing 19th-c theory on trial: Rayleigh–Jeans vs Planck.
         lab.insert(Box::new(Blackbody::rayleigh_jeans()));
         lab.insert(Box::new(Blackbody::planck()));
+        // Standing 1819 theory on trial: Dulong–Petit vs Einstein.
+        lab.insert(Box::new(EinsteinSolid::dulong_petit()));
+        lab.insert(Box::new(EinsteinSolid::einstein()));
         // Fifth domain: quantum foundations (a CHSH Bell test).
         lab.insert(Box::new(BellTest::default()));
         // Pure mathematics: discrete exterior calculus / de Rham cohomology.
@@ -249,6 +257,11 @@ impl Lab {
             }
             "blackbody" => {
                 let report = physis_theory::blackbody();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "solid" => {
+                let report = physis_theory::solid();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
@@ -505,6 +518,21 @@ mod tests {
                 && d.from == VerdictKind::Fails
                 && d.to == VerdictKind::Holds),
             "expected mode-equipartition Fails→Holds, got {diffs:?}"
+        );
+    }
+
+    #[test]
+    fn raising_einstein_temperature_recovers_dulong_petit() {
+        let mut lab = Lab::standard();
+        let diffs = lab
+            .set_knob("einstein-solid", "temperature", "4000")
+            .unwrap()
+            .2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "thermo.dulong-petit"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected dulong-petit Fails→Holds, got {diffs:?}"
         );
     }
 

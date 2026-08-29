@@ -29,6 +29,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   the infrared), and Wien's classical failure is a sampled absence of an
   interior peak.
 
+- **Dulong–Petit vs Einstein: classical solid heat capacity on trial**
+  (`crates/physis-theory/src/solid.rs`, `specs/017-einstein-solid.md`). The
+  1819 standing theory `C_V = 3 N k` independent of T is a first-class object
+  (`dulong-petit`): it holds that axiom and **fails** the third law. Einstein's
+  Bose oscillators (`einstein-solid`) reverse the matrix at `T/Θ_E = 0.2`:
+  `C_V/(3Nk) ≈ 0.17`, `C_V(Θ_E/40) → 0`. Raising `temperature` to 4000 K
+  recovers Dulong–Petit as correspondence without resurrecting the third-law
+  failure. The `thermo` experiment now shares the third-law row across ideal
+  gas, Dulong–Petit, and Einstein.
+
 - **Two-loop RG running for gauge-coupling unification**
   (`crates/physis-theory/src/rge.rs`, `crates/physis-theory/src/gut.rs`,
   `specs/013-grand-unification.md`). `GaugeRunning` now integrates the *coupled

@@ -24,6 +24,7 @@ use physis_model::World;
 
 use crate::critique::{report_from_rows, ExperimentReport};
 use crate::framework::Theory;
+use crate::solid::{EinsteinSolid, DULONG_PETIT, HIGH_T_CLASSICAL};
 
 /// Energy is equipartitioned: U = (3/2) N k T, so C_v = (3/2) N k.
 pub const EQUIPARTITION: &str = "thermo.equipartition";
@@ -33,8 +34,14 @@ pub const SECOND_LAW: &str = "thermo.second-law";
 pub const THIRD_LAW: &str = "thermo.third-law";
 
 /// Matrix rows for the thermodynamics lab.
-pub fn thermo_rows() -> [&'static str; 3] {
-    [EQUIPARTITION, SECOND_LAW, THIRD_LAW]
+pub fn thermo_rows() -> [&'static str; 5] {
+    [
+        EQUIPARTITION,
+        SECOND_LAW,
+        THIRD_LAW,
+        DULONG_PETIT,
+        HIGH_T_CLASSICAL,
+    ]
 }
 
 const SPECS: &[KnobSpec] = &[
@@ -235,21 +242,26 @@ impl Theory for IdealGas {
 
 /// The thermodynamics experiment: a classical ideal gas and its three laws.
 pub fn thermodynamics() -> ExperimentReport {
-    let theories: Vec<Box<dyn Theory>> = vec![Box::new(IdealGas::default())];
     report_from_rows(
         "thermo",
         "Thermodynamics lab",
         "Does the typed substrate reach the statistical layer, keeping kelvin and \
-         joules apart — and does a classical ideal gas honestly fail the third law?",
-        "Equipartition and the second law are computed; the third-law failure is \
-         a real property of the classical ideal gas, not a modelling shortcut.",
+         joules apart — and do classical theories (ideal gas, Dulong–Petit) honestly \
+         fail the third law while Einstein's solid holds it?",
+        "Equipartition and the second law are computed; third-law failures are \
+         real properties of the classical encodings, not modelling shortcuts. \
+         Einstein's C_V → 0 as T → 0 is the same third-law row, held.",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "U, C_v and ΔS are computed; T and energy are distinct types.".into(),
-            "The classical ideal gas fails the third law — quantum statistics are needed.".into(),
+            "The classical ideal gas and Dulong–Petit both fail the third law; the Einstein solid holds it.".into(),
         ],
         &thermo_rows(),
-        theories,
+        vec![
+            Box::new(IdealGas::default()),
+            Box::new(EinsteinSolid::dulong_petit()),
+            Box::new(EinsteinSolid::einstein()),
+        ],
     )
 }
 
@@ -289,13 +301,27 @@ mod tests {
     fn thermo_experiment_builds_a_matrix() {
         let r = thermodynamics();
         assert_eq!(r.id, "thermo");
-        assert_eq!(r.theories.len(), 1);
+        assert_eq!(r.theories.len(), 3);
         assert_eq!(
             r.matrix
                 .get(THIRD_LAW)
                 .and_then(|m| m.get("ideal-gas"))
                 .copied(),
             Some(VerdictKind::Fails)
+        );
+        assert_eq!(
+            r.matrix
+                .get(THIRD_LAW)
+                .and_then(|m| m.get("einstein-solid"))
+                .copied(),
+            Some(VerdictKind::Holds)
+        );
+        assert_eq!(
+            r.matrix
+                .get(DULONG_PETIT)
+                .and_then(|m| m.get("dulong-petit"))
+                .copied(),
+            Some(VerdictKind::Holds)
         );
     }
 }

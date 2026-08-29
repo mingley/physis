@@ -130,7 +130,7 @@ USAGE:
     physis score <theory>
     physis epistemics
     physis experiments
-    physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice | thermo | blackbody | bell]
+    physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice | thermo | blackbody | solid | bell]
     physis journal
     physis replay <journal.jsonl>
 

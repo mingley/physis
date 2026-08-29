@@ -54,6 +54,12 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 - `temperature` — cavity temperature (K)
 - `cutoff_hz` — ultraviolet frequency cutoff (Hz). Classical `u ∝ ν_max³`.
 
+### solid (`einstein-solid`, `dulong-petit`)
+- `quantum` — Einstein (true) vs Dulong–Petit (false)
+- `temperature` — lattice temperature (K). Raising it far above `Θ_E` recovers Dulong–Petit as correspondence.
+- `einstein_temp` — `Θ_E = ħω/k` (K)
+- `oscillators` — number of atoms N
+
 ## Dead knobs
 
 If you find a knob that no claim reads, either wire it or delete it. v0 `cosmological_constant` is *weakly* dead (it appears in the world note, not in a verdict). That is an accepted M0 hole; M1 should give Λ a claim or drop the knob.

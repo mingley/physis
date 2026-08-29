@@ -45,4 +45,5 @@ The workspace is reusable across scientific domains. The first domain is fundame
 - `specs/004-theories-and-claims.md`
 - `specs/005-string-critique.md`
 - `specs/016-blackbody.md`
+- `specs/017-einstein-solid.md`
 - `plans/000-roadmap.md`
