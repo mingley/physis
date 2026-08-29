@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Gauge-coupling unification computed by one-loop RG running**
+  (new `crates/physis-theory/src/rge.rs`, `specs/013-grand-unification.md`).
+  `gut.coupling-unification` is no longer an asserted sentence: `GaugeRunning`
+  runs the three inverse couplings `α_i⁻¹(μ) = α_i⁻¹(M_Z) − (b_i/2π)·ln(μ/M_Z)`
+  from the measured electroweak inputs at `M_Z`, fixes the unification point
+  from the `α_1`/`α_2` crossing, and **predicts** `α_3(M_Z)`. The minimal SM
+  misses by ~40% (`M_GUT ≈ 10¹³ GeV`); the MSSM agrees to ~1% (`M_GUT ≈
+  2×10¹⁶ GeV`) — the celebrated near-success, now computed. The
+  `supersymmetric` knob switches the beta coefficients `(41/10,−19/6,−7) →
+  (33/5,1,−3)`, flipping the verdict `fails → holds`; the same computed `M_GUT`
+  feeds the proton-decay verdict (rate ∝ `M_GUT⁻⁴`). Verdicts stay `Heuristic`
+  (one loop is approximate) but carry the genuinely computed numbers as
+  evidence. New PDG constants `inverse_alpha_em_mz`, `weak_mixing_angle_sin2_mz`,
+  `z_mass_gev`. Verified: four new tests (SM misses, MSSM unifies, SUSY beats
+  SM, verdict carries computed numbers), `fmt`, `clippy -D warnings`, full
+  suite, and the `run su5-gut` + knob diff.
+
 - **SU(5) grand unification: `sin²θ_W = 3/8` and charge quantization derived**
   (new `crates/physis-theory/src/gut.rs`, new `specs/013-grand-unification.md`).
   New `su5-gut` theory (Georgi–Glashow SU(5)) one layer above the SM. Two

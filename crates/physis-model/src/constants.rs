@@ -63,6 +63,25 @@ pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
 }
 
+/// Inverse electromagnetic coupling α_em⁻¹ at the Z mass (dimensionless), PDG.
+///
+/// The fine-structure constant *runs*: it is ≈1/137 at zero momentum but
+/// ≈1/128 at the electroweak scale. Gauge-coupling unification is stated at
+/// `M_Z`, so this is the value the running starts from.
+pub fn inverse_alpha_em_mz() -> Qty<Dimensionless> {
+    Qty::new(127.951)
+}
+
+/// Weak mixing angle sin²θ_W at the Z mass (dimensionless, MS-bar), PDG.
+pub fn weak_mixing_angle_sin2_mz() -> Qty<Dimensionless> {
+    Qty::new(0.231_21)
+}
+
+/// Z boson mass in GeV (PDG), the reference scale for electroweak running.
+pub fn z_mass_gev() -> Qty<Dimensionless> {
+    Qty::new(91.1876)
+}
+
 /// Boltzmann constant k_B (exact, SI). Units: J/K = kg·m²·s⁻²·K⁻¹.
 pub fn k_boltzmann(
 ) -> Qty<physis_core::SI<typenum::P1, typenum::P2, typenum::N2, typenum::Z0, typenum::N1>> {

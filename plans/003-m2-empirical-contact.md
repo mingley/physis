@@ -26,6 +26,12 @@ the lab's first empirically **falsified** theory — minimal SU(5) `fails`
 with a `supersymmetric` knob reviving both as heuristics. This is the concrete
 form of M2's mission: making a unification program *earn* empirical contact.
 
+`gut.coupling-unification` is now **computed**, not asserted: `rge.rs` runs the
+three gauge couplings at one loop from the measured `M_Z` inputs and predicts
+`α_3(M_Z)` — the SM misses by ~40%, the MSSM agrees to ~1%. This also delivers
+the coupling *running* that M2 item 3 deferred: the couplings are no longer just
+typed constants but are evolved with energy at one loop.
+
 ## Retag policy
 
 When a table becomes a check:

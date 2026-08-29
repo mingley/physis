@@ -36,8 +36,8 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10` | `encoded-fact`, holds (verified chain) |
 | `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **computed theorem** |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **computed theorem** |
-| `gut.coupling-unification` | the three couplings meet at one scale | knob-sensitive |
-| `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive |
+| `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
+| `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`) |
 
 ## The two computed theorems
 
@@ -59,6 +59,33 @@ measured `sin²θ_W(M_Z) ≈ 0.231` differs because of renormalization-group
 running between `M_Z` and `M_GUT` — a computation this milestone does not yet
 perform. The theorem is the unification-scale value, and the verdict says so.
 
+## Gauge-coupling unification is *computed*, not asserted
+
+`gut.coupling-unification` is backed by an actual one-loop
+renormalization-group computation (`crates/physis-theory/src/rge.rs`). Each
+inverse coupling runs linearly in `t = ln(μ/M_Z)`:
+
+```text
+α_i⁻¹(μ) = α_i⁻¹(M_Z) − (b_i / 2π) · t
+```
+
+with the standard one-loop coefficients `b = (41/10, −19/6, −7)` for the SM and
+`(33/5, 1, −3)` for the MSSM. Starting from the measured electroweak inputs at
+`M_Z` (`α_em⁻¹`, `sin²θ_W`, `α_s`, in `physis-model` constants), the code fixes
+the unification point from the `α_1`/`α_2` crossing and **predicts** `α_3(M_Z)`:
+
+- **Minimal SM**: predicted `α_3(M_Z) ≈ 0.071` vs measured `0.118` — a ~40%
+  miss, with a low `M_GUT ≈ 10¹³ GeV`. The couplings do not meet.
+- **MSSM**: predicted `α_3(M_Z) ≈ 0.117` vs measured `0.118` — agreement to
+  ~1%, with `M_GUT ≈ 2×10¹⁶ GeV`. The couplings (nearly) meet.
+
+Both verdicts are `Heuristic` (one loop is an approximation; two-loop terms and
+SUSY thresholds shift the percent-level numbers, and MSSM unification rests on
+unobserved superpartners), but the numbers in the evidence are genuinely
+computed. The low SM `M_GUT` is also what feeds `gut.proton-decay-viable`: the
+dimension-6 rate scales as `M_GUT⁻⁴`, so a low scale means a short, excluded
+lifetime.
+
 ## The knob → verdict diff
 
 ```
@@ -67,8 +94,10 @@ physis set su5-gut supersymmetric true
 ```
 
 flips both `gut.coupling-unification` and `gut.proton-decay-viable`
-`fails → holds` (as `heuristic`s). Minimal SU(5) is falsified; SUSY SU(5)
-survives current bounds but requires superpartners that have not been seen.
+`fails → holds` (as `heuristic`s), because switching the beta coefficients from
+SM to MSSM brings the computed `α_3(M_Z)` into agreement and raises `M_GUT`.
+Minimal SU(5) is falsified; SUSY SU(5) survives current bounds but requires
+superpartners that have not been seen.
 
 ## Relation to the string-critique
 
@@ -80,8 +109,9 @@ becomes concrete.
 
 ## Non-goals (this milestone)
 
-- Two-loop RG running of the couplings from `M_Z` to `M_GUT`.
-- A dynamical proton-decay rate from the dimension-6 operator coefficients.
+- **Two-loop** RG running and SUSY threshold corrections (one-loop is done).
+- A dynamical proton-decay *rate* from the dimension-6 operator coefficients
+  (the verdict uses the computed `M_GUT` qualitatively, not a full lifetime).
 - SO(10)/E₆ as separate theories (the embedding chain already reaches them).
 
 ## Related

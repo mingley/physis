@@ -24,6 +24,7 @@ use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 
 use crate::framework::Theory;
+use crate::rge::GaugeRunning;
 use crate::standard_model::{gut_trace_charge, gut_weinberg_sin2};
 
 /// SM fermions fill complete SU(5) multiplets (`5̄ + 10` per generation).
@@ -133,13 +134,13 @@ impl Theory for Su5Gut {
                 GUT_COUPLING_UNIFICATION,
                 "The three SM gauge couplings meet at a single scale.",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                Epistemic::Heuristic,
             ),
             Claim::new(
                 GUT_PROTON_DECAY_VIABLE,
                 "The predicted proton lifetime is consistent with experiment.",
                 LayerId::Effective,
-                Epistemic::EncodedFact,
+                Epistemic::Heuristic,
             ),
         ]
     }
@@ -190,33 +191,65 @@ impl Theory for Su5Gut {
                 }
             }
             GUT_COUPLING_UNIFICATION => {
-                if self.supersymmetric {
+                // Computed at one loop: run α_1, α_2, α_3 from M_Z, fix the
+                // unification point from the electroweak lines, and predict
+                // α_3(M_Z). Small mismatch ⇒ the three couplings meet.
+                let run = if self.supersymmetric {
+                    GaugeRunning::mssm()
+                } else {
+                    GaugeRunning::standard_model()
+                };
+                let mismatch = run.unification_mismatch();
+                let evidence = [
+                    format!(
+                        "predicted α_3(M_Z) = {:.4} vs measured {:.4} (mismatch {:.1}%)",
+                        run.predicted_alpha3_mz(),
+                        run.measured_alpha3_mz(),
+                        100.0 * mismatch
+                    ),
+                    format!("one-loop M_GUT ≈ {:.2e} GeV", run.unification_scale_gev()),
+                ];
+                if mismatch < 0.03 {
                     Verdict::holds(
                         Epistemic::Heuristic,
-                        "with MSSM matter the three couplings meet near 2×10¹⁶ GeV",
+                        "the three couplings meet at one loop (a celebrated near-success)",
                     )
-                    .with_evidence([
-                        "a celebrated near-miss→hit; contingent on unobserved superpartners"
-                            .to_string(),
-                    ])
+                    .with_evidence(evidence)
                 } else {
                     Verdict::fails(
-                        Epistemic::EncodedFact,
-                        "in minimal (non-SUSY) SU(5) the couplings miss unification by several σ",
+                        Epistemic::Heuristic,
+                        format!(
+                            "the couplings miss unification at one loop ({:.0}% off in α_3)",
+                            100.0 * mismatch
+                        ),
                     )
+                    .with_evidence(evidence)
                 }
             }
             GUT_PROTON_DECAY_VIABLE => {
+                // Tie the verdict to the computed unification scale: the
+                // dimension-6 rate scales as M_GUT⁻⁴, so a low M_GUT (minimal
+                // SU(5)) means a short, already-excluded lifetime.
+                let run = if self.supersymmetric {
+                    GaugeRunning::mssm()
+                } else {
+                    GaugeRunning::standard_model()
+                };
+                let m_gut = run.unification_scale_gev();
                 if self.supersymmetric {
                     Verdict::holds(
                         Epistemic::Heuristic,
                         "SUSY raises M_GUT, pushing p → e⁺π⁰ above current limits (not excluded, not seen)",
                     )
+                    .with_evidence([format!("computed one-loop M_GUT ≈ {m_gut:.2e} GeV")])
                 } else {
                     Verdict::fails(
-                        Epistemic::EncodedFact,
+                        Epistemic::Heuristic,
                         "minimal SU(5) predicts τ_p ~ 10³¹ yr, excluded by Super-Kamiokande (τ > 2.4×10³⁴ yr)",
                     )
+                    .with_evidence([format!(
+                        "low computed M_GUT ≈ {m_gut:.2e} GeV drives the too-fast decay (rate ∝ M_GUT⁻⁴)"
+                    )])
                 }
             }
             _ => Verdict::inapplicable("claim not made by the SU(5) GUT object"),
@@ -280,5 +313,20 @@ mod tests {
     fn sm_embeds_in_su5() {
         let g = Su5Gut::default();
         assert_eq!(verdict(&g, GUT_SM_EMBEDDING).kind, VerdictKind::Holds);
+    }
+
+    #[test]
+    fn coupling_unification_verdict_carries_computed_numbers() {
+        // The verdict is backed by an actual one-loop RGE prediction, not a
+        // stored sentence: the evidence must quote a predicted α_3 and M_GUT.
+        let g = Su5Gut::default();
+        let v = verdict(&g, GUT_COUPLING_UNIFICATION);
+        assert_eq!(v.kind, VerdictKind::Fails);
+        assert!(
+            v.evidence.iter().any(|e| e.contains("predicted α_3")),
+            "evidence: {:?}",
+            v.evidence
+        );
+        assert!(v.evidence.iter().any(|e| e.contains("M_GUT")));
     }
 }

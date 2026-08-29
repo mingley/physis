@@ -24,6 +24,7 @@ pub mod geometry;
 pub mod gut;
 pub mod quantum;
 pub mod relativity;
+pub mod rge;
 pub mod standard_model;
 pub mod strings;
 pub mod target;
