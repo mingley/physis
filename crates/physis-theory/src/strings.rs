@@ -771,6 +771,18 @@ mod tests {
     }
 
     #[test]
+    fn switching_kind_to_bosonic_flips_fermions_and_tachyon() {
+        // The `kind` knob is load-bearing: flipping a superstring to the
+        // bosonic string must remove the fermions and reintroduce the tachyon.
+        let mut t = StringTheory::type_iib();
+        assert_eq!(verdict(&t, claims::FERMIONS), VerdictKind::Holds);
+        assert_eq!(verdict(&t, claims::NO_TACHYON), VerdictKind::Holds);
+        t.set("kind", KnobValue::Choice("bosonic".into())).unwrap();
+        assert_eq!(verdict(&t, claims::FERMIONS), VerdictKind::Fails);
+        assert_eq!(verdict(&t, claims::NO_TACHYON), VerdictKind::Fails);
+    }
+
+    #[test]
     fn bosonic_has_tachyon_and_no_fermions() {
         let t = StringTheory::bosonic();
         assert_eq!(verdict(&t, claims::NO_TACHYON), VerdictKind::Fails);

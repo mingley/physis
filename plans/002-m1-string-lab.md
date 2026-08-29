@@ -14,8 +14,10 @@ Goal: make the string-critique experiment less of a skeleton and more of a place
 ## Tests that must exist before calling M1 done
 
 - ✅ Replay of a recorded session matches live diffs (`replay::tests::recorded_session_replays_faithfully`, `resumed_multi_run_session_replays_faithfully`)
-- Switching `kind` from `type-iib` to `bosonic` flips fermions and tachyon
-- Heterotic anomaly claim holds for E₈×E₈ and SO(32), fails for a fake `SU(3)` kind if we allow that knob
+- ✅ Switching `kind` from `type-iib` to `bosonic` flips fermions and tachyon (`strings::tests::switching_kind_to_bosonic_flips_fermions_and_tachyon`)
+- ✅ Heterotic anomaly claim holds for E₈×E₈ and SO(32), fails for a fake `SU(3)` kind (`gauge::tests::green_schwarz_solutions_are_exactly_so32_and_e8e8`, `strings::tests::green_schwarz_constructions_cancel_anomalies`)
+
+**M1 status: all work items (1–6) and required tests are complete.** Next: M2 (`plans/003`).
 
 ## Not in M1
 
