@@ -11,7 +11,7 @@ Finest to coarsest:
 |---|---|---|
 | mathematical | groups, algebras, type-level proofs | `typenum` SI, `SimpleGroup` |
 | spacetime | dimension, signature, extras, topology hint | `Manifold` |
-| quantum | amplitudes, operators | finite `Ket`, Pauli |
+| quantum | amplitudes, operators | finite `Ket`, Pauli, CHSH Bell test (`bell` lab, `specs/012`) |
 | field | local DoF, Lagrangians | string kind, SUSY flag (placeholder) |
 | particle | spectrum | SM catalog + graviton |
 | interaction | gauge groups, couplings | `GaugeGroup`, SM embed table |

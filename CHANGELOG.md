@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Domain reuse
 
+- **Quantum foundations: a fifth domain (CHSH Bell test)**
+  (`crates/physis-theory/src/quantum.rs`, new `specs/012-quantum-foundations.md`).
+  New `bell-test` theory and `physis experiment bell`, giving the `quantum` layer
+  its first `Theory`. Puts local realism on trial and mechanically refutes it:
+  the CHSH correlator `S = |E(a,b) − E(a,b′) + E(a′,b) + E(a′,b′)|` with
+  `E(a,b) = −V·cos(2(a−b))` and the optimal angles computes to `V·2√2`, so at full
+  visibility `quantum.bell-violation` holds (`S = 2√2 > 2`, refuting local hidden
+  variables) while `quantum.tsirelson-bound` holds (`S ≤ 2√2`) and
+  `quantum.born-normalization` is checked from the singlet ket. A `visibility`
+  knob turns the violation off below `1/√2`. Registered in `Lab::standard()` and
+  the experiments list.
+
 - **Thermodynamics: a fourth domain on the statistical layer**
   (`crates/physis-theory/src/thermo.rs`, new `specs/011-thermodynamics.md`).
   New `ideal-gas` theory (monatomic classical ideal gas) and `physis experiment

@@ -11,6 +11,7 @@ use physis_theory::continuum::KleinGordonField;
 use physis_theory::critique::diff_verdicts;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
 use physis_theory::gauge_field::{WilsonSun, WilsonU1};
+use physis_theory::quantum::BellTest;
 use physis_theory::thermo::IdealGas;
 use physis_theory::{
     string_critique, ExperimentReport, GeneralRelativity, ObserverGeometry, StandardModel,
@@ -46,6 +47,10 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
     (
         "thermo",
         "thermodynamics: a classical ideal gas and its three laws",
+    ),
+    (
+        "bell",
+        "quantum foundations: a CHSH Bell test refuting local realism",
     ),
 ];
 
@@ -91,6 +96,8 @@ impl Lab {
         lab.insert(Box::new(WilsonSun::su3()));
         // Fourth domain: thermodynamics on the statistical layer.
         lab.insert(Box::new(IdealGas::default()));
+        // Fifth domain: quantum foundations (a CHSH Bell test).
+        lab.insert(Box::new(BellTest::default()));
         let ids = lab.theories.keys().cloned().collect();
         lab.journal.record(JournalEvent::boot(ids));
         lab
@@ -221,6 +228,11 @@ impl Lab {
             }
             "thermo" => {
                 let report = physis_theory::thermodynamics();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "bell" => {
+                let report = physis_theory::bell();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
