@@ -23,7 +23,11 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `h`, `k_B`, `c`, and `λ_max T` matches `hc/(k x)`. `set planck quantum false`
   restores the catastrophe. Verified: Bose integral `π⁴/15`, numeric `u` vs
   analytic `aT⁴`, RJ octupling, Wien temperature-independence, lab knob-diff,
-  `fmt`, `clippy -D warnings`, full suite, and the CLI experiment.
+  `fmt`, `clippy -D warnings`, full suite, and the CLI experiment. Bugbot
+  follow-up: Planck's `uv-finite` / `stefan-boltzmann` verdicts use the
+  improper integral `u_∞ = a T⁴` (not the current cutoff, which can sit in
+  the infrared), and Wien's classical failure is a sampled absence of an
+  interior peak.
 
 - **Two-loop RG running for gauge-coupling unification**
   (`crates/physis-theory/src/rge.rs`, `crates/physis-theory/src/gut.rs`,
