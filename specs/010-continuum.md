@@ -46,6 +46,7 @@ There is nothing tabulated here: the module computes ω_j² for every mode.
 | `field.stable` | no tachyonic mode | `min_j ω_j² ≥ 0` |
 | `field.causal` | group velocity ≤ c | `max_j |dω/dk| ≤ c` |
 | `field.local` | nearest-neighbour coupling | structural |
+| `field.second-order-accurate` | discretization error ∝ a² | computed convergence order p ≈ 2 (halve the spacing at fixed k) |
 
 ## Knob → verdict
 

@@ -34,11 +34,23 @@ pub const STABLE: &str = "field.stable";
 pub const CAUSAL: &str = "field.causal";
 /// The coupling is local (nearest-neighbour).
 pub const LOCAL: &str = "field.local";
+/// The discretization is second-order accurate (error ∝ a²).
+pub const SECOND_ORDER: &str = "field.second-order-accurate";
 
 /// Matrix rows for the field lab.
-pub fn field_rows() -> [&'static str; 5] {
-    [FINITE_MODES, DISPERSION, STABLE, CAUSAL, LOCAL]
+pub fn field_rows() -> [&'static str; 6] {
+    [
+        FINITE_MODES,
+        DISPERSION,
+        STABLE,
+        CAUSAL,
+        LOCAL,
+        SECOND_ORDER,
+    ]
 }
+
+/// Fixed physical wavenumber used to probe the discretization's accuracy order.
+const CONVERGENCE_PROBE_K: f64 = 0.1;
 
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
@@ -130,6 +142,26 @@ impl KleinGordonField {
             max = max.max(vg);
         }
         max
+    }
+
+    /// Absolute dispersion error of the discrete Laplacian at a fixed physical
+    /// wavenumber `k`, for lattice spacing `a`: `|(4/a²) sin²(ka/2) − k²|`.
+    fn dispersion_abs_error(&self, k: f64, a: f64) -> f64 {
+        let s = (k * a / 2.0).sin();
+        ((4.0 / (a * a)) * s * s - k * k).abs()
+    }
+
+    /// Empirical convergence order p, from the error at spacing `a` vs `a/2`:
+    /// `p = log2(err(a) / err(a/2))`. A second-order scheme gives p ≈ 2.
+    fn convergence_order(&self) -> f64 {
+        let a = self.spacing;
+        let e1 = self.dispersion_abs_error(CONVERGENCE_PROBE_K, a);
+        let e2 = self.dispersion_abs_error(CONVERGENCE_PROBE_K, a / 2.0);
+        if e2 <= 0.0 || e1 <= 0.0 {
+            // Exact at this probe: treat as (at least) second order.
+            return 2.0;
+        }
+        (e1 / e2).log2()
     }
 
     /// Relative error between the longest-wavelength mode and the continuum
@@ -249,6 +281,12 @@ impl Theory for KleinGordonField {
                 LayerId::Field,
                 Epistemic::Theorem,
             ),
+            Claim::new(
+                SECOND_ORDER,
+                "The discretization is second-order accurate (error ∝ a²).",
+                LayerId::Field,
+                Epistemic::Theorem,
+            ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -308,6 +346,26 @@ impl Theory for KleinGordonField {
                 Epistemic::Theorem,
                 "nearest-neighbour Laplacian: the coupling is local",
             ),
+            SECOND_ORDER => {
+                let p = self.convergence_order();
+                if (1.8..=2.2).contains(&p) {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        format!("measured convergence order p = {p:.3} ≈ 2 (error ∝ a²)"),
+                    )
+                    .with_evidence([
+                        "computed by halving the lattice spacing at a fixed physical wavenumber"
+                            .to_string(),
+                    ])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!(
+                            "measured order p = {p:.3}: too coarse to be in the second-order regime",
+                        ),
+                    )
+                }
+            }
             _ => Verdict::inapplicable("claim not made by a field object"),
         }
     }
@@ -395,10 +453,22 @@ mod tests {
     }
 
     #[test]
+    fn discretization_is_second_order_accurate() {
+        // The discrete Laplacian converges at O(a²): computed order ≈ 2.
+        let f = KleinGordonField::default();
+        assert_eq!(verdict(&f, SECOND_ORDER), VerdictKind::Holds);
+        assert!((f.convergence_order() - 2.0).abs() < 0.1);
+        // An absurdly coarse lattice leaves the second-order regime.
+        let mut coarse = KleinGordonField::default();
+        coarse.set("spacing", KnobValue::Float(100.0)).unwrap();
+        assert_eq!(verdict(&coarse, SECOND_ORDER), VerdictKind::Fails);
+    }
+
+    #[test]
     fn mode_count_follows_the_sites_knob() {
         let mut f = KleinGordonField::default();
         f.set("sites", KnobValue::UInt(32)).unwrap();
-        assert_eq!(f.claims().len(), 5);
+        assert_eq!(f.claims().len(), 6);
         // 32 sites → 32 modes; the minimum ω² is the zero mode = mass².
         assert!((f.min_omega_sq() - f.mass_squared).abs() < 1e-9);
     }

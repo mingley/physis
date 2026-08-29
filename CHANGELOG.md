@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **M4 second-order accuracy, computed** (`crates/physis-theory/src/continuum.rs`).
+  New `field.second-order-accurate` claim for `klein-gordon`: the empirical
+  convergence order `p = log2(err(a)/err(a/2))` of the discrete Laplacian at a
+  fixed physical wavenumber is *computed* and verified to be ≈ 2 (error ∝ a²).
+  This promotes the continuum limit from asserted to a computed numerical-order
+  theorem. `set klein-gordon spacing 100` leaves the second-order regime and the
+  claim fails. Tests included.
+
 - **M4 non-abelian gauge fields (QED vs QCD)** (`crates/physis-theory/src/gauge_field.rs`).
   New `WilsonSun` theories `wilson-su2` and `wilson-su3` contrast with compact
   U(1) in the `gauge-lattice` matrix. New `gauge.asymptotic-freedom` claim: U(1)
