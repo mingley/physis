@@ -11,6 +11,21 @@
 //! let _ = kg(1.0) + meters(1.0);
 //! ```
 //!
+//! Subtracting a length from an energy is also rejected:
+//!
+//! ```compile_fail
+//! use physis_core::qty::{joule, meters};
+//! let _ = joule(1.0) - meters(1.0);
+//! ```
+//!
+//! And a wrong-dimension result cannot be assigned: mass × time is not energy:
+//!
+//! ```compile_fail
+//! use physis_core::dim::Energy;
+//! use physis_core::qty::{kg, seconds, Qty};
+//! let _: Qty<Energy> = kg(1.0) * seconds(1.0);
+//! ```
+//!
 //! Energy from mass and velocity is a type success:
 //!
 //! ```

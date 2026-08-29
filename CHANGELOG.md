@@ -10,6 +10,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Type system
+
+- **More compile-fail contracts** (`crates/physis-core/src/lib.rs`). Added two
+  `compile_fail` doctests to the "illegal states are unrepresentable" proof set:
+  subtracting a length from an energy, and assigning `mass × time` to a
+  `Qty<Energy>`. With the original mass+length example, the type system's
+  dimensional safety is now proven by three compile-fail contracts.
+
 ### Tooling
 
 - **`--json` structured output** (`crates/physis`). A global `--json` flag makes
