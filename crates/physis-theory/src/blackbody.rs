@@ -443,9 +443,10 @@ impl Theory for Blackbody {
                             "∫ u(ν) dν = a T⁴ is finite (Planck, independent of cutoff)",
                         )
                         .with_evidence([format!(
-                            "u_∞ = {:.4e} J/m³ vs aT⁴ = {:.4e} (rel {rel:.2e}); cutoff-doubling ratio at ν_max = {doubling:.3}",
+                            "u_∞ = {:.4e} J/m³ vs aT⁴ = {:.4e} (rel {rel:.2e}); ν_max/(kT/h) = {:.3e}",
                             full.value(),
-                            analytic.value()
+                            analytic.value(),
+                            self.cutoff_hz / self.thermal_frequency().value()
                         )])
                     } else {
                         Verdict::fails(
