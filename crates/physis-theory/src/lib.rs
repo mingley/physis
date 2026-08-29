@@ -25,6 +25,7 @@ pub mod relativity;
 pub mod standard_model;
 pub mod strings;
 pub mod target;
+pub mod thermo;
 
 pub use computation::computation;
 pub use continuum::field_modes;
@@ -37,3 +38,4 @@ pub use relativity::GeneralRelativity;
 pub use standard_model::StandardModel;
 pub use strings::{StringKind, StringTheory};
 pub use target::{empirical_target, score, EmpiricalTarget, Scorecard};
+pub use thermo::thermodynamics;

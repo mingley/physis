@@ -63,6 +63,12 @@ pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
 }
 
+/// Boltzmann constant k_B (exact, SI). Units: J/K = kg·m²·s⁻²·K⁻¹.
+pub fn k_boltzmann(
+) -> Qty<physis_core::SI<typenum::P1, typenum::P2, typenum::N2, typenum::Z0, typenum::N1>> {
+    Qty::new(1.380_649e-23)
+}
+
 /// Vacuum permittivity ε₀ (F/m), CODATA. Units: A²·s⁴·kg⁻¹·m⁻³.
 pub fn epsilon0() -> Qty<physis_core::SI<typenum::N1, typenum::N3, typenum::P4, typenum::P2>> {
     Qty::new(8.854_187_812_8e-12)

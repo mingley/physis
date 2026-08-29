@@ -10,6 +10,21 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Domain reuse
+
+- **Thermodynamics: a fourth domain on the statistical layer**
+  (`crates/physis-theory/src/thermo.rs`, new `specs/011-thermodynamics.md`).
+  New `ideal-gas` theory (monatomic classical ideal gas) and `physis experiment
+  thermo`, populating the previously-empty `statistical` layer. Exercises the
+  type system on `Qty<Temperature>` vs `Qty<Energy>` (`k_B·T` is an energy by
+  construction). Claims: `thermo.equipartition` (computed `C_v = dU/dT =
+  (3/2)Nk`), `thermo.second-law` (computed `ΔS = Nk ln(V_f/V_i) ≥ 0`,
+  knob-sensitive — a compression flips it to `fails`), and `thermo.third-law`
+  which **fails honestly**: a classical ideal gas has `S ∝ ln T → −∞`, so it
+  cannot satisfy the third law without quantum statistics. Adds
+  `k_boltzmann` to `physis-model::constants`. Registered in `Lab::standard()`
+  and the experiments list.
+
 ### Type system
 
 - **More compile-fail contracts** (`crates/physis-core/src/lib.rs`). Added two

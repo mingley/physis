@@ -16,7 +16,7 @@ Finest to coarsest:
 | particle | spectrum | SM catalog + graviton |
 | interaction | gauge groups, couplings | `GaugeGroup`, SM embed table |
 | effective | cutoffs, compactification radii | hidden-extra-dims claim |
-| statistical | temperature, ensembles | *not yet* |
+| statistical | temperature, ensembles | ideal gas (`thermo` lab, `specs/011`) |
 | information | records, computation | journal is the seed |
 | agent | observers who turn knobs | `Lab`, protocol |
 
