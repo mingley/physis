@@ -1,0 +1,13 @@
+[package]
+name = "physis-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Typed dimensions, layers, knobs, and claims — the substrate of physis."
+
+[dependencies]
+typenum.workspace = true
+serde.workspace = true

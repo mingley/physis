@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/physis-core",
+    "crates/physis-model",
+    "crates/physis-theory",
+    "crates/physis-agent",
+    "crates/physis",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/mingley/physis"
+authors = ["Michael Ingley"]
+rust-version = "1.83"
+description = "Mechanically verifiable models of reality in pure Rust."
+
+[workspace.dependencies]
+physis-core = { path = "crates/physis-core", version = "0.1.0" }
+physis-model = { path = "crates/physis-model", version = "0.1.0" }
+physis-theory = { path = "crates/physis-theory", version = "0.1.0" }
+physis-agent = { path = "crates/physis-agent", version = "0.1.0" }
+typenum = { version = "1.17", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
