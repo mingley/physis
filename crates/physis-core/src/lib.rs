@@ -51,7 +51,7 @@ pub mod scale;
 pub use claim::{Claim, Epistemic, Verdict, VerdictKind};
 pub use dim::{
     Acceleration, Amount, Charge, Current, Dimensionless, Energy, Force, Frequency, Length,
-    Luminous, Mass, Power, Pressure, Temperature, Time, Velocity, SI,
+    Luminous, Mass, Momentum, Power, Pressure, Temperature, Time, Velocity, SI,
 };
 pub use error::CoreError;
 pub use id::{ClaimId, KnobId, LayerId, TheoryId};

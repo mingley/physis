@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Special relativity: the Galilean→Einstein revolution as one knob**
+  (new `crates/physis-theory/src/special_relativity.rs`, new
+  `specs/014-special-relativity.md`). New `special-relativity` theory with three
+  computed theorems — `sr.invariant-interval` (`s² = (cΔt)² − Δx²` unchanged by
+  a boost), `sr.subluminal-composition` (`0.8c ⊕ 0.7c ≈ 0.9615c < c`), and
+  `sr.energy-momentum-invariant` (`E² − (pc)² = (mc²)²`, with `pc` and `mc²`
+  built from *typed* `Qty<Energy>` so the dimensions are compiler-checked). An
+  `absolute_time` knob replaces Lorentz boosts with Galilean ones and flips all
+  three `holds → fails` at once — the pre-1905 worldview, mechanized. Added a
+  `Momentum` (`M L T⁻¹`) type alias to `physis-core`. Registered in
+  `Lab::standard()`. Verified: four new tests, `fmt`, `clippy -D warnings`, full
+  suite, and the `run special-relativity` + knob diff.
+
 - **Gauge-coupling unification computed by one-loop RG running**
   (new `crates/physis-theory/src/rge.rs`, `specs/013-grand-unification.md`).
   `gut.coupling-unification` is no longer an asserted sentence: `GaugeRunning`

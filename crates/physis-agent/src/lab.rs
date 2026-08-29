@@ -14,8 +14,8 @@ use physis_theory::gauge_field::{WilsonSun, WilsonU1};
 use physis_theory::quantum::BellTest;
 use physis_theory::thermo::IdealGas;
 use physis_theory::{
-    string_critique, ExperimentReport, GeneralRelativity, ObserverGeometry, StandardModel,
-    StringTheory, Su5Gut, Theory, VerdictDiff,
+    string_critique, ExperimentReport, GeneralRelativity, ObserverGeometry, SpecialRelativity,
+    StandardModel, StringTheory, Su5Gut, Theory, VerdictDiff,
 };
 
 use crate::journal::{Journal, JournalEvent};
@@ -74,6 +74,7 @@ impl Lab {
         let mut lab = Self::empty();
         lab.insert(Box::new(StandardModel::default()));
         lab.insert(Box::new(GeneralRelativity::default()));
+        lab.insert(Box::new(SpecialRelativity::default()));
         lab.insert(Box::new(StringTheory::type_iib()));
         lab.insert(Box::new(StringTheory::type_iia()));
         lab.insert(Box::new(StringTheory::type_i()));

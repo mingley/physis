@@ -145,6 +145,8 @@ pub type Amount = SI<Z0, Z0, Z0, Z0, Z0, P1>;
 pub type Luminous = SI<Z0, Z0, Z0, Z0, Z0, Z0, P1>;
 /// Velocity, `L T⁻¹`.
 pub type Velocity = SI<Z0, P1, N1>;
+/// Momentum, `M L T⁻¹`.
+pub type Momentum = SI<P1, P1, N1>;
 /// Acceleration, `L T⁻²`.
 pub type Acceleration = SI<Z0, P1, N2>;
 /// Force, `M L T⁻²`.
