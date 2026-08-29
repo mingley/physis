@@ -26,6 +26,12 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
     use a degenerate placeholder world (generalizing the projection is future
     work).
 
+- **M3 Computation: complexity claims** (`crates/physis-theory/src/computation.rs`).
+  Added `comp.p-equals-np`, encoded as `undecidable`/`open` for the Turing
+  machine — the lab honestly refuses to record holds/fails for a famous open
+  problem — and `inapplicable` for a fixed circuit. Added a `nondeterministic`
+  knob to `turing-machine` that flips `comp.deterministic`. Tests cover both.
+
 - **M3 Ohm-circuit control** (`crates/physis-theory/src/em.rs`). Added
   `ohm-circuit`, lumped circuit theory as the quasi-static effective limit of
   Maxwell, to the `em-vacuum` matrix (now three EM objects). Charge conservation

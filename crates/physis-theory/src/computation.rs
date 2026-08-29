@@ -30,15 +30,18 @@ pub const DETERMINISTIC: &str = "comp.deterministic";
 pub const DECIDABLE_EQUIVALENCE: &str = "comp.decidable-equivalence";
 /// The computation runs within an a priori resource bound.
 pub const RESOURCE_BOUNDED: &str = "comp.resource-bounded";
+/// Whether P = NP in this model.
+pub const P_EQUALS_NP: &str = "comp.p-equals-np";
 
 /// Matrix rows for the computation lab.
-pub fn computation_rows() -> [&'static str; 5] {
+pub fn computation_rows() -> [&'static str; 6] {
     [
         HALTS,
         TURING_COMPLETE,
         DETERMINISTIC,
         DECIDABLE_EQUIVALENCE,
         RESOURCE_BOUNDED,
+        P_EQUALS_NP,
     ]
 }
 
@@ -73,6 +76,12 @@ fn comp_claims() -> Vec<Claim> {
             "The computation runs within an a priori resource bound.",
             LayerId::Information,
             Epistemic::Theorem,
+        ),
+        Claim::new(
+            P_EQUALS_NP,
+            "Polynomial time equals nondeterministic polynomial time (P = NP).",
+            LayerId::Mathematical,
+            Epistemic::Open,
         ),
     ]
 }
@@ -145,23 +154,36 @@ impl Theory for CombinationalCircuit {
             RESOURCE_BOUNDED => {
                 Verdict::holds(Epistemic::Theorem, "bounded by gate count and depth")
             }
+            P_EQUALS_NP => Verdict::inapplicable(
+                "P vs NP concerns uniform machine models, not a single fixed circuit",
+            ),
             _ => Verdict::inapplicable("claim not made by a computational object"),
         }
     }
 }
 
-const TM_SPECS: &[KnobSpec] = &[KnobSpec {
-    name: "tape_bound",
-    layer: LayerId::Information,
-    doc: "Tape length bound in cells; 0 means an unbounded tape. A finite bound makes the machine a finite automaton.",
-    domain: KnobDomain::UInt { min: 0, max: 1_000_000 },
-}];
+const TM_SPECS: &[KnobSpec] = &[
+    KnobSpec {
+        name: "tape_bound",
+        layer: LayerId::Information,
+        doc: "Tape length bound in cells; 0 means an unbounded tape. A finite bound makes the machine a finite automaton.",
+        domain: KnobDomain::UInt { min: 0, max: 1_000_000 },
+    },
+    KnobSpec {
+        name: "nondeterministic",
+        layer: LayerId::Information,
+        doc: "Whether the transition relation allows nondeterministic branching.",
+        domain: KnobDomain::Bool,
+    },
+];
 
-/// A deterministic Turing machine with an optional tape bound.
+/// A Turing machine with an optional tape bound and (non)determinism.
 #[derive(Clone, Debug, Default)]
 pub struct TuringMachine {
     /// Tape bound in cells; 0 means unbounded.
     tape_bound: u64,
+    /// Whether the transition relation is nondeterministic.
+    nondeterministic: bool,
 }
 
 impl TuringMachine {
@@ -177,6 +199,7 @@ impl Knobbed for TuringMachine {
     fn get(&self, name: &str) -> Result<KnobValue, CoreError> {
         match name {
             "tape_bound" => Ok(KnobValue::UInt(self.tape_bound)),
+            "nondeterministic" => Ok(KnobValue::Bool(self.nondeterministic)),
             _ => Err(CoreError::UnknownKnob { name: name.into() }),
         }
     }
@@ -186,6 +209,7 @@ impl Knobbed for TuringMachine {
         let old = self.get(name)?;
         match (name, value) {
             ("tape_bound", KnobValue::UInt(v)) => self.tape_bound = v,
+            ("nondeterministic", KnobValue::Bool(v)) => self.nondeterministic = v,
             _ => {
                 return Err(CoreError::TypeMismatch {
                     name: name.into(),
@@ -257,8 +281,22 @@ impl Theory for TuringMachine {
                 }
             }
             DETERMINISTIC => {
-                Verdict::holds(Epistemic::Theorem, "single-valued transition function")
+                if self.nondeterministic {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        "nondeterministic transition relation: multiple next configurations",
+                    )
+                } else {
+                    Verdict::holds(Epistemic::Theorem, "single-valued transition function")
+                }
             }
+            P_EQUALS_NP => Verdict::undecidable(
+                Epistemic::Open,
+                "P vs NP is an open problem; this encoding does not decide it",
+            )
+            .with_evidence([
+                "one of the Clay Millenium Problems; honestly Open, not Holds or Fails".to_string(),
+            ]),
             DECIDABLE_EQUIVALENCE => {
                 if self.unbounded() {
                     Verdict::undecidable(
@@ -351,6 +389,33 @@ mod tests {
         assert_eq!(verdict(&c, HALTS), VerdictKind::Holds);
         assert_eq!(verdict(&c, TURING_COMPLETE), VerdictKind::Fails);
         assert_eq!(verdict(&c, DECIDABLE_EQUIVALENCE), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn p_vs_np_is_honestly_open() {
+        // The lab refuses to pretend it knows: P vs NP is Undecidable/Open.
+        let tm = TuringMachine::default();
+        let c = tm
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == P_EQUALS_NP)
+            .unwrap();
+        let v = tm.evaluate(&c);
+        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.epistemic, Epistemic::Open);
+        // It does not apply to a single fixed circuit.
+        assert_eq!(
+            verdict(&CombinationalCircuit, P_EQUALS_NP),
+            VerdictKind::Inapplicable
+        );
+    }
+
+    #[test]
+    fn nondeterminism_knob_flips_determinism() {
+        let mut tm = TuringMachine::default();
+        assert_eq!(verdict(&tm, DETERMINISTIC), VerdictKind::Holds);
+        tm.set("nondeterministic", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&tm, DETERMINISTIC), VerdictKind::Fails);
     }
 
     #[test]

@@ -28,6 +28,7 @@ mechanically restores decidability — a clean knob → verdict diff.
 | theory | knob | effect |
 |---|---|---|
 | `turing-machine` | `tape_bound` | tape length in cells; `0` = unbounded. A finite bound makes the machine a finite automaton. |
+| `turing-machine` | `nondeterministic` | whether the transition relation allows nondeterministic branching; flips `comp.deterministic`. |
 
 `combinational-circuit` has no knobs (it is structurally fixed).
 
@@ -40,6 +41,15 @@ mechanically restores decidability — a clean knob → verdict diff.
 | `comp.deterministic` | the transition function is single-valued |
 | `comp.decidable-equivalence` | equivalence of two instances is decidable |
 | `comp.resource-bounded` | the computation runs within an a priori resource bound |
+| `comp.p-equals-np` | P = NP — encoded as `undecidable`/`open`, an honest unknown |
+
+## Honest unknowns: P vs NP
+
+`comp.p-equals-np` is `undecidable` with epistemic tag `open` for the Turing
+machine. This is deliberate: the lab refuses to record `holds` or `fails` for a
+famous open problem. It is `inapplicable` to a single fixed circuit (P vs NP is
+about uniform machine models). This is the epistemic honesty the whole project
+is built on — an `open` verdict is a first-class, respected outcome.
 
 ## The knob → verdict diff
 
