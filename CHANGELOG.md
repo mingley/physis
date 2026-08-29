@@ -26,6 +26,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
     use a degenerate placeholder world (generalizing the projection is future
     work).
 
+- **M3 Ohm-circuit control** (`crates/physis-theory/src/em.rs`). Added
+  `ohm-circuit`, lumped circuit theory as the quasi-static effective limit of
+  Maxwell, to the `em-vacuum` matrix (now three EM objects). Charge conservation
+  is Kirchhoff's current law (`holds`), wave propagation is dropped
+  (`em.wave-speed-c` inapplicable), and the theory has a preferred frame
+  (`em.lorentz-invariance` fails). New `em.quasi-static-valid` claim: the
+  `frequency_hz` knob flips it via typed `Qty<Length>` wavelengths when `c/f`
+  stops dwarfing the circuit. Registered in `Lab::standard()`.
+
 - **M3 Electromagnetism, the second domain** (`crates/physis-theory/src/em.rs`,
   `crates/physis-model/src/constants.rs`, new `specs/008-electromagnetism.md`).
   Proves the workspace hosts a second science without forking core: `Qty`,

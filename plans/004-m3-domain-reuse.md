@@ -10,7 +10,7 @@ New theory `maxwell-vacuum` (and later `linear-medium`):
 - Claims:
   - `1/√(ε₀μ₀) = c` as a **theorem** of the encoding
   - Faraday / Ampere structure as encoded facts, then as typed exterior calculus if we get that far
-- Control: `ohm-circuit` as an effective theory of Maxwell
+- Control: ✅ `ohm-circuit` — lumped circuit theory as the quasi-static effective limit of Maxwell. Charge conservation = Kirchhoff's current law; wave propagation dropped (`wave-speed-c` inapplicable), preferred frame (`lorentz-invariance` fails). The `frequency_hz` knob flips `em.quasi-static-valid` when the wavelength stops dwarfing the circuit.
 
 This domain is chosen because it *needs* `Qty` immediately (cannot add volts to amperes) and produces clean knob diffs (`epsilon_r` changes wave speed).
 
@@ -43,9 +43,12 @@ If model types get heavy, add `physis-em` / `physis-info` crates. Do not copy `p
 
 ## Status
 
-Electricity's first reuse is delivered: `maxwell-vacuum` and `linear-medium`
-theories, the `em-vacuum` experiment, and the `1/√(ε₀μ₀) = c` theorem checked
-from typed `ε₀`/`μ₀` constants — all on the same substrate, no core fork. The
-experiment machinery was generalized (`report_from_rows`) so domains supply
-their own theory list and claim rows. Still open in M3: `ohm-circuit` control,
-typed exterior calculus, and the computation domain.
+Electricity's reuse is delivered: `maxwell-vacuum`, `linear-medium`, and the
+`ohm-circuit` control, the `em-vacuum` experiment, and the `1/√(ε₀μ₀) = c`
+theorem checked from typed `ε₀`/`μ₀` constants — all on the same substrate, no
+core fork. The computation domain (`combinational-circuit`, `turing-machine`,
+`specs/009`) is also delivered. The experiment machinery was generalized
+(`report_from_rows`) so domains supply their own theory list and claim rows.
+Still open in M3: typed exterior calculus for the field equations; complexity
+classes / Landauer for computation; and generalizing the physics-shaped `World`
+projection for non-physics domains.

@@ -22,6 +22,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|
 | `maxwell-vacuum` | Classical EM in vacuum: a U(1) gauge field of light |
 | `linear-medium` | Classical EM in a linear medium (`ε_r`, `μ_r` knobs) |
+| `ohm-circuit` | Lumped-element circuit theory: the quasi-static effective limit of Maxwell (`frequency_hz` knob) |
 
 ## Knobs
 
@@ -29,6 +30,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|---|
 | `linear-medium` | `epsilon_r` | relative permittivity ε_r ≥ 1; raises the refractive index n = √(ε_r μ_r) |
 | `linear-medium` | `mu_r` | relative permeability μ_r ≥ 1; raises n |
+| `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit |
 
 `maxwell-vacuum` has no knobs (vacuum is the unit medium).
 
@@ -41,7 +43,18 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `em.faraday` | Faraday's law | encoded-fact |
 | `em.ampere` | Ampère–Maxwell law | encoded-fact |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem |
-| `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium |
+| `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
+| `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit); inapplicable to full Maxwell |
+
+## The control: `ohm-circuit`
+
+Lumped circuit theory is the quasi-static, long-wavelength limit of Maxwell.
+Kirchhoff's current law *is* charge conservation; Kirchhoff's voltage law *is*
+Faraday's law. Wave propagation is dropped (`em.wave-speed-c` inapplicable) and
+the theory has a preferred rest frame (`em.lorentz-invariance` fails). It is
+valid only while the wavelength `c/f` dwarfs the circuit: raising `frequency_hz`
+past that point flips `em.quasi-static-valid` from `holds` to `fails`, using
+typed `Qty<Length>` wavelengths.
 
 ## The theorem
 

@@ -33,9 +33,11 @@ pub const AMPERE: &str = "em.ampere";
 pub const CHARGE_CONSERVATION: &str = "em.charge-conservation";
 /// Lorentz (boost) invariance of the field equations.
 pub const LORENTZ_INVARIANCE: &str = "em.lorentz-invariance";
+/// The lumped-element (quasi-static) approximation is valid.
+pub const QUASI_STATIC_VALID: &str = "em.quasi-static-valid";
 
 /// Matrix rows for the electromagnetism lab.
-pub fn em_rows() -> [&'static str; 6] {
+pub fn em_rows() -> [&'static str; 7] {
     [
         WAVE_SPEED_C,
         GAUSS,
@@ -43,6 +45,7 @@ pub fn em_rows() -> [&'static str; 6] {
         AMPERE,
         CHARGE_CONSERVATION,
         LORENTZ_INVARIANCE,
+        QUASI_STATIC_VALID,
     ]
 }
 
@@ -92,6 +95,12 @@ fn em_claims() -> Vec<Claim> {
             LayerId::Spacetime,
             Epistemic::Theorem,
         ),
+        Claim::new(
+            QUASI_STATIC_VALID,
+            "The lumped-element (quasi-static) approximation is valid.",
+            LayerId::Effective,
+            Epistemic::EncodedFact,
+        ),
     ]
 }
 
@@ -132,6 +141,9 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
                     "a material medium selects a rest frame, breaking boost invariance",
                 )
             }
+        }
+        QUASI_STATIC_VALID => {
+            Verdict::inapplicable("full Maxwell theory, not a lumped-element approximation")
         }
         _ => Verdict::inapplicable("claim not made by an electromagnetism object"),
     }
@@ -289,10 +301,171 @@ impl Theory for LinearMedium {
     }
 }
 
-/// The electromagnetism experiment: Maxwell in vacuum vs a linear medium.
+/// Characteristic size of the modelled circuit, in metres.
+const CIRCUIT_SIZE_M: f64 = 0.1;
+/// The lumped approximation needs the wavelength to dwarf the circuit.
+const QUASI_STATIC_MARGIN: f64 = 100.0;
+
+const OHM_SPECS: &[KnobSpec] = &[KnobSpec {
+    name: "frequency_hz",
+    layer: LayerId::Effective,
+    doc: "Operating frequency in Hz. The lumped approximation holds while the wavelength c/f dwarfs the circuit; at high frequency it breaks down.",
+    domain: KnobDomain::Float {
+        min: 0.0,
+        max: 1.0e18,
+    },
+}];
+
+/// Ohm's-law lumped circuit theory: the quasi-static effective limit of Maxwell.
+#[derive(Clone, Debug)]
+pub struct OhmCircuit {
+    frequency_hz: f64,
+}
+
+impl Default for OhmCircuit {
+    fn default() -> Self {
+        // 1 kHz: comfortably quasi-static for a 0.1 m circuit.
+        Self {
+            frequency_hz: 1.0e3,
+        }
+    }
+}
+
+impl OhmCircuit {
+    /// Wavelength c/f as a typed length (infinite at DC).
+    fn wavelength(&self) -> physis_core::Qty<physis_core::Length> {
+        let lambda = if self.frequency_hz <= 0.0 {
+            f64::INFINITY
+        } else {
+            C.value() / self.frequency_hz
+        };
+        physis_core::qty::meters(lambda)
+    }
+
+    fn quasi_static_valid(&self) -> bool {
+        self.wavelength().value() > QUASI_STATIC_MARGIN * CIRCUIT_SIZE_M
+    }
+}
+
+impl Knobbed for OhmCircuit {
+    fn specs(&self) -> &'static [KnobSpec] {
+        OHM_SPECS
+    }
+    fn get(&self, name: &str) -> Result<KnobValue, CoreError> {
+        match name {
+            "frequency_hz" => Ok(KnobValue::Float(self.frequency_hz)),
+            _ => Err(CoreError::UnknownKnob { name: name.into() }),
+        }
+    }
+    fn set(&mut self, name: &str, value: KnobValue) -> Result<KnobValue, CoreError> {
+        let spec = self.spec(name)?;
+        spec.domain.check(name, &value)?;
+        let old = self.get(name)?;
+        match (name, value) {
+            ("frequency_hz", KnobValue::Float(v)) => self.frequency_hz = v,
+            _ => {
+                return Err(CoreError::TypeMismatch {
+                    name: name.into(),
+                    expected: spec.domain.kind_name().into(),
+                    got: old.kind_name().into(),
+                });
+            }
+        }
+        Ok(old)
+    }
+}
+
+impl Theory for OhmCircuit {
+    fn id(&self) -> &'static str {
+        "ohm-circuit"
+    }
+    fn name(&self) -> &'static str {
+        "Ohm circuit (lumped)"
+    }
+    fn summary(&self) -> &'static str {
+        "Lumped-element circuit theory: the quasi-static, long-wavelength limit \
+         of Maxwell. Kirchhoff's laws are charge conservation and Faraday's law \
+         in disguise; wave propagation is dropped and there is a preferred rest \
+         frame. Valid only while the wavelength dwarfs the circuit."
+    }
+    fn world(&self) -> World {
+        World {
+            spacetime: Manifold::observed_4d(),
+            gauge: GaugeGroup {
+                factors: vec![SimpleGroup::U1],
+            },
+            spectrum: Spectrum::empty(),
+            has_gravity: false,
+            supersymmetric: false,
+            free_parameter_count: 3,
+            landscape_log10: 0.0,
+            note: format!(
+                "lumped circuit at {:.3e} Hz, wavelength {}",
+                self.frequency_hz,
+                self.wavelength()
+            ),
+        }
+    }
+    fn claims(&self) -> Vec<Claim> {
+        em_claims()
+    }
+    fn evaluate(&self, claim: &Claim) -> Verdict {
+        match claim.id.0.as_str() {
+            WAVE_SPEED_C => Verdict::inapplicable(
+                "lumped circuits are the quasi-static limit; wave propagation is dropped",
+            ),
+            GAUSS => Verdict::holds(
+                Epistemic::EncodedFact,
+                "capacitor charge Q = CV is Gauss's law in the lumped limit",
+            ),
+            FARADAY => Verdict::holds(
+                Epistemic::EncodedFact,
+                "inductor EMF / Kirchhoff's voltage law is Faraday's law",
+            ),
+            AMPERE => Verdict::holds(
+                Epistemic::EncodedFact,
+                "displacement current shows up as capacitor current",
+            ),
+            CHARGE_CONSERVATION => Verdict::holds(
+                Epistemic::Theorem,
+                "Kirchhoff's current law is exactly charge conservation",
+            ),
+            LORENTZ_INVARIANCE => Verdict::fails(
+                Epistemic::EncodedFact,
+                "quasi-static circuit theory has a preferred (lab) rest frame",
+            ),
+            QUASI_STATIC_VALID => {
+                if self.quasi_static_valid() {
+                    Verdict::holds(
+                        Epistemic::EncodedFact,
+                        format!(
+                            "wavelength {} dwarfs the {CIRCUIT_SIZE_M} m circuit",
+                            self.wavelength()
+                        ),
+                    )
+                } else {
+                    Verdict::fails(
+                        Epistemic::EncodedFact,
+                        format!(
+                            "wavelength {} is comparable to the {CIRCUIT_SIZE_M} m circuit; lumped model breaks down",
+                            self.wavelength()
+                        ),
+                    )
+                }
+            }
+            _ => Verdict::inapplicable("claim not made by an electromagnetism object"),
+        }
+    }
+}
+
+/// The electromagnetism experiment: Maxwell in vacuum vs a linear medium vs the
+/// lumped-circuit effective theory.
 pub fn em_vacuum() -> ExperimentReport {
-    let theories: Vec<Box<dyn Theory>> =
-        vec![Box::new(MaxwellVacuum), Box::new(LinearMedium::default())];
+    let theories: Vec<Box<dyn Theory>> = vec![
+        Box::new(MaxwellVacuum),
+        Box::new(LinearMedium::default()),
+        Box::new(OhmCircuit::default()),
+    ];
     report_from_rows(
         "em-vacuum",
         "Electromagnetism lab",
@@ -353,12 +526,35 @@ mod tests {
     fn em_experiment_builds_a_matrix() {
         let r = em_vacuum();
         assert_eq!(r.id, "em-vacuum");
-        assert_eq!(r.theories.len(), 2);
+        assert_eq!(r.theories.len(), 3);
         let wave = r.matrix.get(WAVE_SPEED_C).expect("row");
         assert_eq!(
             wave.get("maxwell-vacuum").copied(),
             Some(VerdictKind::Holds)
         );
         assert_eq!(wave.get("linear-medium").copied(), Some(VerdictKind::Fails));
+        // The lumped circuit is the quasi-static limit: no wave propagation.
+        assert_eq!(
+            wave.get("ohm-circuit").copied(),
+            Some(VerdictKind::Inapplicable)
+        );
+    }
+
+    #[test]
+    fn ohm_circuit_is_the_quasi_static_limit() {
+        let c = OhmCircuit::default();
+        assert_eq!(verdict(&c, WAVE_SPEED_C), VerdictKind::Inapplicable);
+        assert_eq!(verdict(&c, LORENTZ_INVARIANCE), VerdictKind::Fails);
+        assert_eq!(verdict(&c, CHARGE_CONSERVATION), VerdictKind::Holds);
+        assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn high_frequency_breaks_the_lumped_approximation() {
+        // The circuit knob → verdict diff.
+        let mut c = OhmCircuit::default();
+        assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Holds);
+        c.set("frequency_hz", KnobValue::Float(1.0e10)).unwrap();
+        assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Fails);
     }
 }
