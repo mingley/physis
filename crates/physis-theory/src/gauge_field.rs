@@ -61,6 +61,24 @@ fn bessel_i1_over_i0(x: f64) -> f64 {
     (x / 2.0) * i1_series / i0
 }
 
+/// The quadratic Casimir of the fundamental representation of SU(N),
+/// `C₂(fund) = (N²−1)/(2N)`.
+fn su_casimir_fundamental(n: f64) -> f64 {
+    (n * n - 1.0) / (2.0 * n)
+}
+
+/// The **exact** string tension of 2D SU(N) Yang–Mills for a fundamental Wilson
+/// loop, `σ = (g²/2)·C₂(fund) = (N²−1)/(2β)` with `β = 2N/g²`.
+///
+/// Two-dimensional Yang–Mills is exactly solvable (Migdal, Witten): the
+/// fundamental Wilson loop obeys an exact area law `⟨W⟩ = exp(−σ·Area)`. Since
+/// `σ > 0` for every finite `β`, 2D SU(N) confines at **all** couplings — a
+/// theorem, the non-abelian analogue of the 2D compact-U(1) result.
+fn exact_2d_string_tension_sun(n: f64, beta: f64) -> f64 {
+    // σ = (g²/2)·C₂ with g² = 2N/β ⇒ σ = (N/β)·C₂(fund) = (N²−1)/(2β).
+    (n / beta) * su_casimir_fundamental(n)
+}
+
 /// The **exact** string tension of 2D compact U(1) lattice gauge theory,
 /// `σ = −ln(I₁(β)/I₀(β))`.
 ///
@@ -530,11 +548,48 @@ impl Theory for WilsonSun {
                 LayerId::Interaction,
                 Epistemic::Theorem,
             ),
+            Claim::new(
+                EXACT_AREA_LAW_2D,
+                "In 2D the Wilson loop obeys an exact area law at all couplings.",
+                LayerId::Interaction,
+                Epistemic::Theorem,
+            ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
             STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, self.n as f64),
+            EXACT_AREA_LAW_2D => {
+                if self.dimension == 2 {
+                    let n = self.n as f64;
+                    let sigma = exact_2d_string_tension_sun(n, self.beta);
+                    if sigma > 0.0 {
+                        Verdict::holds(
+                            Epistemic::Theorem,
+                            format!(
+                                "exact 2D string tension σ = (N²−1)/(2β) = {sigma:.4} > 0 at β = {}: SU({}) confines at all couplings",
+                                self.beta, self.n
+                            ),
+                        )
+                        .with_evidence([
+                            format!(
+                                "2D Yang–Mills is exactly solvable; σ = (g²/2)·C₂(fund), C₂(fund) = {:.4}",
+                                su_casimir_fundamental(n)
+                            ),
+                            "unlike 4D, this needs no mass-gap conjecture — it is a theorem".to_string(),
+                        ])
+                    } else {
+                        Verdict::fails(
+                            Epistemic::Theorem,
+                            format!("σ = {sigma:.4} ≤ 0 at β = {}", self.beta),
+                        )
+                    }
+                } else {
+                    Verdict::inapplicable(
+                        "the exact 2D solution is special to two dimensions; in 4D see gauge.confining (mass-gap conjecture)",
+                    )
+                }
+            }
             GAUGE_INVARIANT => Verdict::holds(
                 Epistemic::Theorem,
                 "non-abelian plaquette action is gauge invariant by construction",
@@ -712,6 +767,37 @@ mod tests {
         }
         // The tension decreases with β (toward the continuum limit).
         assert!(super::exact_2d_string_tension(1.0) > super::exact_2d_string_tension(10.0));
+    }
+
+    #[test]
+    fn two_d_sun_confines_at_all_couplings_exactly() {
+        // 2D SU(N) Yang–Mills: σ = (N²−1)/(2β) > 0 for every β (exact theorem).
+        for mk in [WilsonSun::su2, WilsonSun::su3] {
+            let mut w = mk();
+            w.set("dimension", KnobValue::UInt(2)).unwrap();
+            for beta in [0.5, 2.0, 6.0, 50.0] {
+                w.set("beta", KnobValue::Float(beta)).unwrap();
+                assert_eq!(
+                    verdict(&w, EXACT_AREA_LAW_2D),
+                    VerdictKind::Holds,
+                    "β={beta}"
+                );
+            }
+        }
+        // Casimir values: C₂(fund) = 3/4 for SU(2), 4/3 for SU(3).
+        assert!((super::su_casimir_fundamental(2.0) - 0.75).abs() < 1e-12);
+        assert!((super::su_casimir_fundamental(3.0) - 4.0 / 3.0).abs() < 1e-12);
+        // σ for SU(3) at β=6 is (9−1)/(2·6) = 2/3.
+        assert!((super::exact_2d_string_tension_sun(3.0, 6.0) - 2.0 / 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn sun_exact_area_law_is_2d_only() {
+        // In 4D the exact solution does not apply — that is the mass-gap regime.
+        assert_eq!(
+            verdict(&WilsonSun::su3(), EXACT_AREA_LAW_2D),
+            VerdictKind::Inapplicable
+        );
     }
 
     #[test]

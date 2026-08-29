@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Exact 2D SU(N) confinement from the quadratic Casimir**
+  (`crates/physis-theory/src/gauge_field.rs`, `specs/010-continuum.md`). Extended
+  `gauge.exact-area-law-2d` to the non-abelian `wilson-su2`/`wilson-su3`
+  theories. Two-dimensional Yang–Mills is exactly solvable, so the fundamental
+  Wilson loop has string tension `σ = (g²/2)·C₂(fund) = (N²−1)/(2β)` (from the
+  quadratic Casimir `C₂(fund) = (N²−1)/(2N)`), positive at every finite `β` — 2D
+  SU(N) confines at *all* couplings, a **theorem**, in pointed contrast to the 4D
+  mass gap, which stays a `conjecture`. `set wilson-su3 dimension 2` flips the
+  claim `inapplicable → holds` (σ = 2/3 at β=6). Added `su_casimir_fundamental`
+  and `exact_2d_string_tension_sun`. Verified: two new tests (SU(2)/SU(3) confine
+  for β ∈ [0.5, 50], Casimir values, 2D-only applicability), `fmt`,
+  `clippy -D warnings`, full suite, and the CLI knob diff.
+
 - **Torus homology: a non-trivial `b₁ = 2` check for the DEC machinery**
   (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). Added
   `Complex::torus()` — a triangulated 3×3 flat torus (9 vertices, 27 edges, 18
