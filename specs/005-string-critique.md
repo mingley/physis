@@ -52,7 +52,9 @@ encoded SM embedding, so theirs `holds` (as `encoded-fact`).
 - Closed strings include a graviton
 - Heterotic 10D gauge groups SO(32) and E₈×E₈, with SM embeddings as encoded facts
 - Type II 10D theories have no GUT group; SM from compactification/branes is `undecidable` here
-- Green–Schwarz anomaly cancellation selects exactly SO(32) and E₈×E₈ in 10D N=1 (both dimension 496). `consistency.anomaly-cancellation` encodes this via `GaugeGroup::gs_anomaly_free_10d` — an `encoded-fact`, not a re-derivation of the anomaly polynomial. It is knob-sensitive: off the critical dimension the claim is `undecidable`. The bosonic string is `inapplicable` (non-chiral). The Standard Model row is a **computed `theorem`**: the hypercharge sums `ΣY` and `ΣY³` over one generation are summed in code and vanish, and the SU(2) doublet count is even (Witten).
+- Green–Schwarz anomaly cancellation selects exactly SO(32) and E₈×E₈ in 10D N=1 (both dimension 496). `consistency.anomaly-cancellation` encodes this via `GaugeGroup::gs_anomaly_free_10d` — an `encoded-fact`, not a re-derivation of the anomaly polynomial. It is knob-sensitive: off the critical dimension the claim is `undecidable`. The bosonic string is `inapplicable` (non-chiral). The Standard Model row is a **computed `theorem`**: all four gauge anomalies — `[SU(3)]²U(1)`, `[SU(2)]²U(1)`, `[grav]²U(1)` (`ΣY`), and `[U(1)]³` (`ΣY³`) — are summed over one generation from the representation content and vanish, and the SU(2) doublet count is even (Witten).
+
+The Standard Model also carries `sm.hypercharge-derivation`, a computed `theorem` that goes one step further than checking cancellation: it **solves** the anomaly conditions for the hypercharges themselves. Fixing only the normalization `Y_Q = 1/6`, the linear anomalies give `Y_L = −1/2` and `Y_e = 1`, and the `[U(1)]³` cubic then forces `{Y_u, Y_d} = {−2/3, 1/3}` — the measured assignments come out as a *consequence* of consistency, not an input (`StandardModel::derive_hypercharges`). This is the mechanized form of "accommodate vs derive": here the SM genuinely *derives* its charges.
 
 ## Distinctive critique facts encoded as heuristics / conjectures
 

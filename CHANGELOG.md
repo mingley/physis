@@ -10,6 +10,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Computed theorems
+
+- **Standard Model hypercharges *derived* from anomaly cancellation**
+  (`crates/physis-theory/src/standard_model.rs`, `specs/005-string-critique.md`).
+  New `sm.hypercharge-derivation` claim (computed `theorem`): fixing only the
+  normalization `Y_Q = 1/6`, the code solves the four anomaly conditions and
+  recovers every hypercharge — `Y_L = −1/2`, `Y_e = 1`, and the `[U(1)]³` cubic
+  forces `{Y_u, Y_d} = {−2/3, 1/3}` (`StandardModel::derive_hypercharges`). The
+  charges are a *consequence* of consistency, not an input — the mechanized form
+  of "accommodate vs derive". The fermion content was refactored into a richer
+  `WeylField` table (separate SU(3)/SU(2) dimensions), and
+  `consistency.anomaly-cancellation` was strengthened to check **all four**
+  gauge anomalies (`[SU(3)]²U(1)`, `[SU(2)]²U(1)`, `[grav]²U(1)`, `[U(1)]³`)
+  rather than only the two hypercharge sums. Verified: three new tests
+  (all-four-anomalies, hypercharges-derived, derivation-claim-holds), `fmt`,
+  `clippy -D warnings`, full suite, and `run standard-model`.
+
 ### Domain reuse
 
 - **Landauer's principle: a computation ↔ thermodynamics bridge**

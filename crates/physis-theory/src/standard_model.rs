@@ -10,20 +10,134 @@ use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use crate::claims;
 use crate::framework::Theory;
 
-/// One generation of left-handed Weyl fermions as `(multiplicity, hypercharge Y)`
-/// with the convention `Q = T₃ + Y`. Anomaly cancellation is a *computation*
-/// over this content, not a stored fact.
-const SM_GENERATION_WEYL: &[(f64, f64)] = &[
-    (6.0, 1.0 / 6.0),  // quark doublet Q_L: 3 colours × 2 weak
-    (3.0, -2.0 / 3.0), // anti-up  u_R^c: 3 colours
-    (3.0, 1.0 / 3.0),  // anti-down d_R^c: 3 colours
-    (2.0, -1.0 / 2.0), // lepton doublet L_L: 2 weak
-    (1.0, 1.0),        // anti-electron e_R^c
+/// The weak hypercharges are fixed by anomaly cancellation up to normalization.
+const SM_HYPERCHARGE_DERIVED: &str = "sm.hypercharge-derivation";
+
+/// One left-handed Weyl fermion of a generation, with its SU(3)×SU(2)
+/// representation dimensions and weak hypercharge `Y` (convention `Q = T₃ + Y`).
+///
+/// Keeping the colour and weak dimensions *separately* (not just the product
+/// multiplicity) is what lets the four gauge anomalies — and the derivation of
+/// `Y` itself — be a computation over the representation content, not a stored
+/// table of answers.
+struct WeylField {
+    /// Species label.
+    name: &'static str,
+    /// SU(3) representation dimension (3 = (anti)triplet, 1 = singlet).
+    color: f64,
+    /// SU(2) representation dimension (2 = doublet, 1 = singlet).
+    weak: f64,
+    /// Weak hypercharge Y.
+    y: f64,
+}
+
+/// One generation of left-handed Weyl fermions of the Standard Model.
+const SM_WEYL_FIELDS: &[WeylField] = &[
+    WeylField {
+        name: "Q_L",
+        color: 3.0,
+        weak: 2.0,
+        y: 1.0 / 6.0,
+    }, // quark doublet
+    WeylField {
+        name: "u_R^c",
+        color: 3.0,
+        weak: 1.0,
+        y: -2.0 / 3.0,
+    }, // anti-up
+    WeylField {
+        name: "d_R^c",
+        color: 3.0,
+        weak: 1.0,
+        y: 1.0 / 3.0,
+    }, // anti-down
+    WeylField {
+        name: "L_L",
+        color: 1.0,
+        weak: 2.0,
+        y: -1.0 / 2.0,
+    }, // lepton doublet
+    WeylField {
+        name: "e_R^c",
+        color: 1.0,
+        weak: 1.0,
+        y: 1.0,
+    }, // anti-electron
 ];
 
 /// Number of SU(2) doublets in one generation (3 quark colours + 1 lepton):
 /// the Witten SU(2) global anomaly needs this to be even.
 const SM_WEAK_DOUBLETS: u32 = 4;
+
+/// The weak hypercharges derived from anomaly cancellation (see
+/// [`derive_hypercharges`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct DerivedHypercharges {
+    /// Y of the quark doublet (the normalization input).
+    y_q: f64,
+    /// Y of the lepton doublet, from the [SU(2)]²U(1) anomaly.
+    y_l: f64,
+    /// Y of the anti-electron, from the gravitational anomaly.
+    y_e: f64,
+    /// The unordered pair {Y_u, Y_d}, sorted ascending, from the [U(1)]³ anomaly.
+    y_ud: [f64; 2],
+}
+
+/// Derive the Standard Model hypercharges from anomaly cancellation.
+///
+/// This is the well-known result that, once the gauge group SU(3)×SU(2)×U(1)
+/// and the representation content (Q, uᶜ, dᶜ, L, eᶜ) are fixed, requiring all
+/// gauge anomalies to vanish determines every hypercharge up to one overall
+/// normalization. We fix the scale with `Y_Q = 1/6` and *solve* for the rest:
+///
+/// - `[SU(2)]²U(1)`: `3·Y_Q + Y_L = 0`            → `Y_L`
+/// - `[SU(3)]²U(1)`: `2·Y_Q + Y_u + Y_d = 0`      → `s := Y_u + Y_d`
+/// - `[grav]²U(1)`:  `6·Y_Q + 3·s + 2·Y_L + Y_e = 0` → `Y_e`
+/// - `[U(1)]³`:      the cubic then fixes `p := Y_u·Y_d`, so {Y_u, Y_d} are the
+///   roots of `t² − s·t + p = 0`.
+///
+/// The output reproduces the measured assignments — the hypercharges are not an
+/// input to the Standard Model here, they are *forced* by consistency.
+fn derive_hypercharges() -> DerivedHypercharges {
+    let y_q: f64 = 1.0 / 6.0; // normalization: fixes the overall U(1) scale
+    let y_l = -3.0 * y_q; // [SU(2)]²U(1)
+    let s = -2.0 * y_q; // [SU(3)]²U(1): Y_u + Y_d
+    let y_e = -(6.0 * y_q + 3.0 * s + 2.0 * y_l); // gravitational anomaly
+                                                  // [U(1)]³: 6Y_Q³ + 3(Y_u³+Y_d³) + 2Y_L³ + Y_e³ = 0.
+    let a = 6.0 * y_q.powi(3) + 2.0 * y_l.powi(3) + y_e.powi(3);
+    // Y_u³ + Y_d³ = s³ − 3·s·p = −a/3  ⇒  p = (s³ + a/3)/(3s).
+    let p = (s.powi(3) + a / 3.0) / (3.0 * s);
+    let disc = (s * s - 4.0 * p).max(0.0);
+    let r = disc.sqrt();
+    let mut y_ud = [(s - r) / 2.0, (s + r) / 2.0];
+    y_ud.sort_by(|x, y| x.partial_cmp(y).unwrap());
+    DerivedHypercharges {
+        y_q,
+        y_l,
+        y_e,
+        y_ud,
+    }
+}
+
+/// The [SU(3)]²U(1) mixed anomaly over one generation (colour triplets only).
+fn anomaly_su3_u1() -> f64 {
+    // Each colour (anti)triplet Weyl fermion contributes T(fund)·(weak mult)·Y,
+    // with T(fund) = 1/2; singlets contribute nothing.
+    SM_WEYL_FIELDS
+        .iter()
+        .filter(|f| f.color > 1.5)
+        .map(|f| 0.5 * f.weak * f.y)
+        .sum()
+}
+
+/// The [SU(2)]²U(1) mixed anomaly over one generation (weak doublets only).
+fn anomaly_su2_u1() -> f64 {
+    SM_WEYL_FIELDS
+        .iter()
+        .filter(|f| f.weak > 1.5)
+        .map(|f| 0.5 * f.color * f.y)
+        .sum()
+}
 
 /// Electric charge (in units of e/3) of a species by flavor, from the catalog.
 fn charge_thirds(flavor: physis_model::Flavor) -> i32 {
@@ -43,14 +157,17 @@ fn hydrogen_charge_thirds() -> i32 {
     proton + charge_thirds(Flavor::Electron)
 }
 
-/// Sum of hypercharge over one generation ([grav]²U(1) and mixed anomalies).
+/// The gravitational [grav]²U(1) anomaly: Σ (colour·weak) · Y over a generation.
 fn hypercharge_sum() -> f64 {
-    SM_GENERATION_WEYL.iter().map(|(m, y)| m * y).sum()
+    SM_WEYL_FIELDS.iter().map(|f| f.color * f.weak * f.y).sum()
 }
 
-/// Sum of hypercharge cubed over one generation (the [U(1)]³ anomaly).
+/// The [U(1)]³ anomaly: Σ (colour·weak) · Y³ over a generation.
 fn hypercharge_cube_sum() -> f64 {
-    SM_GENERATION_WEYL.iter().map(|(m, y)| m * y * y * y).sum()
+    SM_WEYL_FIELDS
+        .iter()
+        .map(|f| f.color * f.weak * f.y * f.y * f.y)
+        .sum()
 }
 
 const SPECS: &[KnobSpec] = &[
@@ -249,6 +366,12 @@ impl Theory for StandardModel {
                 Epistemic::Theorem,
             ),
             claims::c(
+                SM_HYPERCHARGE_DERIVED,
+                "Weak hypercharges are fixed by anomaly cancellation up to normalization.",
+                LayerId::Interaction,
+                Epistemic::Theorem,
+            ),
+            claims::c(
                 claims::THREE_GENERATIONS,
                 "Three generations of fermions.",
                 LayerId::Particle,
@@ -301,21 +424,63 @@ impl Theory for StandardModel {
             claims::FERMIONS => Verdict::holds(Epistemic::EncodedFact, "quarks and leptons"),
             claims::SM_GAUGE => Verdict::holds(Epistemic::EncodedFact, "SU(3)×SU(2)×U(1)"),
             claims::ANOMALY_CANCELLATION => {
+                let a3 = anomaly_su3_u1();
+                let a2 = anomaly_su2_u1();
                 let sy = hypercharge_sum();
                 let sy3 = hypercharge_cube_sum();
-                if sy.abs() < 1e-12 && sy3.abs() < 1e-12 && SM_WEAK_DOUBLETS % 2 == 0 {
+                let all_zero = [a3, a2, sy, sy3].iter().all(|x| x.abs() < 1e-12);
+                if all_zero && SM_WEAK_DOUBLETS % 2 == 0 {
                     Verdict::holds(
                         Epistemic::Theorem,
-                        "SM chiral anomalies cancel within each generation",
+                        "all four SM chiral gauge anomalies cancel within each generation",
                     )
                     .with_evidence([
-                        format!("computed over one generation: ΣY = {sy:.3}, ΣY³ = {sy3:.3} (both 0)"),
+                        format!("[SU(3)]²U(1) = {a3:.3}, [SU(2)]²U(1) = {a2:.3} (both 0)"),
+                        format!("[grav]²U(1) ΣY = {sy:.3}, [U(1)]³ ΣY³ = {sy3:.3} (both 0)"),
                         format!("Witten SU(2): {SM_WEAK_DOUBLETS} doublets (even)"),
                     ])
                 } else {
                     Verdict::fails(
                         Epistemic::Theorem,
-                        format!("anomaly not cancelled: ΣY = {sy:.3}, ΣY³ = {sy3:.3}"),
+                        format!(
+                            "anomaly not cancelled: [SU(3)]²U(1)={a3:.3}, [SU(2)]²U(1)={a2:.3}, ΣY={sy:.3}, ΣY³={sy3:.3}"
+                        ),
+                    )
+                }
+            }
+            id if id == SM_HYPERCHARGE_DERIVED => {
+                let d = derive_hypercharges();
+                // Compare the derived hypercharges to the measured assignments.
+                let stored_u = SM_WEYL_FIELDS.iter().find(|f| f.name == "u_R^c").unwrap().y;
+                let stored_d = SM_WEYL_FIELDS.iter().find(|f| f.name == "d_R^c").unwrap().y;
+                let mut stored_ud = [stored_u, stored_d];
+                stored_ud.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                let stored_l = SM_WEYL_FIELDS.iter().find(|f| f.name == "L_L").unwrap().y;
+                let stored_e = SM_WEYL_FIELDS.iter().find(|f| f.name == "e_R^c").unwrap().y;
+                let close = |a: f64, b: f64| (a - b).abs() < 1e-12;
+                let matches = close(d.y_l, stored_l)
+                    && close(d.y_e, stored_e)
+                    && close(d.y_ud[0], stored_ud[0])
+                    && close(d.y_ud[1], stored_ud[1]);
+                if matches {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        "anomaly cancellation forces the measured hypercharges (up to normalization Y_Q = 1/6)",
+                    )
+                    .with_evidence([
+                        format!(
+                            "derived: Y_Q = {:.4}, Y_L = {:.4}, Y_e = {:.4}, {{Y_u, Y_d}} = {{{:.4}, {:.4}}}",
+                            d.y_q, d.y_l, d.y_e, d.y_ud[0], d.y_ud[1]
+                        ),
+                        "solved from [SU(2)]²U(1), [SU(3)]²U(1), [grav]²U(1), and [U(1)]³".to_string(),
+                    ])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!(
+                            "derived hypercharges {{Y_L={:.4}, Y_e={:.4}, Y_u/d={:?}}} disagree with the catalog",
+                            d.y_l, d.y_e, d.y_ud
+                        ),
                     )
                 }
             }
@@ -460,11 +625,47 @@ mod tests {
     }
 
     #[test]
-    fn hypercharge_sums_vanish_over_a_generation() {
-        // The actual arithmetic behind anomaly cancellation.
-        assert!(hypercharge_sum().abs() < 1e-12);
-        assert!(hypercharge_cube_sum().abs() < 1e-12);
+    fn all_four_gauge_anomalies_vanish_over_a_generation() {
+        // The actual arithmetic behind anomaly cancellation, now all four.
+        assert!(anomaly_su3_u1().abs() < 1e-12, "[SU(3)]²U(1)");
+        assert!(anomaly_su2_u1().abs() < 1e-12, "[SU(2)]²U(1)");
+        assert!(hypercharge_sum().abs() < 1e-12, "[grav]²U(1)");
+        assert!(hypercharge_cube_sum().abs() < 1e-12, "[U(1)]³");
         assert_eq!(SM_WEAK_DOUBLETS % 2, 0);
+    }
+
+    #[test]
+    fn hypercharges_are_derived_from_anomaly_cancellation() {
+        // The headline: the hypercharges are *not* an input — anomaly freedom
+        // plus the normalization Y_Q = 1/6 forces every one of them.
+        let d = derive_hypercharges();
+        assert!((d.y_q - 1.0 / 6.0).abs() < 1e-12);
+        assert!((d.y_l - (-1.0 / 2.0)).abs() < 1e-12, "Y_L = {}", d.y_l);
+        assert!((d.y_e - 1.0).abs() < 1e-12, "Y_e = {}", d.y_e);
+        // {Y_u, Y_d} = {-2/3, 1/3}, sorted ascending.
+        assert!(
+            (d.y_ud[0] - (-2.0 / 3.0)).abs() < 1e-12,
+            "Y_u = {}",
+            d.y_ud[0]
+        );
+        assert!(
+            (d.y_ud[1] - (1.0 / 3.0)).abs() < 1e-12,
+            "Y_d = {}",
+            d.y_ud[1]
+        );
+    }
+
+    #[test]
+    fn hypercharge_derivation_claim_holds_as_theorem() {
+        let t = StandardModel::default();
+        let c = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == SM_HYPERCHARGE_DERIVED)
+            .unwrap();
+        let v = t.evaluate(&c);
+        assert_eq!(v.kind, VerdictKind::Holds);
+        assert_eq!(v.epistemic, Epistemic::Theorem);
     }
 
     #[test]
