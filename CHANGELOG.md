@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M2 — Empirical contact
 
+- **M2.2 Neutrino masses as a knob + claim** (`crates/physis-theory/src/standard_model.rs`).
+  Added the `neutrino_masses` knob and the `empirical.neutrino-masses` claim.
+  The minimal SM (default) now *fails* it honestly ("stores neutrino masses as
+  0, but oscillations prove they are nonzero") instead of silently storing 0;
+  setting the knob makes it hold. Addresses the `specs/002` "known lie". This
+  claim lives on the Standard Model object (visible via `run standard-model`),
+  not in the string-critique matrix rows. Knob-diff test included.
+
 - **M2.1 SM embedding verified by code** (`crates/physis-model/src/gauge.rs`).
   `GaugeGroup::sm_embed` no longer asks "is this group literally SU(5)?" via an
   equality table. It now calls `verified_contains_sm`, which walks the standard

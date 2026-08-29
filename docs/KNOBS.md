@@ -15,6 +15,7 @@ Knobs are the only way an agent is allowed to change a theory. They have:
 - `generations` (1–4)
 - `include_higgs`
 - `include_gravity`
+- `neutrino_masses` — minimal SM stores them as 0; oscillations show they are nonzero (`empirical.neutrino-masses`)
 
 ### general-relativity
 - `dim`

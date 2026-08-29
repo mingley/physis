@@ -29,6 +29,12 @@ const SPECS: &[KnobSpec] = &[
         doc: "SM as usually taught does not include gravity. Flip this to ask 'SM + graviton'.",
         domain: KnobDomain::Bool,
     },
+    KnobSpec {
+        name: "neutrino_masses",
+        layer: LayerId::Particle,
+        doc: "Whether neutrino masses are included. The minimal SM stores them as 0; oscillation experiments show they are nonzero.",
+        domain: KnobDomain::Bool,
+    },
 ];
 
 /// The Standard Model of particle physics (effective QFT).
@@ -37,6 +43,7 @@ pub struct StandardModel {
     generations: u8,
     include_higgs: bool,
     include_gravity: bool,
+    neutrino_masses: bool,
 }
 
 impl Default for StandardModel {
@@ -45,6 +52,8 @@ impl Default for StandardModel {
             generations: 3,
             include_higgs: true,
             include_gravity: false,
+            // The textbook minimal SM leaves neutrinos massless — a known lie.
+            neutrino_masses: false,
         }
     }
 }
@@ -103,6 +112,7 @@ impl Knobbed for StandardModel {
             "generations" => Ok(KnobValue::UInt(self.generations as u64)),
             "include_higgs" => Ok(KnobValue::Bool(self.include_higgs)),
             "include_gravity" => Ok(KnobValue::Bool(self.include_gravity)),
+            "neutrino_masses" => Ok(KnobValue::Bool(self.neutrino_masses)),
             _ => Err(CoreError::UnknownKnob { name: name.into() }),
         }
     }
@@ -115,6 +125,7 @@ impl Knobbed for StandardModel {
             ("generations", KnobValue::UInt(v)) => self.generations = v as u8,
             ("include_higgs", KnobValue::Bool(v)) => self.include_higgs = v,
             ("include_gravity", KnobValue::Bool(v)) => self.include_gravity = v,
+            ("neutrino_masses", KnobValue::Bool(v)) => self.neutrino_masses = v,
             _ => {
                 return Err(CoreError::TypeMismatch {
                     name: name.into(),
@@ -150,8 +161,8 @@ impl Theory for StandardModel {
             free_parameter_count: 19,
             landscape_log10: 0.0,
             note: format!(
-                "SM generations={} higgs={} gravity={}",
-                self.generations, self.include_higgs, self.include_gravity
+                "SM generations={} higgs={} gravity={} neutrino_masses={}",
+                self.generations, self.include_higgs, self.include_gravity, self.neutrino_masses
             ),
         }
     }
@@ -201,6 +212,12 @@ impl Theory for StandardModel {
                 Epistemic::EncodedFact,
             ),
             claims::c(
+                claims::NEUTRINO_MASSES,
+                "Neutrinos have nonzero mass.",
+                LayerId::Particle,
+                Epistemic::EncodedFact,
+            ),
+            claims::c(
                 claims::GRAVITY,
                 "Gravity is part of the Standard Model.",
                 LayerId::Field,
@@ -245,6 +262,19 @@ impl Theory for StandardModel {
                     Verdict::fails(
                         Epistemic::EncodedFact,
                         format!("generations = {}, not 3", self.generations),
+                    )
+                }
+            }
+            claims::NEUTRINO_MASSES => {
+                if self.neutrino_masses {
+                    Verdict::holds(
+                        Epistemic::EncodedFact,
+                        "neutrino masses included (beyond the minimal SM, e.g. via a seesaw)",
+                    )
+                } else {
+                    Verdict::fails(
+                        Epistemic::EncodedFact,
+                        "minimal SM stores neutrino masses as 0, but oscillations prove they are nonzero",
                     )
                 }
             }
@@ -301,6 +331,23 @@ mod tests {
             .find(|c| c.id.0 == claims::GRAVITY)
             .unwrap();
         assert_eq!(t.evaluate(&g).kind, VerdictKind::Fails);
+    }
+
+    #[test]
+    fn neutrino_masses_are_a_known_sm_gap() {
+        let verdict = |t: &StandardModel| {
+            let c = t
+                .claims()
+                .into_iter()
+                .find(|c| c.id.0 == claims::NEUTRINO_MASSES)
+                .unwrap();
+            t.evaluate(&c).kind
+        };
+        let mut t = StandardModel::default();
+        // The minimal SM leaves neutrinos massless: a known empirical failure.
+        assert_eq!(verdict(&t), VerdictKind::Fails);
+        t.set("neutrino_masses", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&t), VerdictKind::Holds);
     }
 
     #[test]
