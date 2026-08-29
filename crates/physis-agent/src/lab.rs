@@ -10,6 +10,7 @@ use physis_theory::computation::{CombinationalCircuit, TuringMachine};
 use physis_theory::continuum::KleinGordonField;
 use physis_theory::critique::diff_verdicts;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
+use physis_theory::gauge_field::WilsonU1;
 use physis_theory::{
     string_critique, ExperimentReport, GeneralRelativity, ObserverGeometry, StandardModel,
     StringTheory, Theory, VerdictDiff,
@@ -54,8 +55,9 @@ impl Lab {
         // Third domain: computation.
         lab.insert(Box::new(CombinationalCircuit));
         lab.insert(Box::new(TuringMachine::default()));
-        // M4 continuum: a scalar field as an actual local object.
+        // M4 continuum: a scalar field and a lattice gauge field as local objects.
         lab.insert(Box::new(KleinGordonField::default()));
+        lab.insert(Box::new(WilsonU1::default()));
         let ids = lab.theories.keys().cloned().collect();
         lab.journal.record(JournalEvent::boot(ids));
         lab
@@ -176,6 +178,11 @@ impl Lab {
             }
             "field-modes" => {
                 let report = physis_theory::field_modes();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "gauge-lattice" => {
+                let report = physis_theory::gauge_lattice();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }

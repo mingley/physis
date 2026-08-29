@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **M4 gauge field on links** (`crates/physis-theory/src/gauge_field.rs`,
+  `specs/010`, `plans/005`). New theory `wilson-u1`: compact U(1) lattice gauge
+  theory whose degrees of freedom live on links, with the Wilson plaquette
+  action. `gauge.invariant` and `gauge.local` are structural theorems;
+  `gauge.confining` is a theorem (encoded) at all β in 2D/3D and a knob-sensitive
+  heuristic across the 4D transition near β ≈ 1.01. New `physis experiment
+  gauge-lattice`; registered in `Lab::standard()`. `set wilson-u1 beta 2`
+  deconfines the 4D theory (Coulomb phase); `set wilson-u1 dimension 3` confines
+  at any β. Tests cover both.
+
 - **M4 seed: a field as an actual local object** (`crates/physis-theory/src/continuum.rs`,
   new `specs/010-continuum.md`, `plans/005-m4-continuum.md`). `klein-gordon` is a
   real scalar field on a finite 1D periodic lattice — N sites coupled by a

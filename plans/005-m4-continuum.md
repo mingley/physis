@@ -25,9 +25,21 @@ New theory `klein-gordon`: a real scalar field on a finite 1D periodic lattice.
   - `field.local` — nearest-neighbour coupling.
 - Experiment `field-modes`.
 
+## Gauge field on links — ✅ done
+
+New theory `wilson-u1`: compact U(1) lattice gauge theory (`gauge_field.rs`,
+experiment `gauge-lattice`). The gauge field lives on links; the action sums
+`1 − cos(θ)` over plaquettes.
+
+- `gauge.invariant` and `gauge.local` are structural theorems of the Wilson
+  construction.
+- `gauge.confining` is a lattice-gauge result: a theorem (encoded) at all β in
+  2D/3D, and a knob-sensitive heuristic in 4D across the transition near
+  `β ≈ 1.01`. `set wilson-u1 beta 2` deconfines the 4D theory (Coulomb phase).
+
 ## Later in M4
 
-- 3+1 lattice and a gauge field on links (Wilson-style), still finite.
+- 3+1 lattice and a non-abelian gauge field on links (Wilson-style), still finite.
 - Connect the scalar tachyon here to the string bosonic tachyon conceptually
   (both are `min ω² < 0`), so the two domains share a stability notion.
 - A `Layer`-based observable so a field's world projection is not the

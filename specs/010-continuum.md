@@ -12,11 +12,12 @@ sites coupled by a nearest-neighbour discrete Laplacian. Its normal modes are
 *computed*, so stability, causality, and the continuum dispersion are theorems
 of the computation rather than tabulated facts.
 
-## Object
+## Objects
 
-| id | object |
-|---|---|
-| `klein-gordon` | real scalar field on an N-site 1D periodic lattice |
+| id | object | experiment |
+|---|---|---|
+| `klein-gordon` | real scalar field on an N-site 1D periodic lattice | `field-modes` |
+| `wilson-u1` | compact U(1) lattice gauge field (links + plaquettes) | `gauge-lattice` |
 
 ## Knobs
 
@@ -57,6 +58,24 @@ imaginary frequency and an ill-defined, effectively superluminal group
 velocity). This is the *same* instability notion as the bosonic string's
 tachyon (`consistency.no-tachyon` in the string lab), but here it is computed
 from the lattice spectrum rather than encoded.
+
+## Gauge field on links: `wilson-u1`
+
+A compact U(1) lattice gauge theory whose degrees of freedom live on the links;
+the Wilson action sums `1 − cos(θ_plaquette)`. Knobs: `dimension` (2–4), `beta`
+(β = 1/g²), `sites_per_side`.
+
+| claim | meaning | how it is decided |
+|---|---|---|
+| `gauge.invariant` | invariance under `U_μ(x) → g(x) U_μ(x) g(x+μ̂)†` | structural theorem |
+| `gauge.local` | only neighbouring links couple (plaquettes) | structural theorem |
+| `gauge.confining` | static charges are confined | theorem (encoded) in 2D/3D; heuristic across the 4D transition near β ≈ 1.01 |
+
+```
+physis experiment gauge-lattice
+physis set wilson-u1 beta 2         # 4D: confining → Coulomb (deconfined)
+physis set wilson-u1 dimension 3    # confines at any β
+```
 
 ## Non-goals (this milestone seed)
 
