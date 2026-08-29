@@ -20,6 +20,30 @@ use crate::journal::{Journal, JournalEvent};
 use crate::protocol::{Command, Response};
 use crate::replay::replay_journal;
 
+/// The experiments the lab can run, with one-line descriptions.
+pub const EXPERIMENTS: &[(&str, &str)] = &[
+    (
+        "string-critique",
+        "string constructions vs the Standard Model, GR, and observer-geometry",
+    ),
+    (
+        "em-vacuum",
+        "electromagnetism: vacuum, a linear medium, and the lumped-circuit limit",
+    ),
+    (
+        "computation",
+        "computation: a combinational circuit vs a Turing machine",
+    ),
+    (
+        "field-modes",
+        "a Klein–Gordon scalar field's computed spectrum on a lattice",
+    ),
+    (
+        "gauge-lattice",
+        "lattice gauge theory: compact U(1) vs non-abelian SU(2)/SU(3)",
+    ),
+];
+
 /// An agent-operable collection of theories.
 pub struct Lab {
     theories: BTreeMap<String, Box<dyn Theory>>,
@@ -283,6 +307,13 @@ impl Lab {
                 }
                 Err(e) => Response::err(e.to_string()),
             },
+            Command::Experiments => {
+                let mut text = String::from("experiments\n");
+                for (id, desc) in EXPERIMENTS {
+                    text.push_str(&format!("  {id:<16} {desc}\n"));
+                }
+                Response::ok(text)
+            }
             Command::Experiment { id } => match self.experiment_canonical(&id) {
                 Ok(report) => Response::Ok {
                     text: report.render(),
@@ -370,6 +401,24 @@ mod tests {
         assert!(diffs
             .iter()
             .any(|d| d.claim == "empirical.three-generations" && d.to == VerdictKind::Fails));
+    }
+
+    #[test]
+    fn all_listed_experiments_are_runnable() {
+        let mut lab = Lab::standard();
+        for (id, _) in EXPERIMENTS {
+            assert!(
+                lab.experiment_canonical(id).is_ok(),
+                "listed experiment '{id}' should run"
+            );
+        }
+        let text = Lab::standard()
+            .exec(Command::Experiments)
+            .text()
+            .to_string();
+        for (id, _) in EXPERIMENTS {
+            assert!(text.contains(id), "experiments list should mention '{id}'");
+        }
     }
 
     fn temp_path(tag: &str) -> std::path::PathBuf {

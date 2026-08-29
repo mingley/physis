@@ -10,6 +10,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Tooling
+
+- **`physis experiments` command** (`crates/physis-agent`, `crates/physis`). Lists
+  the five available experiments (string-critique, em-vacuum, computation,
+  field-modes, gauge-lattice) with one-line descriptions, so the growing set of
+  labs is discoverable without reading the source. A consistency test asserts
+  every listed experiment actually runs.
+
 ### M4 — Continuum
 
 - **Charge conservation backed by a computed identity** (`crates/physis-theory/src/em.rs`).

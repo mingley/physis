@@ -74,6 +74,7 @@ fn parse(args: &[String]) -> Result<Command, String> {
                 value: args[3].clone(),
             })
         }
+        "experiments" => Ok(Command::Experiments),
         "experiment" => {
             let id = args
                 .get(1)
@@ -105,6 +106,7 @@ USAGE:
     physis run <theory>
     physis set <theory> <knob> <value>
     physis score <theory>
+    physis experiments
     physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice]
     physis journal
     physis replay <journal.jsonl>

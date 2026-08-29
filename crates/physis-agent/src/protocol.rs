@@ -30,6 +30,8 @@ pub enum Command {
         /// Raw value (parsed against the knob domain).
         value: String,
     },
+    /// List the available experiments.
+    Experiments,
     /// Run a named experiment.
     Experiment {
         /// Experiment id (`string-critique`).
