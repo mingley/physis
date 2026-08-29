@@ -3,11 +3,11 @@
 Physis is a laboratory that grows by making more of its claims *theorems* and more of its domains *real*. Calendar estimates are not used here. Milestones are mechanical.
 
 ```
-M0 foundation     ← you are here (this repo)
-M1 string lab     deeper string/geometry encodings, journal replay
-M2 empirical      replace tables with typed derivations where possible
-M3 domain reuse   electricity, then computation
-M4 continuum      fields as actual local objects, not flags
+M0 foundation     ✓ typed layers, knobs, claims, string-critique lab, CLI
+M1 string lab     ✓ journal replay, all constructions, anomaly claim, moduli
+M2 empirical      ✓ SM embedding verified by code, typed lengths, fixture + score
+M3 domain reuse   ✓ electricity (Maxwell + ohm-circuit) and computation
+M4 continuum      ◑ fields as actual local objects (klein-gordon lattice seed)
 ```
 
 Each milestone must:
@@ -23,3 +23,4 @@ See:
 - `plans/002-m1-string-lab.md`
 - `plans/003-m2-empirical-contact.md`
 - `plans/004-m3-domain-reuse.md`
+- `plans/005-m4-continuum.md`

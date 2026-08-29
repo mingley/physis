@@ -15,6 +15,7 @@
 
 pub mod claims;
 pub mod computation;
+pub mod continuum;
 pub mod critique;
 pub mod em;
 pub mod framework;
@@ -25,6 +26,7 @@ pub mod strings;
 pub mod target;
 
 pub use computation::computation;
+pub use continuum::field_modes;
 pub use critique::{string_critique, ExperimentReport, TheoryReport, VerdictDiff};
 pub use em::em_vacuum;
 pub use framework::Theory;

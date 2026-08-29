@@ -10,6 +10,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### M4 — Continuum
+
+- **M4 seed: a field as an actual local object** (`crates/physis-theory/src/continuum.rs`,
+  new `specs/010-continuum.md`, `plans/005-m4-continuum.md`). `klein-gordon` is a
+  real scalar field on a finite 1D periodic lattice — N sites coupled by a
+  nearest-neighbour discrete Laplacian — so its normal modes
+  `ω_j² = m² + (4/a²) sin²(π j / N)` are **computed, not tabulated**. Claims are
+  theorems of that computation: `field.finite-modes`, `field.dispersion-continuum-limit`
+  (long-wavelength error < 5%), `field.stable` (min ω² ≥ 0), `field.causal`
+  (group velocity ≤ c), `field.local`. New `physis experiment field-modes`.
+  `set klein-gordon mass_squared -1` produces a genuine computed tachyon:
+  `field.stable` and `field.causal` both flip to `fails` — the same instability
+  notion as the bosonic-string tachyon, here computed from the spectrum.
+
 ### M3 — Domain reuse
 
 - **M3 Computation, the third domain** (`crates/physis-theory/src/computation.rs`,

@@ -7,6 +7,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::KnobValue;
 use physis_theory::computation::{CombinationalCircuit, TuringMachine};
+use physis_theory::continuum::KleinGordonField;
 use physis_theory::critique::diff_verdicts;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
 use physis_theory::{
@@ -53,6 +54,8 @@ impl Lab {
         // Third domain: computation.
         lab.insert(Box::new(CombinationalCircuit));
         lab.insert(Box::new(TuringMachine::default()));
+        // M4 continuum: a scalar field as an actual local object.
+        lab.insert(Box::new(KleinGordonField::default()));
         let ids = lab.theories.keys().cloned().collect();
         lab.journal.record(JournalEvent::boot(ids));
         lab
@@ -168,6 +171,11 @@ impl Lab {
             }
             "computation" => {
                 let report = physis_theory::computation();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "field-modes" => {
+                let report = physis_theory::field_modes();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
