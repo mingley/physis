@@ -12,6 +12,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M2 — Empirical contact
 
+- **M2.3 Coupling constants as typed quantities** (`crates/physis-model/src/constants.rs`).
+  `fine_structure_constant` (α) and `strong_coupling_mz` (α_s) are
+  `Qty<Dimensionless>`; `fermi_coupling` (G_F) is a typed `energy⁻²` quantity
+  (SI J⁻²). The dimension is mechanically enforced: `G_F · E · E` type-checks to
+  `Qty<Dimensionless>` by construction (test), and multiplying G_F by anything
+  else is a compile error. Existence only — running the couplings is M4.
+
 - **M2.2 Neutrino masses as a knob + claim** (`crates/physis-theory/src/standard_model.rs`).
   Added the `neutrino_masses` knob and the `empirical.neutrino-masses` claim.
   The minimal SM (default) now *fails* it honestly ("stores neutrino masses as

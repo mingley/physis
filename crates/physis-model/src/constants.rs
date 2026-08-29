@@ -4,7 +4,7 @@
 //! They are *knobs of nature* in a deeper theory; here they are constants
 //! so that theories can be compared against the same measuring sticks.
 
-use physis_core::dim::{Energy, Length, Mass, Time, Velocity};
+use physis_core::dim::{Dimensionless, Energy, Length, Mass, Time, Velocity};
 use physis_core::qty::{kg, meters, seconds, Qty};
 
 /// Speed of light in vacuum (exact, SI).
@@ -50,6 +50,30 @@ pub fn electron_volt() -> Qty<Energy> {
     Qty::new(1.602_176_634e-19)
 }
 
+/// Fine-structure constant α ≈ 1/137.035999 (dimensionless), CODATA 2018.
+///
+/// A coupling is a first-class dimensioned quantity here, not a bare float.
+/// Its value is M2 scope; running it with energy is M4.
+pub fn fine_structure_constant() -> Qty<Dimensionless> {
+    Qty::new(7.297_352_569_3e-3)
+}
+
+/// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
+pub fn strong_coupling_mz() -> Qty<Dimensionless> {
+    Qty::new(0.1179)
+}
+
+/// Fermi coupling constant G_F, as a typed energy⁻² quantity (SI J⁻²).
+///
+/// The measured value is `G_F/(ħc)³ = 1.166_378_7e-5 GeV⁻²`; converted to SI
+/// joules⁻² here. The type `energy⁻²` is the point: multiplying `G_F` by two
+/// energies is a dimensionless number *by construction* (see the test), and
+/// multiplying it by anything else is a compile error.
+pub fn fermi_coupling() -> Qty<physis_core::SI<typenum::N2, typenum::N4, typenum::P4>> {
+    // 1.1663787e-5 GeV^-2 × (1 GeV / 1.602176634e-10 J)^2  ≈ 4.5438e14 J^-2.
+    Qty::new(4.5438e14)
+}
+
 /// Speed of light (function form for tests that want `.value()`).
 pub fn c_value() -> f64 {
     C.value()
@@ -91,5 +115,20 @@ mod tests {
     #[test]
     fn gamma_rejects_superluminal() {
         assert!(lorentz_gamma(meters_per_second(C.value() * 1.1)).is_none());
+    }
+
+    #[test]
+    fn couplings_are_typed_quantities() {
+        // α is dimensionless and ≈ 1/137.
+        let alpha = fine_structure_constant();
+        assert!((1.0 / alpha.value() - 137.036).abs() < 0.1);
+        // α_s(M_Z) ≈ 0.1179.
+        assert!((strong_coupling_mz().value() - 0.1179).abs() < 1e-6);
+
+        // G_F is energy⁻²: G_F · E · E is dimensionless *by construction*. The
+        // type annotation below only compiles if the dimensions cancel exactly.
+        let e = rest_energy(electron_mass());
+        let dimensionless: Qty<Dimensionless> = fermi_coupling() * e * e;
+        assert!(dimensionless.value() > 0.0 && dimensionless.value().is_finite());
     }
 }
