@@ -26,6 +26,8 @@ pub const SM_GAUGE: &str = "empirical.sm-gauge";
 pub const THREE_GENERATIONS: &str = "empirical.three-generations";
 /// Neutrinos have nonzero mass (as oscillation experiments require).
 pub const NEUTRINO_MASSES: &str = "empirical.neutrino-masses";
+/// Electric charge is quantized so that atoms are exactly neutral.
+pub const CHARGE_QUANTIZATION: &str = "empirical.charge-quantization";
 /// Gravity (massless spin-2) is present.
 pub const GRAVITY: &str = "empirical.gravity";
 

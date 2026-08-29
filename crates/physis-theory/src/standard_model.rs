@@ -25,6 +25,24 @@ const SM_GENERATION_WEYL: &[(f64, f64)] = &[
 /// the Witten SU(2) global anomaly needs this to be even.
 const SM_WEAK_DOUBLETS: u32 = 4;
 
+/// Electric charge (in units of e/3) of a species by flavor, from the catalog.
+fn charge_thirds(flavor: physis_model::Flavor) -> i32 {
+    physis_model::Spectrum::standard_model()
+        .species
+        .iter()
+        .find(|s| s.flavor == flavor)
+        .map(|s| s.charge_thirds as i32)
+        .unwrap_or(0)
+}
+
+/// Net charge of a hydrogen atom (proton `uud` + electron), in units of e/3.
+/// Zero is charge quantization / atom neutrality, computed from the catalog.
+fn hydrogen_charge_thirds() -> i32 {
+    use physis_model::Flavor;
+    let proton = 2 * charge_thirds(Flavor::Up) + charge_thirds(Flavor::Down);
+    proton + charge_thirds(Flavor::Electron)
+}
+
 /// Sum of hypercharge over one generation ([grav]²U(1) and mixed anomalies).
 fn hypercharge_sum() -> f64 {
     SM_GENERATION_WEYL.iter().map(|(m, y)| m * y).sum()
@@ -243,6 +261,12 @@ impl Theory for StandardModel {
                 Epistemic::EncodedFact,
             ),
             claims::c(
+                claims::CHARGE_QUANTIZATION,
+                "Electric charge is quantized so that atoms are exactly neutral.",
+                LayerId::Particle,
+                Epistemic::Theorem,
+            ),
+            claims::c(
                 claims::GRAVITY,
                 "Gravity is part of the Standard Model.",
                 LayerId::Field,
@@ -315,6 +339,23 @@ impl Theory for StandardModel {
                     Verdict::fails(
                         Epistemic::EncodedFact,
                         "minimal SM stores neutrino masses as 0, but oscillations prove they are nonzero",
+                    )
+                }
+            }
+            claims::CHARGE_QUANTIZATION => {
+                let h = hydrogen_charge_thirds();
+                if h == 0 {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        "a hydrogen atom (uud + e⁻) is exactly neutral",
+                    )
+                    .with_evidence([
+                        "computed from the catalog: 2·Q(u) + Q(d) + Q(e⁻) = 0 (units of e/3)".to_string(),
+                    ])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!("hydrogen net charge = {h}/3 ≠ 0"),
                     )
                 }
             }
@@ -401,6 +442,20 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         // Now a computed theorem, not a stored fact.
+        assert_eq!(v.epistemic, Epistemic::Theorem);
+    }
+
+    #[test]
+    fn hydrogen_is_neutral_by_computation() {
+        assert_eq!(hydrogen_charge_thirds(), 0);
+        let t = StandardModel::default();
+        let c = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == claims::CHARGE_QUANTIZATION)
+            .unwrap();
+        let v = t.evaluate(&c);
+        assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.epistemic, Epistemic::Theorem);
     }
 

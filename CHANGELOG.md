@@ -142,6 +142,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M2 — Empirical contact
 
+- **Charge quantization computed from the catalog** (`crates/physis-theory/src/standard_model.rs`).
+  New `empirical.charge-quantization` claim (a computed `theorem`): the net charge
+  of a hydrogen atom (proton `uud` + electron) is summed from the particle
+  catalog's electric charges and is exactly zero — `2·Q(u) + Q(d) + Q(e⁻) = 0`
+  in units of e/3. Shown on `run standard-model`; test asserts neutrality and the
+  theorem tag.
+
 - **SM anomaly cancellation is now computed** (`crates/physis-theory/src/standard_model.rs`).
   `consistency.anomaly-cancellation` for the Standard Model was an `encoded-fact`;
   it is now a **computed `theorem`**. The hypercharges of one generation's
