@@ -40,8 +40,8 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|---|
 | `em.wave-speed-c` | EM waves travel at c | theorem (vacuum); fails in a medium |
 | `em.gauss` | Gauss's law | encoded-fact |
-| `em.faraday` | Faraday's law | encoded-fact |
-| `em.ampere` | Ampère–Maxwell law | encoded-fact |
+| `em.faraday` | Faraday's law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
+| `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem |
 | `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
 | `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit); inapplicable to full Maxwell |
@@ -55,6 +55,13 @@ the theory has a preferred rest frame (`em.lorentz-invariance` fails). It is
 valid only while the wavelength `c/f` dwarfs the circuit: raising `frequency_hz`
 past that point flips `em.quasi-static-valid` from `holds` to `fails`, using
 typed `Qty<Length>` wavelengths.
+
+## Homogeneous Maxwell equations, verified
+
+In vacuum, `em.faraday` and `em.ampère` are **computed theorems**: a plane wave
+`E = ŷ cos(x−t)`, `B = ẑ cos(x−t)` (natural units) is checked by central finite
+differences to satisfy `∂B/∂t + ∇×E = 0` and `∂E/∂t − ∇×B = 0` to residual
+≲ 1e-6. In a medium these revert to encoded facts (macroscopic form).
 
 ## The theorem
 

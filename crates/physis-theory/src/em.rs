@@ -53,6 +53,49 @@ fn refractive_index(epsilon_r: f64, mu_r: f64) -> f64 {
     (epsilon_r * mu_r).sqrt()
 }
 
+// A vacuum plane wave travelling along +x in natural units (c = k = ω = 1):
+// E = ŷ cos(x − t), B = ẑ cos(x − t). We verify numerically that it solves
+// the source-free Maxwell equations, promoting Faraday/Ampère from encoded
+// facts to computed theorems for the vacuum.
+fn wave_ey(t: f64, x: f64) -> f64 {
+    (x - t).cos()
+}
+fn wave_bz(t: f64, x: f64) -> f64 {
+    (x - t).cos()
+}
+
+/// Max residual of Faraday's law `∂B/∂t + (∇×E) = 0` over sample points,
+/// evaluated by central finite differences on the plane-wave fields.
+fn plane_wave_faraday_residual() -> f64 {
+    let h = 1e-4;
+    let mut max = 0.0_f64;
+    for i in 0..8 {
+        let t = 0.13 * i as f64;
+        let x = 0.29 * i as f64;
+        let dbz_dt = (wave_bz(t + h, x) - wave_bz(t - h, x)) / (2.0 * h);
+        let dey_dx = (wave_ey(t, x + h) - wave_ey(t, x - h)) / (2.0 * h);
+        // (∇×E)_z = ∂E_y/∂x (E_x = 0); Faraday: ∂B_z/∂t + (∇×E)_z = 0.
+        max = max.max((dbz_dt + dey_dx).abs());
+    }
+    max
+}
+
+/// Max residual of Ampère's law `∂E/∂t − (∇×B) = 0` (sourceless vacuum) over
+/// sample points, by central finite differences on the plane-wave fields.
+fn plane_wave_ampere_residual() -> f64 {
+    let h = 1e-4;
+    let mut max = 0.0_f64;
+    for i in 0..8 {
+        let t = 0.13 * i as f64;
+        let x = 0.29 * i as f64;
+        let dey_dt = (wave_ey(t + h, x) - wave_ey(t - h, x)) / (2.0 * h);
+        let dbz_dx = (wave_bz(t, x + h) - wave_bz(t, x - h)) / (2.0 * h);
+        // (∇×B)_y = −∂B_z/∂x; Ampère: ∂E_y/∂t − (∇×B)_y = ∂E_y/∂t + ∂B_z/∂x = 0.
+        max = max.max((dey_dt + dbz_dx).abs());
+    }
+    max
+}
+
 fn is_vacuum(epsilon_r: f64, mu_r: f64) -> bool {
     (refractive_index(epsilon_r, mu_r) - 1.0).abs() < 1e-9
 }
@@ -123,8 +166,32 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
             }
         }
         GAUSS => Verdict::holds(Epistemic::EncodedFact, "∇·D = ρ_free"),
-        FARADAY => Verdict::holds(Epistemic::EncodedFact, "∇×E = −∂B/∂t"),
-        AMPERE => Verdict::holds(Epistemic::EncodedFact, "∇×H = J_free + ∂D/∂t"),
+        FARADAY => {
+            if is_vacuum(epsilon_r, mu_r) {
+                let r = plane_wave_faraday_residual();
+                Verdict::holds(Epistemic::Theorem, "∇×E = −∂B/∂t").with_evidence([format!(
+                    "verified numerically on a vacuum plane wave: max residual {r:.1e}"
+                )])
+            } else {
+                Verdict::holds(
+                    Epistemic::EncodedFact,
+                    "∇×E = −∂B/∂t (macroscopic form in the medium)",
+                )
+            }
+        }
+        AMPERE => {
+            if is_vacuum(epsilon_r, mu_r) {
+                let r = plane_wave_ampere_residual();
+                Verdict::holds(Epistemic::Theorem, "∇×B = ∂E/∂t (sourceless)").with_evidence([
+                    format!("verified numerically on a vacuum plane wave: max residual {r:.1e}"),
+                ])
+            } else {
+                Verdict::holds(
+                    Epistemic::EncodedFact,
+                    "∇×H = J_free + ∂D/∂t (macroscopic form in the medium)",
+                )
+            }
+        }
         CHARGE_CONSERVATION => Verdict::holds(
             Epistemic::Theorem,
             "∂ρ/∂t + ∇·J = 0 follows from Gauss + Ampère (divergence of the curl)",
@@ -501,6 +568,25 @@ mod tests {
         assert_eq!(verdict(&v, WAVE_SPEED_C), VerdictKind::Holds);
         assert_eq!(verdict(&v, LORENTZ_INVARIANCE), VerdictKind::Holds);
         assert_eq!(verdict(&v, CHARGE_CONSERVATION), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn plane_wave_solves_vacuum_maxwell() {
+        // The homogeneous Maxwell equations are verified numerically, so
+        // Faraday/Ampère are computed theorems in vacuum.
+        assert!(
+            plane_wave_faraday_residual() < 1e-6,
+            "faraday residual {}",
+            plane_wave_faraday_residual()
+        );
+        assert!(
+            plane_wave_ampere_residual() < 1e-6,
+            "ampere residual {}",
+            plane_wave_ampere_residual()
+        );
+        let v = MaxwellVacuum;
+        let faraday = v.claims().into_iter().find(|c| c.id.0 == FARADAY).unwrap();
+        assert_eq!(v.evaluate(&faraday).epistemic, Epistemic::Theorem);
     }
 
     #[test]

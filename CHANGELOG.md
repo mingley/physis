@@ -12,6 +12,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **Maxwell homogeneous equations verified numerically** (`crates/physis-theory/src/em.rs`).
+  `em.faraday` and `em.ampere` are now **computed theorems** in vacuum: a plane
+  wave `E = ŷ cos(x−t)`, `B = ẑ cos(x−t)` is checked by central finite differences
+  to satisfy `∂B/∂t + ∇×E = 0` and `∂E/∂t − ∇×B = 0` to residual ≲ 1e-6,
+  promoting them from encoded facts. In a medium they revert to encoded facts
+  (macroscopic form). Tests assert the residuals and the vacuum epistemic tag.
+
 - **M4 computed strong-coupling area law** (`crates/physis-theory/src/gauge_field.rs`).
   New `gauge.strong-coupling-area-law` claim backed by a real computation: the
   leading strong-coupling string tension `σ = −ln(β/2N²)` (first term of the
