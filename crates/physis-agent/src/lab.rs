@@ -7,6 +7,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::KnobValue;
 use physis_theory::critique::diff_verdicts;
+use physis_theory::em::{LinearMedium, MaxwellVacuum};
 use physis_theory::{
     string_critique, ExperimentReport, GeneralRelativity, ObserverGeometry, StandardModel,
     StringTheory, Theory, VerdictDiff,
@@ -44,6 +45,9 @@ impl Lab {
         lab.insert(Box::new(StringTheory::bosonic()));
         lab.insert(Box::new(StringTheory::m_theory()));
         lab.insert(Box::new(ObserverGeometry::default()));
+        // Second domain: electromagnetism shares the same lab and protocol.
+        lab.insert(Box::new(MaxwellVacuum));
+        lab.insert(Box::new(LinearMedium::default()));
         let ids = lab.theories.keys().cloned().collect();
         lab.journal.record(JournalEvent::boot(ids));
         lab
@@ -152,6 +156,11 @@ impl Lab {
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
+            "em-vacuum" => {
+                let report = physis_theory::em_vacuum();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
             other => Err(CoreError::UnknownTheory {
                 id: format!("experiment:{other}"),
             }),
@@ -250,7 +259,7 @@ impl Lab {
             Command::Experiment { id } => match self.experiment_canonical(&id) {
                 Ok(report) => Response::Ok {
                     text: report.render(),
-                    report: Some(report),
+                    report: Some(Box::new(report)),
                     diffs: None,
                 },
                 Err(e) => Response::err(e.to_string()),

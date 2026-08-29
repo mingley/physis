@@ -57,9 +57,10 @@ pub enum Response {
     Ok {
         /// Human-readable body.
         text: String,
-        /// Optional structured experiment.
+        /// Optional structured experiment (boxed: it is much larger than the
+        /// other response fields).
         #[serde(skip_serializing_if = "Option::is_none")]
-        report: Option<ExperimentReport>,
+        report: Option<Box<ExperimentReport>>,
         /// Optional verdict diffs.
         #[serde(skip_serializing_if = "Option::is_none")]
         diffs: Option<Vec<VerdictDiff>>,

@@ -105,7 +105,7 @@ USAGE:
     physis run <theory>
     physis set <theory> <knob> <value>
     physis score <theory>
-    physis experiment [string-critique]
+    physis experiment [string-critique | em-vacuum]
     physis journal
     physis replay <journal.jsonl>
 

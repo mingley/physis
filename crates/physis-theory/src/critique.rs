@@ -69,6 +69,10 @@ pub struct ExperimentReport {
     pub honesty: String,
     /// Per-theory reports.
     pub theories: Vec<TheoryReport>,
+    /// Claim ids used as matrix rows, in display order.
+    pub rows: Vec<String>,
+    /// Honesty / reading notes rendered under the matrix.
+    pub notes: Vec<String>,
     /// Row-major matrix using shared claim ids.
     pub matrix: BTreeMap<String, BTreeMap<String, VerdictKind>>,
 }
@@ -113,7 +117,7 @@ impl ExperimentReport {
         }
         out.push('\n');
 
-        for row in claims::critique_rows() {
+        for row in &self.rows {
             out.push_str(&format!("| `{row}` |"));
             for id in &ids {
                 let cell = self
@@ -128,10 +132,9 @@ impl ExperimentReport {
         }
 
         out.push_str("\n## Notes\n\n");
-        out.push_str("- `holds` / `fails` are *internal to the encoding*.\n");
-        out.push_str("- Read `epistemic` before treating a cell as physics.\n");
-        out.push_str("- Type IIB uniqueness failing under a landscape heuristic is not a disproof of string theory; it is the predictivity objection made inspectable.\n");
-        out.push_str("- Observer-geometry uniqueness holding as a *conjecture/axiom* is not a proof that geometry succeeds.\n");
+        for note in &self.notes {
+            out.push_str(&format!("- {note}\n"));
+        }
         out
     }
 }
@@ -191,9 +194,47 @@ pub fn string_critique() -> ExperimentReport {
 
 /// Build a report from a list of theories (used by the agent lab).
 pub fn report_from(theories: Vec<Box<dyn Theory>>) -> ExperimentReport {
+    report_from_rows(
+        "string-critique",
+        "String critique lab",
+        "Which structural claims of string constructions, the Standard Model, GR, \
+         and a unique-geometry scaffold hold under their default knobs — and which \
+         flip when knobs move? In particular: does uniqueness/predictivity fail for \
+         strings in a way that is *mechanical* in this encoding, and does an \
+         alternative program actually *earn* empirical contact, or only assert it?",
+        "This experiment compares encoded structures. It cannot settle whether \
+         nature is a string, a geometry, or something else. Landscape counts are \
+         heuristics. Observer-geometry gauge assignment is a conjecture. Critical \
+         dimensions of strings are theorems.",
+        vec![
+            "`holds` / `fails` are *internal to the encoding*.".into(),
+            "Read `epistemic` before treating a cell as physics.".into(),
+            "Type IIB uniqueness failing under a landscape heuristic is not a disproof of string theory; it is the predictivity objection made inspectable.".into(),
+            "Observer-geometry uniqueness holding as a *conjecture/axiom* is not a proof that geometry succeeds.".into(),
+        ],
+        &claims::critique_rows(),
+        theories,
+    )
+}
+
+/// Build an experiment report over an explicit set of claim-id rows.
+///
+/// This is the domain-agnostic core: string-critique and the electromagnetism
+/// lab both use it, so a new domain adds a theory list and a row list without
+/// forking the report machinery.
+#[allow(clippy::too_many_arguments)]
+pub fn report_from_rows(
+    id: &'static str,
+    title: impl Into<String>,
+    question: impl Into<String>,
+    honesty: impl Into<String>,
+    notes: Vec<String>,
+    rows: &[&str],
+    theories: Vec<Box<dyn Theory>>,
+) -> ExperimentReport {
     let reports: Vec<TheoryReport> = theories.iter().map(|t| report_of(t.as_ref())).collect();
     let mut matrix: BTreeMap<String, BTreeMap<String, VerdictKind>> = BTreeMap::new();
-    for row in claims::critique_rows() {
+    for row in rows {
         let mut cells = BTreeMap::new();
         for t in &theories {
             cells.insert(t.id().to_string(), evaluate_id(t.as_ref(), row));
@@ -201,20 +242,13 @@ pub fn report_from(theories: Vec<Box<dyn Theory>>) -> ExperimentReport {
         matrix.insert((*row).to_string(), cells);
     }
     ExperimentReport {
-        id: "string-critique",
-        title: "String critique lab".into(),
-        question: "Which structural claims of string constructions, the Standard Model, GR, \
-                   and a unique-geometry scaffold hold under their default knobs — and which \
-                   flip when knobs move? In particular: does uniqueness/predictivity fail for \
-                   strings in a way that is *mechanical* in this encoding, and does an \
-                   alternative program actually *earn* empirical contact, or only assert it?"
-            .into(),
-        honesty: "This experiment compares encoded structures. It cannot settle whether \
-                  nature is a string, a geometry, or something else. Landscape counts are \
-                  heuristics. Observer-geometry gauge assignment is a conjecture. Critical \
-                  dimensions of strings are theorems."
-            .into(),
+        id,
+        title: title.into(),
+        question: question.into(),
+        honesty: honesty.into(),
         theories: reports,
+        rows: rows.iter().map(|s| s.to_string()).collect(),
+        notes,
         matrix,
     }
 }

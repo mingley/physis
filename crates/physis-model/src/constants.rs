@@ -63,6 +63,16 @@ pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
 }
 
+/// Vacuum permittivity ε₀ (F/m), CODATA. Units: A²·s⁴·kg⁻¹·m⁻³.
+pub fn epsilon0() -> Qty<physis_core::SI<typenum::N1, typenum::N3, typenum::P4, typenum::P2>> {
+    Qty::new(8.854_187_812_8e-12)
+}
+
+/// Vacuum permeability μ₀ (H/m), CODATA. Units: kg·m·s⁻²·A⁻².
+pub fn mu0() -> Qty<physis_core::SI<typenum::P1, typenum::P1, typenum::N2, typenum::N2>> {
+    Qty::new(1.256_637_062_12e-6)
+}
+
 /// Fermi coupling constant G_F, as a typed energy⁻² quantity (SI J⁻²).
 ///
 /// The measured value is `G_F/(ħc)³ = 1.166_378_7e-5 GeV⁻²`; converted to SI
@@ -115,6 +125,18 @@ mod tests {
     #[test]
     fn gamma_rejects_superluminal() {
         assert!(lorentz_gamma(meters_per_second(C.value() * 1.1)).is_none());
+    }
+
+    #[test]
+    fn light_speed_from_permittivity_and_permeability() {
+        // 1/√(ε₀μ₀) = c, encoded mechanically: ε₀·μ₀·c² is dimensionless and
+        // equals 1. The type annotation compiles only if the units cancel.
+        let one: Qty<Dimensionless> = epsilon0() * mu0() * C * C;
+        assert!(
+            (one.value() - 1.0).abs() < 1e-6,
+            "ε₀·μ₀·c² = {} (should be 1)",
+            one.value()
+        );
     }
 
     #[test]

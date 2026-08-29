@@ -10,6 +10,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### M3 — Domain reuse
+
+- **M3 Electromagnetism, the second domain** (`crates/physis-theory/src/em.rs`,
+  `crates/physis-model/src/constants.rs`, new `specs/008-electromagnetism.md`).
+  Proves the workspace hosts a second science without forking core: `Qty`,
+  layers, knobs, claims, verdicts, the `Theory` trait, and the experiment matrix
+  all carry classical electromagnetism.
+  - New theories `maxwell-vacuum` and `linear-medium` (`ε_r`, `μ_r` knobs) and
+    the `physis experiment em-vacuum` matrix.
+  - **A real theorem:** typed `ε₀` and `μ₀` constants give `ε₀·μ₀·c² = 1` as a
+    `Qty<Dimensionless>` that type-checks and evaluates to 1 — i.e.
+    `1/√(ε₀μ₀) = c`, checked, not tabulated.
+  - Knob → verdict: a linear medium with `n = √(ε_r μ_r) > 1` slows light and
+    selects a rest frame, so `em.wave-speed-c` and `em.lorentz-invariance` fail;
+    setting `epsilon_r = 1` flips them back to hold.
+  - The experiment builder was generalized (`critique::report_from_rows`,
+    `ExperimentReport` gained `rows`/`notes`) so each domain supplies its own
+    theory list and claim rows — string-critique and em-vacuum share the
+    machinery.
+
 ### M2 — Empirical contact
 
 - **M2.5 Empirical target as data** (`data/empirical-world.json`,

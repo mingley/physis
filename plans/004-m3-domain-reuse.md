@@ -28,7 +28,16 @@ If model types get heavy, add `physis-em` / `physis-info` crates. Do not copy `p
 
 ## Done when
 
-- `physis experiment em-vacuum` prints a matrix
-- At least one electricity knob → verdict diff test
-- Spec `specs/008-electromagnetism.md` exists
-- `specs/007-reuse-domains.md` is still accurate
+- ✅ `physis experiment em-vacuum` prints a matrix (M3, `physis_theory::em`)
+- ✅ At least one electricity knob → verdict diff test (`em::tests::permittivity_knob_flips_the_wave_speed_verdict`)
+- ✅ Spec `specs/008-electromagnetism.md` exists
+- ✅ `specs/007-reuse-domains.md` is still accurate
+
+## Status
+
+Electricity's first reuse is delivered: `maxwell-vacuum` and `linear-medium`
+theories, the `em-vacuum` experiment, and the `1/√(ε₀μ₀) = c` theorem checked
+from typed `ε₀`/`μ₀` constants — all on the same substrate, no core fork. The
+experiment machinery was generalized (`report_from_rows`) so domains supply
+their own theory list and claim rows. Still open in M3: `ohm-circuit` control,
+typed exterior calculus, and the computation domain.

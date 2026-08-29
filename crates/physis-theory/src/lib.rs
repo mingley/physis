@@ -15,6 +15,7 @@
 
 pub mod claims;
 pub mod critique;
+pub mod em;
 pub mod framework;
 pub mod geometry;
 pub mod relativity;
@@ -23,6 +24,7 @@ pub mod strings;
 pub mod target;
 
 pub use critique::{string_critique, ExperimentReport, TheoryReport, VerdictDiff};
+pub use em::em_vacuum;
 pub use framework::Theory;
 pub use geometry::ObserverGeometry;
 pub use relativity::GeneralRelativity;
