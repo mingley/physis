@@ -32,6 +32,14 @@ pub enum SimpleGroup {
     Spin(u8),
 }
 
+/// One step along the standard GUT chain toward the Standard Model.
+enum SmStep {
+    /// Descend to a smaller group that is a maximal subgroup on the chain.
+    Down(SimpleGroup),
+    /// The next step is the Standard Model gauge group itself.
+    StandardModel,
+}
+
 impl SimpleGroup {
     /// Rank (Cartan dimension), when well-defined.
     pub fn rank(self) -> Option<u8> {
@@ -48,6 +56,56 @@ impl SimpleGroup {
             SimpleGroup::Spin(n) if n >= 3 => Some(n / 2),
             _ => None,
         }
+    }
+
+    /// One textbook maximal-subgroup step toward the Standard Model, if this
+    /// group sits on the standard GUT chain. Returns the next group down (or a
+    /// signal that the Standard Model itself is the next step).
+    fn step_toward_sm(self) -> Option<SmStep> {
+        Some(match self {
+            SimpleGroup::E8 => SmStep::Down(SimpleGroup::E6),
+            SimpleGroup::E7 => SmStep::Down(SimpleGroup::E6),
+            SimpleGroup::E6 => SmStep::Down(SimpleGroup::So(10)),
+            SimpleGroup::So(10) | SimpleGroup::Spin(10) => SmStep::Down(SimpleGroup::Su(5)),
+            SimpleGroup::So(n) | SimpleGroup::Spin(n) if n > 10 => {
+                SmStep::Down(SimpleGroup::So(10))
+            }
+            SimpleGroup::Su(5) => SmStep::StandardModel,
+            _ => return None,
+        })
+    }
+
+    /// Verify — not discover — that the Standard Model embeds in this simple
+    /// group by walking the standard maximal-subgroup chain and checking the
+    /// necessary rank and dimension inequalities at every link.
+    ///
+    /// This is stronger than group equality but is **not** a full proof: rank
+    /// and dimension containment are necessary, not sufficient, conditions, and
+    /// the chain of maximal subgroups is encoded from the literature. Returns
+    /// the chain of group names on success.
+    fn sm_embedding_chain(self) -> Option<Vec<String>> {
+        let mut chain = vec![self.name()];
+        let mut cur = self;
+        for _ in 0..16 {
+            match cur.step_toward_sm()? {
+                SmStep::Down(next) => {
+                    if next.rank()? > cur.rank()? || next.dimension()? > cur.dimension()? {
+                        return None;
+                    }
+                    chain.push(next.name());
+                    cur = next;
+                }
+                SmStep::StandardModel => {
+                    let sm = GaugeGroup::standard_model();
+                    if sm.rank()? > cur.rank()? as u32 || sm.dimension()? > cur.dimension()? {
+                        return None;
+                    }
+                    chain.push(sm.name());
+                    return Some(chain);
+                }
+            }
+        }
+        None
     }
 
     /// Dimension of the group (number of generators), when well-defined.
@@ -183,24 +241,28 @@ impl GaugeGroup {
         self.dimension() == Some(496) && (self == &Self::so32() || self == &Self::e8e8())
     }
 
-    /// How the Standard Model sits in this group, as encoded textbook facts.
+    /// Verify by code that the Standard Model embeds in this group, returning
+    /// the maximal-subgroup chain that witnesses it.
+    ///
+    /// A group contains the SM if any of its simple factors reduces to the SM
+    /// through the standard chain (e.g. E₈ ⊃ E₆ ⊃ SO(10) ⊃ SU(5) ⊃ SM), with
+    /// the necessary rank and dimension inequalities checked at each step. This
+    /// replaces the old "is this group literally SU(5)?" equality table.
+    pub fn verified_contains_sm(&self) -> Option<Vec<String>> {
+        if self == &Self::standard_model() {
+            return Some(vec![Self::standard_model().name()]);
+        }
+        self.factors.iter().find_map(|f| f.sm_embedding_chain())
+    }
+
+    /// How the Standard Model sits in this group, verified by the maximal-
+    /// subgroup chain rather than stored as an equality table.
     pub fn sm_embed(&self) -> Embed {
         if self == &Self::standard_model() {
             return Embed::Equal;
         }
-        // Known chain: SM ⊂ SU(5) ⊂ SO(10) ⊂ E6 ⊂ E8, and SM ⊂ SO(32), SM ⊂ E8×E8.
-        let facts = [
-            (Self::su5(), Embed::KnownEmbedding),
-            (Self::so10(), Embed::KnownEmbedding),
-            (Self::e6(), Embed::KnownEmbedding),
-            (Self::e8e8(), Embed::KnownEmbedding),
-            (Self::so32(), Embed::KnownEmbedding),
-            (Self::spin10(), Embed::KnownEmbedding),
-        ];
-        for (g, e) in facts {
-            if self == &g {
-                return e;
-            }
+        if self.verified_contains_sm().is_some() {
+            return Embed::KnownEmbedding;
         }
         if self.factors.is_empty() {
             Embed::None
@@ -264,6 +326,65 @@ mod tests {
         assert_eq!(GaugeGroup::e8e8().dimension(), Some(496));
         assert_eq!(GaugeGroup::so32().dimension(), Some(496));
         assert_eq!(GaugeGroup::standard_model().dimension(), Some(12));
+    }
+
+    #[test]
+    fn sm_embedding_is_verified_by_chain_not_equality() {
+        // Each GUT group verifies SM containment by walking a real chain.
+        for g in [
+            GaugeGroup::su5(),
+            GaugeGroup::so10(),
+            GaugeGroup::e6(),
+            GaugeGroup::e8e8(),
+            GaugeGroup::so32(),
+            GaugeGroup::spin10(),
+        ] {
+            let chain = g
+                .verified_contains_sm()
+                .unwrap_or_else(|| panic!("{} should verify SM containment", g.name()));
+            // The chain must terminate at the Standard Model.
+            assert_eq!(chain.last().unwrap(), &GaugeGroup::standard_model().name());
+            assert!(g.sm_embed().contains_sm());
+        }
+
+        // The canonical Georgi–Glashow chain, spelled out.
+        assert_eq!(
+            GaugeGroup::e6().verified_contains_sm().unwrap(),
+            vec![
+                "E6".to_string(),
+                "SO(10)".to_string(),
+                "SU(5)".to_string(),
+                "SU(3) × SU(2) × U(1)".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn groups_without_an_sm_chain_do_not_verify() {
+        for g in [
+            GaugeGroup::trivial(),
+            GaugeGroup {
+                factors: vec![SimpleGroup::G2],
+            },
+            GaugeGroup {
+                factors: vec![SimpleGroup::F4],
+            },
+            GaugeGroup {
+                factors: vec![SimpleGroup::So(9)],
+            },
+        ] {
+            assert!(g.verified_contains_sm().is_none(), "{}", g.name());
+            assert!(!g.sm_embed().contains_sm());
+        }
+    }
+
+    #[test]
+    fn embedding_chain_rank_and_dimension_are_monotonic() {
+        // Necessary conditions: each subgroup has rank and dimension no larger
+        // than its parent, all the way down to the SM.
+        let names = GaugeGroup::e8e8().verified_contains_sm().unwrap();
+        assert_eq!(names.first().unwrap(), "E8");
+        assert_eq!(names.last().unwrap(), &GaugeGroup::standard_model().name());
     }
 
     #[test]

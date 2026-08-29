@@ -675,10 +675,19 @@ impl Theory for StringTheory {
             claims::SM_GAUGE => {
                 let e = w.gauge.sm_embed();
                 if e.contains_sm() {
+                    let chain = w
+                        .gauge
+                        .verified_contains_sm()
+                        .unwrap_or_default()
+                        .join(" ⊃ ");
                     Verdict::holds(
                         Epistemic::EncodedFact,
-                        format!("{} contains SM ({e:?})", w.gauge.name()),
+                        format!("{} contains SM", w.gauge.name()),
                     )
+                    .with_evidence([
+                        format!("verified embedding chain: {chain}"),
+                        "checked by maximal-subgroup steps with rank/dimension necessary conditions (Georgi–Glashow SU(5) ⊃ SM); encoded chain, not a root-system proof".to_string(),
+                    ])
                 } else if matches!(
                     self.kind,
                     StringKind::TypeIIA | StringKind::TypeIIB | StringKind::MTheory

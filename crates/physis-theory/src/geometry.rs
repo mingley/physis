@@ -283,12 +283,18 @@ impl Theory for ObserverGeometry {
                         "this is why the default fibre is 10 (hence total 14 = 4 + 10): the minimal carrier of Spin(10)".to_string(),
                     ])
                 } else if self.gauge().sm_embed().contains_sm() {
+                    let chain = self
+                        .gauge()
+                        .verified_contains_sm()
+                        .unwrap_or_default()
+                        .join(" ⊃ ");
                     Verdict::holds(
                         Epistemic::Conjecture,
                         "Spin(10) is assigned as a derived group and does contain SM — assignment, not a proof",
                     )
                     .with_evidence([
                         format!("fibre_dim = {} ≥ {} can host Spin(10)", self.fibre_dim, SPIN10_MIN_FIBRE),
+                        format!("verified embedding chain: {chain}"),
                         "replace this assignment with an actual geometric derivation before treating it as a theorem".to_string(),
                     ])
                 } else {

@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M2 — Empirical contact
 
+- **M2.1 SM embedding verified by code** (`crates/physis-model/src/gauge.rs`).
+  `GaugeGroup::sm_embed` no longer asks "is this group literally SU(5)?" via an
+  equality table. It now calls `verified_contains_sm`, which walks the standard
+  maximal-subgroup chain (E₈ ⊃ E₆ ⊃ SO(10) ⊃ SU(5) ⊃ SM, plus SO(32) ⊃ SO(10)
+  and Spin(10) ⊃ SU(5)) and checks the necessary rank and dimension
+  inequalities at each step, backed by `SimpleGroup::dimension`/`rank`. The
+  `empirical.sm-gauge` verdicts (strings + observer-geometry) now carry the
+  verified chain as evidence. Retag policy honored: still `EncodedFact` (the
+  check is necessary-but-not-sufficient and the chain is encoded), not
+  `Theorem`. Satisfies M2's "SM ⊂ SU(5) verified by code" criterion. Tests in
+  `gauge.rs` (chains verify, off-chain groups do not, monotonic rank/dim).
+
 - **M2.4 Typed lengths for hidden extra dimensions** (`crates/physis-theory/src/strings.rs`).
   `empirical.hidden-extra-dims` no longer compares a raw float to a magic
   `1e16`. It now builds a typed effective radius `Qty<Length>` (Kähler volume ×
