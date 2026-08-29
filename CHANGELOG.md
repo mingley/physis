@@ -203,6 +203,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M1 — String lab
 
+- **Unified tachyon stability notion across domains** (`crates/physis-theory/src/strings.rs`).
+  `consistency.no-tachyon` is now computed from a string ground-state mass²
+  (`α'm²`): bosonic `−1` (tachyon), superstring with GSO `0` (no tachyon),
+  GSO off `−1/2` (tachyon returns). It fails exactly when `m² < 0` — the *same*
+  criterion as the scalar field's `field.stable` (`min ω² < 0`), so the string
+  and continuum labs share one notion of tachyonic instability (per `plans/005`).
+  Verdicts unchanged; now computed with the mass² in the evidence.
+
 - **"Why three generations?" made mechanical** (`crates/physis-theory/src/strings.rs`).
   New `euler_number` knob (Calabi–Yau Euler characteristic χ). `empirical.three-generations`
   is `undecidable` until a topology is chosen, then it is the computed topological

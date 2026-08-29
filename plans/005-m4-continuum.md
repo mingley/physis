@@ -48,8 +48,11 @@ Yang–Mills mass-gap Millennium Problem), while U(1) deconfines in 4D.
 
 - Genuine 3+1 dynamics / a Monte-Carlo or transfer-matrix computation behind the
   confinement verdicts (currently encoded facts + one heuristic transition).
-- Connect the scalar tachyon here to the string bosonic tachyon conceptually
-  (both are `min ω² < 0`), so the two domains share a stability notion.
+- ✅ Connected the scalar tachyon to the string tachyon: `consistency.no-tachyon`
+  is now computed from a string ground-state `α'm²` and fails exactly when
+  `m² < 0` — the same stability notion as the scalar field's `min ω² < 0`
+  (`field.stable`). Both domains now share one criterion for tachyonic
+  instability.
 - ✅ `Theory::world()` now returns `Option<World>`: computation returns `None`
   (no borrowed spacetime), the scalar field reports an honest 1+1 D world, and
   `physis score` treats non-physics domains as such. A richer `Layer`-based

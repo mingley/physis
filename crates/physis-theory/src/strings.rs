@@ -273,6 +273,22 @@ impl StringTheory {
         self.dilaton.exp()
     }
 
+    /// Leading ground-state mass² in α' = 1 units. `< 0` is a tachyon — the
+    /// same stability notion as the scalar field's minimum ω² in `field-modes`.
+    ///
+    /// Bosonic string: `α'm² = −1` (the ground state is tachyonic). Superstring
+    /// with the GSO projection (SUSY on): `0` (massless, tachyon removed).
+    /// Superstring with GSO off: `−1/2` (the NS tachyon returns).
+    fn ground_state_mass_squared(&self) -> f64 {
+        if !self.kind.requires_susy() {
+            -1.0
+        } else if self.supersymmetry {
+            0.0
+        } else {
+            -0.5
+        }
+    }
+
     /// Total moduli count (Kähler + complex structure stand-ins).
     fn moduli(&self) -> u32 {
         self.h11 + self.h21
@@ -593,21 +609,24 @@ impl Theory for StringTheory {
                 }
             }
             claims::NO_TACHYON => {
-                if self.kind == StringKind::Bosonic {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
-                        "the 26D bosonic string has a tachyon",
-                    )
-                } else if self.supersymmetry {
+                let m2 = self.ground_state_mass_squared();
+                if m2 >= 0.0 {
                     Verdict::holds(
                         Epistemic::EncodedFact,
-                        "spacetime SUSY removes the tachyon in the superstring",
+                        format!("ground-state α'm² = {m2:.1} ≥ 0: no tachyon"),
                     )
+                    .with_evidence([
+                        "spacetime SUSY / GSO projection lifts the ground state to m² ≥ 0"
+                            .to_string(),
+                    ])
                 } else {
                     Verdict::fails(
                         Epistemic::EncodedFact,
-                        "without SUSY the superstring construction is not the usual tachyon-free one",
+                        format!("ground-state α'm² = {m2:.1} < 0: a tachyon"),
                     )
+                    .with_evidence([
+                        "same instability notion as the scalar field's min ω² < 0 (see field-modes)".to_string(),
+                    ])
                 }
             }
             claims::ANOMALY_CANCELLATION => match self.kind {
@@ -853,6 +872,19 @@ mod tests {
         t.set("kind", KnobValue::Choice("bosonic".into())).unwrap();
         assert_eq!(verdict(&t, claims::FERMIONS), VerdictKind::Fails);
         assert_eq!(verdict(&t, claims::NO_TACHYON), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn tachyon_is_the_sign_of_the_ground_state_mass_squared() {
+        // The string tachyon shares the field's stability notion: m² < 0.
+        assert!(StringTheory::bosonic().ground_state_mass_squared() < 0.0);
+        assert!(StringTheory::type_iib().ground_state_mass_squared() >= 0.0);
+        let mut no_susy = StringTheory::type_iib();
+        no_susy
+            .set("supersymmetry", KnobValue::Bool(false))
+            .unwrap();
+        assert!(no_susy.ground_state_mass_squared() < 0.0);
+        assert_eq!(verdict(&no_susy, claims::NO_TACHYON), VerdictKind::Fails);
     }
 
     #[test]
