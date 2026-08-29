@@ -9,6 +9,7 @@ use physis_core::knob::KnobValue;
 use physis_theory::computation::{CombinationalCircuit, LandauerEngine, TuringMachine};
 use physis_theory::continuum::KleinGordonField;
 use physis_theory::critique::diff_verdicts;
+use physis_theory::dec::DeRham;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
 use physis_theory::gauge_field::{WilsonSun, WilsonU1};
 use physis_theory::quantum::BellTest;
@@ -103,6 +104,8 @@ impl Lab {
         lab.insert(Box::new(IdealGas::default()));
         // Fifth domain: quantum foundations (a CHSH Bell test).
         lab.insert(Box::new(BellTest::default()));
+        // Pure mathematics: discrete exterior calculus / de Rham cohomology.
+        lab.insert(Box::new(DeRham::default()));
         let ids = lab.theories.keys().cloned().collect();
         lab.journal.record(JournalEvent::boot(ids));
         lab

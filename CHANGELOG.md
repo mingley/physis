@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Discrete exterior calculus: `d²=0` and Betti numbers with type-level grade**
+  (new `crates/physis-theory/src/dec.rs`, new `specs/015-exterior-calculus.md`).
+  New `de-rham` theory on the mathematical layer. Differential-form grade is a
+  Rust type parameter (`Cochain<G0/G1/G2>`), so the exterior derivative `d`
+  provably raises grade by one and mixing grades is a compile error (guarded by a
+  `compile_fail` doctest, mirroring the `Qty<D>` contracts). Three computed
+  theorems: `dec.d-squared-zero` (`d₁∘d₀ = 0` exactly — the `curl grad = 0` /
+  `dF=0`-from-`F=dA` identity), `dec.first-betti-number` (holes counted as
+  `n_edges − rank(d₁) − rank(d₀)` via Gaussian elimination), and
+  `dec.closed-equals-exact` (the Poincaré lemma). A `filled` knob removes the
+  triangle's face, turning the disk into a circle: `b₁` jumps `0 → 1` and
+  `closed-equals-exact` flips `holds → fails` — topology detected mechanically by
+  linear algebra on the coboundary. Registered in `Lab::standard()`. Verified:
+  five new tests, a compile-fail doctest, `fmt`, `clippy -D warnings`, full
+  suite, and the `run de-rham` + knob diff.
+
 - **CHSH correlator derived from the two-qubit operators**
   (`crates/physis-model/src/quantum.rs`, `crates/physis-theory/src/quantum.rs`,
   `specs/012-quantum-foundations.md`). Added `spin_measurement(θ) = cos θ·σ_z +

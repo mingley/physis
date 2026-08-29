@@ -1,0 +1,90 @@
+# 015 — Discrete exterior calculus / de Rham cohomology
+
+Status: active
+Layer: mathematical
+Id: `de-rham`
+
+## Purpose
+
+The mathematical layer earns a first-class object that scrutinizes a piece of
+pure mathematics with the same machinery as the physics theories — and leans
+hard on Rust's type system, the project's core premise.
+
+Differential-form **grade** is carried at the type level, so the compiler
+forbids adding a 1-form to a 2-form and the exterior derivative `d` provably
+raises grade by exactly one. On a simplicial complex the coboundary makes
+`d ∘ d = 0` an *exact* identity — the algebra behind `curl grad = 0` and behind
+the homogeneous Maxwell equations `dF = 0` when `F = dA`. The same coboundary
+computes topology: the first Betti number counts holes, and whether every closed
+1-form is exact (the Poincaré lemma) detects them.
+
+## Object
+
+| id | object |
+|---|---|
+| `de-rham` | discrete exterior calculus on a small simplicial complex |
+
+## Knob
+
+| knob | effect |
+|---|---|
+| `filled` | fill the 2-simplex's face (a disk, `b₁ = 0`) or remove it (a circle, `b₁ = 1`). Flips `dec.closed-equals-exact`. |
+
+## Claims (all computed theorems)
+
+| id | meaning | how it is decided |
+|---|---|---|
+| `dec.d-squared-zero` | `d ∘ d = 0` | `d₁(d₀ f) = 0` for every basis 0-form, exactly |
+| `dec.first-betti-number` | the number of holes `b₁` | `b₁ = n_edges − rank(d₁) − rank(d₀)`, ranks by Gaussian elimination |
+| `dec.closed-equals-exact` | every closed 1-form is exact (Poincaré) | holds iff `b₁ = 0` |
+
+## Type-level grade
+
+A `Cochain<G>` carries its grade `G ∈ {G0, G1, G2}` as a type parameter. `d₀`
+maps `Cochain<G0> → Cochain<G1>` and `d₁` maps `Cochain<G1> → Cochain<G2>`, so
+`d₁(d₀(f))` type-checks and lands in grade 2. Mixing grades is a compile error,
+enforced by a `compile_fail` doctest:
+
+```rust,compile_fail
+use physis_theory::dec::{Cochain, G0, G1};
+let a = Cochain::<G0>::zero(3);
+let b = Cochain::<G1>::zero(3);
+let _ = a + b; // different grades: does not type-check
+```
+
+This mirrors the `Qty<D>` dimensional contracts in `physis-core`: the type
+system rules out a whole class of nonsense before any value is computed.
+
+## `d² = 0` and Maxwell
+
+For any 0-form `f`, `(d₁ d₀ f)[a,b,c] = (f[b]−f[a]) − (f[c]−f[a]) + (f[c]−f[b])
+= 0` identically — the discrete `curl grad = 0`. The same nilpotency is why
+`F = dA` forces `dF = 0`: the homogeneous Maxwell equations (Faraday's law and
+the absence of magnetic monopoles) are not extra assumptions, they are `d² = 0`.
+`specs/008-electromagnetism.md` checks the Maxwell equations numerically; here
+the *homogeneous* half is an exact topological identity.
+
+## Betti numbers and the knob → verdict diff
+
+```
+physis run de-rham               # disk: b₁ = 0, closed = exact (Poincaré holds)
+physis set de-rham filled false  # circle: b₁ = 1, closed ≠ exact
+```
+
+Removing the triangle's face turns the disk into a circle. The first Betti
+number, computed from the ranks of the incidence matrices, jumps `0 → 1`, and
+`dec.closed-equals-exact` flips `holds → fails`: a closed 1-form that is not
+exact now exists. Topology is detected mechanically, by linear algebra on the
+coboundary.
+
+## Non-goals (this milestone)
+
+- Higher-dimensional complexes (only vertices/edges/triangles, grades 0–2).
+- Hodge star, codifferential, and the Laplacian (a later increment).
+- General mesh input; the two complexes are the disk and the circle.
+
+## Related
+
+- `specs/001-type-system.md` — the `Qty<D>` type-level contracts this mirrors
+- `specs/008-electromagnetism.md` — Maxwell's equations numerically
+- `specs/002-ontology-layers.md` — the mathematical layer

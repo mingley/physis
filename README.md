@@ -105,6 +105,7 @@ cargo run -p physis -- experiment field-modes
 cargo run -p physis -- experiment gauge-lattice
 cargo run -p physis -- experiment thermo
 cargo run -p physis -- experiment bell
+cargo run -p physis -- run de-rham          # d²=0, Betti numbers; flip `filled` for a hole
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
 cargo run -p physis -- set special-relativity absolute_time true
 cargo run -p physis -- run su5-gut          # SU(5): sin²θ_W = 3/8, charge quantization
