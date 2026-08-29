@@ -6,7 +6,7 @@ use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::KnobValue;
-use physis_theory::computation::{CombinationalCircuit, TuringMachine};
+use physis_theory::computation::{CombinationalCircuit, LandauerEngine, TuringMachine};
 use physis_theory::continuum::KleinGordonField;
 use physis_theory::critique::diff_verdicts;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
@@ -89,6 +89,8 @@ impl Lab {
         // Third domain: computation.
         lab.insert(Box::new(CombinationalCircuit));
         lab.insert(Box::new(TuringMachine::default()));
+        // Computation ↔ thermodynamics bridge: Landauer's principle.
+        lab.insert(Box::new(LandauerEngine::default()));
         // M4 continuum: a scalar field and lattice gauge fields as local objects.
         lab.insert(Box::new(KleinGordonField::default()));
         lab.insert(Box::new(WilsonU1::default()));

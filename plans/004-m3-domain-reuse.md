@@ -25,10 +25,14 @@ experiment (`physis_theory::computation`, `specs/009-computation.md`):
 - The halting problem is encoded as a genuine `Undecidable` verdict for the
   unbounded machine; `set turing-machine tape_bound 1000` flips halts,
   turing-complete, decidable-equivalence, and resource-bounded.
-- Later: complexity classes, Landauer / reversible computing on
-  `statistical` + `information`. Also: `World` is physics-shaped, so
-  computational objects use a degenerate placeholder world — generalizing the
-  projection is future work (noted in `specs/009`).
+- ✅ Landauer / reversible computing (`landauer-engine`) on `statistical` +
+  `information`: `info.landauer-cost` = `k_B·T·ln2` computed as a typed
+  `Qty<Energy>` (a theorem), and `set landauer-engine reversible true` flips
+  `info.thermodynamically-free` `fails → holds` — a cross-domain
+  (computation ↔ thermodynamics) knob → verdict diff.
+- The `World` projection was generalized to `Option<World>`; non-physics
+  objects return `None` and describe themselves via `note()`.
+- Later: complexity classes as verdicts; actual interpreters/simulators.
 
 ## Crate split
 
@@ -47,8 +51,10 @@ Electricity's reuse is delivered: `maxwell-vacuum`, `linear-medium`, and the
 `ohm-circuit` control, the `em-vacuum` experiment, and the `1/√(ε₀μ₀) = c`
 theorem checked from typed `ε₀`/`μ₀` constants — all on the same substrate, no
 core fork. The computation domain (`combinational-circuit`, `turing-machine`,
-`specs/009`) is also delivered. The experiment machinery was generalized
-(`report_from_rows`) so domains supply their own theory list and claim rows.
-Still open in M3: typed exterior calculus for the field equations; complexity
-classes / Landauer for computation; and generalizing the physics-shaped `World`
-projection for non-physics domains.
+`specs/009`) is also delivered, now including `landauer-engine` — Landauer's
+principle as a typed-energy theorem bridging computation and thermodynamics. The
+experiment machinery was generalized (`report_from_rows`) so domains supply
+their own theory list and claim rows, and the physics-shaped `World` projection
+was generalized to `Option<World>` for non-physics domains. Still open in M3:
+typed exterior calculus for the field equations, and complexity classes as
+verdicts.

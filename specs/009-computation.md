@@ -22,6 +22,7 @@ mechanically restores decidability — a clean knob → verdict diff.
 |---|---|
 | `combinational-circuit` | a finite, acyclic boolean circuit |
 | `turing-machine` | a deterministic Turing machine (`tape_bound` knob) |
+| `landauer-engine` | a computation coupled to a heat bath (Landauer/Bennett) |
 
 ## Knobs
 
@@ -29,6 +30,9 @@ mechanically restores decidability — a clean knob → verdict diff.
 |---|---|---|
 | `turing-machine` | `tape_bound` | tape length in cells; `0` = unbounded. A finite bound makes the machine a finite automaton. |
 | `turing-machine` | `nondeterministic` | whether the transition relation allows nondeterministic branching; flips `comp.deterministic`. |
+| `landauer-engine` | `temperature_k` | bath temperature (K); sets the energy scale `k_B·T·ln2`. |
+| `landauer-engine` | `bits_erased` | number of logical bits irreversibly erased. |
+| `landauer-engine` | `reversible` | logical reversibility (Bennett): erases nothing, so the process can be free. |
 
 `combinational-circuit` has no knobs (it is structurally fixed).
 
@@ -42,6 +46,34 @@ mechanically restores decidability — a clean knob → verdict diff.
 | `comp.decidable-equivalence` | equivalence of two instances is decidable |
 | `comp.resource-bounded` | the computation runs within an a priori resource bound |
 | `comp.p-equals-np` | P = NP — encoded as `undecidable`/`open`, an honest unknown |
+| `info.landauer-cost` | erasing a bit dissipates at least `k_B·T·ln2` (theorem) |
+| `info.thermodynamically-free` | the process erases nothing and can dissipate no heat |
+
+## Landauer's principle: the computation ↔ thermodynamics bridge
+
+`landauer-engine` is the first object that reuses substrate from **two**
+domains at once. Landauer's principle (1961) says erasing one logical bit
+dissipates at least `k_B·T·ln2` of energy; Bennett (1973) showed a logically
+reversible computation erases nothing and can approach zero dissipation.
+
+The energy is **computed from the typed Boltzmann constant**, so its units are
+checked at compile time: `k_boltzmann()` carries `J/K` and `kelvin(T)` carries
+`K`, so the product `E_min = N·k_B·T·ln2` is a `Qty<Energy>` — a mass added to a
+length would not compile. `info.landauer-cost` holds as a **theorem** of
+statistical mechanics, with the computed floor as evidence (one bit at 300 K is
+`2.871e-21 J`).
+
+The knob → verdict diff is cross-domain:
+
+```
+physis run landauer-engine        # info.thermodynamically-free: fails (erases 1 bit)
+physis set landauer-engine reversible true
+```
+
+flips `info.thermodynamically-free` `fails → holds`: a reversible computation
+erases nothing, so the Landauer floor is zero and the process can be free.
+Setting `bits_erased 0` is the other route to a free process; raising
+`bits_erased` or `temperature_k` scales the computed dissipation linearly.
 
 ## Honest unknowns: P vs NP
 
@@ -83,8 +115,6 @@ that rough edge has been removed.
 
 - An actual interpreter / simulator of circuits or tape machines.
 - Complexity-class claims (P, NP, …) as verdicts — a later milestone.
-- Landauer's principle / reversible computing, which needs the `statistical`
-  layer (see `plans/004`).
 
 ## Related
 

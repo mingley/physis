@@ -15,6 +15,9 @@ use physis_core::claim::{Claim, Epistemic, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::qty::kelvin;
+use physis_core::{Energy, Qty};
+use physis_model::constants::k_boltzmann;
 use physis_model::World;
 
 use crate::critique::{report_from_rows, ExperimentReport};
@@ -319,6 +322,216 @@ impl Theory for TuringMachine {
     }
 }
 
+/// Landauer's principle: erasing one bit dissipates at least `k_B·T·ln2`.
+pub const INFO_LANDAUER_COST: &str = "info.landauer-cost";
+/// The process erases no information, so it can be thermodynamically free.
+pub const INFO_THERMO_FREE: &str = "info.thermodynamically-free";
+
+const LANDAUER_SPECS: &[KnobSpec] = &[
+    KnobSpec {
+        name: "temperature_k",
+        layer: LayerId::Statistical,
+        doc: "Bath temperature in kelvin; sets the Landauer energy scale k_B·T·ln2.",
+        domain: KnobDomain::Float {
+            min: 0.0,
+            max: 1.0e9,
+        },
+    },
+    KnobSpec {
+        name: "bits_erased",
+        layer: LayerId::Information,
+        doc: "Number of logical bits irreversibly erased by the computation.",
+        domain: KnobDomain::UInt {
+            min: 0,
+            max: 1_000_000,
+        },
+    },
+    KnobSpec {
+        name: "reversible",
+        layer: LayerId::Information,
+        doc: "Whether the computation is logically reversible (Bennett): no bits are erased.",
+        domain: KnobDomain::Bool,
+    },
+];
+
+/// A computation coupled to a heat bath, judged by Landauer's principle.
+///
+/// This theory sits on the **information** and **statistical** layers at once:
+/// it turns a fact about information (bits erased) into a typed thermodynamic
+/// energy (`Qty<Energy>`), the bridge Landauer 1961 discovered. It is the first
+/// object that reuses substrate from two domains — computation and
+/// thermodynamics — in a single claim.
+#[derive(Clone, Debug)]
+pub struct LandauerEngine {
+    /// Bath temperature in kelvin.
+    temperature_k: f64,
+    /// Logical bits irreversibly erased.
+    bits_erased: u64,
+    /// Whether the computation is logically reversible.
+    reversible: bool,
+}
+
+impl Default for LandauerEngine {
+    fn default() -> Self {
+        // The canonical irreversible eraser: one bit at room temperature.
+        Self {
+            temperature_k: 300.0,
+            bits_erased: 1,
+            reversible: false,
+        }
+    }
+}
+
+impl LandauerEngine {
+    /// A logically reversible computer (Bennett): erases nothing, dissipates nothing.
+    pub fn reversible() -> Self {
+        Self {
+            temperature_k: 300.0,
+            bits_erased: 0,
+            reversible: true,
+        }
+    }
+
+    /// Effective number of bits erased: zero if the computation is reversible.
+    fn effective_bits(&self) -> u64 {
+        if self.reversible {
+            0
+        } else {
+            self.bits_erased
+        }
+    }
+
+    /// The Landauer lower bound on dissipated energy, as a typed quantity.
+    ///
+    /// `E_min = N · k_B · T · ln2`. The units fall out of the type system:
+    /// `k_B` carries J/K, `kelvin(T)` carries K, so the product is an energy.
+    pub fn landauer_energy(&self) -> Qty<Energy> {
+        let n = self.effective_bits() as f64;
+        k_boltzmann() * kelvin(self.temperature_k) * (n * std::f64::consts::LN_2)
+    }
+}
+
+impl Knobbed for LandauerEngine {
+    fn specs(&self) -> &'static [KnobSpec] {
+        LANDAUER_SPECS
+    }
+    fn get(&self, name: &str) -> Result<KnobValue, CoreError> {
+        match name {
+            "temperature_k" => Ok(KnobValue::Float(self.temperature_k)),
+            "bits_erased" => Ok(KnobValue::UInt(self.bits_erased)),
+            "reversible" => Ok(KnobValue::Bool(self.reversible)),
+            _ => Err(CoreError::UnknownKnob { name: name.into() }),
+        }
+    }
+    fn set(&mut self, name: &str, value: KnobValue) -> Result<KnobValue, CoreError> {
+        let spec = self.spec(name)?;
+        spec.domain.check(name, &value)?;
+        let old = self.get(name)?;
+        match (name, value) {
+            ("temperature_k", KnobValue::Float(v)) => self.temperature_k = v,
+            ("bits_erased", KnobValue::UInt(v)) => self.bits_erased = v,
+            ("reversible", KnobValue::Bool(v)) => self.reversible = v,
+            _ => {
+                return Err(CoreError::TypeMismatch {
+                    name: name.into(),
+                    expected: spec.domain.kind_name().into(),
+                    got: old.kind_name().into(),
+                });
+            }
+        }
+        Ok(old)
+    }
+}
+
+impl Theory for LandauerEngine {
+    fn id(&self) -> &'static str {
+        "landauer-engine"
+    }
+    fn name(&self) -> &'static str {
+        "Landauer engine"
+    }
+    fn summary(&self) -> &'static str {
+        "A computation coupled to a heat bath. Erasing a logical bit costs at \
+         least k_B·T·ln2 of energy (Landauer); a logically reversible \
+         computation erases nothing and can be thermodynamically free (Bennett)."
+    }
+    fn world(&self) -> Option<World> {
+        None // information/statistical content, no spacetime/gauge projection
+    }
+    fn note(&self) -> String {
+        format!(
+            "Landauer engine: {} bit(s) erased at {} K ({})",
+            self.effective_bits(),
+            self.temperature_k,
+            if self.reversible {
+                "reversible"
+            } else {
+                "irreversible"
+            }
+        )
+    }
+    fn claims(&self) -> Vec<Claim> {
+        vec![
+            Claim::new(
+                INFO_LANDAUER_COST,
+                "Erasing a logical bit dissipates at least k_B·T·ln2 of energy.",
+                LayerId::Statistical,
+                Epistemic::Theorem,
+            ),
+            Claim::new(
+                INFO_THERMO_FREE,
+                "The computation erases no information and can dissipate no heat.",
+                LayerId::Information,
+                Epistemic::Theorem,
+            ),
+        ]
+    }
+    fn evaluate(&self, claim: &Claim) -> Verdict {
+        let e = self.landauer_energy().value();
+        match claim.id.0.as_str() {
+            INFO_LANDAUER_COST => {
+                // A theorem of statistical mechanics; the evidence is the
+                // computed, typed lower bound for the configured erasure.
+                let n = self.effective_bits();
+                let per_bit = k_boltzmann().value() * self.temperature_k * std::f64::consts::LN_2;
+                Verdict::holds(
+                    Epistemic::Theorem,
+                    format!(
+                        "erasing {n} bit(s) at {} K costs at least {e:.3e} J",
+                        self.temperature_k
+                    ),
+                )
+                .with_evidence([
+                    format!("k_B·T·ln2 = {per_bit:.3e} J/bit"),
+                    format!("E_min = N·k_B·T·ln2 = {e:.3e} J for N = {n}"),
+                ])
+            }
+            INFO_THERMO_FREE => {
+                if self.effective_bits() == 0 {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        "no bits erased: the process can be run with zero dissipation",
+                    )
+                    .with_evidence([format!("Landauer floor E_min = {e:.3e} J")])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!(
+                            "erasing {} bit(s) forces at least {e:.3e} J of dissipation",
+                            self.effective_bits()
+                        ),
+                    )
+                    .with_evidence([
+                        "reversible computation (reversible=true / bits_erased=0) would make this holds"
+                            .to_string(),
+                    ])
+                }
+            }
+            _ => Verdict::inapplicable("claim not made by a Landauer engine"),
+        }
+    }
+}
+
 /// The computation experiment: a combinational circuit vs a Turing machine.
 pub fn computation() -> ExperimentReport {
     let theories: Vec<Box<dyn Theory>> = vec![
@@ -407,6 +620,56 @@ mod tests {
         assert_eq!(verdict(&tm, DETERMINISTIC), VerdictKind::Holds);
         tm.set("nondeterministic", KnobValue::Bool(true)).unwrap();
         assert_eq!(verdict(&tm, DETERMINISTIC), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn landauer_bound_is_computed_from_typed_constants() {
+        // One bit at 300 K: k_B·T·ln2 ≈ 2.87e-21 J. The value comes from the
+        // typed Boltzmann constant, so its units are checked at compile time.
+        let e = LandauerEngine::default();
+        let joules = e.landauer_energy().value();
+        let expected = 1.380_649e-23 * 300.0 * std::f64::consts::LN_2;
+        assert!((joules - expected).abs() < 1e-30, "got {joules}");
+        assert!((2.5e-21..3.2e-21).contains(&joules));
+    }
+
+    #[test]
+    fn erasing_bits_forces_dissipation() {
+        let e = LandauerEngine::default();
+        assert_eq!(verdict(&e, INFO_THERMO_FREE), VerdictKind::Fails);
+        // Landauer's principle itself always holds as a theorem.
+        assert_eq!(verdict(&e, INFO_LANDAUER_COST), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn reversibility_knob_removes_the_cost() {
+        // The cross-domain knob → verdict diff: reversible computation is free.
+        let mut e = LandauerEngine::default();
+        assert_eq!(verdict(&e, INFO_THERMO_FREE), VerdictKind::Fails);
+        assert!(e.landauer_energy().value() > 0.0);
+
+        e.set("reversible", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&e, INFO_THERMO_FREE), VerdictKind::Holds);
+        assert_eq!(e.landauer_energy().value(), 0.0);
+
+        // Setting bits_erased to 0 is the other route to a free process.
+        let mut e2 = LandauerEngine::default();
+        e2.set("bits_erased", KnobValue::UInt(0)).unwrap();
+        assert_eq!(verdict(&e2, INFO_THERMO_FREE), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn cost_scales_with_bits_and_temperature() {
+        let one = LandauerEngine::default();
+        let mut ten = LandauerEngine::default();
+        ten.set("bits_erased", KnobValue::UInt(10)).unwrap();
+        let r = ten.landauer_energy().value() / one.landauer_energy().value();
+        assert!((r - 10.0).abs() < 1e-9, "ratio {r}");
+
+        let mut hot = LandauerEngine::default();
+        hot.set("temperature_k", KnobValue::Float(600.0)).unwrap();
+        let r2 = hot.landauer_energy().value() / one.landauer_energy().value();
+        assert!((r2 - 2.0).abs() < 1e-9, "ratio {r2}");
     }
 
     #[test]

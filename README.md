@@ -67,6 +67,11 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly** (needs quantum statistics) |
 | `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2` |
 
+Domains also compose: `run landauer-engine` bridges computation and
+thermodynamics — erasing a bit costs `k_B·T·ln2` as a typed `Qty<Energy>`
+theorem, and `set landauer-engine reversible true` flips
+`info.thermodynamically-free` `fails → holds`.
+
 `physis epistemics` tallies the whole lab's knowledge state by epistemic tag
 (currently ~60 theorems alongside encoded-facts, conjectures, heuristics, and
 honestly-`open` problems). `physis --json <command>` emits the typed matrices and

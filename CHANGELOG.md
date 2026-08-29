@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Domain reuse
 
+- **Landauer's principle: a computation ↔ thermodynamics bridge**
+  (`crates/physis-theory/src/computation.rs`, `specs/009-computation.md`).
+  New `landauer-engine` theory — the first object that reuses substrate from two
+  domains at once. Erasing a logical bit dissipates at least `k_B·T·ln2` of
+  energy (Landauer 1961); a logically reversible computation erases nothing and
+  can be free (Bennett 1973). The bound is **computed from the typed Boltzmann
+  constant**, so its units are checked at compile time: `k_boltzmann()` (J/K) ×
+  `kelvin(T)` (K) × `N·ln2` is a `Qty<Energy>`. `info.landauer-cost` holds as a
+  theorem with the computed floor as evidence (one bit at 300 K = `2.871e-21 J`),
+  and `set landauer-engine reversible true` flips `info.thermodynamically-free`
+  `fails → holds` — a cross-domain knob → verdict diff. Knobs: `temperature_k`,
+  `bits_erased`, `reversible`. Registered in `Lab::standard()`. Verified: five
+  new tests (typed-energy bound, erasure forces dissipation, reversibility knob
+  removes it, linear scaling in bits and temperature), `fmt`, `clippy -D
+  warnings`, full workspace suite, and the CLI knob diff.
+
 - **Quantum foundations: a fifth domain (CHSH Bell test)**
   (`crates/physis-theory/src/quantum.rs`, new `specs/012-quantum-foundations.md`).
   New `bell-test` theory and `physis experiment bell`, giving the `quantum` layer
