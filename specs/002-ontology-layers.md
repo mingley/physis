@@ -16,7 +16,7 @@ Finest to coarsest:
 | particle | spectrum | SM catalog + graviton |
 | interaction | gauge groups, couplings | `GaugeGroup`, SM embed table |
 | effective | cutoffs, compactification radii | hidden-extra-dims claim |
-| statistical | temperature, ensembles | ideal gas (`thermo` lab, `specs/011`) |
+| statistical | temperature, ensembles | ideal gas (`thermo` lab, `specs/011`); cavity radiation (`blackbody` lab, `specs/016`) |
 | information | records, computation | journal is the seed |
 | agent | observers who turn knobs | `Lab`, protocol |
 
@@ -52,6 +52,6 @@ That coupling is the product. If a knob is dead — no claim can see it — it i
 ## Future layers (not v0)
 
 - A real field layer: typed Lagrangians, gauge covariant derivatives
-- Statistical mechanics / thermodynamics for electricity and materials
+- Statistical mechanics / thermodynamics for electricity and materials (ideal gas and cavity radiation now live here; more equations of state later)
 - Information / computation as a domain reuse (see `specs/007-reuse-domains.md`)
 - Continuum QFT (almost certainly never “full”; finite modes first)

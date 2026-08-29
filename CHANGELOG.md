@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Rayleigh–Jeans vs Planck: the ultraviolet catastrophe as a computed theorem**
+  (`crates/physis-theory/src/blackbody.rs`, `specs/016-blackbody.md`, typed
+  `EnergyDensity` / `StefanBoltzmann` in `physis-core`). Classical equipartition
+  of electromagnetic cavity modes is a first-class theory (`rayleigh-jeans`):
+  it *holds* `thermo.mode-equipartition` and **fails** finite energy, the T⁴
+  law, and Wien's peak — `u(2ν_max)/u(ν_max) = 8` and `u(2T)/u(T) = 2`, not 16.
+  Planck's Bose occupation (`planck`) reverses the matrix: UV modes freeze out,
+  `u = a T⁴` matches the typed Stefan–Boltzmann constant derived from exact SI
+  `h`, `k_B`, `c`, and `λ_max T` matches `hc/(k x)`. `set planck quantum false`
+  restores the catastrophe. Verified: Bose integral `π⁴/15`, numeric `u` vs
+  analytic `aT⁴`, RJ octupling, Wien temperature-independence, lab knob-diff,
+  `fmt`, `clippy -D warnings`, full suite, and the CLI experiment.
+
 - **Two-loop RG running for gauge-coupling unification**
   (`crates/physis-theory/src/rge.rs`, `crates/physis-theory/src/gut.rs`,
   `specs/013-grand-unification.md`). `GaugeRunning` now integrates the *coupled

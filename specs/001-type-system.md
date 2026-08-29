@@ -16,6 +16,12 @@ SI<M, L, T, I, Θ, N, J>
 - Division *subtracts* exponents (type-level `Sub`).
 - Scaling by `f64` preserves `D`.
 
+Named derived dimensions used by the lab include `Action` (`h`, `ħ`),
+`EnergyDensity` (same exponents as `Pressure`: J/m³ = Pa),
+`SpectralEnergyDensity` (J m⁻³ Hz⁻¹), `StefanBoltzmann` (W m⁻² K⁻⁴), and
+`RadiationConstant` (`a` in `u = a T⁴`). Energy density is *not* energy:
+assigning one to the other is a compile-fail contract.
+
 Numeric payload is `f64` in SI base units. Uncertainty is not in `Qty`; it belongs on claims.
 
 ## Why typenum

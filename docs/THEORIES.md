@@ -20,6 +20,10 @@ A scaffold for programs that say: start from geometry, demand uniqueness, try to
 
 This object exists so uniqueness can sit on the same matrix as the string landscape without anyone pretending a podcast is a proof.
 
+## Cavity radiation
+
+**Rayleigh–Jeans** is classical equipartition applied to electromagnetic cavity modes — a standing 19th-century theory. It holds its axiom (`thermo.mode-equipartition`) and fails the observations (finite energy, Stefan–Boltzmann T⁴, Wien peak). **Planck** replaces the mode energy with Bose occupation; the same typed integrals then hold those observations and fail classical equipartition. `set planck quantum false` is the 1900 revolution run backwards.
+
 ## Adding one
 
 Implement `Knobbed + Theory`, reuse claim ids, add a knob-diff test, register in `Lab::standard` only if it belongs in the default comparison.

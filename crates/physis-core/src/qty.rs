@@ -10,8 +10,8 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 use typenum::Z0;
 
 use crate::dim::{
-    Acceleration, Charge, Current, Dimensionless, Energy, Force, Frequency, HasDim, Length, Mass,
-    Power, Pressure, Temperature, Time, Velocity, SI,
+    Acceleration, Charge, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency, HasDim,
+    Length, Mass, Power, Pressure, Temperature, Time, Velocity, SI,
 };
 
 /// A scalar with a type-level SI dimension.
@@ -219,8 +219,12 @@ pub fn joule(v: f64) -> Qty<Energy> {
 pub fn watt(v: f64) -> Qty<Power> {
     Qty::new(v)
 }
-/// Pascals.
+/// Pascals (also joules per cubic metre: energy density shares this dimension).
 pub fn pascal(v: f64) -> Qty<Pressure> {
+    Qty::new(v)
+}
+/// Joules per cubic metre. Same SI dimension as [`pascal`].
+pub fn joules_per_cubic_meter(v: f64) -> Qty<EnergyDensity> {
     Qty::new(v)
 }
 /// Hertz.
@@ -274,5 +278,13 @@ mod tests {
         let s = format!("{e}");
         assert!(s.contains("kg"));
         assert!(s.contains("m^2"));
+    }
+
+    #[test]
+    fn energy_density_times_volume_is_energy() {
+        let u = joules_per_cubic_meter(3.0);
+        let side = meters(2.0);
+        let energy: Qty<Energy> = u * side * side * side;
+        assert!((energy.value() - 24.0).abs() < 1e-12);
     }
 }

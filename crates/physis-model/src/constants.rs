@@ -4,15 +4,23 @@
 //! They are *knobs of nature* in a deeper theory; here they are constants
 //! so that theories can be compared against the same measuring sticks.
 
-use physis_core::dim::{Dimensionless, Energy, Length, Mass, Time, Velocity};
+use physis_core::dim::{
+    Action, Dimensionless, Energy, EnergyDensity, Length, Mass, RadiationConstant, StefanBoltzmann,
+    Time, Velocity,
+};
 use physis_core::qty::{kg, meters, seconds, Qty};
 
 /// Speed of light in vacuum (exact, SI).
 pub const C: Qty<Velocity> = Qty::new(299_792_458.0);
 
 /// Planck constant over 2π, J·s = kg m² s⁻¹.
-pub fn hbar() -> Qty<physis_core::SI<typenum::P1, typenum::P2, typenum::N1>> {
+pub fn hbar() -> Qty<Action> {
     Qty::new(1.054_571_817e-34)
+}
+
+/// Planck constant h (exact, SI 2019). Units: J·s = kg m² s⁻¹.
+pub fn planck_h() -> Qty<Action> {
+    Qty::new(6.626_070_15e-34)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -86,6 +94,29 @@ pub fn z_mass_gev() -> Qty<Dimensionless> {
 pub fn k_boltzmann(
 ) -> Qty<physis_core::SI<typenum::P1, typenum::P2, typenum::N2, typenum::Z0, typenum::N1>> {
     Qty::new(1.380_649e-23)
+}
+
+/// Stefan–Boltzmann constant σ = 2π⁵ k⁴ / (15 h³ c²), derived from the exact
+/// SI values of h, k_B, and c. Units: W m⁻² K⁻⁴.
+pub fn stefan_boltzmann_constant() -> Qty<StefanBoltzmann> {
+    let k = k_boltzmann();
+    let h = planck_h();
+    let k4 = k * k * k * k;
+    let h3 = h * h * h;
+    let c2 = C * C;
+    k4 / (h3 * c2) * (2.0 * std::f64::consts::PI.powi(5) / 15.0)
+}
+
+/// Radiation density constant `a = 4σ/c` so that a photon gas has `u = a T⁴`.
+/// Units: J m⁻³ K⁻⁴.
+pub fn radiation_density_constant() -> Qty<RadiationConstant> {
+    stefan_boltzmann_constant() / C * 4.0
+}
+
+/// Photon-gas energy density `u = a T⁴` (Planck, infinite bandwidth).
+pub fn planck_energy_density(temperature: Qty<physis_core::Temperature>) -> Qty<EnergyDensity> {
+    let t2 = temperature * temperature;
+    radiation_density_constant() * t2 * t2
 }
 
 /// Vacuum permittivity ε₀ (F/m), CODATA. Units: A²·s⁴·kg⁻¹·m⁻³.
@@ -177,5 +208,33 @@ mod tests {
         let e = rest_energy(electron_mass());
         let dimensionless: Qty<Dimensionless> = fermi_coupling() * e * e;
         assert!(dimensionless.value() > 0.0 && dimensionless.value().is_finite());
+    }
+
+    #[test]
+    fn planck_h_is_two_pi_hbar() {
+        let ratio = planck_h().value() / (std::f64::consts::TAU * hbar().value());
+        assert!(
+            (ratio - 1.0).abs() < 1e-9,
+            "h / (2π ħ) = {ratio} (should be 1)"
+        );
+    }
+
+    #[test]
+    fn stefan_boltzmann_matches_codata() {
+        // Derived from exact h, k, c; CODATA 2018/2019 value 5.670374419e-8.
+        let sigma = stefan_boltzmann_constant().value();
+        assert!(
+            (sigma - 5.670_374_419e-8).abs() / 5.670_374_419e-8 < 1e-9,
+            "σ = {sigma}"
+        );
+    }
+
+    #[test]
+    fn planck_energy_density_is_typed_and_finite() {
+        use physis_core::qty::kelvin;
+        let u = planck_energy_density(kelvin(5000.0));
+        // a T⁴ ≈ 7.5657e-16 * 6.25e14 ≈ 0.473 J/m³.
+        assert!(u.value() > 0.4 && u.value() < 0.55, "u = {}", u.value());
+        assert!(u.value().is_finite());
     }
 }

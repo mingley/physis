@@ -6,6 +6,7 @@ use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::KnobValue;
+use physis_theory::blackbody::Blackbody;
 use physis_theory::computation::{CombinationalCircuit, LandauerEngine, TuringMachine};
 use physis_theory::continuum::KleinGordonField;
 use physis_theory::critique::diff_verdicts;
@@ -48,6 +49,10 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
     (
         "thermo",
         "thermodynamics: a classical ideal gas and its three laws",
+    ),
+    (
+        "blackbody",
+        "cavity radiation: Rayleigh–Jeans vs Planck (ultraviolet catastrophe)",
     ),
     (
         "bell",
@@ -102,6 +107,9 @@ impl Lab {
         lab.insert(Box::new(WilsonSun::su3()));
         // Fourth domain: thermodynamics on the statistical layer.
         lab.insert(Box::new(IdealGas::default()));
+        // Standing 19th-c theory on trial: Rayleigh–Jeans vs Planck.
+        lab.insert(Box::new(Blackbody::rayleigh_jeans()));
+        lab.insert(Box::new(Blackbody::planck()));
         // Fifth domain: quantum foundations (a CHSH Bell test).
         lab.insert(Box::new(BellTest::default()));
         // Pure mathematics: discrete exterior calculus / de Rham cohomology.
@@ -236,6 +244,11 @@ impl Lab {
             }
             "thermo" => {
                 let report = physis_theory::thermodynamics();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "blackbody" => {
+                let report = physis_theory::blackbody();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
@@ -475,6 +488,24 @@ mod tests {
         assert!(text.contains("total claim-evaluations:"));
         // The lab has computed theorems, so the theorem row must be non-empty.
         assert!(text.contains("open") || text.contains("conjecture"));
+    }
+
+    #[test]
+    fn turning_planck_quantum_off_restores_the_uv_catastrophe() {
+        let mut lab = Lab::standard();
+        let diffs = lab.set_knob("planck", "quantum", "false").unwrap().2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "thermo.uv-finite"
+                && d.from == VerdictKind::Holds
+                && d.to == VerdictKind::Fails),
+            "expected uv-finite Holds→Fails, got {diffs:?}"
+        );
+        assert!(
+            diffs.iter().any(|d| d.claim == "thermo.mode-equipartition"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected mode-equipartition Fails→Holds, got {diffs:?}"
+        );
     }
 
     #[test]

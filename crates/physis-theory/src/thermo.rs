@@ -6,7 +6,11 @@
 //! keeps kelvin and joules apart, and (c) record an honest failure: the
 //! *classical* ideal gas violates the third law of thermodynamics.
 //!
-//! Like computation, thermodynamics has no spacetime/gauge/spectrum, so it
+//! Cavity radiation — the ultraviolet catastrophe that killed Rayleigh–Jeans —
+//! lives in [`crate::blackbody`]: same statistical layer, a different standing
+//! theory on trial.
+//!
+//! Like computation, the ideal gas has no spacetime/gauge/spectrum, so it
 //! returns `None` from `Theory::world()` and describes itself via `note`.
 
 use physis_core::claim::{Claim, Epistemic, Verdict};

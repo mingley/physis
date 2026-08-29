@@ -10,7 +10,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use typenum::{Integer, N1, N2, N3, P1, P2, Z0};
+use typenum::{Integer, N1, N2, N3, N4, P1, P2, Z0};
 
 /// SI dimension vector as a zero-sized type.
 ///
@@ -161,6 +161,18 @@ pub type Pressure = SI<P1, N1, N2>;
 pub type Frequency = SI<Z0, Z0, N1>;
 /// Electric charge, `I T`.
 pub type Charge = SI<Z0, Z0, P1, P1>;
+/// Action / angular momentum, `M L² T⁻¹` (Planck's constant).
+pub type Action = SI<P1, P2, N1>;
+/// Energy density, `M L⁻¹ T⁻²` (J/m³). Same dimension as [`Pressure`].
+pub type EnergyDensity = Pressure;
+/// Spectral energy density per unit frequency, `M L⁻¹ T⁻¹` (J m⁻³ Hz⁻¹).
+pub type SpectralEnergyDensity = SI<P1, N1, N1>;
+/// Stefan–Boltzmann constant, `M T⁻³ Θ⁻⁴` (W m⁻² K⁻⁴).
+pub type StefanBoltzmann = SI<P1, Z0, N3, Z0, N4>;
+/// Radiation density constant `a` in `u = a T⁴`, `M L⁻¹ T⁻² Θ⁻⁴` (J m⁻³ K⁻⁴).
+pub type RadiationConstant = SI<P1, N1, N2, Z0, N4>;
+/// Wien displacement product `λ T`, `L Θ` (m·K).
+pub type LengthTemperature = SI<Z0, P1, Z0, Z0, P1>;
 
 #[cfg(test)]
 mod tests {
@@ -180,5 +192,15 @@ mod tests {
         let d = <Dimensionless as HasDim>::exponents();
         assert!(d.is_dimensionless());
         assert_eq!(format!("{d}"), "1");
+    }
+
+    #[test]
+    fn energy_density_matches_pressure() {
+        let u = <EnergyDensity as HasDim>::exponents();
+        let p = <Pressure as HasDim>::exponents();
+        assert_eq!(u, p);
+        assert_eq!(u.mass, 1);
+        assert_eq!(u.length, -1);
+        assert_eq!(u.time, -2);
     }
 }

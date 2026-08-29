@@ -22,7 +22,7 @@ A claim names a layer. A knob names a layer. Worlds are slices across layers. Wh
 
 **effective.** Compactification radius vs collider scales (heuristic).
 
-**statistical.** Empty. Needed for electricity/thermo.
+**statistical.** Ideal gas (`thermo`) and cavity radiation (`blackbody`): temperature, ensembles, and the ultraviolet catastrophe. Energy density is a distinct type from energy.
 
 **information.** The journal is the embryo.
 

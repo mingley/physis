@@ -65,6 +65,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `field-modes` | a Klein–Gordon scalar field on a lattice — computed dispersion, second-order accuracy, and a tachyon from `mass² < 0` |
 | `gauge-lattice` | compact U(1) vs SU(2)/SU(3) — asymptotic freedom, a computed strong-coupling area law, and the 4D mass gap as a `conjecture` |
 | `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly** (needs quantum statistics) |
+| `blackbody` | cavity radiation — **Rayleigh–Jeans fails** finite energy, T⁴, and Wien's peak; Planck holds them; `set planck quantum false` restores the ultraviolet catastrophe |
 | `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2` |
 
 Domains also compose: `run landauer-engine` bridges computation and
@@ -104,6 +105,8 @@ cargo run -p physis -- experiment computation
 cargo run -p physis -- experiment field-modes
 cargo run -p physis -- experiment gauge-lattice
 cargo run -p physis -- experiment thermo
+cargo run -p physis -- experiment blackbody
+cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
 cargo run -p physis -- experiment bell
 cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time

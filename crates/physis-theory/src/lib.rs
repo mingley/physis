@@ -13,6 +13,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod blackbody;
 pub mod claims;
 pub mod computation;
 pub mod continuum;
@@ -32,6 +33,7 @@ pub mod strings;
 pub mod target;
 pub mod thermo;
 
+pub use blackbody::{blackbody, Blackbody};
 pub use computation::computation;
 pub use continuum::field_modes;
 pub use critique::{string_critique, ExperimentReport, TheoryReport, VerdictDiff};

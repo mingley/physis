@@ -60,3 +60,4 @@ physis set ideal-gas volume_ratio 0.5   # a compression: second-law flips to fai
 
 - `specs/002-ontology-layers.md` (the `statistical` layer)
 - `specs/007-reuse-domains.md` (how domains are added)
+- `specs/016-blackbody.md` (Rayleigh–Jeans vs Planck on the same layer)

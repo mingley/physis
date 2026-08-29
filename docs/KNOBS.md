@@ -48,6 +48,12 @@ The total geometric dimension is `observed_dim + fibre_dim` (default `4 + 10 = 1
 not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 `empirical.sm-gauge` fail: Spin(10) has no geometric room in a smaller fibre.
 
+### blackbody (`planck`, `rayleigh-jeans`)
+- `quantum` — Planck (true) vs Rayleigh–Jeans (false). Turning `planck`'s
+  `quantum` off restores the ultraviolet catastrophe.
+- `temperature` — cavity temperature (K)
+- `cutoff_hz` — ultraviolet frequency cutoff (Hz). Classical `u ∝ ν_max³`.
+
 ## Dead knobs
 
 If you find a knob that no claim reads, either wire it or delete it. v0 `cosmological_constant` is *weakly* dead (it appears in the world note, not in a verdict). That is an accepted M0 hole; M1 should give Λ a claim or drop the knob.
