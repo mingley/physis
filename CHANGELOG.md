@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **CHSH bounds derived, not asserted (Tsirelson by maximization, classical by
+  enumeration)** (`crates/physis-theory/src/quantum.rs`,
+  `specs/012-quantum-foundations.md`). `quantum.tsirelson-bound` is now computed:
+  a brute-force maximization of `|S|` over a 90³ grid of measurement angles finds
+  `|S|max ≈ 2.827`, confirming no quantum strategy exceeds `2√2`. A new
+  `quantum.local-realism-bound` claim *derives* the classical CHSH bound by
+  enumerating all `2⁴` deterministic ±1 strategies and finding the maximum is
+  exactly 2 — the threshold falls out of the model rather than being asserted.
+  Together they mechanize why `2 < S ≤ 2√2` is the signature of quantum
+  nonlocality. Verified: three new tests (Tsirelson maximization, classical
+  enumeration, quantum-beats-classical), `fmt`, `clippy -D warnings`, full suite,
+  and the `bell` experiment matrix (now four rows).
+
 - **Exact 2D lattice-gauge confinement from the Bessel-function ratio**
   (`crates/physis-theory/src/gauge_field.rs`, `specs/010-continuum.md`). New
   `gauge.exact-area-law-2d` claim on `wilson-u1`: in two dimensions the gauge

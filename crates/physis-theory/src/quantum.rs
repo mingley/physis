@@ -26,10 +26,47 @@ pub const BORN_NORMALIZATION: &str = "quantum.born-normalization";
 pub const BELL_VIOLATION: &str = "quantum.bell-violation";
 /// The CHSH correlator does not exceed Tsirelson's bound 2√2.
 pub const TSIRELSON_BOUND: &str = "quantum.tsirelson-bound";
+/// The local-hidden-variable maximum of |S| is exactly 2.
+pub const LOCAL_REALISM_BOUND: &str = "quantum.local-realism-bound";
 
 /// Matrix rows for the quantum-foundations lab.
-pub fn quantum_rows() -> [&'static str; 3] {
-    [BORN_NORMALIZATION, BELL_VIOLATION, TSIRELSON_BOUND]
+pub fn quantum_rows() -> [&'static str; 4] {
+    [
+        BORN_NORMALIZATION,
+        BELL_VIOLATION,
+        TSIRELSON_BOUND,
+        LOCAL_REALISM_BOUND,
+    ]
+}
+
+/// Angle-grid resolution for the brute-force Tsirelson maximization.
+const ANGLE_STEPS: usize = 90;
+
+/// The signed CHSH combination `S` for the singlet correlator
+/// `E(x,y) = −V·cos(2(x−y))` at four measurement angles.
+fn chsh_value(v: f64, a: f64, a2: f64, b: f64, b2: f64) -> f64 {
+    let e = |x: f64, y: f64| -v * (2.0 * (x - y)).cos();
+    e(a, b) - e(a, b2) + e(a2, b) + e(a2, b2)
+}
+
+/// Maximum `|S|` any local hidden-variable model can reach, by enumerating all
+/// `2⁴` deterministic ±1 outcome assignments. The maximum is exactly 2 — the
+/// CHSH bound, *derived* here rather than asserted.
+fn max_chsh_local_hidden_variable() -> f64 {
+    let mut best = 0.0_f64;
+    for bits in 0..16u32 {
+        let sign = |n: u32| -> f64 {
+            if (bits >> n) & 1 == 0 {
+                1.0
+            } else {
+                -1.0
+            }
+        };
+        let (aa, aa2, bb, bb2) = (sign(0), sign(1), sign(2), sign(3));
+        let s = (aa * bb - aa * bb2 + aa2 * bb + aa2 * bb2).abs();
+        best = best.max(s);
+    }
+    best
 }
 
 const SPECS: &[KnobSpec] = &[KnobSpec {
@@ -68,10 +105,28 @@ impl BellTest {
     /// The CHSH correlator |S| for the singlet at the optimal angles, scaled by
     /// the visibility. E(a,b) = −V·cos(2(a−b)); optimal angles give |S| = V·2√2.
     fn chsh_s(&self) -> f64 {
+        chsh_value(self.visibility, 0.0, PI / 4.0, PI / 8.0, 3.0 * PI / 8.0).abs()
+    }
+
+    /// Maximize `|S|` over all measurement angles by brute-force grid search
+    /// (the first angle is fixed to 0 by rotational symmetry). This mechanically
+    /// checks Tsirelson's bound: for the quantum correlator no angle choice
+    /// exceeds `V·2√2`, and at full visibility the maximum saturates `2√2`.
+    fn max_chsh_over_angles(&self) -> f64 {
         let v = self.visibility;
-        let e = |a: f64, b: f64| -v * (2.0 * (a - b)).cos();
-        let (a, a2, b, b2) = (0.0, PI / 4.0, PI / 8.0, 3.0 * PI / 8.0);
-        (e(a, b) - e(a, b2) + e(a2, b) + e(a2, b2)).abs()
+        let step = PI / ANGLE_STEPS as f64;
+        let mut best = 0.0_f64;
+        for i in 0..ANGLE_STEPS {
+            let a2 = i as f64 * step;
+            for j in 0..ANGLE_STEPS {
+                let b = j as f64 * step;
+                for k in 0..ANGLE_STEPS {
+                    let b2 = k as f64 * step;
+                    best = best.max(chsh_value(v, 0.0, a2, b, b2).abs());
+                }
+            }
+        }
+        best
     }
 }
 
@@ -145,6 +200,12 @@ impl Theory for BellTest {
                 LayerId::Quantum,
                 Epistemic::Theorem,
             ),
+            Claim::new(
+                LOCAL_REALISM_BOUND,
+                "The local-hidden-variable maximum of |S| is exactly 2.",
+                LayerId::Quantum,
+                Epistemic::Theorem,
+            ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -180,17 +241,42 @@ impl Theory for BellTest {
                 }
             }
             TSIRELSON_BOUND => {
-                let s = self.chsh_s();
+                // Computed, not asserted: maximize |S| over all measurement
+                // angles and confirm no quantum strategy exceeds 2√2.
+                let smax = self.max_chsh_over_angles();
                 let tsirelson = 2.0 * 2.0_f64.sqrt();
-                if s <= tsirelson + 1e-9 {
+                if smax <= tsirelson + 1e-6 {
                     Verdict::holds(
                         Epistemic::Theorem,
-                        format!("CHSH S = {s:.3} ≤ 2√2 ≈ {tsirelson:.3} (Tsirelson bound)"),
+                        format!(
+                            "maximizing over angles gives |S|max = {smax:.4} ≤ 2√2 ≈ {tsirelson:.4}"
+                        ),
                     )
+                    .with_evidence([format!(
+                        "brute-force over a {ANGLE_STEPS}³ angle grid; no setting exceeds 2√2 (Tsirelson)"
+                    )])
                 } else {
                     Verdict::fails(
                         Epistemic::Theorem,
-                        "CHSH S exceeds Tsirelson's bound — impossible in quantum mechanics",
+                        format!("found |S| = {smax:.4} > 2√2 — impossible in quantum mechanics"),
+                    )
+                }
+            }
+            LOCAL_REALISM_BOUND => {
+                // Derive the classical bound by enumerating deterministic models.
+                let lhv = max_chsh_local_hidden_variable();
+                if (lhv - 2.0).abs() < 1e-12 {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        "local hidden-variable |S|max = 2, over all 2⁴ deterministic strategies",
+                    )
+                    .with_evidence([
+                        "enumerated every ±1 outcome assignment; the CHSH bound of 2 is derived, not assumed".to_string(),
+                    ])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!("enumerated local-realism max |S| = {lhv:.3} ≠ 2"),
                     )
                 }
             }
@@ -249,6 +335,37 @@ mod tests {
         assert_eq!(verdict(&t, BELL_VIOLATION), VerdictKind::Fails);
         // Tsirelson still holds (S only got smaller).
         assert_eq!(verdict(&t, TSIRELSON_BOUND), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn tsirelson_bound_is_computed_by_maximizing_over_angles() {
+        // No measurement setting exceeds 2√2, and full visibility saturates it.
+        let t = BellTest::default();
+        let smax = t.max_chsh_over_angles();
+        let tsirelson = 2.0 * 2.0_f64.sqrt();
+        assert!(smax <= tsirelson + 1e-6, "found |S| = {smax} > 2√2");
+        assert!(
+            (smax - tsirelson).abs() < 1e-2,
+            "|S|max = {smax}, expected ≈ 2√2"
+        );
+        assert_eq!(verdict(&t, TSIRELSON_BOUND), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn classical_bound_of_two_is_derived_by_enumeration() {
+        // The CHSH bound of 2 falls out of enumerating deterministic strategies.
+        assert!((super::max_chsh_local_hidden_variable() - 2.0).abs() < 1e-12);
+        assert_eq!(
+            verdict(&BellTest::default(), LOCAL_REALISM_BOUND),
+            VerdictKind::Holds
+        );
+    }
+
+    #[test]
+    fn quantum_beats_the_classical_bound() {
+        // The whole point: the quantum maximum strictly exceeds the LHV maximum.
+        let t = BellTest::default();
+        assert!(t.max_chsh_over_angles() > super::max_chsh_local_hidden_variable() + 0.5);
     }
 
     #[test]

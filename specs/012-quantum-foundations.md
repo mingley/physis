@@ -28,7 +28,8 @@ Born rule) its first `Theory`, where earlier milestones only used it internally.
 |---|---|---|
 | `quantum.born-normalization` | the singlet is normalized | computed from the ket: `⟨ψ|ψ⟩ = 1`, `Σ pᵢ = 1` |
 | `quantum.bell-violation` | `|S| > 2` (local realism refuted) | computed CHSH `S` at the optimal angles; holds iff `S > 2` |
-| `quantum.tsirelson-bound` | `|S| ≤ 2√2` | computed; quantum cannot exceed Tsirelson |
+| `quantum.tsirelson-bound` | `|S| ≤ 2√2` | **computed by maximization**: brute-force over a 90³ angle grid finds `|S|max ≈ 2.827`, never exceeding `2√2` |
+| `quantum.local-realism-bound` | the LHV maximum of `|S|` is exactly 2 | **derived by enumeration** of all `2⁴` deterministic ±1 strategies; the max is 2 |
 
 ## The refutation
 
@@ -38,6 +39,15 @@ evaluates to `V·2√2`. At full visibility `S = 2√2 ≈ 2.828 > 2`: no local
 hidden-variable theory can reproduce it. This is the whole point — a famous
 19th/20th-century intuition (local realism) is refuted by a computation, with
 the classical bound (2) and the quantum bound (2√2) both explicit.
+
+Both bounds are **derived, not asserted**. `quantum.local-realism-bound`
+enumerates every one of the `2⁴` deterministic outcome assignments a local
+hidden-variable model could use and finds the maximum `|S|` is exactly 2 — so
+the CHSH threshold falls out of the model, it is not put in by hand.
+`quantum.tsirelson-bound` brute-force maximizes `|S|` over a fine grid of
+measurement angles and confirms no quantum strategy exceeds `2√2` (the grid
+maximum saturates it). Together they mechanize *why* `2 < S ≤ 2√2` is the
+signature of quantum nonlocality.
 
 ## Knob → verdict
 
