@@ -37,6 +37,8 @@ computes topology: the first Betti number counts holes, and whether every closed
 | `dec.d-squared-zero` | `d ∘ d = 0` | `d₁(d₀ f) = 0` for every basis 0-form, exactly |
 | `dec.first-betti-number` | the number of holes `b₁` | `b₁ = n_edges − rank(d₁) − rank(d₀)`, ranks by Gaussian elimination |
 | `dec.closed-equals-exact` | every closed 1-form is exact (Poincaré) | holds iff `b₁ = 0` |
+| `dec.euler-poincare` | `V−E+F = b₀−b₁+b₂` | the Euler characteristic computed two independent ways, checked equal |
+| `dec.hodge-harmonic` | `dim(harmonic 1-forms) = b₁` (Hodge) | nullity of the Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁`, checked against `b₁` |
 
 ## Type-level grade
 
@@ -77,10 +79,27 @@ number, computed from the ranks of the incidence matrices, jumps `0 → 1`, and
 exact now exists. Topology is detected mechanically, by linear algebra on the
 coboundary.
 
+## Two invariants cross-checked
+
+Two more theorems each compute a classical invariant *two independent ways* and
+check they agree — the kind of redundant, mechanical cross-check the lab is for:
+
+- **Euler–Poincaré** (`dec.euler-poincare`): the Euler characteristic from cell
+  counts, `χ = V − E + F`, equals the alternating sum of Betti numbers,
+  `b₀ − b₁ + b₂`. Disk: `χ = 1`; circle: `χ = 0` — both agree on both sides.
+- **Hodge theorem** (`dec.hodge-harmonic`): the dimension of harmonic 1-forms —
+  the nullity of the combinatorial Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁` — equals
+  `b₁`. Disk: `0`; circle: `1`. Harmonic representatives ≅ cohomology, computed
+  from the coboundary matrices.
+
+Both are identities, so they `hold` on the disk and the circle alike; only the
+numbers change with the `filled` knob.
+
 ## Non-goals (this milestone)
 
 - Higher-dimensional complexes (only vertices/edges/triangles, grades 0–2).
-- Hodge star, codifferential, and the Laplacian (a later increment).
+- The Hodge *star* and codifferential as first-class operators (the Laplacian
+  is built here directly from `d`; a metric-dependent star is a later increment).
 - General mesh input; the two complexes are the disk and the circle.
 
 ## Related

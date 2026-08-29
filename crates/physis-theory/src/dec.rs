@@ -208,6 +208,76 @@ impl Complex {
         let r1 = matrix_rank(self.d1_matrix());
         self.edges.len() - r1 - r0
     }
+
+    /// The second Betti number (enclosed voids). With no 3-cells,
+    /// `b₂ = n_triangles − rank(d₁)`.
+    pub fn betti2(&self) -> usize {
+        self.triangles.len() - matrix_rank(self.d1_matrix())
+    }
+
+    /// The Euler characteristic as the alternating sum of cell counts,
+    /// `χ = V − E + F`.
+    pub fn euler_from_cells(&self) -> i64 {
+        self.n_vertices as i64 - self.edges.len() as i64 + self.triangles.len() as i64
+    }
+
+    /// The Euler characteristic as the alternating sum of Betti numbers,
+    /// `χ = b₀ − b₁ + b₂` (the Euler–Poincaré theorem).
+    pub fn euler_from_betti(&self) -> i64 {
+        self.betti0() as i64 - self.betti1() as i64 + self.betti2() as i64
+    }
+
+    /// Dimension of the space of harmonic 1-forms, `dim ker Δ₁`, where the
+    /// combinatorial Hodge Laplacian is `Δ₁ = d₀ d₀ᵀ + d₁ᵀ d₁`. By the Hodge
+    /// theorem this equals `b₁`.
+    pub fn harmonic1_dim(&self) -> usize {
+        let n = self.edges.len();
+        let d0 = self.d0_matrix(); // edges × vertices
+        let down = matmul(&d0, &transpose(&d0)); // edges × edges
+                                                 // The "up" term d₁ᵀd₁ is the n×n zero matrix when there are no faces.
+        let up = if self.triangles.is_empty() {
+            vec![vec![0.0; n]; n]
+        } else {
+            let d1 = self.d1_matrix(); // triangles × edges
+            matmul(&transpose(&d1), &d1) // edges × edges
+        };
+        let laplacian = matadd(&down, &up);
+        n - matrix_rank(laplacian)
+    }
+}
+
+/// Transpose of a real matrix.
+fn transpose(m: &[Vec<f64>]) -> Vec<Vec<f64>> {
+    if m.is_empty() {
+        return Vec::new();
+    }
+    let (rows, cols) = (m.len(), m[0].len());
+    (0..cols)
+        .map(|c| (0..rows).map(|r| m[r][c]).collect())
+        .collect()
+}
+
+/// Product of two real matrices (`a` is `p×q`, `b` is `q×r`).
+fn matmul(a: &[Vec<f64>], b: &[Vec<f64>]) -> Vec<Vec<f64>> {
+    if a.is_empty() || b.is_empty() {
+        return Vec::new();
+    }
+    let (p, q, r) = (a.len(), b.len(), b[0].len());
+    (0..p)
+        .map(|i| {
+            (0..r)
+                .map(|j| (0..q).map(|k| a[i][k] * b[k][j]).sum())
+                .collect()
+        })
+        .collect()
+}
+
+/// Entrywise sum of two equally-shaped matrices.
+fn matadd(a: &[Vec<f64>], b: &[Vec<f64>]) -> Vec<Vec<f64>> {
+    a.iter()
+        .zip(b.iter())
+        .map(|(ra, rb)| ra.iter().zip(rb.iter()).map(|(x, y)| x + y).collect())
+        .collect()
 }
 
 /// Rank of a real matrix by Gaussian elimination with partial pivoting.
@@ -287,6 +357,10 @@ pub const D_SQUARED_ZERO: &str = "dec.d-squared-zero";
 pub const FIRST_BETTI: &str = "dec.first-betti-number";
 /// `dec.closed-equals-exact`.
 pub const CLOSED_EQUALS_EXACT: &str = "dec.closed-equals-exact";
+/// `dec.euler-poincare`.
+pub const EULER_POINCARE: &str = "dec.euler-poincare";
+/// `dec.hodge-harmonic`.
+pub const HODGE_HARMONIC: &str = "dec.hodge-harmonic";
 
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "filled",
@@ -370,6 +444,18 @@ impl Theory for DeRham {
                 LayerId::Mathematical,
                 Epistemic::Theorem,
             ),
+            Claim::new(
+                EULER_POINCARE,
+                "The Euler characteristic V−E+F equals b₀−b₁+b₂.",
+                LayerId::Mathematical,
+                Epistemic::Theorem,
+            ),
+            Claim::new(
+                HODGE_HARMONIC,
+                "The dimension of harmonic 1-forms equals b₁ (Hodge theorem).",
+                LayerId::Mathematical,
+                Epistemic::Theorem,
+            ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -439,6 +525,47 @@ impl Theory for DeRham {
                     ])
                 }
             }
+            EULER_POINCARE => {
+                let chi_cells = c.euler_from_cells();
+                let chi_betti = c.euler_from_betti();
+                if chi_cells == chi_betti {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        format!("χ = V−E+F = {chi_cells} = b₀−b₁+b₂ (Euler–Poincaré)"),
+                    )
+                    .with_evidence([format!(
+                        "V−E+F = {chi_cells}; b₀−b₁+b₂ = {chi_betti} (b₀={}, b₁={}, b₂={})",
+                        c.betti0(),
+                        c.betti1(),
+                        c.betti2()
+                    )])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!("χ mismatch: cells {chi_cells} ≠ Betti {chi_betti}"),
+                    )
+                }
+            }
+            HODGE_HARMONIC => {
+                let harmonic = c.harmonic1_dim();
+                let b1 = c.betti1();
+                if harmonic == b1 {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        format!(
+                            "dim(harmonic 1-forms) = {harmonic} = b₁ (Hodge: harmonic ≅ cohomology)"
+                        ),
+                    )
+                    .with_evidence([format!(
+                        "nullity of Δ₁ = d₀d₀ᵀ + d₁ᵀd₁ is {harmonic}, matching b₁ = {b1}"
+                    )])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!("harmonic 1-forms dim {harmonic} ≠ b₁ {b1}"),
+                    )
+                }
+            }
             _ => Verdict::inapplicable("claim not made by the de Rham object"),
         }
     }
@@ -491,6 +618,49 @@ mod tests {
     #[test]
     fn d_squared_zero_claim_holds() {
         assert_eq!(kind(&DeRham::default(), D_SQUARED_ZERO), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn euler_characteristic_agrees_two_ways() {
+        // V−E+F equals b₀−b₁+b₂ on both complexes (Euler–Poincaré).
+        for cx in [Complex::disk(), Complex::circle()] {
+            assert_eq!(cx.euler_from_cells(), cx.euler_from_betti());
+        }
+        assert_eq!(Complex::disk().euler_from_cells(), 1); // disk: χ = 1
+        assert_eq!(Complex::circle().euler_from_cells(), 0); // circle: χ = 0
+    }
+
+    #[test]
+    fn hodge_harmonic_dimension_equals_betti1() {
+        // The Hodge theorem: dim ker Δ₁ = b₁, computed from the Laplacian.
+        assert_eq!(Complex::disk().harmonic1_dim(), Complex::disk().betti1());
+        assert_eq!(
+            Complex::circle().harmonic1_dim(),
+            Complex::circle().betti1()
+        );
+        assert_eq!(Complex::circle().harmonic1_dim(), 1);
+        assert_eq!(Complex::disk().harmonic1_dim(), 0);
+    }
+
+    #[test]
+    fn euler_and_hodge_claims_hold_under_the_knob() {
+        let mut t = DeRham::default();
+        assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        // Both are identities: they still hold after removing the face.
+        t.set("filled", KnobValue::Bool(false)).unwrap();
+        assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn transpose_and_matmul_are_correct() {
+        let a = vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]; // 2×3
+        let at = transpose(&a);
+        assert_eq!(at, vec![vec![1.0, 4.0], vec![2.0, 5.0], vec![3.0, 6.0]]);
+        // a·aᵀ = [[14,32],[32,77]]
+        let prod = matmul(&a, &at);
+        assert_eq!(prod, vec![vec![14.0, 32.0], vec![32.0, 77.0]]);
     }
 
     #[test]

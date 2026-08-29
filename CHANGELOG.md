@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Euler–Poincaré and Hodge theorems on the de Rham complex**
+  (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). Two more
+  computed theorems on `de-rham`, each cross-checking a classical invariant two
+  independent ways: `dec.euler-poincare` confirms `χ = V−E+F = b₀−b₁+b₂` (Euler
+  characteristic from cell counts vs. from Betti numbers), and
+  `dec.hodge-harmonic` confirms `dim(harmonic 1-forms) = b₁` by computing the
+  nullity of the combinatorial Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁` and matching
+  it to the first Betti number (harmonic representatives ≅ cohomology). Added
+  `transpose`/`matmul`/`matadd` helpers and `betti2`/`euler_from_cells`/
+  `euler_from_betti`/`harmonic1_dim` to `Complex`. Disk: `χ=1`, harmonic dim `0`;
+  circle: `χ=0`, harmonic dim `1`. Verified: four new tests, `fmt`,
+  `clippy -D warnings`, full suite, and `run de-rham` across the `filled` knob.
+
 - **Discrete exterior calculus: `d²=0` and Betti numbers with type-level grade**
   (new `crates/physis-theory/src/dec.rs`, new `specs/015-exterior-calculus.md`).
   New `de-rham` theory on the mathematical layer. Differential-form grade is a
