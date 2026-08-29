@@ -1,11 +1,29 @@
 //! physis — turn knobs on typed theories of reality.
 
-use physis::Lab;
+use physis::{Journal, Lab};
 use physis_agent::Command;
 
 fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    let raw: Vec<String> = std::env::args().skip(1).collect();
+    let (journal_path, args) = extract_journal_opt(&raw);
+
     let mut lab = Lab::standard();
+    if let Some(path) = &journal_path {
+        match Journal::file(path) {
+            // Persist this session's new events to the file; existing history
+            // is loaded and replayed so `set` turns accumulate across process
+            // runs into one coherent, replayable session.
+            Ok(journal) => {
+                *lab.journal_mut() = journal;
+                lab.restore_from_journal();
+            }
+            Err(e) => {
+                eprintln!("error: cannot open journal '{path}': {e}");
+                std::process::exit(2);
+            }
+        }
+    }
+
     let cmd = match parse(&args) {
         Ok(c) => c,
         Err(help) => {
@@ -19,6 +37,17 @@ fn main() {
         physis_agent::Response::Err { message } => eprintln!("error: {message}"),
     }
     std::process::exit(response.exit_code());
+}
+
+/// Strip a leading `--journal <path>` (or `-j <path>`) option, returning the
+/// path and the remaining args. The option must precede the subcommand.
+fn extract_journal_opt(args: &[String]) -> (Option<String>, Vec<String>) {
+    if let Some(first) = args.first() {
+        if (first == "--journal" || first == "-j") && args.len() >= 2 {
+            return (Some(args[1].clone()), args[2..].to_vec());
+        }
+    }
+    (None, args.to_vec())
 }
 
 fn parse(args: &[String]) -> Result<Command, String> {
@@ -53,6 +82,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             Ok(Command::Experiment { id })
         }
         "journal" => Ok(Command::Journal),
+        "replay" => {
+            let path = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Replay { path })
+        }
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -61,6 +94,7 @@ fn usage() -> String {
     r#"physis — mechanically verifiable models of reality
 
 USAGE:
+    physis [--journal <file.jsonl>] <command>
     physis layers
     physis theories
     physis knobs [theory]
@@ -68,12 +102,15 @@ USAGE:
     physis set <theory> <knob> <value>
     physis experiment [string-critique]
     physis journal
+    physis replay <journal.jsonl>
 
 EXAMPLES:
     physis experiment string-critique
     physis run type-iib
     physis set type-iib total_dim 9
     physis set standard-model generations 2
+    physis --journal session.jsonl set type-iib total_dim 9
+    physis replay session.jsonl
 
 Theories: standard-model, general-relativity, type-iib,
           heterotic-e8e8, bosonic, observer-geometry

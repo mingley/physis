@@ -74,7 +74,7 @@ pub struct ExperimentReport {
 }
 
 /// A before/after verdict change after a knob turn.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerdictDiff {
     /// Claim id.
     pub claim: String,

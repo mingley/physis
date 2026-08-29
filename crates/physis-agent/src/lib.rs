@@ -9,7 +9,9 @@
 pub mod journal;
 pub mod lab;
 pub mod protocol;
+pub mod replay;
 
 pub use journal::{Journal, JournalEvent};
 pub use lab::Lab;
 pub use protocol::{Command, Response};
+pub use replay::{replay_journal, ReplayReport, ReplayStep};

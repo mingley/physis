@@ -14,6 +14,7 @@ use physis_theory::{
 
 use crate::journal::{Journal, JournalEvent};
 use crate::protocol::{Command, Response};
+use crate::replay::replay_journal;
 
 /// An agent-operable collection of theories.
 pub struct Lab {
@@ -108,15 +109,35 @@ impl Lab {
             .set(knob, value.clone())?;
         let after = self.theories[theory].evaluate_all();
         let diffs = diff_verdicts(&before, &after);
-        self.journal.record(JournalEvent::SetKnob {
-            t: 0,
-            theory: theory.into(),
-            knob: knob.into(),
-            from: old.clone(),
-            to: value.clone(),
-            diffs: diffs.clone(),
-        });
+        self.journal.record(JournalEvent::set_knob(
+            theory,
+            knob,
+            old.clone(),
+            value.clone(),
+            diffs.clone(),
+        ));
         Ok((old, value, diffs))
+    }
+
+    /// Re-apply the `set-knob` events already in the journal to theory state,
+    /// **without** recording them again.
+    ///
+    /// This resumes a persisted session: after loading a journal from a file,
+    /// call this so subsequent turns build on the prior ones instead of on
+    /// fresh defaults. It is what makes a multi-process `--journal` session a
+    /// single coherent, replayable session rather than a bag of independent
+    /// one-shot diffs.
+    pub fn restore_from_journal(&mut self) {
+        for ev in self.journal.events().to_vec() {
+            if let JournalEvent::SetKnob {
+                theory, knob, to, ..
+            } = ev
+            {
+                if let Ok(t) = self.theory_mut(&theory) {
+                    let _ = t.set(&knob, to);
+                }
+            }
+        }
     }
 
     /// Canonical experiment (fresh default knobs).
@@ -124,10 +145,7 @@ impl Lab {
         match id {
             "string-critique" => {
                 let report = string_critique();
-                self.journal.record(JournalEvent::Experiment {
-                    t: 0,
-                    id: id.into(),
-                });
+                self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
             other => Err(CoreError::UnknownTheory {
@@ -192,13 +210,8 @@ impl Lab {
                     ));
                 }
                 text.push_str(&format!("\nholds={holds} fails={fails} other={other}\n"));
-                self.journal.record(JournalEvent::Run {
-                    t: 0,
-                    theory: theory.clone(),
-                    holds,
-                    fails,
-                    other,
-                });
+                self.journal
+                    .record(JournalEvent::run(theory.clone(), holds, fails, other));
                 Response::ok(text)
             }
             Command::Set {
@@ -239,6 +252,31 @@ impl Lab {
                 Err(e) => Response::err(e.to_string()),
             },
             Command::Journal => Response::ok(self.journal.to_string()),
+            Command::Replay { path } => match std::fs::read_to_string(&path) {
+                Ok(contents) => {
+                    let (journal, malformed) = Journal::from_jsonl_counting(&contents);
+                    // Refuse to certify a journal we could not fully parse:
+                    // dropped lines would make an incomplete replay look faithful.
+                    if malformed > 0 {
+                        return Response::err(format!(
+                            "journal '{path}': {malformed} malformed line(s); refusing to certify replay"
+                        ));
+                    }
+                    let report = replay_journal(&journal);
+                    if report.is_empty() {
+                        return Response::err(format!(
+                            "journal '{path}': no set-knob events to replay"
+                        ));
+                    }
+                    // A non-faithful replay is a verification failure: exit non-zero.
+                    if report.faithful() {
+                        Response::ok(report.render())
+                    } else {
+                        Response::err(report.render())
+                    }
+                }
+                Err(e) => Response::err(format!("cannot read journal '{path}': {e}")),
+            },
         }
     }
 }
@@ -285,5 +323,44 @@ mod tests {
         assert!(diffs
             .iter()
             .any(|d| d.claim == "empirical.three-generations" && d.to == VerdictKind::Fails));
+    }
+
+    fn temp_path(tag: &str) -> std::path::PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        std::env::temp_dir().join(format!("physis_{tag}_{}_{nanos}.jsonl", std::process::id()))
+    }
+
+    #[test]
+    fn replay_command_rejects_malformed_journal() {
+        let path = temp_path("malformed");
+        std::fs::write(
+            &path,
+            "this is not json\n{\"event\":\"boot\",\"t\":1,\"theories\":[]}\n",
+        )
+        .unwrap();
+        let mut lab = Lab::standard();
+        let resp = lab.exec(Command::Replay {
+            path: path.to_string_lossy().into_owned(),
+        });
+        assert_eq!(resp.exit_code(), 1, "malformed journal must not certify");
+        assert!(resp.text().contains("malformed"));
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn replay_command_rejects_journal_with_no_turns() {
+        let path = temp_path("noturns");
+        // Only a boot event — nothing to verify.
+        std::fs::write(&path, "{\"event\":\"boot\",\"t\":1,\"theories\":[]}\n").unwrap();
+        let mut lab = Lab::standard();
+        let resp = lab.exec(Command::Replay {
+            path: path.to_string_lossy().into_owned(),
+        });
+        assert_eq!(resp.exit_code(), 1, "empty session must not certify");
+        assert!(resp.text().contains("no set-knob events"));
+        let _ = std::fs::remove_file(&path);
     }
 }

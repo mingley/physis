@@ -37,6 +37,11 @@ pub enum Command {
     },
     /// Dump the journal.
     Journal,
+    /// Replay a recorded JSONL journal and check it reproduces.
+    Replay {
+        /// Path to a JSONL journal file.
+        path: String,
+    },
 }
 
 /// Lab → agent.

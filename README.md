@@ -68,6 +68,10 @@ cargo run -p physis -- run type-iib
 cargo run -p physis -- set type-iib total_dim 9
 cargo run -p physis -- experiment string-critique
 cargo run -p physis --example kinetic_energy
+
+# record a session across runs, then mechanically verify it replays:
+cargo run -p physis -- --journal session.jsonl set type-iib total_dim 9
+cargo run -p physis -- replay session.jsonl
 ```
 
 Adding mass to length is a type error (this doctest is required to *fail* to compile):
