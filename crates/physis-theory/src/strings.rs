@@ -10,6 +10,8 @@ use physis_core::claim::{Claim, Epistemic, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::Scale;
+use physis_model::constants::planck_length;
 use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
 
 use crate::claims;
@@ -257,6 +259,11 @@ impl StringTheory {
     /// g_s inflates the effective size, making extra dimensions easier to see.
     fn effective_radius_planck(&self) -> f64 {
         self.compact_radius_planck * self.string_coupling().sqrt()
+    }
+
+    /// The effective compact radius as a typed physical length.
+    fn effective_radius(&self) -> physis_core::Qty<physis_core::Length> {
+        planck_length() * self.effective_radius_planck()
     }
 
     fn manifold(&self) -> Manifold {
@@ -624,27 +631,32 @@ impl Theory for StringTheory {
             }
             claims::HIDDEN_EXTRA_DIMS => {
                 let extra = self.extra();
-                let r_eff = self.effective_radius_planck();
+                // Typed lengths, not a magic float: an extra dimension is hidden
+                // while its effective radius stays below the shortest length we
+                // currently probe (the electroweak scale). The effective radius
+                // folds in the Kähler size and the dilaton (g_s) frame factor.
+                let r_eff = self.effective_radius();
+                let probe = Scale::Electroweak.typical_length();
                 if extra <= 0 {
                     Verdict::holds(Epistemic::Heuristic, "no extra dimensions to hide")
-                } else if r_eff <= 1e16 {
-                    // Extremely loose: Planck-to-electroweak is ~10^16 in length ratio-ish
-                    // (this is a placeholder scale cut, labelled Heuristic). The effective
-                    // radius folds in the Kähler size and the dilaton (g_s) frame factor.
+                } else if r_eff.value() <= probe.value() {
                     Verdict::holds(
                         Epistemic::Heuristic,
-                        format!("effective R = {r_eff:.3} ℓ_P is hidden at current colliders"),
+                        format!("effective R = {r_eff} is below the {probe} electroweak probe"),
                     )
                 } else {
                     Verdict::fails(
                         Epistemic::Heuristic,
-                        "effective compact size is large enough to be visible",
+                        "effective compact size exceeds the electroweak probe length",
                     )
-                    .with_evidence([format!(
-                        "effective R = {r_eff:.3} ℓ_P (radius {} × √g_s, g_s = {:.2})",
-                        self.compact_radius_planck,
-                        self.string_coupling()
-                    )])
+                    .with_evidence([
+                        format!(
+                            "effective R = {r_eff} (radius {} ℓ_P × √g_s, g_s = {:.2})",
+                            self.compact_radius_planck,
+                            self.string_coupling()
+                        ),
+                        format!("electroweak probe length = {probe}"),
+                    ])
                 }
             }
             claims::FERMIONS => {

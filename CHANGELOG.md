@@ -10,6 +10,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### M2 — Empirical contact
+
+- **M2.4 Typed lengths for hidden extra dimensions** (`crates/physis-theory/src/strings.rs`).
+  `empirical.hidden-extra-dims` no longer compares a raw float to a magic
+  `1e16`. It now builds a typed effective radius `Qty<Length>` (Kähler volume ×
+  √g_s × Planck length via `StringTheory::effective_radius`) and compares it to
+  `Scale::Electroweak.typical_length()` — the shortest length we currently
+  probe. The threshold is physics (an electroweak probe length), not a
+  hand-tuned constant. Satisfies one of M2's "Done when" criteria.
+
 ### M1 — String lab
 
 - **M1.5 Retire observer-geometry's magic 14** (`crates/physis-theory/src/geometry.rs`).
