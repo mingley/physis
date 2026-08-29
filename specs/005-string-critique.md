@@ -42,8 +42,10 @@ encoded SM embedding, so theirs `holds` (as `encoded-fact`).
 
 ## Distinctive string facts encoded as theorems / encoded facts
 
-- Bosonic critical dimension 26
-- Superstring critical dimension 10
+- Critical dimension **derived from the conformal anomaly** (not tabulated):
+  `c_matter·D + c_ghost = 0` gives 26 (bosonic: `1·D − 26`) and 10 (superstring:
+  `(3/2)·D − 15`), via `StringKind::critical_dim_from_anomaly`. M-theory (11D)
+  is a membrane / supergravity with no worldsheet anomaly.
 - M-theory dimension 11
 - Bosonic tachyon
 - Superstring tachyon absence when SUSY is on

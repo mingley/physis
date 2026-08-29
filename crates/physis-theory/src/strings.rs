@@ -84,6 +84,27 @@ impl StringKind {
         }
     }
 
+    /// Worldsheet central charges `(c_matter per spacetime dimension, c_ghost)`.
+    ///
+    /// The critical dimension is where the total conformal anomaly cancels,
+    /// `c_matter·D + c_ghost = 0`: bosonic `1·D − 26 = 0 ⇒ 26`; superstring
+    /// `(3/2)·D − 15 = 0 ⇒ 10`. Returns `None` for M-theory, which is a
+    /// membrane / 11D supergravity with no worldsheet conformal anomaly.
+    pub fn worldsheet_central_charge(self) -> Option<(f64, f64)> {
+        match self {
+            StringKind::Bosonic => Some((1.0, -26.0)),
+            StringKind::MTheory => None,
+            _ => Some((1.5, -15.0)),
+        }
+    }
+
+    /// Critical dimension derived from the conformal-anomaly cancellation,
+    /// when the object is a worldsheet theory.
+    pub fn critical_dim_from_anomaly(self) -> Option<u8> {
+        self.worldsheet_central_charge()
+            .map(|(c_matter, c_ghost)| (-c_ghost / c_matter).round() as u8)
+    }
+
     /// Construction uses supersymmetry as a structural ingredient.
     pub const fn requires_susy(self) -> bool {
         !matches!(self, StringKind::Bosonic)
@@ -565,11 +586,18 @@ impl Theory for StringTheory {
             }
             claims::CRITICAL_DIMENSION => {
                 let crit = self.kind.critical_dim();
+                let anomaly_note = match self.kind.worldsheet_central_charge() {
+                    Some((cm, cg)) => {
+                        format!("conformal anomaly cancels: {cm}·D {cg:+} = 0 ⇒ D = {crit}",)
+                    }
+                    None => "11D from supergravity; no worldsheet conformal anomaly".to_string(),
+                };
                 if self.total_dim == crit {
                     Verdict::holds(
                         Epistemic::Theorem,
-                        format!("D={} equals critical dimension", crit),
+                        format!("D={crit} equals the critical dimension"),
                     )
+                    .with_evidence([anomaly_note])
                 } else {
                     Verdict::fails(
                         Epistemic::Theorem,
@@ -853,6 +881,28 @@ mod tests {
         assert_eq!(verdict(&t, claims::OBSERVED_4D), VerdictKind::Holds);
         assert_eq!(verdict(&t, claims::FERMIONS), VerdictKind::Holds);
         assert_eq!(verdict(&t, claims::UNIQUE_VACUUM), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn critical_dimension_is_derived_from_the_conformal_anomaly() {
+        // c_matter·D + c_ghost = 0 reproduces 26 (bosonic) and 10 (superstring).
+        for kind in [
+            StringKind::Bosonic,
+            StringKind::TypeIIA,
+            StringKind::TypeIIB,
+            StringKind::TypeI,
+            StringKind::HeteroticE8xE8,
+            StringKind::HeteroticSO32,
+        ] {
+            assert_eq!(
+                kind.critical_dim_from_anomaly(),
+                Some(kind.critical_dim()),
+                "{}",
+                kind.as_str()
+            );
+        }
+        // M-theory is not a worldsheet theory: no conformal anomaly.
+        assert_eq!(StringKind::MTheory.critical_dim_from_anomaly(), None);
     }
 
     #[test]

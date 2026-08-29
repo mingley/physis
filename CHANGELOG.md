@@ -211,6 +211,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M1 — String lab
 
+- **Critical dimension derived from the conformal anomaly** (`crates/physis-theory/src/strings.rs`).
+  `consistency.critical-dimension` no longer relies only on a table: the critical
+  dimension is computed from central-charge cancellation `c_matter·D + c_ghost = 0`
+  (`StringKind::worldsheet_central_charge` / `critical_dim_from_anomaly`), giving
+  26 for the bosonic string (`1·D − 26`) and 10 for the superstring
+  (`(3/2)·D − 15`). The verdict carries the cancellation equation as evidence; a
+  test asserts the derived value matches the table for every worldsheet kind, and
+  M-theory (11D SUGRA) has no worldsheet anomaly.
+
 - **Unified tachyon stability notion across domains** (`crates/physis-theory/src/strings.rs`).
   `consistency.no-tachyon` is now computed from a string ground-state mass²
   (`α'm²`): bosonic `−1` (tachyon), superstring with GSO `0` (no tachyon),
