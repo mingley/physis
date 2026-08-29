@@ -166,6 +166,67 @@ impl Complex {
         Self::new(n * n, edges, triangles)
     }
 
+    /// A triangulated Klein bottle: a 4×4 grid glued into a torus in one
+    /// direction and with a *flip* in the other (the top edge is identified with
+    /// the bottom edge reversed). Non-orientable closed surface: over ℝ,
+    /// `b₀ = 1`, `b₁ = 1`, `b₂ = 0`, `χ = 0`. The ℤ₂ torsion in `H₁` is invisible
+    /// to real coefficients, and `b₂ = 0` records the non-orientability.
+    pub fn klein_bottle() -> Self {
+        let n = 4usize;
+        // Logical (row a, col b) → canonical vertex index. Columns are glued
+        // straight (periodic in b); rows are glued with a flip that mirrors b.
+        let vert = |a: usize, b: usize| -> usize {
+            let bb = b % n;
+            if a == n {
+                (n - bb) % n // seam: row n ≡ row 0, column mirrored
+            } else {
+                (a % n) * n + bb
+            }
+        };
+        let mut edge_set = std::collections::BTreeSet::new();
+        let mut triangles = Vec::new();
+        let mut add_edge = |a: usize, b: usize| {
+            if a != b {
+                edge_set.insert((a.min(b), a.max(b)));
+            }
+        };
+        for a in 0..n {
+            for b in 0..n {
+                let (c00, c01, c10, c11) = (
+                    vert(a, b),
+                    vert(a, b + 1),
+                    vert(a + 1, b),
+                    vert(a + 1, b + 1),
+                );
+                for tri in [[c00, c01, c11], [c00, c10, c11]] {
+                    // Skip any degenerate triangle (repeated vertex).
+                    if tri[0] != tri[1] && tri[1] != tri[2] && tri[0] != tri[2] {
+                        add_edge(tri[0], tri[1]);
+                        add_edge(tri[1], tri[2]);
+                        add_edge(tri[0], tri[2]);
+                        let mut t = tri;
+                        t.sort_unstable();
+                        triangles.push(t);
+                    }
+                }
+            }
+        }
+        let edges = edge_set.into_iter().map(|(a, b)| [a, b]).collect();
+        Self::new(n * n, edges, triangles)
+    }
+
+    /// True if every edge borders exactly two triangles — the combinatorial
+    /// signature of a closed surface (a validity check for the constructions).
+    pub fn is_closed_surface(&self) -> bool {
+        let mut count: HashMap<(usize, usize), usize> = HashMap::new();
+        for t in &self.triangles {
+            for (a, b) in [(t[0], t[1]), (t[0], t[2]), (t[1], t[2])] {
+                *count.entry((a.min(b), a.max(b))).or_insert(0) += 1;
+            }
+        }
+        !count.is_empty() && count.values().all(|&c| c == 2)
+    }
+
     fn edge_of(&self, a: usize, b: usize) -> usize {
         self.edge_index[&(a.min(b), a.max(b))]
     }
@@ -358,6 +419,8 @@ pub enum Shape {
     Circle,
     /// Triangulated 3×3 flat torus (`b₁ = 2`).
     Torus,
+    /// Triangulated Klein bottle (non-orientable; over ℝ, `b₁ = 1`, `b₂ = 0`).
+    Klein,
 }
 
 impl Shape {
@@ -366,6 +429,7 @@ impl Shape {
             Shape::Disk => "disk",
             Shape::Circle => "circle",
             Shape::Torus => "torus",
+            Shape::Klein => "klein",
         }
     }
     fn from_name(s: &str) -> Option<Self> {
@@ -373,15 +437,17 @@ impl Shape {
             "disk" => Some(Shape::Disk),
             "circle" => Some(Shape::Circle),
             "torus" => Some(Shape::Torus),
+            "klein" => Some(Shape::Klein),
             _ => None,
         }
     }
-    /// Expected first Betti number, the textbook value this shape should yield.
+    /// Expected first Betti number (over ℝ), the textbook value this shape yields.
     fn expected_b1(self) -> usize {
         match self {
             Shape::Disk => 0,
             Shape::Circle => 1,
             Shape::Torus => 2,
+            Shape::Klein => 1, // ℤ₂ torsion in H₁ is invisible over ℝ
         }
     }
     fn complex(self) -> Complex {
@@ -389,6 +455,7 @@ impl Shape {
             Shape::Disk => Complex::disk(),
             Shape::Circle => Complex::circle(),
             Shape::Torus => Complex::torus(),
+            Shape::Klein => Complex::klein_bottle(),
         }
     }
 }
@@ -402,7 +469,7 @@ impl Shape {
 /// - `dec.euler-poincare`: `V−E+F = b₀−b₁+b₂`,
 /// - `dec.hodge-harmonic`: `dim(harmonic 1-forms) = b₁`.
 ///
-/// The `shape` knob (`disk`, `circle`, `torus`) selects the complex.
+/// The `shape` knob (`disk`, `circle`, `torus`, `klein`) selects the complex.
 #[derive(Clone, Debug)]
 pub struct DeRham {
     /// Which simplicial complex to evaluate on.
@@ -433,12 +500,12 @@ pub const EULER_POINCARE: &str = "dec.euler-poincare";
 /// `dec.hodge-harmonic`.
 pub const HODGE_HARMONIC: &str = "dec.hodge-harmonic";
 
-const SHAPE_OPTIONS: &[&str] = &["disk", "circle", "torus"];
+const SHAPE_OPTIONS: &[&str] = &["disk", "circle", "torus", "klein"];
 
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "shape",
     layer: LayerId::Mathematical,
-    doc: "The simplicial complex to evaluate on: disk (b₁=0), circle (b₁=1), or torus (b₁=2). Changing it changes the topology and the Poincaré verdict.",
+    doc: "The simplicial complex to evaluate on: disk (b₁=0), circle (b₁=1), torus (b₁=2), or klein (Klein bottle, b₁=1, b₂=0). Changing it changes the topology and the Poincaré verdict.",
     domain: KnobDomain::Choice(SHAPE_OPTIONS),
 }];
 
@@ -696,6 +763,29 @@ mod tests {
     }
 
     #[test]
+    fn klein_bottle_real_homology() {
+        // Non-orientable closed surface. Over ℝ the ℤ₂ torsion in H₁ is
+        // invisible, so b₁ = 1 (not 2 like the torus), and b₂ = 0 records the
+        // non-orientability, yet χ = 0 like the torus.
+        let k = Complex::klein_bottle();
+        assert!(
+            k.is_closed_surface(),
+            "each edge must border exactly 2 faces"
+        );
+        assert_eq!(k.betti0(), 1);
+        assert_eq!(k.betti1(), 1); // ℝ can't see the ℤ₂ torsion
+        assert_eq!(k.betti2(), 0); // non-orientable: no fundamental class over ℝ
+        assert_eq!(k.euler_from_cells(), 0);
+        assert_eq!(k.euler_from_cells(), k.euler_from_betti());
+        assert_eq!(k.harmonic1_dim(), 1);
+        // The torus and Klein bottle share χ = 0 but differ in b₁ and b₂.
+        let t = Complex::torus();
+        assert_eq!(t.euler_from_cells(), k.euler_from_cells());
+        assert_ne!(t.betti1(), k.betti1());
+        assert_ne!(t.betti2(), k.betti2());
+    }
+
+    #[test]
     fn torus_has_two_holes() {
         // A non-trivial homology check beyond the minimal disk/circle.
         let t = Complex::torus();
@@ -721,7 +811,18 @@ mod tests {
         // The torus has holes, so closed ≠ exact.
         assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Fails);
         // An unknown shape is rejected by the domain.
-        assert!(t.set("shape", KnobValue::Choice("klein".into())).is_err());
+        assert!(t.set("shape", KnobValue::Choice("mobius".into())).is_err());
+    }
+
+    #[test]
+    fn klein_bottle_via_the_shape_knob() {
+        let mut t = DeRham::default();
+        t.set("shape", KnobValue::Choice("klein".into())).unwrap();
+        assert_eq!(kind(&t, FIRST_BETTI), VerdictKind::Holds); // b₁ = 1 over ℝ
+        assert_eq!(kind(&t, D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Fails); // it has a hole
     }
 
     #[test]

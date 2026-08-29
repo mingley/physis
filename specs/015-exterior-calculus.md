@@ -28,7 +28,7 @@ computes topology: the first Betti number counts holes, and whether every closed
 
 | knob | effect |
 |---|---|
-| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`), `circle` (`b₁ = 1`), or `torus` (`b₁ = 2`). Changing it changes the topology and flips `dec.closed-equals-exact`. |
+| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`), `circle` (`b₁ = 1`), `torus` (`b₁ = 2`), or `klein` (Klein bottle: `b₁ = 1`, `b₂ = 0`). Changing it changes the topology and flips `dec.closed-equals-exact`. |
 
 ## Claims (all computed theorems)
 
@@ -96,8 +96,24 @@ check they agree — the kind of redundant, mechanical cross-check the lab is fo
   `b₁`. Disk: `0`; circle: `1`. Harmonic representatives ≅ cohomology, computed
   from the coboundary matrices.
 
-Both are identities, so they `hold` on the disk and the circle alike; only the
-numbers change with the `filled` knob.
+Both are identities, so they `hold` on every shape alike; only the numbers change
+with the `shape` knob.
+
+## Non-orientability: the Klein bottle vs the torus
+
+The `klein` shape is a triangulated Klein bottle (a 4×4 grid glued into a torus
+in one direction and with a *flip* in the other). It is the sharpest homology
+contrast in the lab: it shares the torus's Euler characteristic `χ = 0`, but
+
+- `b₁ = 1`, not 2 — the integral `H₁(K;ℤ) = ℤ ⊕ ℤ/2` carries a `ℤ/2` **torsion**
+  summand that is *invisible to real coefficients*, so the rank computation sees
+  only one 1-cycle; and
+- `b₂ = 0`, not 1 — a non-orientable surface has no fundamental class over `ℝ`.
+
+So two closed surfaces with identical `χ` are told apart mechanically by their
+Betti numbers, and the disappearance of the `ℤ/2` torsion under real
+coefficients is made concrete. Each construction is validated by
+`Complex::is_closed_surface` (every edge borders exactly two triangles).
 
 ## Non-goals (this milestone)
 

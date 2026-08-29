@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Klein bottle: non-orientability and torsion-invisibility over ℝ**
+  (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). Added
+  `Complex::klein_bottle()` (a 4×4 grid glued into a torus one way and with a flip
+  the other) and a `klein` option to the `shape` knob. It is the sharpest
+  homology contrast in the lab: same Euler characteristic as the torus (`χ = 0`)
+  but `b₁ = 1` (not 2 — the `ℤ/2` torsion in `H₁(K;ℤ)` is invisible to real
+  coefficients) and `b₂ = 0` (not 1 — non-orientable surfaces have no fundamental
+  class over ℝ). Added `Complex::is_closed_surface()` (every edge borders exactly
+  two triangles) as a validity check for the surface constructions. Verified:
+  two new tests (Klein real homology + closed-surface check, and via the knob),
+  `fmt`, `clippy -D warnings`, full suite, and the CLI knob diff.
+
 - **Exact 2D SU(N) confinement from the quadratic Casimir**
   (`crates/physis-theory/src/gauge_field.rs`, `specs/010-continuum.md`). Extended
   `gauge.exact-area-law-2d` to the non-abelian `wilson-su2`/`wilson-su3`
