@@ -266,6 +266,30 @@ impl StringTheory {
         planck_length() * self.effective_radius_planck()
     }
 
+    fn build_world(&self) -> World {
+        World {
+            spacetime: self.manifold(),
+            gauge: self.kind.fundamental_gauge(),
+            spectrum: self.spectrum(),
+            has_gravity: true,
+            supersymmetric: self.supersymmetry,
+            // The moduli are the continuous free parameters (plus the dilaton).
+            free_parameter_count: 4 + self.moduli() + 1,
+            landscape_log10: self.landscape_log10(),
+            note: format!(
+                "{} at D={}, observed {}, extra {}, g_s={:.2}, moduli h11={}+h21={}, landscape ~10^{:.1}",
+                self.kind.as_str(),
+                self.total_dim,
+                self.observed_dim,
+                self.extra(),
+                self.string_coupling(),
+                self.h11,
+                self.h21,
+                self.landscape_log10()
+            ),
+        }
+    }
+
     fn manifold(&self) -> Manifold {
         let extra = self.extra().max(0) as u8;
         let space = self.total_dim.saturating_sub(1);
@@ -391,28 +415,8 @@ impl Theory for StringTheory {
          it does not compactify Calabi–Yau manifolds."
     }
 
-    fn world(&self) -> World {
-        World {
-            spacetime: self.manifold(),
-            gauge: self.kind.fundamental_gauge(),
-            spectrum: self.spectrum(),
-            has_gravity: true,
-            supersymmetric: self.supersymmetry,
-            // The moduli are the continuous free parameters (plus the dilaton).
-            free_parameter_count: 4 + self.moduli() + 1,
-            landscape_log10: self.landscape_log10(),
-            note: format!(
-                "{} at D={}, observed {}, extra {}, g_s={:.2}, moduli h11={}+h21={}, landscape ~10^{:.1}",
-                self.kind.as_str(),
-                self.total_dim,
-                self.observed_dim,
-                self.extra(),
-                self.string_coupling(),
-                self.h11,
-                self.h21,
-                self.landscape_log10()
-            ),
-        }
+    fn world(&self) -> Option<World> {
+        Some(self.build_world())
     }
 
     fn claims(&self) -> Vec<Claim> {
@@ -499,7 +503,7 @@ impl Theory for StringTheory {
     }
 
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        let w = self.world();
+        let w = self.build_world();
         match claim.id.0.as_str() {
             claims::SPACETIME_STRUCTURE => {
                 if w.spacetime.structurally_ok() && self.extra() >= 0 {

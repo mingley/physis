@@ -42,9 +42,11 @@ experiment `gauge-lattice`). The gauge field lives on links; the action sums
 - 3+1 lattice and a non-abelian gauge field on links (Wilson-style), still finite.
 - Connect the scalar tachyon here to the string bosonic tachyon conceptually
   (both are `min ω² < 0`), so the two domains share a stability notion.
-- A `Layer`-based observable so a field's world projection is not the
-  physics-shaped `World` placeholder (also unblocks the computation domain's
-  documented rough edge).
+- ✅ `Theory::world()` now returns `Option<World>`: computation returns `None`
+  (no borrowed spacetime), the scalar field reports an honest 1+1 D world, and
+  `physis score` treats non-physics domains as such. A richer `Layer`-based
+  observable is still possible later, but the placeholder-world rough edge is
+  gone.
 
 ## Done when (seed)
 

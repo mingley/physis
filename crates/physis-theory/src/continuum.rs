@@ -191,9 +191,17 @@ impl Theory for KleinGordonField {
          by a nearest-neighbour Laplacian, with computed normal modes. Its \
          stability and dispersion are theorems of the computation, not flags."
     }
-    fn world(&self) -> World {
-        World {
-            spacetime: Manifold::observed_4d(),
+    fn world(&self) -> Option<World> {
+        // A 1+1 D field: one time direction, one spatial lattice direction.
+        Some(World {
+            spacetime: Manifold {
+                dim: 2,
+                signature: physis_model::Signature { time: 1, space: 1 },
+                compact_extra: 0,
+                compact_radius_planck: 0.0,
+                topology: physis_model::Topology::Minkowski,
+                convention: physis_model::SignConvention::MostlyPlus,
+            },
             gauge: GaugeGroup::trivial(),
             spectrum: Spectrum::empty(),
             has_gravity: false,
@@ -207,7 +215,7 @@ impl Theory for KleinGordonField {
                 self.spacing,
                 self.min_omega_sq()
             ),
-        }
+        })
     }
     fn claims(&self) -> Vec<Claim> {
         vec![

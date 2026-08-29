@@ -75,19 +75,8 @@ impl Knobbed for GeneralRelativity {
     }
 }
 
-impl Theory for GeneralRelativity {
-    fn id(&self) -> &'static str {
-        "general-relativity"
-    }
-    fn name(&self) -> &'static str {
-        "General relativity"
-    }
-    fn summary(&self) -> &'static str {
-        "Classical dynamical spacetime. Matches gravity from tabletop to cosmology. \
-         Not a quantum theory. Not a theory of the Standard Model spectrum."
-    }
-
-    fn world(&self) -> World {
+impl GeneralRelativity {
+    fn build_world(&self) -> World {
         let space = self.dim.saturating_sub(1);
         World {
             spacetime: Manifold {
@@ -110,6 +99,23 @@ impl Theory for GeneralRelativity {
             landscape_log10: 0.0,
             note: format!("GR in D={} Λ={}", self.dim, self.cosmological_constant),
         }
+    }
+}
+
+impl Theory for GeneralRelativity {
+    fn id(&self) -> &'static str {
+        "general-relativity"
+    }
+    fn name(&self) -> &'static str {
+        "General relativity"
+    }
+    fn summary(&self) -> &'static str {
+        "Classical dynamical spacetime. Matches gravity from tabletop to cosmology. \
+         Not a quantum theory. Not a theory of the Standard Model spectrum."
+    }
+
+    fn world(&self) -> Option<World> {
+        Some(self.build_world())
     }
 
     fn claims(&self) -> Vec<Claim> {
@@ -162,7 +168,7 @@ impl Theory for GeneralRelativity {
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
             claims::SPACETIME_STRUCTURE => {
-                if self.world().spacetime.structurally_ok() {
+                if self.build_world().spacetime.structurally_ok() {
                     Verdict::holds(Epistemic::Theorem, "Lorentzian, consistent dim")
                 } else {
                     Verdict::fails(Epistemic::Theorem, "inconsistent manifold numbers")

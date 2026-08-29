@@ -83,12 +83,13 @@ physis set wilson-u1 dimension 3    # confines at any β
 - Interactions / renormalization.
 - Gauge fields on links (Wilson) — planned later in M4.
 
-## Known limitation
+## Spacetime projection
 
-Like the computation domain, a field does not have a meaningful physics-shaped
-`World` projection; `klein-gordon` uses a placeholder world whose `note` carries
-the computed spectrum. Generalizing `Theory`'s projection is tracked in
-`plans/005`.
+`Theory::world()` returns `Option<World>`. `klein-gordon` reports an honest
+1+1-dimensional world (one time direction, one spatial lattice direction)
+rather than borrowing 3+1 Minkowski; `wilson-u1` reports its lattice dimension.
+Non-physics domains (computation) return `None`. This replaced the earlier
+placeholder-world rough edge.
 
 ## Related
 

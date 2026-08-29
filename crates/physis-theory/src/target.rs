@@ -103,8 +103,21 @@ impl Scorecard {
 
 /// Score a theory's projected world against the empirical target.
 pub fn score(target: &EmpiricalTarget, theory: &dyn Theory) -> Scorecard {
-    let w = theory.world();
     let mut checks = Vec::new();
+    let Some(w) = theory.world() else {
+        // A non-physics domain (e.g. computation) has no world to grade against
+        // the physics target; say so honestly rather than faking a score.
+        checks.push(Check {
+            name: "physics-domain".into(),
+            required: "physics world".into(),
+            actual: "none (non-physics domain)".into(),
+            pass: false,
+        });
+        return Scorecard {
+            theory: theory.id().into(),
+            checks,
+        };
+    };
 
     let observed = w.spacetime.observed_dim();
     checks.push(Check {

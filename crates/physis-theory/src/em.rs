@@ -194,8 +194,8 @@ impl Theory for MaxwellVacuum {
          travel at 1/√(ε₀μ₀) = c. The workspace's second domain, sharing the \
          same typed substrate as the physics lab."
     }
-    fn world(&self) -> World {
-        em_world(1.0, 1.0, "Maxwell vacuum".to_string())
+    fn world(&self) -> Option<World> {
+        Some(em_world(1.0, 1.0, "Maxwell vacuum".to_string()))
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()
@@ -286,12 +286,12 @@ impl Theory for LinearMedium {
          frame, so the wave-speed and Lorentz-invariance claims fail unless the \
          medium is trivial."
     }
-    fn world(&self) -> World {
-        em_world(
+    fn world(&self) -> Option<World> {
+        Some(em_world(
             self.epsilon_r,
             self.mu_r,
             format!("linear medium ε_r={} μ_r={}", self.epsilon_r, self.mu_r),
-        )
+        ))
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()
@@ -388,8 +388,8 @@ impl Theory for OhmCircuit {
          in disguise; wave propagation is dropped and there is a preferred rest \
          frame. Valid only while the wavelength dwarfs the circuit."
     }
-    fn world(&self) -> World {
-        World {
+    fn world(&self) -> Option<World> {
+        Some(World {
             spacetime: Manifold::observed_4d(),
             gauge: GaugeGroup {
                 factors: vec![SimpleGroup::U1],
@@ -404,7 +404,7 @@ impl Theory for OhmCircuit {
                 self.frequency_hz,
                 self.wavelength()
             ),
-        }
+        })
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()

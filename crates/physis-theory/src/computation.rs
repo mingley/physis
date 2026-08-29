@@ -7,15 +7,15 @@
 //! lab already had. Bounding the tape turns the machine into a finite automaton
 //! and halting becomes decidable, a clean knob → verdict diff.
 //!
-//! `World` is a physics-shaped projection, so computational objects use a
-//! degenerate placeholder world (documented in `specs/009-computation.md`);
-//! only their claims carry meaning here.
+//! Computation has no spacetime, gauge, or spectrum, so these theories return
+//! `None` from `Theory::world()` and describe themselves via `Theory::note()`
+//! instead of borrowing a physics-shaped placeholder.
 
 use physis_core::claim::{Claim, Epistemic, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
-use physis_model::{GaugeGroup, Manifold, Spectrum, World};
+use physis_model::World;
 
 use crate::critique::{report_from_rows, ExperimentReport};
 use crate::framework::Theory;
@@ -86,21 +86,6 @@ fn comp_claims() -> Vec<Claim> {
     ]
 }
 
-/// Degenerate physics-shaped world; computation lives on the information and
-/// mathematical layers, so only the note is meaningful here.
-fn comp_world(note: String) -> World {
-    World {
-        spacetime: Manifold::observed_4d(),
-        gauge: GaugeGroup::trivial(),
-        spectrum: Spectrum::empty(),
-        has_gravity: false,
-        supersymmetric: false,
-        free_parameter_count: 0,
-        landscape_log10: 0.0,
-        note,
-    }
-}
-
 /// A finite, acyclic boolean circuit (combinational logic).
 #[derive(Clone, Debug, Default)]
 pub struct CombinationalCircuit;
@@ -128,8 +113,11 @@ impl Theory for CombinationalCircuit {
         "A finite, acyclic boolean circuit. It always halts and its equivalence \
          is decidable, but with no memory or feedback it is not Turing complete."
     }
-    fn world(&self) -> World {
-        comp_world("combinational boolean circuit (acyclic, finite)".to_string())
+    fn world(&self) -> Option<World> {
+        None // computation has no spacetime/gauge/spectrum projection
+    }
+    fn note(&self) -> String {
+        "combinational boolean circuit (acyclic, finite)".to_string()
     }
     fn claims(&self) -> Vec<Claim> {
         comp_claims()
@@ -234,8 +222,11 @@ impl Theory for TuringMachine {
          complete and its halting is undecidable; bounding the tape makes it a \
          finite automaton whose halting and equivalence are decidable."
     }
-    fn world(&self) -> World {
-        comp_world(format!(
+    fn world(&self) -> Option<World> {
+        None // computation has no spacetime/gauge/spectrum projection
+    }
+    fn note(&self) -> String {
+        format!(
             "Turing machine, tape_bound={} ({})",
             self.tape_bound,
             if self.unbounded() {
@@ -243,7 +234,7 @@ impl Theory for TuringMachine {
             } else {
                 "finite"
             }
-        ))
+        )
     }
     fn claims(&self) -> Vec<Claim> {
         comp_claims()

@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **Architecture: `Theory::world()` returns `Option<World>`** (`framework.rs` and
+  all theories). Non-physics domains no longer borrow a physics-shaped
+  spacetime. Computation (`combinational-circuit`, `turing-machine`) returns
+  `None` and describes itself via the new `Theory::note()`; the scalar field
+  reports an honest 1+1 D world instead of 3+1 Minkowski. `physis score` now
+  reports a non-physics theory as such rather than faking a physics score, and
+  `critique::report_of` handles the optional world. Removes the placeholder-world
+  rough edge documented in `specs/009`/`specs/010`. All existing tests stay
+  green.
+
 - **M4 gauge field on links** (`crates/physis-theory/src/gauge_field.rs`,
   `specs/010`, `plans/005`). New theory `wilson-u1`: compact U(1) lattice gauge
   theory whose degrees of freedom live on links, with the Wilson plaquette

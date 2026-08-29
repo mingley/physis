@@ -12,8 +12,15 @@ pub trait Theory: Knobbed + Send + Sync {
     fn name(&self) -> &'static str;
     /// What this object is, and what it is not.
     fn summary(&self) -> &'static str;
-    /// Projection into mechanical layers.
-    fn world(&self) -> World;
+    /// Projection into the physics-shaped mechanical layers, when the object
+    /// has one. Non-physics domains (e.g. computation) have no spacetime,
+    /// gauge, or spectrum and return `None` rather than borrowing a placeholder.
+    fn world(&self) -> Option<World>;
+    /// One-line note for reports. Defaults to the world's note; domains without
+    /// a world override this to describe themselves.
+    fn note(&self) -> String {
+        self.world().map(|w| w.note).unwrap_or_default()
+    }
     /// Claims this theory is willing to be judged on.
     fn claims(&self) -> Vec<Claim>;
     /// Evaluate one claim against current knobs.

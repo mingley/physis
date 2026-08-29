@@ -70,14 +70,14 @@ Setting `tape_bound: 0 → 1000` flips:
 The combinational circuit always halts and has decidable equivalence, but is
 not Turing complete (no memory or feedback).
 
-## Honest limitation: `World` is physics-shaped
+## No borrowed spacetime
 
-The `Theory::world()` projection assumes spacetime/gauge/spectrum, which do not
-apply to a computation. These objects therefore return a **degenerate
-placeholder world**; only their claims carry meaning. A future milestone may
-generalize the projection (e.g. a `Layer`-based observable) so non-physics
-domains do not borrow a spacetime they do not have. This is a known rough edge,
-not a hidden one.
+Computation has no spacetime, gauge, or spectrum, so these theories return
+`None` from `Theory::world()` (whose return type is `Option<World>`) and
+describe themselves via `Theory::note()`. The `physis score` command reports a
+computational object as a non-physics domain rather than grading it against the
+physics empirical target. Earlier drafts used a degenerate placeholder world;
+that rough edge has been removed.
 
 ## Non-goals (this milestone)
 

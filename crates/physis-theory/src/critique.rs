@@ -141,6 +141,8 @@ impl ExperimentReport {
 
 fn report_of(t: &dyn Theory) -> TheoryReport {
     let world = t.world();
+    let landscape_log10 = world.as_ref().map(|w| w.landscape_log10).unwrap_or(0.0);
+    let free_parameter_count = world.as_ref().map(|w| w.free_parameter_count).unwrap_or(0);
     let verdicts = t
         .evaluate_all()
         .into_iter()
@@ -158,9 +160,9 @@ fn report_of(t: &dyn Theory) -> TheoryReport {
         id: t.id().into(),
         name: t.name().into(),
         summary: t.summary().into(),
-        world_note: world.note,
-        landscape_log10: world.landscape_log10,
-        free_parameter_count: world.free_parameter_count,
+        world_note: t.note(),
+        landscape_log10,
+        free_parameter_count,
         verdicts,
     }
 }

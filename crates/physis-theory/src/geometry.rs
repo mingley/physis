@@ -84,6 +84,32 @@ impl ObserverGeometry {
         self.fibre_dim >= SPIN10_MIN_FIBRE
     }
 
+    fn build_world(&self) -> World {
+        let total = self.total_dim();
+        let extra = self.fibre_dim;
+        let space = total.saturating_sub(1);
+        World {
+            spacetime: Manifold {
+                dim: total,
+                signature: Signature { time: 1, space },
+                compact_extra: extra,
+                compact_radius_planck: if extra == 0 { 0.0 } else { 1.0 },
+                topology: Topology::Unspecified,
+                convention: physis_model::SignConvention::MostlyPlus,
+            },
+            gauge: self.gauge(),
+            spectrum: Spectrum::standard_model_plus_graviton(),
+            has_gravity: true,
+            supersymmetric: false,
+            free_parameter_count: if self.unique_vacuum { 1 } else { 40 },
+            landscape_log10: if self.unique_vacuum { 0.0 } else { 12.0 },
+            note: format!(
+                "observer-geometry D={}=({}+{}) derive_gauge={} unique={}",
+                total, self.observed_dim, self.fibre_dim, self.derive_gauge, self.unique_vacuum
+            ),
+        }
+    }
+
     fn gauge(&self) -> GaugeGroup {
         if self.derive_gauge {
             GaugeGroup::spin10()
@@ -143,30 +169,8 @@ impl Theory for ObserverGeometry {
          (Spin(10)), labelled as such."
     }
 
-    fn world(&self) -> World {
-        let total = self.total_dim();
-        let extra = self.fibre_dim;
-        let space = total.saturating_sub(1);
-        World {
-            spacetime: Manifold {
-                dim: total,
-                signature: Signature { time: 1, space },
-                compact_extra: extra,
-                compact_radius_planck: if extra == 0 { 0.0 } else { 1.0 },
-                topology: Topology::Unspecified,
-                convention: physis_model::SignConvention::MostlyPlus,
-            },
-            gauge: self.gauge(),
-            spectrum: Spectrum::standard_model_plus_graviton(),
-            has_gravity: true,
-            supersymmetric: false,
-            free_parameter_count: if self.unique_vacuum { 1 } else { 40 },
-            landscape_log10: if self.unique_vacuum { 0.0 } else { 12.0 },
-            note: format!(
-                "observer-geometry D={}=({}+{}) derive_gauge={} unique={}",
-                total, self.observed_dim, self.fibre_dim, self.derive_gauge, self.unique_vacuum
-            ),
-        }
+    fn world(&self) -> Option<World> {
+        Some(self.build_world())
     }
 
     fn claims(&self) -> Vec<Claim> {
@@ -231,7 +235,7 @@ impl Theory for ObserverGeometry {
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
             claims::SPACETIME_STRUCTURE => {
-                if self.world().spacetime.structurally_ok() {
+                if self.build_world().spacetime.structurally_ok() {
                     Verdict::holds(Epistemic::Theorem, "dimension numbers fit")
                 } else {
                     Verdict::fails(

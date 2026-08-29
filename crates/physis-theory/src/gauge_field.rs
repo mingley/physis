@@ -131,9 +131,9 @@ impl Theory for WilsonU1 {
          locality are structural theorems; confinement is a knob-sensitive \
          lattice result (all β in 2D/3D; a transition near β ≈ 1.01 in 4D)."
     }
-    fn world(&self) -> World {
+    fn world(&self) -> Option<World> {
         let space = self.dimension.saturating_sub(1);
-        World {
+        Some(World {
             spacetime: Manifold {
                 dim: self.dimension,
                 signature: physis_model::Signature { time: 1, space },
@@ -161,7 +161,7 @@ impl Theory for WilsonU1 {
                     "Coulomb phase"
                 }
             ),
-        }
+        })
     }
     fn claims(&self) -> Vec<Claim> {
         vec![

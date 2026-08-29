@@ -151,8 +151,8 @@ impl Theory for StandardModel {
          and not a UV completion. ~19 free parameters."
     }
 
-    fn world(&self) -> World {
-        World {
+    fn world(&self) -> Option<World> {
+        Some(World {
             spacetime: Manifold::observed_4d(),
             gauge: GaugeGroup::standard_model(),
             spectrum: self.spectrum(),
@@ -164,7 +164,7 @@ impl Theory for StandardModel {
                 "SM generations={} higgs={} gravity={} neutrino_masses={}",
                 self.generations, self.include_higgs, self.include_gravity, self.neutrino_masses
             ),
-        }
+        })
     }
 
     fn claims(&self) -> Vec<Claim> {
