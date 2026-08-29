@@ -1,0 +1,16 @@
+[package]
+name = "physis"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Facade and CLI for the physis reality-modeling workspace."
+default-run = "physis"
+
+[dependencies]
+physis-core.workspace = true
+physis-model.workspace = true
+physis-theory.workspace = true
+physis-agent.workspace = true
