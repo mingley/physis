@@ -9,6 +9,13 @@
 //! - compact U(1) confines at all couplings in 2D and 3D;
 //! - in 4D it has a phase transition near `β ≈ 1.01`: confining below, a
 //!   Coulomb (free-photon) phase above.
+//!
+//! In two dimensions the theory is **exactly solvable**: the gauge integral
+//! factorizes plaquette by plaquette, so the fundamental Wilson loop of area `A`
+//! is exactly `⟨W⟩ = (I₁(β)/I₀(β))ᴬ`, an area law with string tension
+//! `σ = −ln(I₁(β)/I₀(β)) > 0` at *every* finite coupling. That exact confinement
+//! result (`gauge.exact-area-law-2d`) is a theorem, in honest contrast to the
+//! 4D Yang–Mills mass gap, which stays a `conjecture`.
 
 use physis_core::claim::{Claim, Epistemic, Verdict};
 use physis_core::error::CoreError;
@@ -29,6 +36,42 @@ pub const CONFINING: &str = "gauge.confining";
 pub const ASYMPTOTIC_FREEDOM: &str = "gauge.asymptotic-freedom";
 /// The leading strong-coupling expansion yields an area law (σ > 0).
 pub const STRONG_COUPLING_AREA_LAW: &str = "gauge.strong-coupling-area-law";
+/// In 2D the Wilson loop obeys an *exact* area law at all couplings.
+pub const EXACT_AREA_LAW_2D: &str = "gauge.exact-area-law-2d";
+
+/// Ratio `I₁(x)/I₀(x)` of modified Bessel functions, from their convergent
+/// power series. Stable for the `β` range this lab uses (no factorial overflow:
+/// each term is built from the previous by a bounded ratio).
+///
+/// `I₀(x) = Σ (x²/4)ᵏ/(k!)²` and `I₁(x) = (x/2)·Σ (x²/4)ᵏ/(k!(k+1)!)`.
+fn bessel_i1_over_i0(x: f64) -> f64 {
+    let z = x * x / 4.0;
+    let (mut i0, mut term0) = (1.0_f64, 1.0_f64);
+    let (mut i1_series, mut term1) = (1.0_f64, 1.0_f64);
+    for k in 1..10_000 {
+        let kf = k as f64;
+        term0 *= z / (kf * kf);
+        i0 += term0;
+        term1 *= z / (kf * (kf + 1.0));
+        i1_series += term1;
+        if term0 <= 1e-18 * i0 && term1 <= 1e-18 * i1_series {
+            break;
+        }
+    }
+    (x / 2.0) * i1_series / i0
+}
+
+/// The **exact** string tension of 2D compact U(1) lattice gauge theory,
+/// `σ = −ln(I₁(β)/I₀(β))`.
+///
+/// In two dimensions the gauge integral factorizes plaquette by plaquette, so
+/// the fundamental Wilson loop of area `A` (in plaquettes) is exactly
+/// `⟨W⟩ = (I₁(β)/I₀(β))ᴬ = e^{−σA}`. Since `0 < I₁/I₀ < 1` for every finite `β`,
+/// `σ > 0` always: 2D compact U(1) confines at **all** couplings. This is a
+/// theorem, not a strong-coupling approximation.
+fn exact_2d_string_tension(beta: f64) -> f64 {
+    -bessel_i1_over_i0(beta).ln()
+}
 
 /// Matrix rows for the lattice-gauge lab.
 pub fn gauge_rows() -> [&'static str; 5] {
@@ -236,11 +279,46 @@ impl Theory for WilsonU1 {
                 LayerId::Interaction,
                 Epistemic::Theorem,
             ),
+            Claim::new(
+                EXACT_AREA_LAW_2D,
+                "In 2D the Wilson loop obeys an exact area law at all couplings.",
+                LayerId::Interaction,
+                Epistemic::Theorem,
+            ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
             STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, 1.0),
+            EXACT_AREA_LAW_2D => {
+                if self.dimension == 2 {
+                    let sigma = exact_2d_string_tension(self.beta);
+                    let ratio = bessel_i1_over_i0(self.beta);
+                    if sigma > 0.0 {
+                        Verdict::holds(
+                            Epistemic::Theorem,
+                            format!(
+                                "exact 2D string tension σ = −ln(I₁/I₀) = {sigma:.4} > 0 at β = {}: confines at all couplings",
+                                self.beta
+                            ),
+                        )
+                        .with_evidence([
+                            format!("⟨W⟩ = (I₁(β)/I₀(β))^Area = {ratio:.4}^Area (exact plaquette factorization)"),
+                            "0 < I₁/I₀ < 1 for all finite β, so σ > 0 for every coupling".to_string(),
+                        ])
+                    } else {
+                        // Only reachable in the β → ∞ continuum limit (σ → 0⁺).
+                        Verdict::fails(
+                            Epistemic::Theorem,
+                            format!("σ = {sigma:.4} ≤ 0 at β = {}", self.beta),
+                        )
+                    }
+                } else {
+                    Verdict::inapplicable(
+                        "the exact plaquette factorization is special to 2D; in higher D see gauge.confining",
+                    )
+                }
+            }
             ASYMPTOTIC_FREEDOM => Verdict::fails(
                 Epistemic::EncodedFact,
                 "abelian U(1) is not asymptotically free: the coupling grows with energy (Landau pole)",
@@ -604,6 +682,47 @@ mod tests {
         // −ln(β/2N²) for SU(3) at β=18 is exactly 0 (the strong-coupling radius).
         assert!(super::strong_coupling_string_tension(18.0, 3.0).abs() < 1e-12);
         assert!(super::strong_coupling_string_tension(2.0, 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn bessel_ratio_matches_known_values() {
+        // I₁(2)/I₀(2) = 1.5906.../2.2796... = 0.6977...
+        assert!((super::bessel_i1_over_i0(2.0) - 0.697_774_65).abs() < 1e-6);
+        // Small x: I₁/I₀ ≈ x/2.
+        assert!((super::bessel_i1_over_i0(0.02) - 0.01).abs() < 1e-4);
+        // Large x: I₁/I₀ → 1⁻.
+        assert!(super::bessel_i1_over_i0(50.0) < 1.0);
+        assert!(super::bessel_i1_over_i0(50.0) > 0.98);
+    }
+
+    #[test]
+    fn two_d_u1_confines_at_all_couplings_exactly() {
+        // The exact (not strong-coupling) 2D area law: σ = −ln(I₁/I₀) > 0 for
+        // every β — 2D compact U(1) confines at all couplings.
+        let mut w = WilsonU1::default();
+        w.set("dimension", KnobValue::UInt(2)).unwrap();
+        for beta in [0.1, 1.0, 2.0, 10.0, 50.0] {
+            w.set("beta", KnobValue::Float(beta)).unwrap();
+            assert_eq!(
+                verdict(&w, EXACT_AREA_LAW_2D),
+                VerdictKind::Holds,
+                "β = {beta}"
+            );
+            assert!(super::exact_2d_string_tension(beta) > 0.0, "β = {beta}");
+        }
+        // The tension decreases with β (toward the continuum limit).
+        assert!(super::exact_2d_string_tension(1.0) > super::exact_2d_string_tension(10.0));
+    }
+
+    #[test]
+    fn exact_area_law_is_2d_only() {
+        // The exact plaquette factorization is special to 2D; 4D is the open
+        // problem, so the exact claim is inapplicable there.
+        let w = WilsonU1::default(); // 4D
+        assert_eq!(verdict(&w, EXACT_AREA_LAW_2D), VerdictKind::Inapplicable);
+        let mut w3 = WilsonU1::default();
+        w3.set("dimension", KnobValue::UInt(3)).unwrap();
+        assert_eq!(verdict(&w3, EXACT_AREA_LAW_2D), VerdictKind::Inapplicable);
     }
 
     #[test]

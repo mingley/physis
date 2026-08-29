@@ -12,6 +12,21 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Exact 2D lattice-gauge confinement from the Bessel-function ratio**
+  (`crates/physis-theory/src/gauge_field.rs`, `specs/010-continuum.md`). New
+  `gauge.exact-area-law-2d` claim on `wilson-u1`: in two dimensions the gauge
+  integral factorizes plaquette by plaquette, so the Wilson loop is *exactly*
+  `⟨W⟩ = (I₁(β)/I₀(β))^Area` with string tension `σ = −ln(I₁(β)/I₀(β))`. Since
+  `0 < I₁/I₀ < 1` for every finite `β`, `σ > 0` always — 2D compact U(1) confines
+  at **all** couplings, a theorem (not the strong-coupling approximation). The
+  modified Bessel ratio is computed by a convergent, overflow-free series
+  (`bessel_i1_over_i0`); the claim is `inapplicable` in D > 2, honestly leaving
+  4D as the open mass-gap problem. `set wilson-u1 dimension 2` flips it
+  `inapplicable → holds` (σ = 0.807 at β=1, 0.053 at β=10, both > 0). Verified:
+  four new tests (Bessel values, 2D confinement at β ∈ [0.1, 50], 2D-only
+  applicability, monotone tension), `fmt`, `clippy -D warnings`, full suite, and
+  the CLI knob diff.
+
 - **Special relativity: the Galilean→Einstein revolution as one knob**
   (new `crates/physis-theory/src/special_relativity.rs`, new
   `specs/014-special-relativity.md`). New `special-relativity` theory with three

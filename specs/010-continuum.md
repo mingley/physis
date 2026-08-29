@@ -75,6 +75,7 @@ the Wilson action sums `1 − cos(θ_plaquette)`. Knobs: `dimension` (2–4), `b
 | `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap) |
 | `gauge.asymptotic-freedom` | the coupling runs to zero at high energy | U(1) `fails` (Landau pole); SU(N) `holds` (Gross–Wilczek–Politzer) |
 | `gauge.strong-coupling-area-law` | leading strong-coupling expansion gives an area law | **computed**: `σ = −ln(β/2N²) > 0` (theorem of the convergent expansion); fails at weak coupling |
+| `gauge.exact-area-law-2d` | 2D compact U(1) confines at all couplings | **exactly computed**: `σ = −ln(I₁(β)/I₀(β)) > 0` for every β (theorem); `inapplicable` in D > 2 |
 
 ### Abelian vs non-abelian
 
@@ -86,6 +87,16 @@ The lab contrasts compact U(1) (QED-like) with SU(2)/SU(3) Yang–Mills:
   Problem), so `gauge.confining` for SU(N) in 4D `holds` with epistemic tag
   `conjecture`, not `theorem`. This is the honesty discipline again: a famous
   open problem is recorded as open.
+
+In two dimensions the compact-U(1) theory is **exactly solvable**: the gauge
+integral factorizes plaquette by plaquette, so the fundamental Wilson loop of
+area `A` is exactly `⟨W⟩ = (I₁(β)/I₀(β))ᴬ = e^{−σA}` with
+`σ = −ln(I₁(β)/I₀(β))`. Because `0 < I₁/I₀ < 1` for every finite `β`, `σ > 0`
+always — 2D compact U(1) confines at *all* couplings, a genuine theorem
+(`gauge.exact-area-law-2d`, computed from the modified Bessel-function ratio by a
+convergent series). It is `inapplicable` in `D > 2`, where the factorization
+fails and 4D confinement remains the open Yang–Mills problem. `set wilson-u1
+dimension 2` turns this claim from `inapplicable` to `holds`.
 
 The `gauge.confining` verdict is the *physical* claim (heuristic/conjecture);
 `gauge.strong-coupling-area-law` is the **computed** companion — the first term
