@@ -95,6 +95,7 @@ AGENTS.md  standing orders for long-horizon agents
 
 - Critical dimensions of strings (26 / 10 / 11) are encoded as **theorems**.
 - SM embeddings into E₈×E₈, SO(32), SO(10), Spin(10) are **encoded facts**, not computer-algebra branching rules. Replacing the table with typed root systems is a planned milestone.
+- Green–Schwarz anomaly cancellation is a **mechanical predicate** on the gauge group (dimension 496, exactly SO(32) or E₈×E₈), not a menu — see `GaugeGroup::gs_anomaly_free_10d`. It is an **encoded fact**, not a re-derivation of the anomaly polynomial (that is a later milestone).
 - Landscape counts are **heuristics**. They exist so uniqueness can *flip* when fluxes and extra dimensions move — not because we computed 10⁵⁰⁰ Calabi–Yau flux vacua.
 - Observer-geometry's gauge group is a **conjectural assignment**. The program is here as a contrast class, not as a completed theory.
 

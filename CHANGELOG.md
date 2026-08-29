@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M1 — String lab
 
+- **M1.3 Anomaly cancellation as a claim** (`crates/physis-model/src/gauge.rs`,
+  `crates/physis-theory/src/{claims,strings,standard_model}.rs`). New matrix row
+  `consistency.anomaly-cancellation`. The Green–Schwarz condition is a mechanical
+  predicate — `GaugeGroup::gs_anomaly_free_10d`, backed by a real
+  `GaugeGroup::dimension` computation — that holds for exactly SO(32) and E₈×E₈
+  (dimension 496) and rejects a fake `SU(3)`/`E8`/SM gauge choice. So heterotic
+  gauge groups are "not a menu; Green–Schwarz is the reason." Type II and
+  M-theory hold for their own (non-GS) reasons; the SM holds (per-generation
+  cancellation); the bosonic string is inapplicable (non-chiral); and off the
+  critical dimension the claim is `undecidable`. Encoded as `EncodedFact`; a
+  typed anomaly polynomial is deferred. Tests in `gauge.rs` (predicate),
+  `strings.rs`, and `standard_model.rs`.
+
 - **M1.2 More constructions first-class** (`crates/physis-theory/src/strings.rs`,
   `critique.rs`, `lab.rs`). Type I, Type IIA, heterotic SO(32), and M-theory are
   now constructed and registered in both the default lab and the `string-critique`

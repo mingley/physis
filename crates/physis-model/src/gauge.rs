@@ -50,6 +50,23 @@ impl SimpleGroup {
         }
     }
 
+    /// Dimension of the group (number of generators), when well-defined.
+    pub fn dimension(self) -> Option<u32> {
+        Some(match self {
+            SimpleGroup::U1 => 1,
+            SimpleGroup::Su(n) if n >= 2 => (n as u32) * (n as u32) - 1,
+            SimpleGroup::So(n) if n >= 3 => (n as u32) * (n as u32 - 1) / 2,
+            SimpleGroup::Sp(n) if n >= 1 => (n as u32) * (2 * n as u32 + 1),
+            SimpleGroup::G2 => 14,
+            SimpleGroup::F4 => 52,
+            SimpleGroup::E6 => 78,
+            SimpleGroup::E7 => 133,
+            SimpleGroup::E8 => 248,
+            SimpleGroup::Spin(n) if n >= 3 => (n as u32) * (n as u32 - 1) / 2,
+            _ => return None,
+        })
+    }
+
     /// Short name.
     pub fn name(self) -> String {
         match self {
@@ -149,6 +166,23 @@ impl GaugeGroup {
             .sum()
     }
 
+    /// Total dimension (sum of factor dimensions), when all factors are valid.
+    pub fn dimension(&self) -> Option<u32> {
+        self.factors.iter().map(|f| f.dimension()).sum()
+    }
+
+    /// Whether this group cancels the 10D N=1 anomaly via Green–Schwarz.
+    ///
+    /// Green–Schwarz cancellation in ten-dimensional N=1 supergravity coupled
+    /// to super-Yang–Mills requires a dimension-496 gauge group with the right
+    /// trace identities. The non-abelian solutions realized by consistent
+    /// string constructions are SO(32) (Type I, heterotic) and E₈×E₈
+    /// (heterotic). Encoded as a textbook fact — this is *not* a re-derivation
+    /// of the anomaly polynomial, which is a later milestone.
+    pub fn gs_anomaly_free_10d(&self) -> bool {
+        self.dimension() == Some(496) && (self == &Self::so32() || self == &Self::e8e8())
+    }
+
     /// How the Standard Model sits in this group, as encoded textbook facts.
     pub fn sm_embed(&self) -> Embed {
         if self == &Self::standard_model() {
@@ -220,5 +254,44 @@ mod tests {
     fn su3_rank() {
         assert_eq!(SimpleGroup::Su(3).rank(), Some(2));
         assert_eq!(SimpleGroup::E8.rank(), Some(8));
+    }
+
+    #[test]
+    fn group_dimensions() {
+        assert_eq!(SimpleGroup::Su(3).dimension(), Some(8));
+        assert_eq!(SimpleGroup::E8.dimension(), Some(248));
+        assert_eq!(SimpleGroup::So(32).dimension(), Some(496));
+        assert_eq!(GaugeGroup::e8e8().dimension(), Some(496));
+        assert_eq!(GaugeGroup::so32().dimension(), Some(496));
+        assert_eq!(GaugeGroup::standard_model().dimension(), Some(12));
+    }
+
+    #[test]
+    fn green_schwarz_solutions_are_exactly_so32_and_e8e8() {
+        // The two consistent 10D N=1 gauge groups.
+        assert!(GaugeGroup::so32().gs_anomaly_free_10d());
+        assert!(GaugeGroup::e8e8().gs_anomaly_free_10d());
+
+        // Everything else must fail — including a plausible-looking "fake"
+        // gauge choice. Green–Schwarz is the reason, not a menu.
+        for g in [
+            GaugeGroup::standard_model(),
+            GaugeGroup::su5(),
+            GaugeGroup::so10(),
+            GaugeGroup::e6(),
+            GaugeGroup::trivial(),
+            GaugeGroup {
+                factors: vec![SimpleGroup::Su(3)],
+            },
+            GaugeGroup {
+                factors: vec![SimpleGroup::E8],
+            },
+        ] {
+            assert!(
+                !g.gs_anomaly_free_10d(),
+                "{} must not be a GS solution",
+                g.name()
+            );
+        }
     }
 }

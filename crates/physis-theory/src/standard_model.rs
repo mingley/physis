@@ -189,6 +189,12 @@ impl Theory for StandardModel {
                 Epistemic::EncodedFact,
             ),
             claims::c(
+                claims::ANOMALY_CANCELLATION,
+                "Chiral gauge anomalies cancel within each generation.",
+                LayerId::Interaction,
+                Epistemic::EncodedFact,
+            ),
+            claims::c(
                 claims::THREE_GENERATIONS,
                 "Three generations of fermions.",
                 LayerId::Particle,
@@ -228,6 +234,10 @@ impl Theory for StandardModel {
             }
             claims::FERMIONS => Verdict::holds(Epistemic::EncodedFact, "quarks and leptons"),
             claims::SM_GAUGE => Verdict::holds(Epistemic::EncodedFact, "SU(3)×SU(2)×U(1)"),
+            claims::ANOMALY_CANCELLATION => Verdict::holds(
+                Epistemic::EncodedFact,
+                "each SM generation is anomaly-free (hypercharge trace and Witten SU(2) conditions)",
+            ),
             claims::THREE_GENERATIONS => {
                 if self.generations == 3 {
                     Verdict::holds(Epistemic::EncodedFact, "three generations")
@@ -291,6 +301,17 @@ mod tests {
             .find(|c| c.id.0 == claims::GRAVITY)
             .unwrap();
         assert_eq!(t.evaluate(&g).kind, VerdictKind::Fails);
+    }
+
+    #[test]
+    fn sm_cancels_anomalies() {
+        let t = StandardModel::default();
+        let c = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == claims::ANOMALY_CANCELLATION)
+            .unwrap();
+        assert_eq!(t.evaluate(&c).kind, VerdictKind::Holds);
     }
 
     #[test]

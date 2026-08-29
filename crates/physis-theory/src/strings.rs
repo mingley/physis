@@ -413,6 +413,12 @@ impl Theory for StringTheory {
                 Epistemic::EncodedFact,
             ),
             claims::c(
+                claims::ANOMALY_CANCELLATION,
+                "Chiral gauge/gravitational anomalies cancel (Green–Schwarz in 10D).",
+                LayerId::Interaction,
+                Epistemic::EncodedFact,
+            ),
+            claims::c(
                 claims::OBSERVED_4D,
                 "Non-compact spacetime is 3+1.",
                 LayerId::Spacetime,
@@ -545,6 +551,45 @@ impl Theory for StringTheory {
                     )
                 }
             }
+            claims::ANOMALY_CANCELLATION => match self.kind {
+                StringKind::Bosonic => Verdict::inapplicable(
+                    "non-chiral 26D string: gauge/gravitational anomalies are not the \
+                     obstruction here (the tachyon is)",
+                ),
+                StringKind::TypeIIA | StringKind::TypeIIB => Verdict::holds(
+                    Epistemic::EncodedFact,
+                    "Type II 10D spectrum is anomaly-free (no chiral gauge anomaly to cancel)",
+                ),
+                StringKind::MTheory => Verdict::holds(
+                    Epistemic::EncodedFact,
+                    "11D supergravity is anomaly-free; boundary E₈ factors are the \
+                     Hořava–Witten mechanism",
+                ),
+                StringKind::TypeI | StringKind::HeteroticSO32 | StringKind::HeteroticE8xE8 => {
+                    if self.total_dim != 10 {
+                        Verdict::undecidable(
+                            Epistemic::EncodedFact,
+                            "Green–Schwarz cancellation is a 10D statement; off the critical \
+                             dimension this encoding does not assert it",
+                        )
+                    } else if w.gauge.gs_anomaly_free_10d() {
+                        Verdict::holds(
+                            Epistemic::EncodedFact,
+                            format!("{} anomalies cancel via Green–Schwarz", w.gauge.name()),
+                        )
+                        .with_evidence([
+                            "dimension-496 GS solution (SO(32) or E₈×E₈); encoded, not \
+                             re-derived from the anomaly polynomial"
+                                .to_string(),
+                        ])
+                    } else {
+                        Verdict::fails(
+                            Epistemic::EncodedFact,
+                            format!("{} is not a 10D Green–Schwarz solution", w.gauge.name()),
+                        )
+                    }
+                }
+            },
             claims::OBSERVED_4D => {
                 if self.observed_dim == 4 {
                     Verdict::holds(Epistemic::EncodedFact, "observed_dim = 4")
@@ -742,6 +787,54 @@ mod tests {
         assert_eq!(verdict(&t, claims::SM_GAUGE), VerdictKind::Undecidable);
         t.set("total_dim", KnobValue::UInt(10)).unwrap();
         assert_eq!(verdict(&t, claims::CRITICAL_DIMENSION), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn green_schwarz_constructions_cancel_anomalies() {
+        // SO(32) and E₈×E₈ constructions cancel via Green–Schwarz.
+        for t in [
+            StringTheory::type_i(),
+            StringTheory::heterotic_so32(),
+            StringTheory::heterotic_e8(),
+        ] {
+            assert_eq!(
+                verdict(&t, claims::ANOMALY_CANCELLATION),
+                VerdictKind::Holds,
+                "{} should cancel anomalies via GS",
+                t.id()
+            );
+        }
+        // Type II and M are anomaly-free for their own (non-GS) reasons.
+        for t in [
+            StringTheory::type_iia(),
+            StringTheory::type_iib(),
+            StringTheory::m_theory(),
+        ] {
+            assert_eq!(
+                verdict(&t, claims::ANOMALY_CANCELLATION),
+                VerdictKind::Holds
+            );
+        }
+        // The bosonic string is non-chiral: anomalies are not the obstruction.
+        assert_eq!(
+            verdict(&StringTheory::bosonic(), claims::ANOMALY_CANCELLATION),
+            VerdictKind::Inapplicable
+        );
+    }
+
+    #[test]
+    fn anomaly_claim_is_a_ten_dimensional_statement() {
+        // Off the critical dimension, GS cancellation is not asserted.
+        let mut t = StringTheory::heterotic_e8();
+        assert_eq!(
+            verdict(&t, claims::ANOMALY_CANCELLATION),
+            VerdictKind::Holds
+        );
+        t.set("total_dim", KnobValue::UInt(9)).unwrap();
+        assert_eq!(
+            verdict(&t, claims::ANOMALY_CANCELLATION),
+            VerdictKind::Undecidable
+        );
     }
 
     #[test]

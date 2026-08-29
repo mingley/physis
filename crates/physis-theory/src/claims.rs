@@ -11,6 +11,8 @@ pub const CRITICAL_DIMENSION: &str = "consistency.critical-dimension";
 pub const SUSY_CONSTRUCTION: &str = "consistency.susy-construction";
 /// No tachyon in the spectrum of the construction.
 pub const NO_TACHYON: &str = "consistency.no-tachyon";
+/// Chiral gauge/gravitational anomalies cancel (Green–Schwarz in 10D).
+pub const ANOMALY_CANCELLATION: &str = "consistency.anomaly-cancellation";
 
 /// Macroscopic spacetime is 3+1.
 pub const OBSERVED_4D: &str = "empirical.observed-4d";
@@ -38,12 +40,13 @@ pub fn c(id: &str, statement: &str, layer: LayerId, epistemic: Epistemic) -> Cla
 }
 
 /// The comparison rows used by the string-critique lab.
-pub fn critique_rows() -> [&'static str; 12] {
+pub fn critique_rows() -> [&'static str; 13] {
     [
         SPACETIME_STRUCTURE,
         CRITICAL_DIMENSION,
         SUSY_CONSTRUCTION,
         NO_TACHYON,
+        ANOMALY_CANCELLATION,
         OBSERVED_4D,
         HIDDEN_EXTRA_DIMS,
         FERMIONS,
