@@ -37,9 +37,17 @@ experiment `gauge-lattice`). The gauge field lives on links; the action sums
   2D/3D, and a knob-sensitive heuristic in 4D across the transition near
   `β ≈ 1.01`. `set wilson-u1 beta 2` deconfines the 4D theory (Coulomb phase).
 
+## Non-abelian gauge — ✅ done
+
+`wilson-su2` and `wilson-su3` (`WilsonSun`) contrast with compact U(1) in the
+`gauge-lattice` matrix: SU(N) is asymptotically free (`gauge.asymptotic-freedom`
+holds; U(1) fails) and its 4D confinement holds as a **conjecture** (the
+Yang–Mills mass-gap Millennium Problem), while U(1) deconfines in 4D.
+
 ## Later in M4
 
-- 3+1 lattice and a non-abelian gauge field on links (Wilson-style), still finite.
+- Genuine 3+1 dynamics / a Monte-Carlo or transfer-matrix computation behind the
+  confinement verdicts (currently encoded facts + one heuristic transition).
 - Connect the scalar tachyon here to the string bosonic tachyon conceptually
   (both are `min ω² < 0`), so the two domains share a stability notion.
 - ✅ `Theory::world()` now returns `Option<World>`: computation returns `None`

@@ -18,6 +18,8 @@ of the computation rather than tabulated facts.
 |---|---|---|
 | `klein-gordon` | real scalar field on an N-site 1D periodic lattice | `field-modes` |
 | `wilson-u1` | compact U(1) lattice gauge field (links + plaquettes) | `gauge-lattice` |
+| `wilson-su2` | non-abelian SU(2) Wilson lattice gauge field | `gauge-lattice` |
+| `wilson-su3` | non-abelian SU(3) Wilson lattice gauge field (QCD group) | `gauge-lattice` |
 
 ## Knobs
 
@@ -69,12 +71,24 @@ the Wilson action sums `1 − cos(θ_plaquette)`. Knobs: `dimension` (2–4), `b
 |---|---|---|
 | `gauge.invariant` | invariance under `U_μ(x) → g(x) U_μ(x) g(x+μ̂)†` | structural theorem |
 | `gauge.local` | only neighbouring links couple (plaquettes) | structural theorem |
-| `gauge.confining` | static charges are confined | theorem (encoded) in 2D/3D; heuristic across the 4D transition near β ≈ 1.01 |
+| `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap) |
+| `gauge.asymptotic-freedom` | the coupling runs to zero at high energy | U(1) `fails` (Landau pole); SU(N) `holds` (Gross–Wilczek–Politzer) |
+
+### Abelian vs non-abelian
+
+The lab contrasts compact U(1) (QED-like) with SU(2)/SU(3) Yang–Mills:
+
+- U(1) is **not** asymptotically free and **deconfines** in 4D above β ≈ 1.01.
+- SU(N) **is** asymptotically free and is *expected* to confine in 4D — but 4D
+  Yang–Mills existence and the mass gap are unproven (a Clay Millennium
+  Problem), so `gauge.confining` for SU(N) in 4D `holds` with epistemic tag
+  `conjecture`, not `theorem`. This is the honesty discipline again: a famous
+  open problem is recorded as open.
 
 ```
 physis experiment gauge-lattice
-physis set wilson-u1 beta 2         # 4D: confining → Coulomb (deconfined)
-physis set wilson-u1 dimension 3    # confines at any β
+physis set wilson-u1 beta 2         # 4D U(1): confining → Coulomb (deconfined)
+physis set wilson-u1 dimension 3    # U(1) confines at any β
 ```
 
 ## Non-goals (this milestone seed)

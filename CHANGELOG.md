@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **M4 non-abelian gauge fields (QED vs QCD)** (`crates/physis-theory/src/gauge_field.rs`).
+  New `WilsonSun` theories `wilson-su2` and `wilson-su3` contrast with compact
+  U(1) in the `gauge-lattice` matrix. New `gauge.asymptotic-freedom` claim: U(1)
+  `fails` (Landau pole), SU(N) `holds` (Gross–Wilczek–Politzer). SU(N) 4D
+  confinement `holds` as a **conjecture** — the Yang–Mills mass-gap Millennium
+  Problem — while U(1) deconfines in 4D above β≈1.01. Registered in
+  `Lab::standard()`; tests cover the asymptotic-freedom contrast and the
+  conjecture tag.
+
 - **Architecture: `Theory::world()` returns `Option<World>`** (`framework.rs` and
   all theories). Non-physics domains no longer borrow a physics-shaped
   spacetime. Computation (`combinational-circuit`, `turing-machine`) returns
