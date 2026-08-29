@@ -12,6 +12,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Tooling
 
+- **`--json` structured output** (`crates/physis`). A global `--json` flag makes
+  the CLI emit the full typed `Response` as JSON — status, text, and the
+  structured `report` (claim matrix) / `diffs` (verdict changes) — so a
+  long-horizon agent consumes typed data instead of parsing prose. Works with
+  any command and composes with `--journal`. A test asserts the response
+  serializes with the matrix and knob-diff content.
+
 - **`physis experiments` command** (`crates/physis-agent`, `crates/physis`). Lists
   the five available experiments (string-critique, em-vacuum, computation,
   field-modes, gauge-lattice) with one-line descriptions, so the growing set of

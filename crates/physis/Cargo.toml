@@ -14,3 +14,4 @@ physis-core.workspace = true
 physis-model.workspace = true
 physis-theory.workspace = true
 physis-agent.workspace = true
+serde_json.workspace = true

@@ -22,6 +22,7 @@ dependencies = [
  "physis-core",
  "physis-model",
  "physis-theory",
+ "serde_json",
 ]
 
 [[package]]

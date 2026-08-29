@@ -5,7 +5,7 @@ use physis_agent::Command;
 
 fn main() {
     let raw: Vec<String> = std::env::args().skip(1).collect();
-    let (journal_path, args) = extract_journal_opt(&raw);
+    let (journal_path, json, args) = extract_opts(&raw);
 
     let mut lab = Lab::standard();
     if let Some(path) = &journal_path {
@@ -32,22 +32,43 @@ fn main() {
         }
     };
     let response = lab.exec(cmd);
-    match &response {
-        physis_agent::Response::Ok { text, .. } => print!("{text}"),
-        physis_agent::Response::Err { message } => eprintln!("error: {message}"),
+    if json {
+        // Structured output for agents: the full typed response (matrix,
+        // diffs, verdicts) as JSON, not just the human-readable text.
+        match serde_json::to_string_pretty(&response) {
+            Ok(s) => println!("{s}"),
+            Err(e) => eprintln!("error: could not serialize response: {e}"),
+        }
+    } else {
+        match &response {
+            physis_agent::Response::Ok { text, .. } => print!("{text}"),
+            physis_agent::Response::Err { message } => eprintln!("error: {message}"),
+        }
     }
     std::process::exit(response.exit_code());
 }
 
-/// Strip a leading `--journal <path>` (or `-j <path>`) option, returning the
-/// path and the remaining args. The option must precede the subcommand.
-fn extract_journal_opt(args: &[String]) -> (Option<String>, Vec<String>) {
-    if let Some(first) = args.first() {
-        if (first == "--journal" || first == "-j") && args.len() >= 2 {
-            return (Some(args[1].clone()), args[2..].to_vec());
+/// Strip leading global options (`--journal <path>`/`-j <path>` and `--json`),
+/// in any order, returning the journal path, whether JSON output was requested,
+/// and the remaining args. Options must precede the subcommand.
+fn extract_opts(args: &[String]) -> (Option<String>, bool, Vec<String>) {
+    let mut journal = None;
+    let mut json = false;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--journal" | "-j" if i + 1 < args.len() => {
+                journal = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--json" => {
+                json = true;
+                i += 1;
+            }
+            _ => break,
         }
     }
-    (None, args.to_vec())
+    (journal, json, args[i..].to_vec())
 }
 
 fn parse(args: &[String]) -> Result<Command, String> {
@@ -99,7 +120,7 @@ fn usage() -> String {
     r#"physis — mechanically verifiable models of reality
 
 USAGE:
-    physis [--journal <file.jsonl>] <command>
+    physis [--journal <file.jsonl>] [--json] <command>
     physis layers
     physis theories
     physis knobs [theory]

@@ -26,6 +26,10 @@ CLI tokens map 1:1 onto `physis_agent::Command`.
 
 Text is for humans and for agents that just want a buffer. `report` / `diffs` are structured.
 
+The CLI `--json` flag emits the whole `Response` as JSON (status, text, and the
+structured `report`/`diffs`), so an agent gets typed matrices and verdict diffs
+rather than parsing prose. Example: `physis --json set type-iib total_dim 9`.
+
 ## Journal events
 
 - `boot` — theory ids at lab creation

@@ -404,6 +404,25 @@ mod tests {
     }
 
     #[test]
+    fn response_serializes_to_json_for_agents() {
+        let mut lab = Lab::standard();
+        let resp = lab.exec(Command::Experiment {
+            id: "string-critique".into(),
+        });
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"status\":\"ok\""));
+        assert!(json.contains("matrix"));
+        // A knob turn exposes structured diffs.
+        let set = lab.exec(Command::Set {
+            theory: "type-iib".into(),
+            knob: "total_dim".into(),
+            value: "9".into(),
+        });
+        let json = serde_json::to_string(&set).unwrap();
+        assert!(json.contains("consistency.critical-dimension"));
+    }
+
+    #[test]
     fn all_listed_experiments_are_runnable() {
         let mut lab = Lab::standard();
         for (id, _) in EXPERIMENTS {

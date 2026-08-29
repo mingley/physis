@@ -18,6 +18,9 @@ cargo run -p physis -- journal
 cargo run -p physis -- --journal session.jsonl set type-iib total_dim 9
 cargo run -p physis -- --journal session.jsonl set type-iib supersymmetry false
 cargo run -p physis -- replay session.jsonl
+
+# Structured JSON output for agents (typed matrix + diffs):
+cargo run -p physis -- --json experiment string-critique
 ```
 
 ## Library
