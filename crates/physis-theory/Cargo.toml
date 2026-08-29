@@ -1,0 +1,14 @@
+[package]
+name = "physis-theory"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Theories as first-class objects: Standard Model, GR, strings, observer-geometry."
+
+[dependencies]
+physis-core.workspace = true
+physis-model.workspace = true
+serde.workspace = true
