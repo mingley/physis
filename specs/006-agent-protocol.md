@@ -13,6 +13,7 @@ Layer: agent
 | `run <theory>` | evaluate all claims |
 | `set <theory> <knob> <value>` | turn a knob, print Δverdicts |
 | `experiment <id>` | canonical experiment (fresh defaults) |
+| `score <theory>` | grade a theory against the empirical-target fixture |
 | `journal` | dump JSONL |
 | `replay <path>` | replay a recorded JSONL journal and verify it reproduces |
 

@@ -256,6 +256,13 @@ impl Lab {
                 Err(e) => Response::err(e.to_string()),
             },
             Command::Journal => Response::ok(self.journal.to_string()),
+            Command::Score { theory } => match self.theory(&theory) {
+                Ok(t) => {
+                    let card = physis_theory::score(&physis_theory::empirical_target(), t);
+                    Response::ok(card.render())
+                }
+                Err(e) => Response::err(e.to_string()),
+            },
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);

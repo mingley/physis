@@ -12,3 +12,4 @@ description = "Theories as first-class objects: Standard Model, GR, strings, obs
 physis-core.workspace = true
 physis-model.workspace = true
 serde.workspace = true
+serde_json.workspace = true

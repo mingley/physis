@@ -20,6 +20,7 @@ pub mod geometry;
 pub mod relativity;
 pub mod standard_model;
 pub mod strings;
+pub mod target;
 
 pub use critique::{string_critique, ExperimentReport, TheoryReport, VerdictDiff};
 pub use framework::Theory;
@@ -27,3 +28,4 @@ pub use geometry::ObserverGeometry;
 pub use relativity::GeneralRelativity;
 pub use standard_model::StandardModel;
 pub use strings::{StringKind, StringTheory};
+pub use target::{empirical_target, score, EmpiricalTarget, Scorecard};

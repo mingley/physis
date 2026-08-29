@@ -1,0 +1,8 @@
+{
+  "observed_dim": 4,
+  "gauge_contains_sm": true,
+  "has_fermions": true,
+  "charged_lepton_generations": 3,
+  "has_gravity": true,
+  "note": "The low-energy world any candidate theory must reproduce: 3+1 macroscopic spacetime, a gauge sector containing SU(3)xSU(2)xU(1), chiral fermions in three generations, and gravity. This is data, not code: theories are scored against this fixture."
+}

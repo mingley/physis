@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M2 — Empirical contact
 
+- **M2.5 Empirical target as data** (`data/empirical-world.json`,
+  `crates/physis-theory/src/target.rs`, new `physis score` CLI verb). The
+  low-energy requirements (observed 3+1, gauge ⊃ SM, chiral fermions, three
+  generations, gravity) live in a checked-in JSON fixture parsed by serde, not a
+  hand-written `empirical_target()` body. `score(target, theory)` grades any
+  theory's projected `World`; `physis score <theory>` prints the scorecard.
+  Honest, illustrative results: heterotic E₈×E₈ 5/5, Standard Model 4/5 (misses
+  only gravity), Type IIB 4/5 (no perturbative SM gauge), GR 2/5. Tests cover
+  each case. **M2 complete** (all five items, both "Done when" criteria).
+
 - **M2.3 Coupling constants as typed quantities** (`crates/physis-model/src/constants.rs`).
   `fine_structure_constant` (α) and `strong_coupling_mz` (α_s) are
   `Qty<Dimensionless>`; `fermi_coupling` (G_F) is a typed `energy⁻²` quantity

@@ -42,6 +42,11 @@ pub enum Command {
         /// Path to a JSONL journal file.
         path: String,
     },
+    /// Score a theory against the empirical target fixture.
+    Score {
+        /// Theory id.
+        theory: String,
+    },
 }
 
 /// Lab → agent.

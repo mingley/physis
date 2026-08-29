@@ -82,6 +82,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             Ok(Command::Experiment { id })
         }
         "journal" => Ok(Command::Journal),
+        "score" => {
+            let theory = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Score { theory })
+        }
         "replay" => {
             let path = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Replay { path })
@@ -100,6 +104,7 @@ USAGE:
     physis knobs [theory]
     physis run <theory>
     physis set <theory> <knob> <value>
+    physis score <theory>
     physis experiment [string-critique]
     physis journal
     physis replay <journal.jsonl>

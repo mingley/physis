@@ -8,7 +8,11 @@ Goal: replace the most embarrassing `EncodedFact` tables with typed checks, and 
 2. **Neutrino masses.** ✅ *Done (M2.2).* Added the `neutrino_masses` knob to `standard-model` and the `empirical.neutrino-masses` claim. The minimal SM (default `false`) now *fails* this claim honestly — "stores neutrino masses as 0, but oscillations prove they are nonzero" — instead of silently storing 0; flipping the knob to `true` makes it hold. Knob-diff test in `standard_model.rs`.
 3. **Coupling constants as quantities.** ✅ *Done (M2.3).* `fine_structure_constant` (α) and `strong_coupling_mz` (α_s) are `Qty<Dimensionless>`; `fermi_coupling` (G_F) is a typed `energy⁻²` quantity. The type system enforces it: `G_F · E · E` type-checks to `Qty<Dimensionless>` by construction, and multiplying G_F by anything else is a compile error. Running the couplings with energy is deferred to M4. Test in `constants.rs`.
 4. **Electroweak scale vs compactification radius.** ✅ *Done (M2.4).* `empirical.hidden-extra-dims` now compares a typed effective radius `Qty<Length>` (Kähler volume × √g_s × Planck length) against `Scale::Electroweak.typical_length()`, instead of a raw float against `1e16`. See `StringTheory::effective_radius`.
-5. **A tiny empirical fixture file.** JSON of “what we require of a low-energy world” that theories are scored against, so the target is data, not a function named `empirical_target()`.
+5. **A tiny empirical fixture file.** ✅ *Done (M2.5).* `data/empirical-world.json` states the low-energy requirements (observed 3+1, gauge ⊃ SM, chiral fermions, three generations, gravity). `physis_theory::target` parses it and `score(target, theory)` grades any theory's projected `World` against it; `physis score <theory>` prints the scorecard. Results are honest and illustrative: heterotic E₈×E₈ scores 5/5, the SM misses only gravity (4/5), Type IIB misses the gauge sector, GR scores 2/5. The target is now versioned data, not a function body.
+
+## M2 status
+
+All five work items are complete and both "Done when" criteria are met. Next: M3 (`plans/004`).
 
 ## Retag policy
 
