@@ -21,6 +21,9 @@ pub mod world;
 pub use complex::Complex;
 pub use gauge::{Embed, GaugeGroup, SimpleGroup};
 pub use particle::{EmpiricalStatus, Flavor, Species, Spectrum};
-pub use quantum::{pauli_x, pauli_y, pauli_z, Hilbert, Ket};
+pub use quantum::{
+    apply_mat4, expectation4, pauli_x, pauli_y, pauli_z, spin_measurement, tensor2, Hilbert, Ket,
+    Mat4,
+};
 pub use spacetime::{Manifold, SignConvention, Signature, Topology};
 pub use world::World;

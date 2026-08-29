@@ -27,6 +27,7 @@ Born rule) its first `Theory`, where earlier milestones only used it internally.
 | id | meaning | how it is decided |
 |---|---|---|
 | `quantum.born-normalization` | the singlet is normalized | computed from the ket: `⟨ψ|ψ⟩ = 1`, `Σ pᵢ = 1` |
+| `quantum.correlator-from-operators` | `E(a,b) = ⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b)` | **derived from the operators**: builds `σ(θ) = cos θ·σ_z + sin θ·σ_x`, tensors them, and evaluates the expectation on the singlet |
 | `quantum.bell-violation` | `|S| > 2` (local realism refuted) | computed CHSH `S` at the optimal angles; holds iff `S > 2` |
 | `quantum.tsirelson-bound` | `|S| ≤ 2√2` | **computed by maximization**: brute-force over a 90³ angle grid finds `|S|max ≈ 2.827`, never exceeding `2√2` |
 | `quantum.local-realism-bound` | the LHV maximum of `|S|` is exactly 2 | **derived by enumeration** of all `2⁴` deterministic ±1 strategies; the max is 2 |
@@ -34,11 +35,15 @@ Born rule) its first `Theory`, where earlier milestones only used it internally.
 ## The refutation
 
 The CHSH correlator `S = |E(a,b) − E(a,b′) + E(a′,b) + E(a′,b′)|` with
-`E(a,b) = −V·cos(2(a−b))` and the optimal angles `(0, 45°, 22.5°, 67.5°)`
-evaluates to `V·2√2`. At full visibility `S = 2√2 ≈ 2.828 > 2`: no local
-hidden-variable theory can reproduce it. This is the whole point — a famous
-19th/20th-century intuition (local realism) is refuted by a computation, with
-the classical bound (2) and the quantum bound (2√2) both explicit.
+`E(a,b) = −V·cos(a−b)` and the optimal angles `(0, 90°, 45°, 135°)` evaluates to
+`V·2√2`. The correlator `−cos(a−b)` is itself **derived**: the operator
+expectation `⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩` is computed on the singlet (building the spin
+operators, tensoring them, and applying the 4×4 matrix — all in
+`physis-model`), and `quantum.correlator-from-operators` checks it matches the
+closed form to machine precision. At full visibility `S = 2√2 ≈ 2.828 > 2`: no
+local hidden-variable theory can reproduce it. This is the whole point — a
+famous 19th/20th-century intuition (local realism) is refuted by a computation,
+with the classical bound (2) and the quantum bound (2√2) both explicit.
 
 Both bounds are **derived, not asserted**. `quantum.local-realism-bound`
 enumerates every one of the `2⁴` deterministic outcome assignments a local

@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **CHSH correlator derived from the two-qubit operators**
+  (`crates/physis-model/src/quantum.rs`, `crates/physis-theory/src/quantum.rs`,
+  `specs/012-quantum-foundations.md`). Added `spin_measurement(θ) = cos θ·σ_z +
+  sin θ·σ_x`, a Kronecker product `tensor2`, a 4×4 `apply_mat4`, and
+  `expectation4` to `physis-model`. The Bell test's correlator `E(a,b) =
+  −cos(a−b)` is now the genuine operator expectation `⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩`,
+  verified against the closed form by a new `quantum.correlator-from-operators`
+  theorem — so the quantum prediction *emerges from the formalism* rather than
+  being an assumed cosine. The CHSH angle convention was updated accordingly
+  `(0, 90°, 45°, 135°)`, still saturating `2√2`. Verified: three new
+  `physis-model` tests (spin eigenvalues ±1, singlet correlator = −cos Δ) and a
+  `physis-theory` test, `fmt`, `clippy -D warnings`, full suite, and `run
+  bell-test` (now five holding theorems).
+
 - **CHSH bounds derived, not asserted (Tsirelson by maximization, classical by
   enumeration)** (`crates/physis-theory/src/quantum.rs`,
   `specs/012-quantum-foundations.md`). `quantum.tsirelson-bound` is now computed:

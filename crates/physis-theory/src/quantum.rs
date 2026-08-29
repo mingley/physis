@@ -1,10 +1,13 @@
 //! Quantum foundations: a fifth domain that puts local realism on trial.
 //!
 //! [`BellTest`] computes the CHSH correlator `S` for a two-qubit singlet with
-//! the optimal measurement angles. Local hidden-variable theories obey
-//! `|S| ≤ 2` (the Bell/CHSH bound); quantum mechanics reaches `2√2 ≈ 2.828`
-//! (Tsirelson's bound). Computing `S > 2` is a mechanical refutation of local
-//! realism — exactly the kind of old assumption this lab exists to scrutinize.
+//! the optimal measurement angles. The correlator `E(a,b) = −cos(a−b)` is not
+//! assumed — it is the operator expectation `⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩`, verified
+//! against the closed form by `quantum.correlator-from-operators`. Local
+//! hidden-variable theories obey `|S| ≤ 2` (the Bell/CHSH bound); quantum
+//! mechanics reaches `2√2 ≈ 2.828` (Tsirelson's bound). Computing `S > 2` is a
+//! mechanical refutation of local realism — exactly the kind of old assumption
+//! this lab exists to scrutinize.
 //!
 //! A `visibility` knob (Werner-state mixedness) turns the violation off: below
 //! `1/√2` the correlations are reproducible by a local model.
@@ -15,7 +18,7 @@ use physis_core::claim::{Claim, Epistemic, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
-use physis_model::{Complex, Ket, World};
+use physis_model::{expectation4, spin_measurement, tensor2, Complex, Ket, World};
 
 use crate::critique::{report_from_rows, ExperimentReport};
 use crate::framework::Theory;
@@ -28,11 +31,14 @@ pub const BELL_VIOLATION: &str = "quantum.bell-violation";
 pub const TSIRELSON_BOUND: &str = "quantum.tsirelson-bound";
 /// The local-hidden-variable maximum of |S| is exactly 2.
 pub const LOCAL_REALISM_BOUND: &str = "quantum.local-realism-bound";
+/// The singlet correlator equals ⟨ψ|σ(a)⊗σ(b)|ψ⟩, derived from the operators.
+pub const QM_CORRELATOR: &str = "quantum.correlator-from-operators";
 
 /// Matrix rows for the quantum-foundations lab.
-pub fn quantum_rows() -> [&'static str; 4] {
+pub fn quantum_rows() -> [&'static str; 5] {
     [
         BORN_NORMALIZATION,
+        QM_CORRELATOR,
         BELL_VIOLATION,
         TSIRELSON_BOUND,
         LOCAL_REALISM_BOUND,
@@ -43,10 +49,21 @@ pub fn quantum_rows() -> [&'static str; 4] {
 const ANGLE_STEPS: usize = 90;
 
 /// The signed CHSH combination `S` for the singlet correlator
-/// `E(x,y) = −V·cos(2(x−y))` at four measurement angles.
+/// `E(x,y) = −V·cos(x−y)` at four measurement angles. The `−cos(x−y)` form is
+/// not assumed: it is verified against the operator expectation
+/// `⟨ψ⁻|σ(x)⊗σ(y)|ψ⁻⟩` by the `quantum.correlator-from-operators` claim.
 fn chsh_value(v: f64, a: f64, a2: f64, b: f64, b2: f64) -> f64 {
-    let e = |x: f64, y: f64| -v * (2.0 * (x - y)).cos();
+    let e = |x: f64, y: f64| -v * (x - y).cos();
     e(a, b) - e(a, b2) + e(a2, b) + e(a2, b2)
+}
+
+/// The singlet correlator `E(a,b) = ⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩`, computed directly from
+/// the two-qubit state and the spin-measurement operators (no visibility).
+fn singlet_correlator(a: f64, b: f64) -> f64 {
+    let op = tensor2(spin_measurement(a), spin_measurement(b));
+    expectation4(&op, &BellTest::singlet())
+        .map(|c| c.re)
+        .unwrap_or(f64::NAN)
 }
 
 /// Maximum `|S|` any local hidden-variable model can reach, by enumerating all
@@ -105,7 +122,7 @@ impl BellTest {
     /// The CHSH correlator |S| for the singlet at the optimal angles, scaled by
     /// the visibility. E(a,b) = −V·cos(2(a−b)); optimal angles give |S| = V·2√2.
     fn chsh_s(&self) -> f64 {
-        chsh_value(self.visibility, 0.0, PI / 4.0, PI / 8.0, 3.0 * PI / 8.0).abs()
+        chsh_value(self.visibility, 0.0, PI / 2.0, PI / 4.0, 3.0 * PI / 4.0).abs()
     }
 
     /// Maximize `|S|` over all measurement angles by brute-force grid search
@@ -189,6 +206,12 @@ impl Theory for BellTest {
                 Epistemic::Theorem,
             ),
             Claim::new(
+                QM_CORRELATOR,
+                "The singlet correlator equals ⟨ψ|σ(a)⊗σ(b)|ψ⟩ = −cos(a−b).",
+                LayerId::Quantum,
+                Epistemic::Theorem,
+            ),
+            Claim::new(
                 BELL_VIOLATION,
                 "The CHSH correlator exceeds the local-realism bound of 2.",
                 LayerId::Quantum,
@@ -219,6 +242,30 @@ impl Theory for BellTest {
                         .with_evidence([format!("norm² = {n:.6}, Σ pᵢ = {p_sum:.6}")])
                 } else {
                     Verdict::fails(Epistemic::Theorem, "state is not normalized")
+                }
+            }
+            QM_CORRELATOR => {
+                // Verify the closed form used everywhere else is the genuine
+                // quantum expectation, computed from σ(a)⊗σ(b) on the singlet.
+                let mut worst = 0.0_f64;
+                for (a, b) in [(0.0, 0.4), (0.3, 1.1), (1.0, 2.0), (0.0, PI / 2.0)] {
+                    let from_ops = singlet_correlator(a, b);
+                    let closed = -(a - b).cos();
+                    worst = worst.max((from_ops - closed).abs());
+                }
+                if worst < 1e-12 {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        "⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b), computed from the operators",
+                    )
+                    .with_evidence([format!(
+                        "max |operator expectation − (−cos Δ)| = {worst:.2e} over sampled angles"
+                    )])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!("operator correlator disagrees with −cos(a−b) by {worst:.2e}"),
+                    )
                 }
             }
             BELL_VIOLATION => {
@@ -357,6 +404,18 @@ mod tests {
         assert!((super::max_chsh_local_hidden_variable() - 2.0).abs() < 1e-12);
         assert_eq!(
             verdict(&BellTest::default(), LOCAL_REALISM_BOUND),
+            VerdictKind::Holds
+        );
+    }
+
+    #[test]
+    fn correlator_is_derived_from_the_operators() {
+        // The quantum prediction −cos(a−b) emerges from σ(a)⊗σ(b) on the singlet.
+        for (a, b) in [(0.0, 0.4), (0.3, 1.1), (1.0, 2.0)] {
+            assert!((super::singlet_correlator(a, b) - (-(a - b).cos())).abs() < 1e-12);
+        }
+        assert_eq!(
+            verdict(&BellTest::default(), QM_CORRELATOR),
             VerdictKind::Holds
         );
     }
