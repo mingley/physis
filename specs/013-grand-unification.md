@@ -86,6 +86,18 @@ computed. The low SM `M_GUT` is also what feeds `gut.proton-decay-viable`: the
 dimension-6 rate scales as `M_GUT⁻⁴`, so a low scale means a short, excluded
 lifetime.
 
+### Two-loop running
+
+The verdict also carries a **two-loop** result: `GaugeRunning` integrates the
+coupled two-loop RGEs `d(α_i⁻¹)/dt = −b_i/2π − (1/8π²)·Σ_j b_ij α_j` with RK4
+(the gauge two-loop matrices `b_ij` for the SM and MSSM), finds the
+`α_1⁻¹ = α_2⁻¹` crossing, and reports the residual `α_3⁻¹` gap there. The
+qualitative picture is unchanged and sharpened: minimal SU(5) misses (≈12% gap,
+`M_GUT ≈ 10¹³ GeV`), while the MSSM meets to a few percent at
+`M_GUT ≈ 3×10¹⁶ GeV` — the phenomenological unification scale. The residual
+two-loop gap in the MSSM is the well-known few-percent discrepancy closed by
+SUSY threshold corrections, which this milestone does not model.
+
 ## The knob → verdict diff
 
 ```
@@ -109,7 +121,8 @@ becomes concrete.
 
 ## Non-goals (this milestone)
 
-- **Two-loop** RG running and SUSY threshold corrections (one-loop is done).
+- SUSY threshold corrections and Yukawa contributions to the two-loop running
+  (the gauge-only two-loop RGEs are integrated; thresholds close the residual).
 - A dynamical proton-decay *rate* from the dimension-6 operator coefficients
   (the verdict uses the computed `M_GUT` qualitatively, not a full lifetime).
 - SO(10)/E₆ as separate theories (the embedding chain already reaches them).

@@ -24,11 +24,13 @@ use physis_model::constants::{
     inverse_alpha_em_mz, strong_coupling_mz, weak_mixing_angle_sin2_mz, z_mass_gev,
 };
 
-/// A one-loop running of the three SM gauge couplings from `M_Z`.
+/// A running of the three SM gauge couplings from `M_Z` (one- and two-loop).
 #[derive(Clone, Copy, Debug)]
 pub struct GaugeRunning {
     /// One-loop beta coefficients `(b_1, b_2, b_3)`, GUT-normalized U(1).
     pub b: [f64; 3],
+    /// Two-loop (gauge) beta matrix `b_ij`, GUT-normalized.
+    pub b2: [[f64; 3]; 3],
     /// Inverse couplings at `M_Z`: `[α_1⁻¹, α_2⁻¹, α_3⁻¹]`.
     pub inv_alpha_mz: [f64; 3],
 }
@@ -48,18 +50,30 @@ impl GaugeRunning {
         [a1, a2, a3]
     }
 
-    /// The minimal Standard Model: `b = (41/10, −19/6, −7)`.
+    /// The minimal Standard Model: one-loop `b = (41/10, −19/6, −7)` and the
+    /// standard two-loop gauge matrix (GUT-normalized).
     pub fn standard_model() -> Self {
         Self {
             b: [41.0 / 10.0, -19.0 / 6.0, -7.0],
+            b2: [
+                [199.0 / 50.0, 27.0 / 10.0, 44.0 / 5.0],
+                [9.0 / 10.0, 35.0 / 6.0, 12.0],
+                [11.0 / 10.0, 9.0 / 2.0, -26.0],
+            ],
             inv_alpha_mz: Self::measured_inv_alpha_mz(),
         }
     }
 
-    /// The MSSM (supersymmetric SM): `b = (33/5, 1, −3)`.
+    /// The MSSM (supersymmetric SM): one-loop `b = (33/5, 1, −3)` and the
+    /// standard two-loop gauge matrix (GUT-normalized).
     pub fn mssm() -> Self {
         Self {
             b: [33.0 / 5.0, 1.0, -3.0],
+            b2: [
+                [199.0 / 25.0, 27.0 / 5.0, 88.0 / 5.0],
+                [9.0 / 5.0, 25.0, 24.0],
+                [11.0 / 5.0, 9.0, 14.0],
+            ],
             inv_alpha_mz: Self::measured_inv_alpha_mz(),
         }
     }
@@ -103,11 +117,105 @@ impl GaugeRunning {
     pub fn unification_mismatch(&self) -> f64 {
         (self.predicted_alpha3_mz() / self.measured_alpha3_mz() - 1.0).abs()
     }
+
+    /// Two-loop RGE derivative `d(α_i⁻¹)/dt` at inverse couplings `y`:
+    /// `−b_i/2π − (1/8π²) Σ_j b_ij α_j`, with `α_j = 1/y_j`.
+    fn two_loop_deriv(&self, y: [f64; 3]) -> [f64; 3] {
+        let mut d = [0.0; 3];
+        for (i, di) in d.iter_mut().enumerate() {
+            let two_loop: f64 = (0..3).map(|j| self.b2[i][j] / y[j]).sum();
+            *di = -self.b[i] / (2.0 * PI) - two_loop / (8.0 * PI * PI);
+        }
+        d
+    }
+
+    /// One RK4 step of size `h` on the inverse-coupling vector.
+    fn rk4_step(&self, y: [f64; 3], h: f64) -> [f64; 3] {
+        let add =
+            |a: [f64; 3], b: [f64; 3], s: f64| [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s];
+        let k1 = self.two_loop_deriv(y);
+        let k2 = self.two_loop_deriv(add(y, k1, h / 2.0));
+        let k3 = self.two_loop_deriv(add(y, k2, h / 2.0));
+        let k4 = self.two_loop_deriv(add(y, k3, h));
+        [
+            y[0] + h / 6.0 * (k1[0] + 2.0 * k2[0] + 2.0 * k3[0] + k4[0]),
+            y[1] + h / 6.0 * (k1[1] + 2.0 * k2[1] + 2.0 * k3[1] + k4[1]),
+            y[2] + h / 6.0 * (k1[2] + 2.0 * k2[2] + 2.0 * k3[2] + k4[2]),
+        ]
+    }
+
+    /// Integrate the two-loop RGEs up from `M_Z`, find the scale where `α_1⁻¹`
+    /// and `α_2⁻¹` cross, and return `(ln(M_GUT/M_Z), α_GUT⁻¹, α_3⁻¹ there)`.
+    fn two_loop_crossing(&self) -> (f64, f64, f64) {
+        let h = 0.01;
+        let mut y = self.inv_alpha_mz;
+        let mut t = 0.0;
+        for _ in 0..6000 {
+            let y_next = self.rk4_step(y, h);
+            let (d_now, d_next) = (y[0] - y[1], y_next[0] - y_next[1]);
+            if d_now.signum() != d_next.signum() && d_now != 0.0 {
+                // Linear interpolation to the crossing within this step.
+                let frac = d_now / (d_now - d_next);
+                let interp = |a: f64, b: f64| a + (b - a) * frac;
+                let a1 = interp(y[0], y_next[0]);
+                let a3 = interp(y[2], y_next[2]);
+                return (t + h * frac, a1, a3);
+            }
+            y = y_next;
+            t += h;
+        }
+        (t, y[0], y[2]) // no crossing found within range
+    }
+
+    /// Two-loop unification scale `M_GUT` in GeV.
+    pub fn two_loop_unification_scale_gev(&self) -> f64 {
+        z_mass_gev().value() * self.two_loop_crossing().0.exp()
+    }
+
+    /// Two-loop unification mismatch: the fractional gap between `α_3⁻¹` and the
+    /// `α_1⁻¹ = α_2⁻¹` meeting value, at the two-loop crossing scale. Small means
+    /// all three couplings meet there.
+    pub fn two_loop_unification_mismatch(&self) -> f64 {
+        let (_, a12, a3) = self.two_loop_crossing();
+        (a3 - a12).abs() / a12.abs()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn two_loop_mssm_unifies_far_better_than_the_sm() {
+        let sm = GaugeRunning::standard_model();
+        let mssm = GaugeRunning::mssm();
+        // Two-loop RK4 integration: SM misses, MSSM unifies to a few percent.
+        let sm_m = sm.two_loop_unification_mismatch();
+        let mssm_m = mssm.two_loop_unification_mismatch();
+        assert!(sm_m > 0.08, "SM two-loop mismatch = {sm_m}");
+        assert!(mssm_m < 0.05, "MSSM two-loop mismatch = {mssm_m}");
+        assert!(mssm_m < sm_m / 2.0, "SUSY should unify much better");
+        // Two-loop MSSM scale is the phenomenological ~2–3×10^16 GeV; the SM's is
+        // far too low (~10^13 GeV), the reason its proton decay is excluded.
+        let mssm_gut = mssm.two_loop_unification_scale_gev();
+        assert!(
+            (1e16..1e17).contains(&mssm_gut),
+            "MSSM M_GUT = {mssm_gut:.2e}"
+        );
+        assert!((1e12..1e14).contains(&sm.two_loop_unification_scale_gev()));
+    }
+
+    #[test]
+    fn two_loop_refines_one_loop() {
+        // The two-loop scale differs measurably from the one-loop estimate.
+        let mssm = GaugeRunning::mssm();
+        let one = mssm.unification_scale_gev();
+        let two = mssm.two_loop_unification_scale_gev();
+        assert!(
+            (one / two - 1.0).abs() > 0.05,
+            "one={one:.2e}, two={two:.2e}"
+        );
+    }
 
     #[test]
     fn standard_model_misses_unification() {

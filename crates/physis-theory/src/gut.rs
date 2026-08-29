@@ -202,25 +202,36 @@ impl Theory for Su5Gut {
                 let mismatch = run.unification_mismatch();
                 let evidence = [
                     format!(
-                        "predicted α_3(M_Z) = {:.4} vs measured {:.4} (mismatch {:.1}%)",
+                        "one-loop: predicted α_3(M_Z) = {:.4} vs measured {:.4} (mismatch {:.1}%), M_GUT ≈ {:.2e} GeV",
                         run.predicted_alpha3_mz(),
                         run.measured_alpha3_mz(),
-                        100.0 * mismatch
+                        100.0 * mismatch,
+                        run.unification_scale_gev()
                     ),
-                    format!("one-loop M_GUT ≈ {:.2e} GeV", run.unification_scale_gev()),
+                    format!(
+                        "two-loop (RK4): α_3⁻¹ gap {:.1}% at M_GUT ≈ {:.2e} GeV",
+                        100.0 * run.two_loop_unification_mismatch(),
+                        run.two_loop_unification_scale_gev()
+                    ),
                 ];
+                let two_loop = run.two_loop_unification_mismatch();
                 if mismatch < 0.03 {
                     Verdict::holds(
                         Epistemic::Heuristic,
-                        "the three couplings meet at one loop (a celebrated near-success)",
+                        format!(
+                            "the three couplings meet (1-loop {:.0}%, 2-loop {:.0}% gap) — a celebrated near-success",
+                            100.0 * mismatch,
+                            100.0 * two_loop
+                        ),
                     )
                     .with_evidence(evidence)
                 } else {
                     Verdict::fails(
                         Epistemic::Heuristic,
                         format!(
-                            "the couplings miss unification at one loop ({:.0}% off in α_3)",
-                            100.0 * mismatch
+                            "the couplings miss unification (1-loop {:.0}%, 2-loop {:.0}% off in α_3)",
+                            100.0 * mismatch,
+                            100.0 * two_loop
                         ),
                     )
                     .with_evidence(evidence)

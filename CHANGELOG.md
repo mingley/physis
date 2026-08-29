@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Two-loop RG running for gauge-coupling unification**
+  (`crates/physis-theory/src/rge.rs`, `crates/physis-theory/src/gut.rs`,
+  `specs/013-grand-unification.md`). `GaugeRunning` now integrates the *coupled
+  two-loop* RGEs `d(α_i⁻¹)/dt = −b_i/2π − (1/8π²)·Σ_j b_ij α_j` with a hand-rolled
+  RK4 stepper (the standard gauge two-loop matrices `b_ij` for the SM and MSSM),
+  finds the `α_1⁻¹ = α_2⁻¹` crossing, and reports the residual `α_3⁻¹` gap and the
+  two-loop `M_GUT`. The `gut.coupling-unification` verdict now shows both loops:
+  minimal SU(5) misses (≈12% gap at `M_GUT ≈ 10¹³ GeV`), the MSSM meets to a few
+  percent at `M_GUT ≈ 3×10¹⁶ GeV`. Verified: two new tests (MSSM unifies far
+  better than the SM at two loops; two-loop scale refines the one-loop estimate),
+  `fmt`, `clippy -D warnings`, full suite, and the CLI knob diff.
+
 - **Klein bottle: non-orientability and torsion-invisibility over ℝ**
   (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). Added
   `Complex::klein_bottle()` (a 4×4 grid glued into a torus one way and with a flip
