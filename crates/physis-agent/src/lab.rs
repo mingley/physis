@@ -6,6 +6,7 @@ use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::KnobValue;
+use physis_theory::computation::{CombinationalCircuit, TuringMachine};
 use physis_theory::critique::diff_verdicts;
 use physis_theory::em::{LinearMedium, MaxwellVacuum};
 use physis_theory::{
@@ -48,6 +49,9 @@ impl Lab {
         // Second domain: electromagnetism shares the same lab and protocol.
         lab.insert(Box::new(MaxwellVacuum));
         lab.insert(Box::new(LinearMedium::default()));
+        // Third domain: computation.
+        lab.insert(Box::new(CombinationalCircuit));
+        lab.insert(Box::new(TuringMachine::default()));
         let ids = lab.theories.keys().cloned().collect();
         lab.journal.record(JournalEvent::boot(ids));
         lab
@@ -158,6 +162,11 @@ impl Lab {
             }
             "em-vacuum" => {
                 let report = physis_theory::em_vacuum();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "computation" => {
+                let report = physis_theory::computation();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }

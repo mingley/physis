@@ -14,13 +14,21 @@ New theory `maxwell-vacuum` (and later `linear-medium`):
 
 This domain is chosen because it *needs* `Qty` immediately (cannot add volts to amperes) and produces clean knob diffs (`epsilon_r` changes wave speed).
 
-## Computation (second reuse)
+## Computation (second reuse) — ✅ done
 
-New theory `turing-finite` or `combinational-circuit`:
+New theories `combinational-circuit` and `turing-machine` with the `computation`
+experiment (`physis_theory::computation`, `specs/009-computation.md`):
 
-- Knobs: resource bounds
-- Claims: invariants, halt (undecidable — good, we already have that verdict kind)
-- Later: Landauer, sitting on `statistical` + `information`
+- Knob: `turing-machine tape_bound` (0 = unbounded).
+- Claims: halts, turing-complete, deterministic, decidable-equivalence,
+  resource-bounded.
+- The halting problem is encoded as a genuine `Undecidable` verdict for the
+  unbounded machine; `set turing-machine tape_bound 1000` flips halts,
+  turing-complete, decidable-equivalence, and resource-bounded.
+- Later: complexity classes, Landauer / reversible computing on
+  `statistical` + `information`. Also: `World` is physics-shaped, so
+  computational objects use a degenerate placeholder world — generalizing the
+  projection is future work (noted in `specs/009`).
 
 ## Crate split
 

@@ -32,7 +32,7 @@ This repository does **not** decide whether string theory is false. It makes the
 |---|---|
 | `physis-core` | SI dimensions, quantities, layers, knobs, claims, verdicts |
 | `physis-model` | Spacetime, finite Hilbert space, SM spectrum, gauge groups, `World` |
-| `physis-theory` | Standard Model, GR, strings/M, observer-geometry scaffold, critique lab, **electromagnetism** (second domain) |
+| `physis-theory` | Standard Model, GR, strings/M, observer-geometry scaffold, critique lab, **electromagnetism** and **computation** (domain reuse) |
 | `physis-agent` | Lab, protocol, JSONL journal |
 | `physis` | Facade + CLI |
 
@@ -68,6 +68,7 @@ cargo run -p physis -- run type-iib
 cargo run -p physis -- set type-iib total_dim 9
 cargo run -p physis -- experiment string-critique
 cargo run -p physis -- experiment em-vacuum
+cargo run -p physis -- experiment computation
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis --example kinetic_energy
 

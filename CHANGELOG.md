@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M3 — Domain reuse
 
+- **M3 Computation, the third domain** (`crates/physis-theory/src/computation.rs`,
+  new `specs/009-computation.md`). A second reuse on the same substrate. New
+  theories `combinational-circuit` and `turing-machine` (`tape_bound` knob) and
+  the `physis experiment computation` matrix.
+  - **The halting problem as an honest `Undecidable`:** the unbounded Turing
+    machine's `comp.halts` is `undecidable` (Turing 1936); `comp.decidable-equivalence`
+    is `undecidable` (Rice). Setting `tape_bound` to a finite value flips halts,
+    turing-complete, decidable-equivalence, and resource-bounded — a finite
+    automaton decides halting but loses Turing completeness.
+  - Registered in `Lab::standard()`; `run`/`knobs`/`set` work from the CLI.
+  - Documented rough edge: `World` is physics-shaped, so computational objects
+    use a degenerate placeholder world (generalizing the projection is future
+    work).
+
 - **M3 Electromagnetism, the second domain** (`crates/physis-theory/src/em.rs`,
   `crates/physis-model/src/constants.rs`, new `specs/008-electromagnetism.md`).
   Proves the workspace hosts a second science without forking core: `Qty`,
