@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **M4 computed strong-coupling area law** (`crates/physis-theory/src/gauge_field.rs`).
+  New `gauge.strong-coupling-area-law` claim backed by a real computation: the
+  leading strong-coupling string tension `σ = −ln(β/2N²)` (first term of the
+  convergent Wilson-loop expansion) for both compact U(1) and SU(N). `σ > 0` is a
+  genuine area-law theorem; it fails once the coupling is too weak for the
+  expansion. This is the *computed* companion to the physical (heuristic/
+  conjecture) `gauge.confining` verdict. Knob-sensitive: `set wilson-su3 beta
+  100` flips it holds→fails. Tests check the knob diff and the closed form.
+
 - **M4 second-order accuracy, computed** (`crates/physis-theory/src/continuum.rs`).
   New `field.second-order-accurate` claim for `klein-gordon`: the empirical
   convergence order `p = log2(err(a)/err(a/2))` of the discrete Laplacian at a

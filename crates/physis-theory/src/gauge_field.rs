@@ -27,10 +27,49 @@ pub const GAUGE_LOCAL: &str = "gauge.local";
 pub const CONFINING: &str = "gauge.confining";
 /// The coupling runs to zero at high energy (asymptotic freedom).
 pub const ASYMPTOTIC_FREEDOM: &str = "gauge.asymptotic-freedom";
+/// The leading strong-coupling expansion yields an area law (σ > 0).
+pub const STRONG_COUPLING_AREA_LAW: &str = "gauge.strong-coupling-area-law";
 
 /// Matrix rows for the lattice-gauge lab.
-pub fn gauge_rows() -> [&'static str; 4] {
-    [GAUGE_INVARIANT, GAUGE_LOCAL, CONFINING, ASYMPTOTIC_FREEDOM]
+pub fn gauge_rows() -> [&'static str; 5] {
+    [
+        GAUGE_INVARIANT,
+        GAUGE_LOCAL,
+        CONFINING,
+        ASYMPTOTIC_FREEDOM,
+        STRONG_COUPLING_AREA_LAW,
+    ]
+}
+
+/// Leading-order strong-coupling string tension `σ = −ln(β / 2N²)`.
+///
+/// This is the first term of the convergent strong-coupling (high-temperature)
+/// expansion of the fundamental Wilson loop. `σ > 0` is a genuine area law
+/// (confinement) in that regime; the expansion breaks down at large β. `n_group`
+/// is the SU(N) rank for non-abelian groups, and 1 for compact U(1).
+fn strong_coupling_string_tension(beta: f64, n_group: f64) -> f64 {
+    -(beta / (2.0 * n_group * n_group)).ln()
+}
+
+/// Verdict for the computed strong-coupling area law.
+fn strong_coupling_verdict(beta: f64, n_group: f64) -> Verdict {
+    let sigma = strong_coupling_string_tension(beta, n_group);
+    if sigma > 0.0 {
+        Verdict::holds(
+            Epistemic::Theorem,
+            format!("leading strong-coupling string tension σ = {sigma:.3} > 0: area law"),
+        )
+        .with_evidence([
+            "first term of the convergent strong-coupling expansion of the Wilson loop".to_string(),
+        ])
+    } else {
+        Verdict::fails(
+            Epistemic::Theorem,
+            format!(
+                "σ = {sigma:.3} ≤ 0 at β = {beta}: the strong-coupling expansion gives no area law here"
+            ),
+        )
+    }
 }
 
 /// Approximate 4D compact-U(1) deconfinement coupling (β = 1/g²).
@@ -191,10 +230,17 @@ impl Theory for WilsonU1 {
                 LayerId::Interaction,
                 Epistemic::EncodedFact,
             ),
+            Claim::new(
+                STRONG_COUPLING_AREA_LAW,
+                "The leading strong-coupling expansion yields an area law.",
+                LayerId::Interaction,
+                Epistemic::Theorem,
+            ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
+            STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, 1.0),
             ASYMPTOTIC_FREEDOM => Verdict::fails(
                 Epistemic::EncodedFact,
                 "abelian U(1) is not asymptotically free: the coupling grows with energy (Landau pole)",
@@ -400,10 +446,17 @@ impl Theory for WilsonSun {
                 LayerId::Interaction,
                 Epistemic::EncodedFact,
             ),
+            Claim::new(
+                STRONG_COUPLING_AREA_LAW,
+                "The leading strong-coupling expansion yields an area law.",
+                LayerId::Interaction,
+                Epistemic::Theorem,
+            ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
+            STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, self.n as f64),
             GAUGE_INVARIANT => Verdict::holds(
                 Epistemic::Theorem,
                 "non-abelian plaquette action is gauge invariant by construction",
@@ -529,6 +582,28 @@ mod tests {
         let mut qcd_weak = WilsonSun::su3();
         qcd_weak.set("beta", KnobValue::Float(50.0)).unwrap();
         assert_eq!(verdict(&qcd_weak, CONFINING), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn strong_coupling_area_law_is_computed_and_knob_sensitive() {
+        // U(1): σ = −ln(β/2) > 0 at β=1 (area law), fails once β > 2.
+        let mut u1 = WilsonU1::default();
+        assert_eq!(verdict(&u1, STRONG_COUPLING_AREA_LAW), VerdictKind::Holds);
+        u1.set("beta", KnobValue::Float(3.0)).unwrap();
+        assert_eq!(verdict(&u1, STRONG_COUPLING_AREA_LAW), VerdictKind::Fails);
+
+        // SU(3): σ = −ln(β/18); holds at β=6, fails at very weak coupling.
+        let mut qcd = WilsonSun::su3();
+        assert_eq!(verdict(&qcd, STRONG_COUPLING_AREA_LAW), VerdictKind::Holds);
+        qcd.set("beta", KnobValue::Float(100.0)).unwrap();
+        assert_eq!(verdict(&qcd, STRONG_COUPLING_AREA_LAW), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn string_tension_matches_the_closed_form() {
+        // −ln(β/2N²) for SU(3) at β=18 is exactly 0 (the strong-coupling radius).
+        assert!(super::strong_coupling_string_tension(18.0, 3.0).abs() < 1e-12);
+        assert!(super::strong_coupling_string_tension(2.0, 1.0).abs() < 1e-12);
     }
 
     #[test]

@@ -74,6 +74,7 @@ the Wilson action sums `1 − cos(θ_plaquette)`. Knobs: `dimension` (2–4), `b
 | `gauge.local` | only neighbouring links couple (plaquettes) | structural theorem |
 | `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap) |
 | `gauge.asymptotic-freedom` | the coupling runs to zero at high energy | U(1) `fails` (Landau pole); SU(N) `holds` (Gross–Wilczek–Politzer) |
+| `gauge.strong-coupling-area-law` | leading strong-coupling expansion gives an area law | **computed**: `σ = −ln(β/2N²) > 0` (theorem of the convergent expansion); fails at weak coupling |
 
 ### Abelian vs non-abelian
 
@@ -86,10 +87,17 @@ The lab contrasts compact U(1) (QED-like) with SU(2)/SU(3) Yang–Mills:
   `conjecture`, not `theorem`. This is the honesty discipline again: a famous
   open problem is recorded as open.
 
+The `gauge.confining` verdict is the *physical* claim (heuristic/conjecture);
+`gauge.strong-coupling-area-law` is the **computed** companion — the first term
+of the convergent strong-coupling expansion, `σ = −ln(β/2N²)`, which is a
+genuine area-law theorem where `σ > 0` and fails once the coupling is too weak
+for the expansion.
+
 ```
 physis experiment gauge-lattice
 physis set wilson-u1 beta 2         # 4D U(1): confining → Coulomb (deconfined)
 physis set wilson-u1 dimension 3    # U(1) confines at any β
+physis set wilson-su3 beta 100      # weak coupling: strong-coupling area law fails
 ```
 
 ## Non-goals (this milestone seed)
