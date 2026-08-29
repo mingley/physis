@@ -44,11 +44,11 @@ Layers, finest first: `mathematical → spacetime → quantum → field → part
 physis experiment string-critique
 ```
 
-Six objects sit on one claim matrix:
+Ten objects sit on one claim matrix:
 
 - **standard-model** — empirically sharp, not a theory of gravity, not UV-complete
 - **general-relativity** — gravity, classical, no SM matter
-- **type-iib** / **heterotic-e8e8** / **bosonic** — string constructions with real theorems (critical dimension) and honest heuristics (landscape count)
+- **type-iib** / **type-iia** / **type-i** / **heterotic-e8e8** / **heterotic-so32** / **bosonic** / **m-theory** — string/M constructions with real theorems (critical dimension) and honest heuristics (landscape count)
 - **observer-geometry** — a *scaffold* for unique-geometry programs. **Not Geometric Unity.** Uniqueness is an axiom/conjecture here, not a proof.
 
 Read the `epistemic` column before treating a cell as physics. A `holds` that is a `conjecture` is not the same object as a `holds` that is a `theorem`.

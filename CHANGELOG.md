@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M1 — String lab
 
+- **M1.2 More constructions first-class** (`crates/physis-theory/src/strings.rs`,
+  `critique.rs`, `lab.rs`). Type I, Type IIA, heterotic SO(32), and M-theory are
+  now constructed and registered in both the default lab and the `string-critique`
+  matrix — ten objects in all. Their distinctive verdicts are pinned by tests:
+  SO(32) constructions (Type I, heterotic SO(32)) carry an encoded SM embedding
+  (`sm-gauge` holds); Type IIA and M-theory have no perturbative GUT group
+  (`sm-gauge` undecidable); M-theory sits at critical dimension 11; and every
+  default string construction fails `unique-vacuum` as a heuristic.
+
 - **M1.1 Journal replay** (`crates/physis-agent/src/replay.rs`).
   Deterministic replay of a recorded JSONL journal onto a fresh
   `Lab::standard()`. `replay_journal` re-applies every `set-knob`, recomputes

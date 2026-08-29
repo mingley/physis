@@ -37,8 +37,12 @@ impl Lab {
         lab.insert(Box::new(StandardModel::default()));
         lab.insert(Box::new(GeneralRelativity::default()));
         lab.insert(Box::new(StringTheory::type_iib()));
+        lab.insert(Box::new(StringTheory::type_iia()));
+        lab.insert(Box::new(StringTheory::type_i()));
         lab.insert(Box::new(StringTheory::heterotic_e8()));
+        lab.insert(Box::new(StringTheory::heterotic_so32()));
         lab.insert(Box::new(StringTheory::bosonic()));
+        lab.insert(Box::new(StringTheory::m_theory()));
         lab.insert(Box::new(ObserverGeometry::default()));
         let ids = lab.theories.keys().cloned().collect();
         lab.journal.record(JournalEvent::boot(ids));

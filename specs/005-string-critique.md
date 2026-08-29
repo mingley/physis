@@ -26,10 +26,19 @@ Eric Weinstein’s public critique (string theory as a wrong turn; uniqueness an
 |---|---|
 | `standard-model` | SM QFT control |
 | `general-relativity` | classical gravity control |
-| `type-iib` | Type IIB superstring |
+| `type-iib` | Type IIB superstring (chiral N=2, no perturbative GUT group) |
+| `type-iia` | Type IIA superstring (non-chiral N=2, no perturbative GUT group) |
+| `type-i` | Type I superstring (open + closed, SO(32)) |
 | `heterotic-e8e8` | Heterotic E₈×E₈ (SM embedding is an encoded fact) |
+| `heterotic-so32` | Heterotic SO(32) (SM embedding is an encoded fact) |
 | `bosonic` | 26D bosonic string (tachyon, no fermions) |
+| `m-theory` | 11D M-theory (membrane; critical dimension 11) |
 | `observer-geometry` | unique-geometry scaffold (default D=14 is a documented choice, not a derivation) |
+
+All five superstring/M constructions plus the bosonic string are in the default
+lab and matrix. Type II and M have no perturbative 10D/11D GUT group, so their
+`empirical.sm-gauge` is `undecidable`; the SO(32)/E₈×E₈ constructions carry an
+encoded SM embedding, so theirs `holds` (as `encoded-fact`).
 
 ## Distinctive string facts encoded as theorems / encoded facts
 

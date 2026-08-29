@@ -183,6 +183,42 @@ impl StringTheory {
         }
     }
 
+    /// Type I (open + closed) with SO(32) gauge at D=10.
+    pub fn type_i() -> Self {
+        Self {
+            kind: StringKind::TypeI,
+            total_dim: 10,
+            observed_dim: 4,
+            compact_radius_planck: 1.0,
+            supersymmetry: true,
+            flux_bits: 100,
+        }
+    }
+
+    /// Type IIA (closed, non-chiral) at D=10.
+    pub fn type_iia() -> Self {
+        Self {
+            kind: StringKind::TypeIIA,
+            total_dim: 10,
+            observed_dim: 4,
+            compact_radius_planck: 1.0,
+            supersymmetry: true,
+            flux_bits: 200,
+        }
+    }
+
+    /// Heterotic SO(32) at D=10.
+    pub fn heterotic_so32() -> Self {
+        Self {
+            kind: StringKind::HeteroticSO32,
+            total_dim: 10,
+            observed_dim: 4,
+            compact_radius_planck: 1.0,
+            supersymmetry: true,
+            flux_bits: 80,
+        }
+    }
+
     /// Bosonic string at D=26.
     pub fn bosonic() -> Self {
         Self {
@@ -676,5 +712,56 @@ mod tests {
     fn heterotic_encodes_sm_embedding() {
         let t = StringTheory::heterotic_e8();
         assert_eq!(verdict(&t, claims::SM_GAUGE), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn so32_constructions_embed_sm() {
+        // Type I and heterotic SO(32) both carry an SO(32) gauge sector that
+        // contains the Standard Model as an encoded textbook fact.
+        for t in [StringTheory::type_i(), StringTheory::heterotic_so32()] {
+            assert_eq!(verdict(&t, claims::SM_GAUGE), VerdictKind::Holds);
+            assert_eq!(verdict(&t, claims::CRITICAL_DIMENSION), VerdictKind::Holds);
+            assert_eq!(verdict(&t, claims::NO_TACHYON), VerdictKind::Holds);
+        }
+    }
+
+    #[test]
+    fn type_iia_gauge_is_undecidable() {
+        // Like IIB, Type IIA has no perturbative 10D GUT group.
+        let t = StringTheory::type_iia();
+        assert_eq!(verdict(&t, claims::SM_GAUGE), VerdictKind::Undecidable);
+    }
+
+    #[test]
+    fn m_theory_is_eleven_dimensional() {
+        let mut t = StringTheory::m_theory();
+        assert_eq!(t.kind.critical_dim(), 11);
+        assert_eq!(verdict(&t, claims::CRITICAL_DIMENSION), VerdictKind::Holds);
+        assert_eq!(verdict(&t, claims::GRAVITY), VerdictKind::Holds);
+        // M-theory has no worldsheet GUT group either.
+        assert_eq!(verdict(&t, claims::SM_GAUGE), VerdictKind::Undecidable);
+        t.set("total_dim", KnobValue::UInt(10)).unwrap();
+        assert_eq!(verdict(&t, claims::CRITICAL_DIMENSION), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn every_default_string_construction_fails_uniqueness() {
+        // The predictivity objection is mechanical for all default string knobs.
+        for t in [
+            StringTheory::type_iib(),
+            StringTheory::type_iia(),
+            StringTheory::type_i(),
+            StringTheory::heterotic_e8(),
+            StringTheory::heterotic_so32(),
+            StringTheory::bosonic(),
+            StringTheory::m_theory(),
+        ] {
+            assert_eq!(
+                verdict(&t, claims::UNIQUE_VACUUM),
+                VerdictKind::Fails,
+                "{} should fail uniqueness under default knobs",
+                t.id()
+            );
+        }
     }
 }

@@ -178,8 +178,12 @@ pub fn string_critique() -> ExperimentReport {
         Box::new(StandardModel::default()),
         Box::new(GeneralRelativity::default()),
         Box::new(StringTheory::type_iib()),
+        Box::new(StringTheory::type_iia()),
+        Box::new(StringTheory::type_i()),
         Box::new(StringTheory::heterotic_e8()),
+        Box::new(StringTheory::heterotic_so32()),
         Box::new(StringTheory::bosonic()),
+        Box::new(StringTheory::m_theory()),
         Box::new(ObserverGeometry::default()),
     ];
     report_from(theories)

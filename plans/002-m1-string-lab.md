@@ -5,7 +5,7 @@ Goal: make the string-critique experiment less of a skeleton and more of a place
 ## Work
 
 1. **Journal replay.** ✅ *Done (M1.1).* `Journal` `set-knob` events applied to a fresh `Lab::standard()` reproduce the same diffs. `physis_agent::replay::replay_journal` recomputes and verifies; `physis replay <file.jsonl>` exits non-zero on mismatch. Round-trip and tamper-detection tests in `crates/physis-agent/src/replay.rs`.
-2. **More constructions as first-class:** Type I, Type IIA, heterotic SO(32), M-theory already exist as `StringKind` — put them in the default lab and matrix.
+2. **More constructions as first-class:** ✅ *Done (M1.2).* Type I, Type IIA, heterotic SO(32), and M-theory are now constructed (`StringTheory::type_i/type_iia/heterotic_so32/m_theory`) and registered in both `Lab::standard()` and the `string-critique` matrix (ten objects total). Tests in `crates/physis-theory/src/strings.rs` pin their distinctive cells (SO(32) embeds SM; Type IIA/M gauge undecidable; M-theory critical dim 11; all default string knobs fail uniqueness).
 3. **Anomaly cancellation as a claim.** Heterotic gauge groups are not a menu; Green–Schwarz is the reason. Encode as `EncodedFact` first, then look at a typed polynomial later.
 4. **Moduli as knobs.** Dilaton, a few Kähler/complex-structure stand-ins. Hidden-extra-dims and uniqueness should depend on them.
 5. **Observer-geometry: kill the magic 14 or justify it.** Either derive a constraint (even a toy one) or rename the default and document it as “unset.”
