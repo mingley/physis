@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M1 — String lab
 
+- **M1.5 Retire observer-geometry's magic 14** (`crates/physis-theory/src/geometry.rs`).
+  The total dimension is now `observed_dim + fibre_dim` rather than a literal
+  14. The `total_dim` knob is replaced by `fibre_dim` (default 10). The 10 is
+  justified by a toy constraint: Spin(10) acts on a 10-dimensional space, so a
+  fibre smaller than 10 cannot host the conjectured gauge group — setting
+  `fibre_dim < 10` with `derive_gauge=true` flips `empirical.sm-gauge` to
+  `fails`. So `14 = 4 + 10` is the minimal geometric carrier, not a magic
+  number. (Knob rename: `observer-geometry total_dim` → `fibre_dim`.)
+
 - **M1.4 Moduli as knobs** (`crates/physis-theory/src/strings.rs`). Added
   `dilaton` (string coupling g_s = e^φ) and heuristic moduli counts `h11`
   (Kähler / size) and `h21` (complex structure / shape). `unique-vacuum` now

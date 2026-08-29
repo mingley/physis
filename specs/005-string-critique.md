@@ -33,7 +33,7 @@ Eric Weinstein’s public critique (string theory as a wrong turn; uniqueness an
 | `heterotic-so32` | Heterotic SO(32) (SM embedding is an encoded fact) |
 | `bosonic` | 26D bosonic string (tachyon, no fermions) |
 | `m-theory` | 11D M-theory (membrane; critical dimension 11) |
-| `observer-geometry` | unique-geometry scaffold (default D=14 is a documented choice, not a derivation) |
+| `observer-geometry` | unique-geometry scaffold (total D = observed 4 + fibre 10; the fibre 10 is the minimal carrier of Spin(10), so 14 is a toy constraint, not a magic number) |
 
 All five superstring/M constructions plus the bosonic string are in the default
 lab and matrix. Type II and M have no perturbative 10D/11D GUT group, so their

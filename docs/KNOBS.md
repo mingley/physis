@@ -37,10 +37,14 @@ effective radius `compact_radius_planck · √g_s`, so both the Kähler volume a
 the dilaton can expose extra dimensions.
 
 ### observer-geometry
-- `total_dim` (default 14, scaffold choice)
+- `fibre_dim` (default 10 — minimal fibre that can host Spin(10); total = observed + fibre)
 - `observed_dim`
 - `derive_gauge`
 - `unique_vacuum`
+
+The total geometric dimension is `observed_dim + fibre_dim` (default `4 + 10 = 14`),
+not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
+`empirical.sm-gauge` fail: Spin(10) has no geometric room in a smaller fibre.
 
 ## Dead knobs
 
