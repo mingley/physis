@@ -1,0 +1,14 @@
+[package]
+name = "physis-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Layered mechanical model of reality: spacetime, quantum, particles, gauge."
+
+[dependencies]
+physis-core.workspace = true
+typenum.workspace = true
+serde.workspace = true
