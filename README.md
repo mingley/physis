@@ -72,6 +72,13 @@ thermodynamics — erasing a bit costs `k_B·T·ln2` as a typed `Qty<Energy>`
 theorem, and `set landauer-engine reversible true` flips
 `info.thermodynamically-free` `fails → holds`.
 
+The `su5-gut` theory mechanizes "accommodate vs derive" with real stakes:
+embedding one SM generation in a complete SU(5) multiplet **derives** charge
+quantization (`Tr Q = 0`) and `sin²θ_W = 3/8` as computed theorems, while
+minimal (non-SUSY) SU(5) is honestly **falsified** — it `fails`
+`gut.coupling-unification` and `gut.proton-decay-viable` (excluded by
+Super-Kamiokande), which a `supersymmetric` knob revives as heuristics.
+
 `physis epistemics` tallies the whole lab's knowledge state by epistemic tag
 (currently ~60 theorems alongside encoded-facts, conjectures, heuristics, and
 honestly-`open` problems). `physis --json <command>` emits the typed matrices and
@@ -98,6 +105,8 @@ cargo run -p physis -- experiment field-modes
 cargo run -p physis -- experiment gauge-lattice
 cargo run -p physis -- experiment thermo
 cargo run -p physis -- experiment bell
+cargo run -p physis -- run su5-gut          # SU(5): sin²θ_W = 3/8, charge quantization
+cargo run -p physis -- set su5-gut supersymmetric true
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis -- epistemics
 cargo run -p physis --example kinetic_energy

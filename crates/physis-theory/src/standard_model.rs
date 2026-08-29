@@ -119,6 +119,39 @@ fn derive_hypercharges() -> DerivedHypercharges {
     }
 }
 
+/// Σ T₃² over an SU(2) irrep of dimension `d`: `j(j+1)(2j+1)/3` with
+/// `j = (d−1)/2`. A doublet gives `1/2`, a singlet `0`, a triplet `2`.
+fn weak_t3_sq(weak_dim: f64) -> f64 {
+    let j = (weak_dim - 1.0) / 2.0;
+    j * (j + 1.0) * (2.0 * j + 1.0) / 3.0
+}
+
+/// The GUT-scale weak mixing angle from embedding one SM generation in a
+/// complete SU(5) multiplet: `sin²θ_W = ΣT₃² / ΣQ²`.
+///
+/// Because the SU(5) generators are equally normalized at unification, the
+/// tree-level relation is `sin²θ_W = Tr(T₃²)/Tr(Q²)` over any complete
+/// multiplet. Using `Q = T₃ + Y` and `Σ T₃ = 0` per weak multiplet, the sums
+/// are computed from the same `SM_WEYL_FIELDS` the anomalies use, giving `3/8`.
+pub(crate) fn gut_weinberg_sin2() -> f64 {
+    let sum_t3_sq: f64 = SM_WEYL_FIELDS
+        .iter()
+        .map(|f| f.color * weak_t3_sq(f.weak))
+        .sum();
+    let sum_q_sq: f64 = SM_WEYL_FIELDS
+        .iter()
+        .map(|f| f.color * (weak_t3_sq(f.weak) + f.weak * f.y * f.y))
+        .sum();
+    sum_t3_sq / sum_q_sq
+}
+
+/// Trace of electric charge over one SM generation (`Σ colour·weak·Y = ΣY`).
+/// A vanishing `Tr Q` is charge quantization in a GUT: `Q` is a traceless
+/// SU(5) generator, so charges are forced onto a discrete lattice.
+pub(crate) fn gut_trace_charge() -> f64 {
+    hypercharge_sum()
+}
+
 /// The [SU(3)]²U(1) mixed anomaly over one generation (colour triplets only).
 fn anomaly_su3_u1() -> f64 {
     // Each colour (anti)triplet Weyl fermion contributes T(fund)·(weak mult)·Y,

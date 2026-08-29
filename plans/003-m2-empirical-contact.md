@@ -14,6 +14,18 @@ Goal: replace the most embarrassing `EncodedFact` tables with typed checks, and 
 
 All five work items are complete and both "Done when" criteria are met. Next: M3 (`plans/004`).
 
+### M2 follow-on: the SU(5) GUT layer (`specs/013`)
+
+Empirical contact was pushed one layer higher with the `su5-gut` theory
+(`crates/physis-theory/src/gut.rs`). Where item 1 *verifies* the SM embeds in
+SU(5), the GUT theory *uses* that embedding to derive physics: `Tr Q = 0` gives
+charge quantization and `sin²θ_W = Tr(T₃²)/Tr(Q²) = 3/8` at unification, both
+computed `Theorem`s over the same fermion table the anomalies use. It is also
+the lab's first empirically **falsified** theory — minimal SU(5) `fails`
+`gut.coupling-unification` and `gut.proton-decay-viable` (Super-Kamiokande),
+with a `supersymmetric` knob reviving both as heuristics. This is the concrete
+form of M2's mission: making a unification program *earn* empirical contact.
+
 ## Retag policy
 
 When a table becomes a check:

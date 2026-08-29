@@ -15,7 +15,7 @@ use physis_theory::quantum::BellTest;
 use physis_theory::thermo::IdealGas;
 use physis_theory::{
     string_critique, ExperimentReport, GeneralRelativity, ObserverGeometry, StandardModel,
-    StringTheory, Theory, VerdictDiff,
+    StringTheory, Su5Gut, Theory, VerdictDiff,
 };
 
 use crate::journal::{Journal, JournalEvent};
@@ -82,6 +82,8 @@ impl Lab {
         lab.insert(Box::new(StringTheory::bosonic()));
         lab.insert(Box::new(StringTheory::m_theory()));
         lab.insert(Box::new(ObserverGeometry::default()));
+        // Grand unification: SU(5) sits one layer above the SM.
+        lab.insert(Box::new(Su5Gut::default()));
         // Second domain: electromagnetism shares the same lab and protocol.
         lab.insert(Box::new(MaxwellVacuum));
         lab.insert(Box::new(LinearMedium::default()));

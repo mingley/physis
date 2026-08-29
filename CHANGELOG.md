@@ -12,6 +12,21 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **SU(5) grand unification: `sin²θ_W = 3/8` and charge quantization derived**
+  (new `crates/physis-theory/src/gut.rs`, new `specs/013-grand-unification.md`).
+  New `su5-gut` theory (Georgi–Glashow SU(5)) one layer above the SM. Two
+  computed theorems from embedding one generation in a complete SU(5) multiplet,
+  both from the same `SM_WEYL_FIELDS` table the anomalies use: `Tr Q = 0` forces
+  charge quantization (`gut.charge-quantization`), and `sin²θ_W = Tr(T₃²)/Tr(Q²)
+  = 3/8` at the unification scale (`gut.weinberg-angle`, with an honesty note
+  that the measured `M_Z` value differs by RG running). It is also honest about
+  failure: minimal (non-SUSY) SU(5) `fails` both `gut.coupling-unification` and
+  `gut.proton-decay-viable` (excluded by Super-Kamiokande), and a
+  `supersymmetric` knob flips both `fails → holds` as heuristics. New helpers
+  `gut_weinberg_sin2` / `gut_trace_charge` in `standard_model.rs`; registered in
+  `Lab::standard()`. Verified: four new tests, `fmt`, `clippy -D warnings`, full
+  suite, and the `run su5-gut` + SUSY knob diff.
+
 - **Standard Model hypercharges *derived* from anomaly cancellation**
   (`crates/physis-theory/src/standard_model.rs`, `specs/005-string-critique.md`).
   New `sm.hypercharge-derivation` claim (computed `theorem`): fixing only the

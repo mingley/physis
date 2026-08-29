@@ -1,0 +1,91 @@
+# 013 — Grand unification (SU(5))
+
+Status: active
+Layer: interaction / particle / effective
+Id: `su5-gut`
+
+## Purpose
+
+The Georgi–Glashow SU(5) grand unified theory sits one layer above the Standard
+Model and sharpens the lab's central theme — **accommodate vs derive** — with
+real empirical stakes. The SM *accommodates* charge quantization and the weak
+mixing angle as inputs; SU(5) *derives* both from the single requirement that
+one generation of fermions fills a complete SU(5) multiplet (`5̄ ⊕ 10`).
+
+It is equally a lesson in honest failure: minimal (non-SUSY) SU(5) does **not**
+unify the gauge couplings and predicts proton decay at a rate already excluded
+by Super-Kamiokande. Those claims `fail`. This is a theory the lab records as
+empirically refuted — exactly the epistemic honesty the project is built on.
+
+## Object
+
+| id | object |
+|---|---|
+| `su5-gut` | Georgi–Glashow SU(5) (with a `supersymmetric` knob) |
+
+## Knob
+
+| knob | effect |
+|---|---|
+| `supersymmetric` | MSSM matter. Flips `gut.coupling-unification` and `gut.proton-decay-viable` from `fails` to `holds` (as `heuristic`s), at the price of unobserved superpartners. |
+
+## Claims
+
+| id | meaning | status |
+|---|---|---|
+| `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10` | `encoded-fact`, holds (verified chain) |
+| `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **computed theorem** |
+| `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **computed theorem** |
+| `gut.coupling-unification` | the three couplings meet at one scale | knob-sensitive |
+| `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive |
+
+## The two computed theorems
+
+Both numbers are computed from the *same* `SM_WEYL_FIELDS` table the anomalies
+use (`crates/physis-theory/src/standard_model.rs`), so there is one source of
+fermion truth:
+
+- **Charge quantization** (`gut_trace_charge`): `Q` is a traceless generator of
+  SU(5), so `Tr Q = Σ colour·weak·Y = ΣY = 0` over one generation. Charge is
+  forced onto a discrete lattice — quantization is a *consequence* of the
+  embedding, not a postulate.
+- **Weak mixing angle** (`gut_weinberg_sin2`): because the SU(5) generators are
+  equally normalized at unification, `sin²θ_W = Tr(T₃²)/Tr(Q²)` over a complete
+  multiplet. Using `Q = T₃ + Y` and `Σ T₃ = 0` per weak multiplet, the sums give
+  `ΣT₃² = 2` and `ΣQ² = 16/3`, so `sin²θ_W = 3/8` exactly.
+
+Honesty note: `3/8 = 0.375` is the *boundary condition at the GUT scale*. The
+measured `sin²θ_W(M_Z) ≈ 0.231` differs because of renormalization-group
+running between `M_Z` and `M_GUT` — a computation this milestone does not yet
+perform. The theorem is the unification-scale value, and the verdict says so.
+
+## The knob → verdict diff
+
+```
+physis run su5-gut               # coupling-unification + proton-decay-viable: fails
+physis set su5-gut supersymmetric true
+```
+
+flips both `gut.coupling-unification` and `gut.proton-decay-viable`
+`fails → holds` (as `heuristic`s). Minimal SU(5) is falsified; SUSY SU(5)
+survives current bounds but requires superpartners that have not been seen.
+
+## Relation to the string-critique
+
+The heterotic gauge chains verified in `crates/physis-model/src/gauge.rs`
+(`E₈ ⊃ E₆ ⊃ SO(10) ⊃ SU(5) ⊃ SM`) pass through SU(5). This GUT layer is where a
+string compactification would have to *land* to make contact with observed
+physics — and where the "does the alternative earn empirical contact?" question
+becomes concrete.
+
+## Non-goals (this milestone)
+
+- Two-loop RG running of the couplings from `M_Z` to `M_GUT`.
+- A dynamical proton-decay rate from the dimension-6 operator coefficients.
+- SO(10)/E₆ as separate theories (the embedding chain already reaches them).
+
+## Related
+
+- `specs/005-string-critique.md` — the SM anomaly/hypercharge theorems
+- `specs/004-theories-and-claims.md` — the `Theory` trait
+- `plans/003-m2-empirical-contact.md` — the empirical-contact milestone
