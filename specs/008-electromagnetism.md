@@ -39,7 +39,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | id | meaning | epistemic |
 |---|---|---|
 | `em.wave-speed-c` | EM waves travel at c | theorem (vacuum); fails in a medium |
-| `em.gauss` | Gauss's law | encoded-fact |
+| `em.gauss` | Gauss's law | theorem (vacuum: `∇·E = 0` verified on a Coulomb field); encoded-fact in a medium |
 | `em.faraday` | Faraday's law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem |
@@ -58,7 +58,9 @@ typed `Qty<Length>` wavelengths.
 
 ## Homogeneous Maxwell equations, verified
 
-In vacuum, `em.faraday` and `em.ampère` are **computed theorems**: a plane wave
+In vacuum, all three of `em.gauss`, `em.faraday`, and `em.ampère` are **computed
+theorems**. Gauss: a Coulomb field `E = r̂/r²` is checked to have `∇·E = 0` away
+from the source (residual ≲ 1e-4). Faraday/Ampère: a plane wave
 `E = ŷ cos(x−t)`, `B = ẑ cos(x−t)` (natural units) is checked by central finite
 differences to satisfy `∂B/∂t + ∇×E = 0` and `∂E/∂t − ∇×B = 0` to residual
 ≲ 1e-6. In a medium these revert to encoded facts (macroscopic form).

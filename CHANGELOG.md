@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **Gauss's law verified on a Coulomb field** (`crates/physis-theory/src/em.rs`).
+  `em.gauss` is now a **computed theorem** in vacuum: a Coulomb field `E = r̂/r²`
+  is checked by central finite differences to have `∇·E = 0` away from the source
+  (residual ≲ 1e-4). With this, all three vacuum Maxwell laws (`gauss`,
+  `faraday`, `ampere`) are computed theorems; a medium keeps the encoded-fact
+  macroscopic forms. Test asserts the residual and both the vacuum-theorem and
+  medium-encoded-fact tags.
+
 - **Maxwell homogeneous equations verified numerically** (`crates/physis-theory/src/em.rs`).
   `em.faraday` and `em.ampere` are now **computed theorems** in vacuum: a plane
   wave `E = ŷ cos(x−t)`, `B = ẑ cos(x−t)` is checked by central finite differences

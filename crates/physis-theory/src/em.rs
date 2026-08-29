@@ -80,6 +80,30 @@ fn plane_wave_faraday_residual() -> f64 {
     max
 }
 
+/// Max residual of Gauss's law `∇·E = 0` for a Coulomb field away from its
+/// source, by central finite differences. E = r̂/r² = r⃗/r³; its divergence
+/// vanishes for r > 0 (all the charge is the delta function at the origin).
+fn coulomb_gauss_residual() -> f64 {
+    let h = 1e-4;
+    let e = |x: f64, y: f64, z: f64| -> [f64; 3] {
+        let r3 = (x * x + y * y + z * z).powf(1.5);
+        [x / r3, y / r3, z / r3]
+    };
+    let mut max = 0.0_f64;
+    for &(x, y, z) in &[
+        (1.0, 2.0, 3.0),
+        (2.0, -1.0, 1.0),
+        (-1.5, 0.5, 2.0),
+        (3.0, 3.0, -2.0),
+    ] {
+        let dex_dx = (e(x + h, y, z)[0] - e(x - h, y, z)[0]) / (2.0 * h);
+        let dey_dy = (e(x, y + h, z)[1] - e(x, y - h, z)[1]) / (2.0 * h);
+        let dez_dz = (e(x, y, z + h)[2] - e(x, y, z - h)[2]) / (2.0 * h);
+        max = max.max((dex_dx + dey_dy + dez_dz).abs());
+    }
+    max
+}
+
 /// Max residual of Ampère's law `∂E/∂t − (∇×B) = 0` (sourceless vacuum) over
 /// sample points, by central finite differences on the plane-wave fields.
 fn plane_wave_ampere_residual() -> f64 {
@@ -165,7 +189,17 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
                 )
             }
         }
-        GAUSS => Verdict::holds(Epistemic::EncodedFact, "∇·D = ρ_free"),
+        GAUSS => {
+            if is_vacuum(epsilon_r, mu_r) {
+                let r = coulomb_gauss_residual();
+                Verdict::holds(Epistemic::Theorem, "∇·E = 0 in vacuum away from charges")
+                    .with_evidence([format!(
+                        "verified numerically on a Coulomb field: max |∇·E| = {r:.1e}"
+                    )])
+            } else {
+                Verdict::holds(Epistemic::EncodedFact, "∇·D = ρ_free (macroscopic form)")
+            }
+        }
         FARADAY => {
             if is_vacuum(epsilon_r, mu_r) {
                 let r = plane_wave_faraday_residual();
@@ -587,6 +621,26 @@ mod tests {
         let v = MaxwellVacuum;
         let faraday = v.claims().into_iter().find(|c| c.id.0 == FARADAY).unwrap();
         assert_eq!(v.evaluate(&faraday).epistemic, Epistemic::Theorem);
+    }
+
+    #[test]
+    fn gauss_law_verified_on_a_coulomb_field() {
+        assert!(
+            coulomb_gauss_residual() < 1e-4,
+            "gauss residual {}",
+            coulomb_gauss_residual()
+        );
+        let v = MaxwellVacuum;
+        let gauss = v.claims().into_iter().find(|c| c.id.0 == GAUSS).unwrap();
+        assert_eq!(v.evaluate(&gauss).epistemic, Epistemic::Theorem);
+        // In a medium, Gauss stays an encoded fact (macroscopic form).
+        let glass = LinearMedium::default();
+        let gauss_m = glass
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == GAUSS)
+            .unwrap();
+        assert_eq!(glass.evaluate(&gauss_m).epistemic, Epistemic::EncodedFact);
     }
 
     #[test]
