@@ -42,7 +42,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `em.gauss` | Gauss's law | theorem (vacuum: `∇·E = 0` verified on a Coulomb field); encoded-fact in a medium |
 | `em.faraday` | Faraday's law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
-| `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem |
+| `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem (backed by a numerically-verified `∇·(∇×A) = 0`) |
 | `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
 | `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit); inapplicable to full Maxwell |
 

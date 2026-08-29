@@ -12,6 +12,12 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M4 — Continuum
 
+- **Charge conservation backed by a computed identity** (`crates/physis-theory/src/em.rs`).
+  `em.charge-conservation` (already a theorem) now carries computed evidence: the
+  vector-calculus identity `∇·(∇×A) = 0` — the mechanism behind the continuity
+  equation `∂ρ/∂t + ∇·J = 0` — is verified numerically (4-point mixed-partial
+  stencil) to residual ≈ 0. Test included.
+
 - **Gauss's law verified on a Coulomb field** (`crates/physis-theory/src/em.rs`).
   `em.gauss` is now a **computed theorem** in vacuum: a Coulomb field `E = r̂/r²`
   is checked by central finite differences to have `∇·E = 0` away from the source

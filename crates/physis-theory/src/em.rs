@@ -80,6 +80,40 @@ fn plane_wave_faraday_residual() -> f64 {
     max
 }
 
+/// Mixed second partial ∂²f/∂x_a∂x_b via the 4-point central stencil.
+fn mixed_partial(f: &dyn Fn(f64, f64, f64) -> f64, a: usize, b: usize, p: [f64; 3], h: f64) -> f64 {
+    let shift = |sa: f64, sb: f64| {
+        let mut q = p;
+        q[a] += sa * h;
+        q[b] += sb * h;
+        f(q[0], q[1], q[2])
+    };
+    (shift(1.0, 1.0) - shift(1.0, -1.0) - shift(-1.0, 1.0) + shift(-1.0, -1.0)) / (4.0 * h * h)
+}
+
+/// Max residual of `∇·(∇×A) = 0` for a smooth test field, by finite differences.
+///
+/// This vector-calculus identity is the mechanism behind local charge
+/// conservation: `∂ρ/∂t + ∇·J = 0` follows because the divergence of a curl
+/// vanishes (apply ∇· to the Ampère–Maxwell law).
+fn div_curl_residual() -> f64 {
+    let h = 1e-3;
+    let ax = |x: f64, y: f64, _z: f64| x.sin() * y.cos();
+    let ay = |_x: f64, y: f64, z: f64| y.sin() * z.cos();
+    let az = |x: f64, _y: f64, z: f64| z.sin() * x.cos();
+    let mut max = 0.0_f64;
+    for &p in &[[0.5, 1.0, 1.5], [1.2, -0.7, 0.3], [2.0, 0.4, -1.1]] {
+        // ∇·(∇×A) = ∂x(∂yAz − ∂zAy) + ∂y(∂zAx − ∂xAz) + ∂z(∂xAy − ∂yAx).
+        let d = mixed_partial(&az, 0, 1, p, h) - mixed_partial(&ay, 0, 2, p, h)
+            + mixed_partial(&ax, 1, 2, p, h)
+            - mixed_partial(&az, 1, 0, p, h)
+            + mixed_partial(&ay, 2, 0, p, h)
+            - mixed_partial(&ax, 2, 1, p, h);
+        max = max.max(d.abs());
+    }
+    max
+}
+
 /// Max residual of Gauss's law `∇·E = 0` for a Coulomb field away from its
 /// source, by central finite differences. E = r̂/r² = r⃗/r³; its divergence
 /// vanishes for r > 0 (all the charge is the delta function at the origin).
@@ -229,7 +263,11 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
         CHARGE_CONSERVATION => Verdict::holds(
             Epistemic::Theorem,
             "∂ρ/∂t + ∇·J = 0 follows from Gauss + Ampère (divergence of the curl)",
-        ),
+        )
+        .with_evidence([format!(
+            "∇·(∇×A) = {:.1e} ≈ 0 verified numerically — the identity behind continuity",
+            div_curl_residual()
+        )]),
         LORENTZ_INVARIANCE => {
             if is_vacuum(epsilon_r, mu_r) {
                 Verdict::holds(
@@ -621,6 +659,16 @@ mod tests {
         let v = MaxwellVacuum;
         let faraday = v.claims().into_iter().find(|c| c.id.0 == FARADAY).unwrap();
         assert_eq!(v.evaluate(&faraday).epistemic, Epistemic::Theorem);
+    }
+
+    #[test]
+    fn divergence_of_a_curl_vanishes() {
+        // The identity behind charge conservation, verified numerically.
+        assert!(
+            div_curl_residual() < 1e-6,
+            "div(curl A) residual {}",
+            div_curl_residual()
+        );
     }
 
     #[test]
