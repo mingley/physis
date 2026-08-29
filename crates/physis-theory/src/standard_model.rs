@@ -10,6 +10,31 @@ use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use crate::claims;
 use crate::framework::Theory;
 
+/// One generation of left-handed Weyl fermions as `(multiplicity, hypercharge Y)`
+/// with the convention `Q = T₃ + Y`. Anomaly cancellation is a *computation*
+/// over this content, not a stored fact.
+const SM_GENERATION_WEYL: &[(f64, f64)] = &[
+    (6.0, 1.0 / 6.0),  // quark doublet Q_L: 3 colours × 2 weak
+    (3.0, -2.0 / 3.0), // anti-up  u_R^c: 3 colours
+    (3.0, 1.0 / 3.0),  // anti-down d_R^c: 3 colours
+    (2.0, -1.0 / 2.0), // lepton doublet L_L: 2 weak
+    (1.0, 1.0),        // anti-electron e_R^c
+];
+
+/// Number of SU(2) doublets in one generation (3 quark colours + 1 lepton):
+/// the Witten SU(2) global anomaly needs this to be even.
+const SM_WEAK_DOUBLETS: u32 = 4;
+
+/// Sum of hypercharge over one generation ([grav]²U(1) and mixed anomalies).
+fn hypercharge_sum() -> f64 {
+    SM_GENERATION_WEYL.iter().map(|(m, y)| m * y).sum()
+}
+
+/// Sum of hypercharge cubed over one generation (the [U(1)]³ anomaly).
+fn hypercharge_cube_sum() -> f64 {
+    SM_GENERATION_WEYL.iter().map(|(m, y)| m * y * y * y).sum()
+}
+
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "generations",
@@ -203,7 +228,7 @@ impl Theory for StandardModel {
                 claims::ANOMALY_CANCELLATION,
                 "Chiral gauge anomalies cancel within each generation.",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                Epistemic::Theorem,
             ),
             claims::c(
                 claims::THREE_GENERATIONS,
@@ -251,10 +276,25 @@ impl Theory for StandardModel {
             }
             claims::FERMIONS => Verdict::holds(Epistemic::EncodedFact, "quarks and leptons"),
             claims::SM_GAUGE => Verdict::holds(Epistemic::EncodedFact, "SU(3)×SU(2)×U(1)"),
-            claims::ANOMALY_CANCELLATION => Verdict::holds(
-                Epistemic::EncodedFact,
-                "each SM generation is anomaly-free (hypercharge trace and Witten SU(2) conditions)",
-            ),
+            claims::ANOMALY_CANCELLATION => {
+                let sy = hypercharge_sum();
+                let sy3 = hypercharge_cube_sum();
+                if sy.abs() < 1e-12 && sy3.abs() < 1e-12 && SM_WEAK_DOUBLETS % 2 == 0 {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        "SM chiral anomalies cancel within each generation",
+                    )
+                    .with_evidence([
+                        format!("computed over one generation: ΣY = {sy:.3}, ΣY³ = {sy3:.3} (both 0)"),
+                        format!("Witten SU(2): {SM_WEAK_DOUBLETS} doublets (even)"),
+                    ])
+                } else {
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        format!("anomaly not cancelled: ΣY = {sy:.3}, ΣY³ = {sy3:.3}"),
+                    )
+                }
+            }
             claims::THREE_GENERATIONS => {
                 if self.generations == 3 {
                     Verdict::holds(Epistemic::EncodedFact, "three generations")
@@ -358,7 +398,18 @@ mod tests {
             .into_iter()
             .find(|c| c.id.0 == claims::ANOMALY_CANCELLATION)
             .unwrap();
-        assert_eq!(t.evaluate(&c).kind, VerdictKind::Holds);
+        let v = t.evaluate(&c);
+        assert_eq!(v.kind, VerdictKind::Holds);
+        // Now a computed theorem, not a stored fact.
+        assert_eq!(v.epistemic, Epistemic::Theorem);
+    }
+
+    #[test]
+    fn hypercharge_sums_vanish_over_a_generation() {
+        // The actual arithmetic behind anomaly cancellation.
+        assert!(hypercharge_sum().abs() < 1e-12);
+        assert!(hypercharge_cube_sum().abs() < 1e-12);
+        assert_eq!(SM_WEAK_DOUBLETS % 2, 0);
     }
 
     #[test]

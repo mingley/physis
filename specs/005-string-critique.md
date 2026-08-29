@@ -50,7 +50,7 @@ encoded SM embedding, so theirs `holds` (as `encoded-fact`).
 - Closed strings include a graviton
 - Heterotic 10D gauge groups SO(32) and E₈×E₈, with SM embeddings as encoded facts
 - Type II 10D theories have no GUT group; SM from compactification/branes is `undecidable` here
-- Green–Schwarz anomaly cancellation selects exactly SO(32) and E₈×E₈ in 10D N=1 (both dimension 496). `consistency.anomaly-cancellation` encodes this via `GaugeGroup::gs_anomaly_free_10d` — an `encoded-fact`, not a re-derivation of the anomaly polynomial. It is knob-sensitive: off the critical dimension the claim is `undecidable`. The Standard Model row also `holds` (anomalies cancel per generation); the bosonic string is `inapplicable` (non-chiral).
+- Green–Schwarz anomaly cancellation selects exactly SO(32) and E₈×E₈ in 10D N=1 (both dimension 496). `consistency.anomaly-cancellation` encodes this via `GaugeGroup::gs_anomaly_free_10d` — an `encoded-fact`, not a re-derivation of the anomaly polynomial. It is knob-sensitive: off the critical dimension the claim is `undecidable`. The bosonic string is `inapplicable` (non-chiral). The Standard Model row is a **computed `theorem`**: the hypercharge sums `ΣY` and `ΣY³` over one generation are summed in code and vanish, and the SU(2) doublet count is even (Witten).
 
 ## Distinctive critique facts encoded as heuristics / conjectures
 

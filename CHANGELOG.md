@@ -142,6 +142,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M2 — Empirical contact
 
+- **SM anomaly cancellation is now computed** (`crates/physis-theory/src/standard_model.rs`).
+  `consistency.anomaly-cancellation` for the Standard Model was an `encoded-fact`;
+  it is now a **computed `theorem`**. The hypercharges of one generation's
+  left-handed Weyl fermions are summed in code: `ΣY = 0` (grav/mixed anomalies)
+  and `ΣY³ = 0` (the [U(1)]³ anomaly), with an even SU(2) doublet count (Witten).
+  Tests assert both the vanishing sums and the theorem tag.
+
 - **M2.5 Empirical target as data** (`data/empirical-world.json`,
   `crates/physis-theory/src/target.rs`, new `physis score` CLI verb). The
   low-energy requirements (observed 3+1, gauge ⊃ SM, chiral fermions, three
