@@ -28,7 +28,7 @@ computes topology: the first Betti number counts holes, and whether every closed
 
 | knob | effect |
 |---|---|
-| `filled` | fill the 2-simplex's face (a disk, `b₁ = 0`) or remove it (a circle, `b₁ = 1`). Flips `dec.closed-equals-exact`. |
+| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`), `circle` (`b₁ = 1`), or `torus` (`b₁ = 2`). Changing it changes the topology and flips `dec.closed-equals-exact`. |
 
 ## Claims (all computed theorems)
 
@@ -69,15 +69,19 @@ the *homogeneous* half is an exact topological identity.
 ## Betti numbers and the knob → verdict diff
 
 ```
-physis run de-rham               # disk: b₁ = 0, closed = exact (Poincaré holds)
-physis set de-rham filled false  # circle: b₁ = 1, closed ≠ exact
+physis run de-rham                # disk: b₁ = 0, closed = exact (Poincaré holds)
+physis set de-rham shape circle   # circle: b₁ = 1, closed ≠ exact
+physis set de-rham shape torus    # torus: b₁ = 2, χ = 0, harmonic dim 2
 ```
 
-Removing the triangle's face turns the disk into a circle. The first Betti
-number, computed from the ranks of the incidence matrices, jumps `0 → 1`, and
-`dec.closed-equals-exact` flips `holds → fails`: a closed 1-form that is not
-exact now exists. Topology is detected mechanically, by linear algebra on the
-coboundary.
+Changing the `shape` changes the topology. The first Betti number, computed from
+the ranks of the incidence matrices, is `0` for the disk, `1` for the circle,
+and `2` for the torus, and `dec.closed-equals-exact` flips `holds → fails` once a
+hole appears: a closed 1-form that is not exact now exists. The torus (a
+triangulated 3×3 flat torus: 9 vertices, 27 edges, 18 triangles) is a
+non-trivial check — `b₀ = 1`, `b₁ = 2`, `b₂ = 1`, `χ = 0`, all computed from the
+coboundary, with the Hodge Laplacian's harmonic dimension matching `b₁ = 2`.
+Topology is detected mechanically, by linear algebra on the coboundary.
 
 ## Two invariants cross-checked
 
@@ -97,7 +101,8 @@ numbers change with the `filled` knob.
 
 ## Non-goals (this milestone)
 
-- Higher-dimensional complexes (only vertices/edges/triangles, grades 0–2).
+- Higher-dimensional complexes (only vertices/edges/triangles, grades 0–2; the
+  torus is a genuine closed surface, but simplices stop at triangles).
 - The Hodge *star* and codifferential as first-class operators (the Laplacian
   is built here directly from `d`; a metric-dependent star is a later increment).
 - General mesh input; the two complexes are the disk and the circle.

@@ -138,6 +138,34 @@ impl Complex {
         Self::new(3, vec![[0, 1], [0, 2], [1, 2]], vec![])
     }
 
+    /// A triangulated torus `T²` as a 3×3 flat (periodic) grid, each square cut
+    /// by its diagonal into two triangles. Closed orientable surface with
+    /// `b₀ = 1`, `b₁ = 2`, `b₂ = 1`, `χ = 0` — a non-trivial homology check.
+    pub fn torus() -> Self {
+        let n = 3usize;
+        let idx = |i: usize, j: usize| (i % n) * n + (j % n);
+        let mut edge_set = std::collections::BTreeSet::new();
+        let mut triangles = Vec::new();
+        for i in 0..n {
+            for j in 0..n {
+                let (v, right, up, diag) =
+                    (idx(i, j), idx(i, j + 1), idx(i + 1, j), idx(i + 1, j + 1));
+                for (a, b) in [(v, right), (v, up), (v, diag)] {
+                    edge_set.insert((a.min(b), a.max(b)));
+                }
+                // Split square (i,j) along the (v, diag) diagonal.
+                let mut lower = [v, right, diag];
+                lower.sort_unstable();
+                let mut upper = [v, up, diag];
+                upper.sort_unstable();
+                triangles.push(lower);
+                triangles.push(upper);
+            }
+        }
+        let edges = edge_set.into_iter().map(|(a, b)| [a, b]).collect();
+        Self::new(n * n, edges, triangles)
+    }
+
     fn edge_of(&self, a: usize, b: usize) -> usize {
         self.edge_index[&(a.min(b), a.max(b))]
     }
@@ -321,33 +349,76 @@ fn matrix_rank(mut m: Vec<Vec<f64>>) -> usize {
     rank
 }
 
+/// The simplicial complex a [`DeRham`] object is evaluated on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Shape {
+    /// Filled triangle — a disk (`b₁ = 0`).
+    Disk,
+    /// Hollow triangle — a circle (`b₁ = 1`).
+    Circle,
+    /// Triangulated 3×3 flat torus (`b₁ = 2`).
+    Torus,
+}
+
+impl Shape {
+    fn name(self) -> &'static str {
+        match self {
+            Shape::Disk => "disk",
+            Shape::Circle => "circle",
+            Shape::Torus => "torus",
+        }
+    }
+    fn from_name(s: &str) -> Option<Self> {
+        match s {
+            "disk" => Some(Shape::Disk),
+            "circle" => Some(Shape::Circle),
+            "torus" => Some(Shape::Torus),
+            _ => None,
+        }
+    }
+    /// Expected first Betti number, the textbook value this shape should yield.
+    fn expected_b1(self) -> usize {
+        match self {
+            Shape::Disk => 0,
+            Shape::Circle => 1,
+            Shape::Torus => 2,
+        }
+    }
+    fn complex(self) -> Complex {
+        match self {
+            Shape::Disk => Complex::disk(),
+            Shape::Circle => Complex::circle(),
+            Shape::Torus => Complex::torus(),
+        }
+    }
+}
+
 /// De Rham cohomology on a simplicial complex, via the exterior derivative.
 ///
 /// Named claims:
 /// - `dec.d-squared-zero`: `d ∘ d = 0` (an exact theorem of the coboundary),
 /// - `dec.first-betti-number`: the computed number of holes `b₁`,
-/// - `dec.closed-equals-exact`: every closed 1-form is exact (Poincaré) — holds
-///   iff `b₁ = 0`, which the `filled` knob controls.
+/// - `dec.closed-equals-exact`: every closed 1-form is exact (Poincaré),
+/// - `dec.euler-poincare`: `V−E+F = b₀−b₁+b₂`,
+/// - `dec.hodge-harmonic`: `dim(harmonic 1-forms) = b₁`.
+///
+/// The `shape` knob (`disk`, `circle`, `torus`) selects the complex.
 #[derive(Clone, Debug)]
 pub struct DeRham {
-    /// Whether the triangle's face is filled (a disk) or removed (a circle).
-    filled: bool,
+    /// Which simplicial complex to evaluate on.
+    shape: Shape,
 }
 
 impl Default for DeRham {
     fn default() -> Self {
-        // The filled triangle (a disk) is the contractible default.
-        Self { filled: true }
+        // The disk is the contractible default.
+        Self { shape: Shape::Disk }
     }
 }
 
 impl DeRham {
     fn complex(&self) -> Complex {
-        if self.filled {
-            Complex::disk()
-        } else {
-            Complex::circle()
-        }
+        self.shape.complex()
     }
 }
 
@@ -362,11 +433,13 @@ pub const EULER_POINCARE: &str = "dec.euler-poincare";
 /// `dec.hodge-harmonic`.
 pub const HODGE_HARMONIC: &str = "dec.hodge-harmonic";
 
+const SHAPE_OPTIONS: &[&str] = &["disk", "circle", "torus"];
+
 const SPECS: &[KnobSpec] = &[KnobSpec {
-    name: "filled",
+    name: "shape",
     layer: LayerId::Mathematical,
-    doc: "Whether the 2-simplex's face is filled (a disk, b₁=0) or removed (a circle, b₁=1). Toggling it changes the topology and the Poincaré verdict.",
-    domain: KnobDomain::Bool,
+    doc: "The simplicial complex to evaluate on: disk (b₁=0), circle (b₁=1), or torus (b₁=2). Changing it changes the topology and the Poincaré verdict.",
+    domain: KnobDomain::Choice(SHAPE_OPTIONS),
 }];
 
 impl Knobbed for DeRham {
@@ -375,7 +448,7 @@ impl Knobbed for DeRham {
     }
     fn get(&self, name: &str) -> Result<KnobValue, CoreError> {
         match name {
-            "filled" => Ok(KnobValue::Bool(self.filled)),
+            "shape" => Ok(KnobValue::Choice(self.shape.name().to_string())),
             _ => Err(CoreError::UnknownKnob { name: name.into() }),
         }
     }
@@ -383,13 +456,18 @@ impl Knobbed for DeRham {
         let spec = self.spec(name)?;
         spec.domain.check(name, &value)?;
         let old = self.get(name)?;
-        match (name, value) {
-            ("filled", KnobValue::Bool(v)) => self.filled = v,
+        match (name, &value) {
+            ("shape", KnobValue::Choice(v)) => {
+                self.shape = Shape::from_name(v).ok_or_else(|| CoreError::Domain {
+                    name: name.into(),
+                    reason: format!("unknown shape '{v}'"),
+                })?;
+            }
             _ => {
                 return Err(CoreError::TypeMismatch {
                     name: name.into(),
                     expected: spec.domain.kind_name().into(),
-                    got: old.kind_name().into(),
+                    got: value.kind_name().into(),
                 });
             }
         }
@@ -417,7 +495,7 @@ impl Theory for DeRham {
         let c = self.complex();
         format!(
             "simplicial complex: {} ({} vertices, {} edges, {} triangles), b₁ = {}",
-            if self.filled { "disk" } else { "circle" },
+            self.shape.name(),
             c.n_vertices,
             c.edges.len(),
             c.triangles.len(),
@@ -485,20 +563,20 @@ impl Theory for DeRham {
             }
             FIRST_BETTI => {
                 let b1 = c.betti1();
-                let expected = if self.filled { 0 } else { 1 };
+                let expected = self.shape.expected_b1();
                 if b1 == expected {
                     Verdict::holds(
                         Epistemic::Theorem,
                         format!(
-                            "b₁ = {b1} ({}) — computed from n_edges − rank(d₁) − rank(d₀)",
-                            if self.filled {
-                                "disk: no hole"
-                            } else {
-                                "circle: one hole"
-                            }
+                            "b₁ = {b1} for the {} — computed from n_edges − rank(d₁) − rank(d₀)",
+                            self.shape.name()
                         ),
                     )
-                    .with_evidence([format!("b₀ = {}, b₁ = {b1}", c.betti0())])
+                    .with_evidence([format!(
+                        "b₀ = {}, b₁ = {b1}, b₂ = {}",
+                        c.betti0(),
+                        c.betti2()
+                    )])
                 } else {
                     Verdict::fails(
                         Epistemic::Theorem,
@@ -517,12 +595,14 @@ impl Theory for DeRham {
                     Verdict::fails(
                         Epistemic::Theorem,
                         format!(
-                            "b₁ = {b1}: a closed 1-form that is not exact exists (the circle has a hole)"
+                            "b₁ = {b1}: a closed 1-form that is not exact exists (the {} has holes)",
+                            self.shape.name()
                         ),
                     )
-                    .with_evidence([
-                        "closed ≠ exact detects topology — nontrivial de Rham cohomology".to_string(),
-                    ])
+                    .with_evidence([format!(
+                        "closed ≠ exact detects topology: {} has {b1} independent 1-cycle(s)",
+                        self.shape.name()
+                    )])
                 }
             }
             EULER_POINCARE => {
@@ -602,17 +682,46 @@ mod tests {
     }
 
     #[test]
-    fn filled_knob_flips_poincare_and_betti() {
+    fn shape_knob_flips_poincare_and_betti() {
         // Topology as a knob → verdict diff.
         let mut t = DeRham::default();
-        assert!(t.filled);
+        assert_eq!(t.shape, Shape::Disk);
         assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
         assert_eq!(kind(&t, FIRST_BETTI), VerdictKind::Holds);
 
-        t.set("filled", KnobValue::Bool(false)).unwrap();
+        t.set("shape", KnobValue::Choice("circle".into())).unwrap();
         assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Fails);
         // The Betti claim still *holds* (b₁ = 1 is the correct expected value).
         assert_eq!(kind(&t, FIRST_BETTI), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn torus_has_two_holes() {
+        // A non-trivial homology check beyond the minimal disk/circle.
+        let t = Complex::torus();
+        assert_eq!(t.n_vertices, 9);
+        assert_eq!(t.edges.len(), 27);
+        assert_eq!(t.triangles.len(), 18);
+        assert_eq!(t.betti0(), 1); // connected
+        assert_eq!(t.betti1(), 2); // two independent 1-cycles
+        assert_eq!(t.betti2(), 1); // one enclosed void (closed surface)
+        assert_eq!(t.euler_from_cells(), 0); // χ(T²) = 0
+        assert_eq!(t.euler_from_cells(), t.euler_from_betti());
+        assert_eq!(t.harmonic1_dim(), 2); // Hodge: matches b₁
+    }
+
+    #[test]
+    fn torus_via_the_shape_knob() {
+        let mut t = DeRham::default();
+        t.set("shape", KnobValue::Choice("torus".into())).unwrap();
+        assert_eq!(kind(&t, FIRST_BETTI), VerdictKind::Holds);
+        assert_eq!(kind(&t, D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        // The torus has holes, so closed ≠ exact.
+        assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Fails);
+        // An unknown shape is rejected by the domain.
+        assert!(t.set("shape", KnobValue::Choice("klein".into())).is_err());
     }
 
     #[test]
@@ -647,8 +756,11 @@ mod tests {
         let mut t = DeRham::default();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
-        // Both are identities: they still hold after removing the face.
-        t.set("filled", KnobValue::Bool(false)).unwrap();
+        // Both are identities: they still hold on the circle and the torus.
+        t.set("shape", KnobValue::Choice("circle".into())).unwrap();
+        assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        t.set("shape", KnobValue::Choice("torus".into())).unwrap();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
     }

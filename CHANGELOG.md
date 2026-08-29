@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Torus homology: a non-trivial `b₁ = 2` check for the DEC machinery**
+  (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). Added
+  `Complex::torus()` — a triangulated 3×3 flat torus (9 vertices, 27 edges, 18
+  triangles) — and generalized the `de-rham` knob from a `filled` bool to a
+  `shape` **choice** (`disk`/`circle`/`torus`, exercising the `Choice` knob
+  domain). The torus is a genuine stress test of the Betti/Hodge code beyond the
+  minimal disk/circle: all invariants come out to the textbook values `b₀ = 1`,
+  `b₁ = 2`, `b₂ = 1`, `χ = 0`, with the Hodge Laplacian's harmonic dimension
+  matching `b₁ = 2`. `set de-rham shape torus` flips `closed-equals-exact` to
+  `fails` (two independent 1-cycles). Verified: two new tests (torus invariants,
+  torus via the knob incl. rejecting an unknown shape) plus updated knob tests,
+  `fmt`, `clippy -D warnings`, full suite, and the CLI knob diff.
+
 - **Euler–Poincaré and Hodge theorems on the de Rham complex**
   (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). Two more
   computed theorems on `de-rham`, each cross-checking a classical invariant two
