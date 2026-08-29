@@ -31,6 +31,7 @@ Knobs are the only way an agent is allowed to change a theory. They have:
 - `dilaton` — φ; string coupling g_s = e^φ (inflates the effective compact size)
 - `h11` — Kähler (size) moduli count, heuristic stand-in for h^{1,1}
 - `h21` — complex-structure (shape) moduli count, heuristic stand-in for h^{2,1}
+- `euler_number` — Euler characteristic χ of the compactification (0 = unset); chiral generations = |χ|/2
 
 `unique-vacuum` depends on `flux_bits`, `h11`, and `h21` (zero flux **or** zero
 moduli ⇒ no landscape ⇒ uniqueness holds). `hidden-extra-dims` depends on the

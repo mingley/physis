@@ -168,6 +168,15 @@ const SPECS: &[KnobSpec] = &[
         doc: "Complex-structure (shape) moduli count, a heuristic stand-in for h^{2,1}. Drives the flux landscape.",
         domain: KnobDomain::UInt { min: 0, max: 500 },
     },
+    KnobSpec {
+        name: "euler_number",
+        layer: LayerId::Spacetime,
+        doc: "Euler characteristic χ of the compactification (0 = unset). Chiral generations = |χ|/2. The value is chosen, not derived — the crux of the predictivity critique.",
+        domain: KnobDomain::Int {
+            min: -1000,
+            max: 1000,
+        },
+    },
 ];
 
 /// A knobbed string / M-theory object.
@@ -182,6 +191,7 @@ pub struct StringTheory {
     dilaton: f64,
     h11: u32,
     h21: u32,
+    euler_number: i64,
 }
 
 impl StringTheory {
@@ -201,6 +211,20 @@ impl StringTheory {
             dilaton: 0.0,
             h11: 3,
             h21: 3,
+            euler_number: 0,
+        }
+    }
+
+    /// Chiral generations from the compactification topology.
+    ///
+    /// A Calabi–Yau threefold has an **even** Euler characteristic and gives
+    /// `|χ|/2` net generations. Returns `None` when the topology is unset
+    /// (`χ = 0`) or `χ` is odd (not a valid Calabi–Yau Euler number).
+    fn generations_from_topology(&self) -> Option<i64> {
+        if self.euler_number == 0 || self.euler_number % 2 != 0 {
+            None
+        } else {
+            Some(self.euler_number.abs() / 2)
         }
     }
 
@@ -357,6 +381,7 @@ impl Knobbed for StringTheory {
             "dilaton" => Ok(KnobValue::Float(self.dilaton)),
             "h11" => Ok(KnobValue::UInt(self.h11 as u64)),
             "h21" => Ok(KnobValue::UInt(self.h21 as u64)),
+            "euler_number" => Ok(KnobValue::Int(self.euler_number)),
             _ => Err(CoreError::UnknownKnob { name: name.into() }),
         }
     }
@@ -380,6 +405,7 @@ impl Knobbed for StringTheory {
             ("dilaton", KnobValue::Float(v)) => self.dilaton = v,
             ("h11", KnobValue::UInt(v)) => self.h11 = v as u32,
             ("h21", KnobValue::UInt(v)) => self.h21 = v as u32,
+            ("euler_number", KnobValue::Int(v)) => self.euler_number = v,
             _ => {
                 return Err(CoreError::TypeMismatch {
                     name: name.into(),
@@ -711,13 +737,35 @@ impl Theory for StringTheory {
                 if self.kind == StringKind::Bosonic {
                     Verdict::fails(Epistemic::EncodedFact, "no fermions, so no generations")
                 } else {
-                    Verdict::undecidable(
-                        Epistemic::Open,
-                        "generation count depends on compactification topology, not encoded here",
-                    )
-                    .with_evidence([
-                        "replace this with a typed compactification once that layer exists",
-                    ])
+                    if self.euler_number != 0 && self.euler_number % 2 != 0 {
+                        return Verdict::fails(
+                            Epistemic::EncodedFact,
+                            format!(
+                                "χ = {} is odd; a Calabi–Yau threefold has an even Euler number",
+                                self.euler_number
+                            ),
+                        );
+                    }
+                    match self.generations_from_topology() {
+                        None => Verdict::undecidable(
+                            Epistemic::Open,
+                            "generation count depends on the compactification topology (set euler_number)",
+                        ),
+                        Some(3) => Verdict::holds(
+                            Epistemic::EncodedFact,
+                            format!(
+                                "|χ|/2 = 3 generations from χ = {} — accommodated, not derived",
+                                self.euler_number
+                            ),
+                        )
+                        .with_evidence([
+                            "the topological count |χ|/2 is a real theorem; but *why* χ = ±6 is not derived — this is the predictivity critique made mechanical".to_string(),
+                        ]),
+                        Some(g) => Verdict::fails(
+                            Epistemic::EncodedFact,
+                            format!("|χ|/2 = {g} generations from χ = {}, not 3", self.euler_number),
+                        ),
+                    }
                 }
             }
             claims::GRAVITY => {
@@ -897,6 +945,27 @@ mod tests {
             verdict(&t, claims::ANOMALY_CANCELLATION),
             VerdictKind::Undecidable
         );
+    }
+
+    #[test]
+    fn euler_number_accommodates_three_generations_without_deriving_them() {
+        let mut t = StringTheory::heterotic_e8();
+        // With no chosen topology, the generation count is genuinely open.
+        assert_eq!(
+            verdict(&t, claims::THREE_GENERATIONS),
+            VerdictKind::Undecidable
+        );
+        // χ = ±6 gives |χ|/2 = 3 generations — accommodated by a chosen topology.
+        t.set("euler_number", KnobValue::Int(6)).unwrap();
+        assert_eq!(verdict(&t, claims::THREE_GENERATIONS), VerdictKind::Holds);
+        t.set("euler_number", KnobValue::Int(-6)).unwrap();
+        assert_eq!(verdict(&t, claims::THREE_GENERATIONS), VerdictKind::Holds);
+        // A different topology gives a different, wrong count.
+        t.set("euler_number", KnobValue::Int(8)).unwrap();
+        assert_eq!(verdict(&t, claims::THREE_GENERATIONS), VerdictKind::Fails);
+        // An odd χ is not a valid Calabi–Yau Euler number (must not truncate to 3).
+        t.set("euler_number", KnobValue::Int(7)).unwrap();
+        assert_eq!(verdict(&t, claims::THREE_GENERATIONS), VerdictKind::Fails);
     }
 
     #[test]

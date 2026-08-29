@@ -42,4 +42,19 @@ In this lab that argument becomes:
 - observer-geometry default knobs → `predictivity.unique-vacuum` **holds** (conjecture/axiom)
 - observer-geometry empirical contact → **undecidable / conjecture**, not earned
 
+### "Why three generations?", made mechanical
+
+`empirical.three-generations` is `undecidable` for a superstring until you choose
+a compactification topology via the `euler_number` knob. Then generations =
+`|χ|/2` is a real topological count:
+
+```
+cargo run -p physis -- set heterotic-e8e8 euler_number 6   # |χ|/2 = 3: holds
+cargo run -p physis -- set heterotic-e8e8 euler_number 8   # |χ|/2 = 4: fails
+```
+
+This is exactly the accommodate-vs-derive distinction: the theory can *fit* three
+generations by choosing χ = ±6, but nothing here *derives* why χ = ±6. The knob
+is the choice the critique says is unexplained.
+
 So the critique is *visible*, and the alternative has not yet *won*. That is the correct v0 state. Agents are invited to change it by encoding more mechanism, not by turning the uniqueness axiom on harder.

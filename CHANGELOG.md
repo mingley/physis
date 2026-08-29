@@ -203,6 +203,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M1 — String lab
 
+- **"Why three generations?" made mechanical** (`crates/physis-theory/src/strings.rs`).
+  New `euler_number` knob (Calabi–Yau Euler characteristic χ). `empirical.three-generations`
+  is `undecidable` until a topology is chosen, then it is the computed topological
+  count `|χ|/2`: `set heterotic-e8e8 euler_number 6` → 3 generations (`holds`);
+  `euler_number 8` → 4 (`fails`). This encodes the accommodate-vs-derive critique
+  directly — string theory can *fit* three generations by choosing χ = ±6, but
+  nothing *derives* why χ = ±6; the knob is the unexplained choice. Docs:
+  docs/KNOBS, docs/STRING-EXPERIMENT. Knob-diff test included.
+
 - **M1.5 Retire observer-geometry's magic 14** (`crates/physis-theory/src/geometry.rs`).
   The total dimension is now `observed_dim + fibre_dim` rather than a literal
   14. The `total_dim` knob is replaced by `fibre_dim` (default 10). The 10 is
