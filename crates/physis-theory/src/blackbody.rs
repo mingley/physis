@@ -195,16 +195,46 @@ impl Blackbody {
         planck_h() * nu4 / (C * C * C) * (8.0 * PI * integral)
     }
 
-    /// Wavelength of the u(λ) peak, if the spectrum has one.
-    fn wien_peak_lambda_m(&self) -> Option<f64> {
-        if !self.quantum {
-            return None;
-        }
+    /// Full Planck energy density (improper integral, independent of cutoff).
+    fn full_planck_u(&self) -> Qty<EnergyDensity> {
+        self.planck_u_to(f64::INFINITY)
+    }
+
+    /// Log-spaced samples of u(λ) from the deep UV to the IR, in metres.
+    fn u_lambda_samples(&self) -> (f64, f64, Vec<(f64, f64)>) {
         let kt = k_boltzmann().value() * self.temperature_k;
         let hc = planck_h().value() * C.value();
-        let mut lo = (hc / (20.0 * kt)).ln();
-        let mut hi = (hc / (0.5 * kt)).ln();
-        for _ in 0..80 {
+        let lam_uv = hc / (30.0 * kt);
+        let lam_ir = hc / (0.2 * kt);
+        let n = 48_usize;
+        let mut pts = Vec::with_capacity(n + 1);
+        for i in 0..=n {
+            let t = i as f64 / n as f64;
+            let l = (lam_uv.ln() + t * (lam_ir.ln() - lam_uv.ln())).exp();
+            pts.push((l, self.u_lambda(l)));
+        }
+        (lam_uv, lam_ir, pts)
+    }
+
+    /// Wavelength of an *interior* u(λ) peak, if the sampled spectrum has one.
+    ///
+    /// Classical Rayleigh–Jeans `u(λ) ∝ λ⁻⁴` is monotonic and maxes at the UV
+    /// endpoint of any finite window — that is a computed absence of a peak,
+    /// not a prose assertion.
+    fn wien_peak_lambda_m(&self) -> Option<f64> {
+        let (lam_uv, lam_ir, pts) = self.u_lambda_samples();
+        let (best_l, _) = pts
+            .iter()
+            .copied()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))?;
+        // A peak at either endpoint is not Wien's displacement: it is a
+        // window artefact (or a UV divergence).
+        if (best_l - lam_uv).abs() / lam_uv < 0.25 || (best_l - lam_ir).abs() / lam_ir < 0.25 {
+            return None;
+        }
+        let mut lo = (best_l * 0.5).max(lam_uv).ln();
+        let mut hi = (best_l * 2.0).min(lam_ir).ln();
+        for _ in 0..60 {
             let m1 = lo + (hi - lo) / 3.0;
             let m2 = hi - (hi - lo) / 3.0;
             if self.u_lambda(m1.exp()) < self.u_lambda(m2.exp()) {
@@ -350,7 +380,7 @@ impl Theory for Blackbody {
             ),
             Claim::new(
                 UV_FINITE,
-                "The cavity energy density remains finite as the ultraviolet cutoff is doubled.",
+                "The improper integral ∫_0^∞ u(ν) dν converges to a finite energy density.",
                 LayerId::Statistical,
                 Epistemic::Theorem,
             ),
@@ -399,62 +429,101 @@ impl Theory for Blackbody {
             UV_FINITE => {
                 let u1 = self.energy_density_to(self.cutoff_hz);
                 let u2 = self.energy_density_to(self.cutoff_hz * 2.0);
-                let ratio = u2.value() / u1.value();
-                if (ratio - 1.0).abs() < 0.02 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "doubling the UV cutoff leaves u unchanged (Planck saturates)",
-                    )
-                    .with_evidence([format!(
-                        "u(2ν_max)/u(ν_max) = {ratio:.4}; u = {:.4e} J/m³",
-                        u1.value()
-                    )])
+                let doubling = u2.value() / u1.value();
+                if self.quantum {
+                    // The theorem is convergence of the improper integral, not
+                    // saturation of the current cutoff (which may sit in the
+                    // Rayleigh–Jeans infrared at high T / low ν_max).
+                    let full = self.full_planck_u();
+                    let analytic = planck_energy_density(kelvin(self.temperature_k));
+                    let rel = (full.value() - analytic.value()).abs() / analytic.value();
+                    if rel < 1e-3 {
+                        Verdict::holds(
+                            Epistemic::Theorem,
+                            "∫ u(ν) dν = a T⁴ is finite (Planck, independent of cutoff)",
+                        )
+                        .with_evidence([format!(
+                            "u_∞ = {:.4e} J/m³ vs aT⁴ = {:.4e} (rel {rel:.2e}); cutoff-doubling ratio at ν_max = {doubling:.3}",
+                            full.value(),
+                            analytic.value()
+                        )])
+                    } else {
+                        Verdict::fails(
+                            Epistemic::Theorem,
+                            "Planck integral disagrees with analytic a T⁴",
+                        )
+                        .with_evidence([format!(
+                            "u_∞ = {:.4e}, aT⁴ = {:.4e}",
+                            full.value(),
+                            analytic.value()
+                        )])
+                    }
                 } else {
                     Verdict::fails(
                         Epistemic::Theorem,
-                        "ultraviolet catastrophe: u grows as ν_max³",
+                        "ultraviolet catastrophe: the Rayleigh–Jeans integral diverges as ν_max³",
                     )
                     .with_evidence([format!(
-                        "u(2ν_max)/u(ν_max) = {ratio:.3} (Rayleigh–Jeans predicts 8)"
+                        "u(2ν_max)/u(ν_max) = {doubling:.3} (equipartition predicts 8)"
                     )])
                 }
             }
             STEFAN_BOLTZMANN => {
-                let u_t = self.energy_density_to(self.cutoff_hz);
-                let mut hot = self.clone();
-                hot.temperature_k *= 2.0;
-                let u_2t = hot.energy_density_to(self.cutoff_hz);
-                let ratio = u_2t.value() / u_t.value();
-                if (ratio - 16.0).abs() / 16.0 < 0.03 {
+                if self.quantum {
+                    let u_t = self.full_planck_u();
+                    let mut hot = self.clone();
+                    hot.temperature_k *= 2.0;
+                    let u_2t = hot.full_planck_u();
+                    let ratio = u_2t.value() / u_t.value();
                     let analytic = planck_energy_density(kelvin(self.temperature_k));
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "u(2T)/u(T) = 16 = 2⁴ (Stefan–Boltzmann)",
-                    )
-                    .with_evidence([
-                        format!("u(2T)/u(T) = {ratio:.3}"),
-                        format!(
-                            "u(T) = {:.4e} J/m³ (analytic aT⁴ = {:.4e})",
-                            u_t.value(),
-                            analytic.value()
-                        ),
-                    ])
+                    if (ratio - 16.0).abs() / 16.0 < 0.03 {
+                        Verdict::holds(
+                            Epistemic::Theorem,
+                            "u_∞(2T)/u_∞(T) = 16 = 2⁴ (Stefan–Boltzmann)",
+                        )
+                        .with_evidence([
+                            format!("u_∞(2T)/u_∞(T) = {ratio:.3}"),
+                            format!(
+                                "u_∞(T) = {:.4e} J/m³ (analytic aT⁴ = {:.4e})",
+                                u_t.value(),
+                                analytic.value()
+                            ),
+                        ])
+                    } else {
+                        Verdict::fails(
+                            Epistemic::Theorem,
+                            "Planck energy density does not scale as T⁴",
+                        )
+                        .with_evidence([format!("u_∞(2T)/u_∞(T) = {ratio:.3} (expected 16)")])
+                    }
                 } else {
+                    let u_t = self.energy_density_to(self.cutoff_hz);
+                    let mut hot = self.clone();
+                    hot.temperature_k *= 2.0;
+                    let u_2t = hot.energy_density_to(self.cutoff_hz);
+                    let ratio = u_2t.value() / u_t.value();
                     Verdict::fails(
                         Epistemic::Theorem,
                         "at fixed bandwidth classical u is linear in T, not T⁴",
                     )
                     .with_evidence([format!(
-                        "u(2T)/u(T) = {ratio:.3} (Stefan–Boltzmann requires 16)"
+                        "u(2T)/u(T) = {ratio:.3} at fixed ν_max (Stefan–Boltzmann requires 16)"
                     )])
                 }
             }
             WIEN_DISPLACEMENT => match self.wien_peak_lambda_m() {
-                None => Verdict::fails(
-                    Epistemic::Theorem,
-                    "Rayleigh–Jeans u(λ) ∝ λ⁻⁴ has no peak; it diverges as λ → 0",
-                )
-                .with_evidence(["classical spectral density is monotonic in the ultraviolet"]),
+                None => {
+                    let (lam_uv, _, pts) = self.u_lambda_samples();
+                    let u_uv = pts.first().map(|p| p.1).unwrap_or(0.0);
+                    let u_mid = pts.get(pts.len() / 2).map(|p| p.1).unwrap_or(0.0);
+                    Verdict::fails(
+                        Epistemic::Theorem,
+                        "sampled u(λ) has no interior peak; the maximum is at the UV endpoint",
+                    )
+                    .with_evidence([format!(
+                        "u(λ_UV = {lam_uv:.3e} m) = {u_uv:.3e} > u(mid-window) = {u_mid:.3e} (monotonic UV rise)"
+                    )])
+                }
                 Some(lambda) => {
                     let product = lambda * self.temperature_k;
                     let analytic = wien_constant().value();
@@ -600,6 +669,20 @@ mod tests {
         assert_eq!(verdict(&p, MODE_EQUIPARTITION), VerdictKind::Holds);
         // Identity is stable: the object is still `planck` in the lab.
         assert_eq!(p.id(), "planck");
+    }
+
+    #[test]
+    fn planck_observables_hold_when_cutoff_is_in_the_infrared() {
+        // High T and the domain-minimum cutoff put ν_max ≪ kT/h, so a
+        // cutoff-doubling test would look classical. The improper-integral
+        // statements must still hold.
+        let mut p = Blackbody::planck();
+        p.set("temperature", KnobValue::Float(1.0e6)).unwrap();
+        p.set("cutoff_hz", KnobValue::Float(1.0e8)).unwrap();
+        assert_eq!(verdict(&p, UV_FINITE), VerdictKind::Holds);
+        assert_eq!(verdict(&p, STEFAN_BOLTZMANN), VerdictKind::Holds);
+        assert_eq!(verdict(&p, WIEN_DISPLACEMENT), VerdictKind::Holds);
+        assert_eq!(verdict(&p, MODE_EQUIPARTITION), VerdictKind::Fails);
     }
 
     #[test]

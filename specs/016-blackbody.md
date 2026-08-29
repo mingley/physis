@@ -42,7 +42,7 @@ restores Rayleigh–Jeans *physics* on the Planck object without renaming it.
 | id | meaning | Rayleigh–Jeans | Planck |
 |---|---|---|---|
 | `thermo.mode-equipartition` | a UV mode (`hν = 8 kT`) still carries `kT` | **holds** (axiom) | **fails** (freeze-out) |
-| `thermo.uv-finite` | doubling `ν_max` leaves `u` unchanged | **fails** (`u ∝ ν_max³`, ratio 8) | **holds** (Bose tail) |
+| `thermo.uv-finite` | `∫_0^∞ u(ν) dν` converges | **fails** (`u ∝ ν_max³`, ratio 8) | **holds** (`u_∞ = a T⁴`, even if the current cutoff is still infrared) |
 | `thermo.stefan-boltzmann` | `u(2T)/u(T) = 16` at fixed bandwidth | **fails** (`u ∝ T`, ratio 2) | **holds** (`u = a T⁴`) |
 | `thermo.wien-displacement` | finite `λ_max` with `λ_max T` constant | **fails** (`u(λ) ∝ λ⁻⁴`, no peak) | **holds** (computed peak = `hc/(k x)`) |
 | `thermo.rj-ir-limit` | `hν ≪ kT` matches Rayleigh–Jeans | **holds** (identity) | **holds** (correspondence) |
@@ -55,13 +55,18 @@ resolution fails the axiom and holds the observations. That is the challenge.
 - Mode energy: `kT` vs `hν/(e^{hν/kT}−1)`, as `Qty<Energy>` (`h · ν` is energy
   by construction).
 - Spectral density `u(ν) = (8πν²/c³) · ⟨E⟩`, as `Qty<SpectralEnergyDensity>`.
-- Integrated `u` to a cutoff: analytic `8π kT ν_max³ / (3 c³)` classically;
-  trapezoid of `∫ x³/(e^x−1) dx` for Planck, checked against `π⁴/15`.
+- Integrated `u` to a cutoff: analytic `8π kT ν_max³ / (3 c³)` classically.
+  Planck's *improper* integral is the Bose trapezoid out to `x = 40` (the tail
+  is negligible), checked against `π⁴/15` and against typed `a T⁴`. Verdicts
+  for `thermo.uv-finite` and `thermo.stefan-boltzmann` use this improper
+  integral, so they do not silently fail when the `cutoff_hz` knob sits in
+  the infrared.
 - Stefan–Boltzmann constant `σ = 2π⁵ k⁴ / (15 h³ c²)` *derived* from exact SI
   `h`, `k_B`, `c`, typed as `Qty<StefanBoltzmann>`. Radiation constant
   `a = 4σ/c`. Photon-gas energy density `u = a T⁴` is `Qty<EnergyDensity>`.
 - Wien root `x = 5(1−e^{-x})` and `λ_max T = hc/(k x)`, checked against a
-  ternary search on `u(λ)`.
+  ternary search on sampled `u(λ)`. Rayleigh–Jeans is a computed *absence* of
+  an interior peak: the sampled maximum sits at the UV endpoint of the window.
 
 Energy density is *not* energy: assigning `Qty<EnergyDensity>` to `Qty<Energy>`
 is a compile-fail contract in `physis-core`.
