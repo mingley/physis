@@ -45,6 +45,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `Qty<Energy>`. With the original mass+length example, the type system's
   dimensional safety is now proven by three compile-fail contracts.
 
+### Documentation
+
+- **README refresh for five domains.** The top-level README now presents physis
+  as a five-domain laboratory (fundamental physics, electromagnetism,
+  computation, thermodynamics, quantum foundations) with a "Five domains, one
+  substrate" table of the seven experiments and what each scrutinizes, plus the
+  `epistemics` ledger and `--json` structured output — while keeping
+  string-critique as the flagship.
+
 ### Tooling
 
 - **`physis epistemics` knowledge ledger** (`crates/physis-agent`, `crates/physis`).

@@ -22,7 +22,7 @@ Rust is unusually good at this:
 - a claim can carry an epistemic tag (`theorem` vs `heuristic`) as seriously as its verdict (`holds` vs `fails`)
 - a lab journal is an append-only record of knob turns and verdict diffs
 
-`physis` is a **foundational building block**. The first experiment is a laboratory for the public argument that string theory took fundamental physics into a landscape of untestable vacua (the family of critiques associated with, among others, Eric Weinstein). After that, the same substrate is meant to host electricity, computation, and other domains — not as plugins bolted on, but as new layers and theories on the same knobs-and-claims machine.
+`physis` is a **foundational building block**. The flagship experiment is a laboratory for the public argument that string theory took fundamental physics into a landscape of untestable vacua (the family of critiques associated with, among others, Eric Weinstein). The *same* substrate now also hosts **electromagnetism, computation, thermodynamics, and quantum foundations** — not plugins bolted on, but new layers and theories on the same knobs-and-claims machine.
 
 This repository does **not** decide whether string theory is false. It makes the distinctive structural claims of several theories *inspectable* and *comparable*, over long time horizons, by agents that can only act through a typed protocol.
 
@@ -32,7 +32,7 @@ This repository does **not** decide whether string theory is false. It makes the
 |---|---|
 | `physis-core` | SI dimensions, quantities, layers, knobs, claims, verdicts |
 | `physis-model` | Spacetime, finite Hilbert space, SM spectrum, gauge groups, `World` |
-| `physis-theory` | Standard Model, GR, strings/M, observer-geometry scaffold, critique lab, **electromagnetism** and **computation** (domain reuse) |
+| `physis-theory` | five domains on one substrate: fundamental physics (SM, GR, strings/M, observer-geometry), **electromagnetism**, **computation**, **thermodynamics**, and **quantum foundations** |
 | `physis-agent` | Lab, protocol, JSONL journal |
 | `physis` | Facade + CLI |
 
@@ -53,6 +53,25 @@ Ten objects sit on one claim matrix:
 
 Read the `epistemic` column before treating a cell as physics. A `holds` that is a `conjecture` is not the same object as a `holds` that is a `theorem`.
 
+## Five domains, one substrate
+
+The same typed knob→verdict machine hosts five sciences (`physis experiments`):
+
+| experiment | what it scrutinizes |
+|---|---|
+| `string-critique` | string constructions vs SM/GR/observer-geometry — predictivity and the "accommodate vs derive" critique (a `euler_number` knob makes three generations a *choice*, not a derivation) |
+| `em-vacuum` | electromagnetism — `1/√(ε₀μ₀)=c` and the Maxwell equations as **computed theorems**; a medium and a lumped circuit as effective limits |
+| `computation` | a combinational circuit vs a Turing machine — the halting problem and P vs NP as honest `undecidable`/`open` |
+| `field-modes` | a Klein–Gordon scalar field on a lattice — computed dispersion, second-order accuracy, and a tachyon from `mass² < 0` |
+| `gauge-lattice` | compact U(1) vs SU(2)/SU(3) — asymptotic freedom, a computed strong-coupling area law, and the 4D mass gap as a `conjecture` |
+| `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly** (needs quantum statistics) |
+| `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2` |
+
+`physis epistemics` tallies the whole lab's knowledge state by epistemic tag
+(currently ~60 theorems alongside encoded-facts, conjectures, heuristics, and
+honestly-`open` problems). `physis --json <command>` emits the typed matrices and
+verdict diffs for agents.
+
 ## Smallest level of modern physics
 
 Empirically confirmed description currently bottoms out at **quantum fields of the Standard Model** (quarks, leptons, gauge bosons, Higgs) on a classical 3+1 spacetime, down to the electroweak scale. Planck-scale pictures (strings, loops, causal sets, unique geometries) are first-class *theories* in this workspace. They are not smuggled in as substrate. See `docs/LAYERS.md` and `specs/002-ontology-layers.md`.
@@ -70,7 +89,12 @@ cargo run -p physis -- experiments
 cargo run -p physis -- experiment string-critique
 cargo run -p physis -- experiment em-vacuum
 cargo run -p physis -- experiment computation
+cargo run -p physis -- experiment field-modes
+cargo run -p physis -- experiment gauge-lattice
+cargo run -p physis -- experiment thermo
+cargo run -p physis -- experiment bell
 cargo run -p physis -- score heterotic-e8e8
+cargo run -p physis -- epistemics
 cargo run -p physis --example kinetic_energy
 
 # record a session across runs, then mechanically verify it replays:
