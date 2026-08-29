@@ -26,6 +26,8 @@ If a load-bearing knob produces an empty diff, that is a failing test.
 | `type-iib` | `total_dim=9` | `consistency.critical-dimension` holds → fails |
 | `type-iib` | `supersymmetry=false` | `consistency.susy-construction` and `no-tachyon` fail |
 | `type-iib` | `flux_bits=0` | `predictivity.unique-vacuum` may hold (heuristic) |
+| `type-iib` | `h11=0` and `h21=0` | `predictivity.unique-vacuum` fails → holds (no moduli to scan) |
+| `type-iib` | `dilaton` large (with large `compact_radius_planck`) | `empirical.hidden-extra-dims` holds → fails (g_s inflates the effective size) |
 | `standard-model` | `generations=2` | `empirical.three-generations` holds → fails |
 | `observer-geometry` | `unique_vacuum=false` | `predictivity.unique-vacuum` holds → fails |
 | `observer-geometry` | `derive_gauge=false` | `empirical.sm-gauge` fails (SM postulated, not derived) |

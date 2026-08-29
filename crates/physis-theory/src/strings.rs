@@ -145,6 +145,27 @@ const SPECS: &[KnobSpec] = &[
         doc: "Heuristic bits of flux/moduli data contributing to a landscape count.",
         domain: KnobDomain::UInt { min: 0, max: 10_000 },
     },
+    KnobSpec {
+        name: "dilaton",
+        layer: LayerId::Field,
+        doc: "Dilaton VEV φ; string coupling is g_s = e^φ. Large g_s inflates the effective size of the compact space.",
+        domain: KnobDomain::Float {
+            min: -30.0,
+            max: 30.0,
+        },
+    },
+    KnobSpec {
+        name: "h11",
+        layer: LayerId::Spacetime,
+        doc: "Kähler (size) moduli count, a heuristic stand-in for h^{1,1}. Drives the flux landscape.",
+        domain: KnobDomain::UInt { min: 0, max: 500 },
+    },
+    KnobSpec {
+        name: "h21",
+        layer: LayerId::Spacetime,
+        doc: "Complex-structure (shape) moduli count, a heuristic stand-in for h^{2,1}. Drives the flux landscape.",
+        domain: KnobDomain::UInt { min: 0, max: 500 },
+    },
 ];
 
 /// A knobbed string / M-theory object.
@@ -156,96 +177,86 @@ pub struct StringTheory {
     compact_radius_planck: f64,
     supersymmetry: bool,
     flux_bits: u32,
+    dilaton: f64,
+    h11: u32,
+    h21: u32,
 }
 
 impl StringTheory {
-    /// Type IIB at its critical dimension, 6 extra dims at 1 Planck length.
-    pub fn type_iib() -> Self {
+    /// Build a construction at its critical dimension with default moduli.
+    ///
+    /// Supersymmetry defaults to whatever the kind requires; the compact space
+    /// starts at 4 observed dimensions, radius 1 ℓ_P, dilaton 0 (g_s = 1), and
+    /// a small `h11 = h21 = 3` moduli stand-in.
+    fn new(kind: StringKind, flux_bits: u32) -> Self {
         Self {
-            kind: StringKind::TypeIIB,
-            total_dim: 10,
+            kind,
+            total_dim: kind.critical_dim(),
             observed_dim: 4,
             compact_radius_planck: 1.0,
-            supersymmetry: true,
-            flux_bits: 200,
+            supersymmetry: kind.requires_susy(),
+            flux_bits,
+            dilaton: 0.0,
+            h11: 3,
+            h21: 3,
         }
+    }
+
+    /// Type IIB at its critical dimension, 6 extra dims at 1 Planck length.
+    pub fn type_iib() -> Self {
+        Self::new(StringKind::TypeIIB, 200)
     }
 
     /// Heterotic E₈×E₈, the usual SM-embedding story.
     pub fn heterotic_e8() -> Self {
-        Self {
-            kind: StringKind::HeteroticE8xE8,
-            total_dim: 10,
-            observed_dim: 4,
-            compact_radius_planck: 1.0,
-            supersymmetry: true,
-            flux_bits: 80,
-        }
+        Self::new(StringKind::HeteroticE8xE8, 80)
     }
 
     /// Type I (open + closed) with SO(32) gauge at D=10.
     pub fn type_i() -> Self {
-        Self {
-            kind: StringKind::TypeI,
-            total_dim: 10,
-            observed_dim: 4,
-            compact_radius_planck: 1.0,
-            supersymmetry: true,
-            flux_bits: 100,
-        }
+        Self::new(StringKind::TypeI, 100)
     }
 
     /// Type IIA (closed, non-chiral) at D=10.
     pub fn type_iia() -> Self {
-        Self {
-            kind: StringKind::TypeIIA,
-            total_dim: 10,
-            observed_dim: 4,
-            compact_radius_planck: 1.0,
-            supersymmetry: true,
-            flux_bits: 200,
-        }
+        Self::new(StringKind::TypeIIA, 200)
     }
 
     /// Heterotic SO(32) at D=10.
     pub fn heterotic_so32() -> Self {
-        Self {
-            kind: StringKind::HeteroticSO32,
-            total_dim: 10,
-            observed_dim: 4,
-            compact_radius_planck: 1.0,
-            supersymmetry: true,
-            flux_bits: 80,
-        }
+        Self::new(StringKind::HeteroticSO32, 80)
     }
 
     /// Bosonic string at D=26.
     pub fn bosonic() -> Self {
-        Self {
-            kind: StringKind::Bosonic,
-            total_dim: 26,
-            observed_dim: 4,
-            compact_radius_planck: 1.0,
-            supersymmetry: false,
-            flux_bits: 20,
-        }
+        Self::new(StringKind::Bosonic, 20)
     }
 
     /// M-theory at D=11.
     pub fn m_theory() -> Self {
-        Self {
-            kind: StringKind::MTheory,
-            total_dim: 11,
-            observed_dim: 4,
-            compact_radius_planck: 1.0,
-            supersymmetry: true,
-            flux_bits: 150,
-        }
+        Self::new(StringKind::MTheory, 150)
     }
 
     /// Compact extra dimensions.
     fn extra(&self) -> i32 {
         self.total_dim as i32 - self.observed_dim as i32
+    }
+
+    /// String coupling g_s = e^φ from the dilaton.
+    fn string_coupling(&self) -> f64 {
+        self.dilaton.exp()
+    }
+
+    /// Total moduli count (Kähler + complex structure stand-ins).
+    fn moduli(&self) -> u32 {
+        self.h11 + self.h21
+    }
+
+    /// Effective compact size seen at low energy: the Kähler volume radius
+    /// modulated by the string coupling (a heuristic frame factor). Larger
+    /// g_s inflates the effective size, making extra dimensions easier to see.
+    fn effective_radius_planck(&self) -> f64 {
+        self.compact_radius_planck * self.string_coupling().sqrt()
     }
 
     fn manifold(&self) -> Manifold {
@@ -275,14 +286,16 @@ impl StringTheory {
     }
 
     /// Heuristic log₁₀(number of vacua). 0 means "unique" for our threshold.
+    ///
+    /// Folklore: flux vacua proliferate as (flux choices)^(number of moduli).
+    /// So log₁₀N ≈ (moduli) · (flux_bits · log₁₀2). With no compact space, no
+    /// flux, or no moduli there is nothing to scan and the count collapses to
+    /// one. This is knob-sensitive folklore, not a computation of the landscape.
     fn landscape_log10(&self) -> f64 {
-        let extra = self.extra().max(0) as f64;
-        if extra == 0.0 || self.flux_bits == 0 {
+        if self.extra() <= 0 {
             return 0.0;
         }
-        // Folklore: flux compactifications proliferate with extra dims and fluxes.
-        // This is a knob-sensitive heuristic, not a computation of the landscape.
-        (self.flux_bits as f64) * extra / 4.0
+        (self.moduli() as f64) * (self.flux_bits as f64) * std::f64::consts::LOG10_2
     }
 
     fn spectrum(&self) -> Spectrum {
@@ -310,6 +323,9 @@ impl Knobbed for StringTheory {
             "compact_radius_planck" => Ok(KnobValue::Float(self.compact_radius_planck)),
             "supersymmetry" => Ok(KnobValue::Bool(self.supersymmetry)),
             "flux_bits" => Ok(KnobValue::UInt(self.flux_bits as u64)),
+            "dilaton" => Ok(KnobValue::Float(self.dilaton)),
+            "h11" => Ok(KnobValue::UInt(self.h11 as u64)),
+            "h21" => Ok(KnobValue::UInt(self.h21 as u64)),
             _ => Err(CoreError::UnknownKnob { name: name.into() }),
         }
     }
@@ -330,6 +346,9 @@ impl Knobbed for StringTheory {
             ("compact_radius_planck", KnobValue::Float(v)) => self.compact_radius_planck = v,
             ("supersymmetry", KnobValue::Bool(v)) => self.supersymmetry = v,
             ("flux_bits", KnobValue::UInt(v)) => self.flux_bits = v as u32,
+            ("dilaton", KnobValue::Float(v)) => self.dilaton = v,
+            ("h11", KnobValue::UInt(v)) => self.h11 = v as u32,
+            ("h21", KnobValue::UInt(v)) => self.h21 = v as u32,
             _ => {
                 return Err(CoreError::TypeMismatch {
                     name: name.into(),
@@ -366,21 +385,24 @@ impl Theory for StringTheory {
     }
 
     fn world(&self) -> World {
-        let extra = self.extra().max(0) as u32;
         World {
             spacetime: self.manifold(),
             gauge: self.kind.fundamental_gauge(),
             spectrum: self.spectrum(),
             has_gravity: true,
             supersymmetric: self.supersymmetry,
-            free_parameter_count: 20 + extra * self.flux_bits.max(1),
+            // The moduli are the continuous free parameters (plus the dilaton).
+            free_parameter_count: 4 + self.moduli() + 1,
             landscape_log10: self.landscape_log10(),
             note: format!(
-                "{} at D={}, observed {}, extra {}, landscape ~10^{:.1}",
+                "{} at D={}, observed {}, extra {}, g_s={:.2}, moduli h11={}+h21={}, landscape ~10^{:.1}",
                 self.kind.as_str(),
                 self.total_dim,
                 self.observed_dim,
                 self.extra(),
+                self.string_coupling(),
+                self.h11,
+                self.h21,
                 self.landscape_log10()
             ),
         }
@@ -602,24 +624,27 @@ impl Theory for StringTheory {
             }
             claims::HIDDEN_EXTRA_DIMS => {
                 let extra = self.extra();
+                let r_eff = self.effective_radius_planck();
                 if extra <= 0 {
                     Verdict::holds(Epistemic::Heuristic, "no extra dimensions to hide")
-                } else if self.compact_radius_planck <= 1e16 {
+                } else if r_eff <= 1e16 {
                     // Extremely loose: Planck-to-electroweak is ~10^16 in length ratio-ish
-                    // (this is a placeholder scale cut, labelled Heuristic).
+                    // (this is a placeholder scale cut, labelled Heuristic). The effective
+                    // radius folds in the Kähler size and the dilaton (g_s) frame factor.
                     Verdict::holds(
                         Epistemic::Heuristic,
-                        format!(
-                            "R = {} ℓ_P is treated as hidden at current colliders",
-                            self.compact_radius_planck
-                        ),
+                        format!("effective R = {r_eff:.3} ℓ_P is hidden at current colliders"),
                     )
                 } else {
                     Verdict::fails(
                         Epistemic::Heuristic,
-                        "compactification radius is large enough to be visible",
+                        "effective compact size is large enough to be visible",
                     )
-                    .with_evidence([format!("R = {} ℓ_P", self.compact_radius_planck)])
+                    .with_evidence([format!(
+                        "effective R = {r_eff:.3} ℓ_P (radius {} × √g_s, g_s = {:.2})",
+                        self.compact_radius_planck,
+                        self.string_coupling()
+                    )])
                 }
             }
             claims::FERMIONS => {
@@ -835,6 +860,37 @@ mod tests {
             verdict(&t, claims::ANOMALY_CANCELLATION),
             VerdictKind::Undecidable
         );
+    }
+
+    #[test]
+    fn moduli_drive_the_landscape() {
+        let mut t = StringTheory::type_iib();
+        assert_eq!(verdict(&t, claims::UNIQUE_VACUUM), VerdictKind::Fails);
+        // With no moduli to stabilize against flux, there is nothing to scan:
+        // the landscape collapses and uniqueness is restored.
+        t.set("h11", KnobValue::UInt(0)).unwrap();
+        t.set("h21", KnobValue::UInt(0)).unwrap();
+        assert_eq!(verdict(&t, claims::UNIQUE_VACUUM), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn zero_flux_restores_uniqueness() {
+        let mut t = StringTheory::type_iib();
+        t.set("flux_bits", KnobValue::UInt(0)).unwrap();
+        assert_eq!(verdict(&t, claims::UNIQUE_VACUUM), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn kahler_volume_and_dilaton_expose_extra_dimensions() {
+        let mut t = StringTheory::type_iib();
+        assert_eq!(verdict(&t, claims::HIDDEN_EXTRA_DIMS), VerdictKind::Holds);
+        // A large Kähler volume (radius) that is still under the cut stays hidden.
+        t.set("compact_radius_planck", KnobValue::Float(1e15))
+            .unwrap();
+        assert_eq!(verdict(&t, claims::HIDDEN_EXTRA_DIMS), VerdictKind::Holds);
+        // The dilaton (g_s) then tips the effective size over the threshold.
+        t.set("dilaton", KnobValue::Float(10.0)).unwrap();
+        assert_eq!(verdict(&t, claims::HIDDEN_EXTRA_DIMS), VerdictKind::Fails);
     }
 
     #[test]

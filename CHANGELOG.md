@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### M1 — String lab
 
+- **M1.4 Moduli as knobs** (`crates/physis-theory/src/strings.rs`). Added
+  `dilaton` (string coupling g_s = e^φ) and heuristic moduli counts `h11`
+  (Kähler / size) and `h21` (complex structure / shape). `unique-vacuum` now
+  scales as `flux_bits × (h11 + h21)` — zeroing either the flux or the moduli
+  collapses the landscape and restores uniqueness — and `hidden-extra-dims`
+  uses the effective radius `compact_radius_planck · √g_s`, so the dilaton and
+  the Kähler volume can both make extra dimensions visible. Constructors were
+  refactored through a shared `StringTheory::new`. Knob→verdict-diff tests:
+  moduli drive the landscape, zero flux restores uniqueness, and the
+  Kähler volume + dilaton expose extra dimensions.
+
 - **M1.3 Anomaly cancellation as a claim** (`crates/physis-model/src/gauge.rs`,
   `crates/physis-theory/src/{claims,strings,standard_model}.rs`). New matrix row
   `consistency.anomaly-cancellation`. The Green–Schwarz condition is a mechanical
