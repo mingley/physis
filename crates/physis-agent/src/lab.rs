@@ -1737,6 +1737,15 @@ mod tests {
             "{p3n}"
         );
         assert!(
+            p3n.lines()
+                .any(|l| l.contains("standard-model") && l.contains("sm.hypercharge-derivation")),
+            "exact Ratio hypercharge roots must mint P3N: {p3n}"
+        );
+        assert!(
+            p3n.lines().any(|l| l.trim() == "count 2"),
+            "P3N is the two SM exact-Ratio cells, not more: {p3n}"
+        );
+        assert!(
             !p3n.lines()
                 .any(|l| l.contains("type-iib") && l.contains("consistency.anomaly-cancellation")),
             "Green-Schwarz stays encoded, not a Ratio certificate: {p3n}"
@@ -1757,6 +1766,16 @@ mod tests {
         assert!(why.contains("P3N"), "{why}");
         assert!(!why.contains("P3F"), "{why}");
         assert!(why.contains("kernel proof: none"), "{why}");
+        let why_y = lab
+            .exec(Command::Why {
+                claim: "sm.hypercharge-derivation".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_y.contains("derivation: certified-numeric"), "{why_y}");
+        assert!(why_y.contains("P3N"), "{why_y}");
+        assert!(!why_y.contains("P3F"), "{why_y}");
+        assert!(why_y.contains("kernel proof: none"), "{why_y}");
         let run = lab
             .exec(Command::Run {
                 theory: "standard-model".into(),
@@ -1765,6 +1784,11 @@ mod tests {
             .to_string();
         assert!(run.contains("certified-numeric"), "{run}");
         assert!(run.contains("exact Ratio"), "{run}");
+        assert!(
+            run.lines().any(|l| l.contains("sm.hypercharge-derivation")
+                && l.contains("certified-numeric")),
+            "hypercharge derivation must not stay executed: {run}"
+        );
         // Heterotic GS remains executed in the same why dump.
         assert!(
             why.contains("derivation: executed"),

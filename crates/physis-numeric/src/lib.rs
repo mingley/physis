@@ -80,6 +80,17 @@ impl Ratio {
     pub fn to_f64(self) -> f64 {
         (self.num as f64) / (self.den as f64)
     }
+
+    /// Exact square root when both numerator and denominator are perfect
+    /// squares. `None` if the radicand is negative or not a square in Q.
+    pub fn checked_sqrt(self) -> Option<Self> {
+        if self.num < 0 {
+            return None;
+        }
+        let n = isqrt_exact(self.num)?;
+        let d = isqrt_exact(self.den)?;
+        Some(Ratio::new(n, d))
+    }
 }
 
 impl std::ops::Add for Ratio {
@@ -100,6 +111,33 @@ impl std::ops::Mul for Ratio {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
         mul_ratio(self, rhs)
+    }
+}
+
+impl std::ops::Div for Ratio {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        assert!(!rhs.is_zero(), "ratio denominator must be nonzero");
+        self * Ratio::new(rhs.den, rhs.num)
+    }
+}
+
+impl std::ops::Neg for Ratio {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Ratio::new(-self.num, self.den)
+    }
+}
+
+impl PartialOrd for Ratio {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Ratio {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        cmp_ratio(*self, *other)
     }
 }
 
@@ -130,6 +168,37 @@ const fn reduce(num: i128, den: i128) -> (i128, i128) {
     let d = den.abs();
     let g = gcd(n, d);
     (n / g, d / g)
+}
+
+/// Integer square root when `n` is a perfect square.
+fn isqrt_exact(n: i128) -> Option<i128> {
+    if n < 0 {
+        return None;
+    }
+    if n <= 1 {
+        return Some(n);
+    }
+    let mut x = n;
+    while x > n / x {
+        let next = x.saturating_add(n / x) / 2;
+        if next >= x {
+            break;
+        }
+        x = next;
+        if x == 0 {
+            return None;
+        }
+    }
+    if x.checked_mul(x) == Some(n) {
+        return Some(x);
+    }
+    // Newton's method can land one below a perfect square.
+    let up = x.checked_add(1)?;
+    if up.checked_mul(up) == Some(n) {
+        Some(up)
+    } else {
+        None
+    }
 }
 
 /// Closed interval with exact rational endpoints.
@@ -327,5 +396,27 @@ mod tests {
         assert!(cubic.is_zero(), "Σ colour·weak·Y³ = {cubic}");
         let flipped = cubic + Ratio::int(1);
         assert!(!flipped.is_zero());
+    }
+
+    #[test]
+    fn checked_sqrt_is_exact_or_absent() {
+        assert_eq!(Ratio::int(0).checked_sqrt(), Some(Ratio::int(0)));
+        assert_eq!(Ratio::int(1).checked_sqrt(), Some(Ratio::int(1)));
+        assert_eq!(Ratio::int(9).checked_sqrt(), Some(Ratio::int(3)));
+        assert_eq!(Ratio::new(4, 9).checked_sqrt(), Some(Ratio::new(2, 3)));
+        assert_eq!(Ratio::new(36, 49).checked_sqrt(), Some(Ratio::new(6, 7)));
+        assert_eq!(Ratio::int(2).checked_sqrt(), None);
+        assert_eq!(Ratio::int(8).checked_sqrt(), None);
+        assert_eq!(Ratio::int(-1).checked_sqrt(), None);
+        for k in 0i128..=256 {
+            let sq = Ratio::int(k * k);
+            assert_eq!(sq.checked_sqrt(), Some(Ratio::int(k)), "sqrt({}^2)", k);
+        }
+        // Discriminant of the SM {Y_u, Y_d} quadratic t^2 - s t + p = 0.
+        let s = Ratio::new(-1, 3);
+        let p = Ratio::new(-2, 9);
+        let disc = s * s - Ratio::int(4) * p;
+        assert_eq!(disc, Ratio::int(1));
+        assert_eq!(disc.checked_sqrt(), Some(Ratio::int(1)));
     }
 }

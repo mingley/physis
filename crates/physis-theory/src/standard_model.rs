@@ -73,16 +73,35 @@ const SM_WEAK_DOUBLETS: u32 = 4;
 
 /// The weak hypercharges derived from anomaly cancellation (see
 /// [`derive_hypercharges`]).
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct DerivedHypercharges {
     /// Y of the quark doublet (the normalization input).
-    y_q: f64,
+    y_q: Ratio,
     /// Y of the lepton doublet, from the [SU(2)]²U(1) anomaly.
-    y_l: f64,
+    y_l: Ratio,
     /// Y of the anti-electron, from the gravitational anomaly.
-    y_e: f64,
+    y_e: Ratio,
     /// The unordered pair {Y_u, Y_d}, sorted ascending, from the [U(1)]³ anomaly.
-    y_ud: [f64; 2],
+    y_ud: [Ratio; 2],
+}
+
+/// Roots of `t² − s t + p = 0` over Q, sorted, when the discriminant is a square.
+fn quadratic_roots(sum: Ratio, product: Ratio) -> Option<[Ratio; 2]> {
+    let disc = sum * sum - Ratio::int(4) * product;
+    let r = disc.checked_sqrt()?;
+    let two = Ratio::int(2);
+    let mut roots = [(sum - r) / two, (sum + r) / two];
+    roots.sort();
+    Some(roots)
+}
+
+/// Stored hypercharge of a named Weyl species.
+fn stored_y(name: &str) -> Ratio {
+    SM_WEYL_FIELDS
+        .iter()
+        .find(|f| f.name == name)
+        .expect("Weyl species is in the SM generation table")
+        .y
 }
 
 /// Derive the Standard Model hypercharges from anomaly cancellation.
@@ -98,27 +117,31 @@ struct DerivedHypercharges {
 /// - `[U(1)]³`:      the cubic then fixes `p := Y_u·Y_d`, so {Y_u, Y_d} are the
 ///   roots of `t² − s·t + p = 0`.
 ///
+/// Arithmetic is exact `Ratio`. The quadratic is accepted only when the
+/// discriminant is a square in Q (`Ratio::checked_sqrt`). `None` if that
+/// square root is absent or a linear denominator vanishes.
+///
 /// The output reproduces the measured assignments — the hypercharges are not an
 /// input to the Standard Model here, they are *forced* by consistency.
-fn derive_hypercharges() -> DerivedHypercharges {
-    let y_q: f64 = 1.0 / 6.0; // normalization: fixes the overall U(1) scale
-    let y_l = -3.0 * y_q; // [SU(2)]²U(1)
-    let s = -2.0 * y_q; // [SU(3)]²U(1): Y_u + Y_d
-    let y_e = -(6.0 * y_q + 3.0 * s + 2.0 * y_l); // gravitational anomaly
-                                                  // [U(1)]³: 6Y_Q³ + 3(Y_u³+Y_d³) + 2Y_L³ + Y_e³ = 0.
-    let a = 6.0 * y_q.powi(3) + 2.0 * y_l.powi(3) + y_e.powi(3);
+fn derive_hypercharges() -> Option<DerivedHypercharges> {
+    let y_q = Ratio::new(1, 6); // normalization: fixes the overall U(1) scale
+    let y_l = -Ratio::int(3) * y_q; // [SU(2)]²U(1)
+    let s = -Ratio::int(2) * y_q; // [SU(3)]²U(1): Y_u + Y_d
+    if s.is_zero() {
+        return None;
+    }
+    let y_e = -(Ratio::int(6) * y_q + Ratio::int(3) * s + Ratio::int(2) * y_l);
+    // [U(1)]³: 6Y_Q³ + 3(Y_u³+Y_d³) + 2Y_L³ + Y_e³ = 0.
+    let a = Ratio::int(6) * y_q.pow(3) + Ratio::int(2) * y_l.pow(3) + y_e.pow(3);
     // Y_u³ + Y_d³ = s³ − 3·s·p = −a/3  ⇒  p = (s³ + a/3)/(3s).
-    let p = (s.powi(3) + a / 3.0) / (3.0 * s);
-    let disc = (s * s - 4.0 * p).max(0.0);
-    let r = disc.sqrt();
-    let mut y_ud = [(s - r) / 2.0, (s + r) / 2.0];
-    y_ud.sort_by(|x, y| x.partial_cmp(y).unwrap());
-    DerivedHypercharges {
+    let p = (s.pow(3) + a / Ratio::int(3)) / (Ratio::int(3) * s);
+    let y_ud = quadratic_roots(s, p)?;
+    Some(DerivedHypercharges {
         y_q,
         y_l,
         y_e,
         y_ud,
-    }
+    })
 }
 
 /// Σ T₃² over an SU(2) irrep of dimension `d`: `j(j+1)(2j+1)/3` with
@@ -500,57 +523,41 @@ impl Theory for StandardModel {
                 }
             }
             id if id == SM_HYPERCHARGE_DERIVED => {
-                let d = derive_hypercharges();
-                // Compare the derived hypercharges to the measured assignments.
-                let stored_u = SM_WEYL_FIELDS
-                    .iter()
-                    .find(|f| f.name == "u_R^c")
-                    .unwrap()
-                    .y
-                    .to_f64();
-                let stored_d = SM_WEYL_FIELDS
-                    .iter()
-                    .find(|f| f.name == "d_R^c")
-                    .unwrap()
-                    .y
-                    .to_f64();
-                let mut stored_ud = [stored_u, stored_d];
-                stored_ud.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                let stored_l = SM_WEYL_FIELDS
-                    .iter()
-                    .find(|f| f.name == "L_L")
-                    .unwrap()
-                    .y
-                    .to_f64();
-                let stored_e = SM_WEYL_FIELDS
-                    .iter()
-                    .find(|f| f.name == "e_R^c")
-                    .unwrap()
-                    .y
-                    .to_f64();
-                let close = |a: f64, b: f64| (a - b).abs() < 1e-12;
-                let matches = close(d.y_l, stored_l)
-                    && close(d.y_e, stored_e)
-                    && close(d.y_ud[0], stored_ud[0])
-                    && close(d.y_ud[1], stored_ud[1]);
-                if matches {
-                    Verdict::holds(claim,
-                        "anomaly cancellation forces the measured hypercharges (up to normalization Y_Q = 1/6)",
-                    )
-                    .with_evidence([
-                        format!(
-                            "derived: Y_Q = {:.4}, Y_L = {:.4}, Y_e = {:.4}, {{Y_u, Y_d}} = {{{:.4}, {:.4}}}",
-                            d.y_q, d.y_l, d.y_e, d.y_ud[0], d.y_ud[1]
-                        ),
-                        "solved from [SU(2)]²U(1), [SU(3)]²U(1), [grav]²U(1), and [U(1)]³".to_string(),
-                    ])
-                } else {
-                    Verdict::fails(claim,
-                        format!(
-                            "derived hypercharges {{Y_L={:.4}, Y_e={:.4}, Y_u/d={:?}}} disagree with the catalog",
-                            d.y_l, d.y_e, d.y_ud
-                        ),
-                    )
+                match derive_hypercharges() {
+                    None => Verdict::fails(
+                        claim,
+                        "the [U(1)]³ discriminant is not a square in Q; hypercharges are not exact rationals",
+                    ),
+                    Some(d) => {
+                        let mut stored_ud = [stored_y("u_R^c"), stored_y("d_R^c")];
+                        stored_ud.sort();
+                        let matches = d.y_q == stored_y("Q_L")
+                            && d.y_l == stored_y("L_L")
+                            && d.y_e == stored_y("e_R^c")
+                            && d.y_ud == stored_ud;
+                        if matches {
+                            Verdict::holds(
+                                claim,
+                                "anomaly cancellation forces the measured hypercharges as exact Ratio roots (Y_Q = 1/6)",
+                            )
+                            .with_evidence([
+                                format!(
+                                    "derived: Y_Q = {}, Y_L = {}, Y_e = {}, {{Y_u, Y_d}} = {{{}, {}}}",
+                                    d.y_q, d.y_l, d.y_e, d.y_ud[0], d.y_ud[1]
+                                ),
+                                "solved in Q from [SU(2)]²U(1), [SU(3)]²U(1), [grav]²U(1), and [U(1)]³".to_string(),
+                            ])
+                            .with_certified_numeric()
+                        } else {
+                            Verdict::fails(
+                                claim,
+                                format!(
+                                    "derived hypercharges {{Y_L={}, Y_e={}, Y_u/d=[{}, {}]}} disagree with the catalog",
+                                    d.y_l, d.y_e, d.y_ud[0], d.y_ud[1]
+                                ),
+                            )
+                        }
+                    }
                 }
             }
             claims::THREE_GENERATIONS => {
@@ -706,33 +713,35 @@ mod tests {
         assert!(hypercharge_cube_sum_exact().is_zero(), "[U(1)]³");
         assert_eq!(SM_WEAK_DOUBLETS % 2, 0);
         // A sign flip of the cubic is not a cancellation.
-        assert!(!hypercharge_cube_sum_exact().is_zero() || true);
         assert!(!(hypercharge_cube_sum_exact() + Ratio::int(1)).is_zero());
+    }
+
+    #[test]
+    fn quadratic_roots_require_a_square_discriminant() {
+        assert_eq!(
+            quadratic_roots(Ratio::new(-1, 3), Ratio::new(-2, 9)),
+            Some([Ratio::new(-2, 3), Ratio::new(1, 3)])
+        );
+        assert_eq!(quadratic_roots(Ratio::int(0), Ratio::int(1)), None);
+        assert_eq!(
+            quadratic_roots(Ratio::int(0), Ratio::int(-1)),
+            Some([Ratio::int(-1), Ratio::int(1)])
+        );
     }
 
     #[test]
     fn hypercharges_are_derived_from_anomaly_cancellation() {
         // The headline: the hypercharges are *not* an input — anomaly freedom
         // plus the normalization Y_Q = 1/6 forces every one of them.
-        let d = derive_hypercharges();
-        assert!((d.y_q - 1.0 / 6.0).abs() < 1e-12);
-        assert!((d.y_l - (-1.0 / 2.0)).abs() < 1e-12, "Y_L = {}", d.y_l);
-        assert!((d.y_e - 1.0).abs() < 1e-12, "Y_e = {}", d.y_e);
-        // {Y_u, Y_d} = {-2/3, 1/3}, sorted ascending.
-        assert!(
-            (d.y_ud[0] - (-2.0 / 3.0)).abs() < 1e-12,
-            "Y_u = {}",
-            d.y_ud[0]
-        );
-        assert!(
-            (d.y_ud[1] - (1.0 / 3.0)).abs() < 1e-12,
-            "Y_d = {}",
-            d.y_ud[1]
-        );
+        let d = derive_hypercharges().expect("SM discriminant is 1, a square in Q");
+        assert_eq!(d.y_q, Ratio::new(1, 6));
+        assert_eq!(d.y_l, Ratio::new(-1, 2), "Y_L");
+        assert_eq!(d.y_e, Ratio::int(1), "Y_e");
+        assert_eq!(d.y_ud, [Ratio::new(-2, 3), Ratio::new(1, 3)]);
     }
 
     #[test]
-    fn hypercharge_derivation_claim_holds_as_theorem() {
+    fn hypercharge_derivation_claim_holds_as_certified_numeric() {
         let t = StandardModel::default();
         let c = t
             .claims()
@@ -742,6 +751,9 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
+        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert!(v.evidence.iter().any(|e| e.contains("Y_L = -1/2")));
+        assert!(v.evidence.iter().any(|e| e.contains("-2/3")));
     }
 
     #[test]

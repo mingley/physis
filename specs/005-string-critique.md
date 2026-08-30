@@ -60,7 +60,7 @@ That overlay is `CertifiedNumeric` (P3N), not a Lean kernel proof. Green–Schwa
 on heterotic strings remains encoded (`GaugeGroup::gs_anomaly_free_10d`), not
 a Ratio certificate.
 
-The Standard Model also carries `sm.hypercharge-derivation`, a computed `theorem` that goes one step further than checking cancellation: it **solves** the anomaly conditions for the hypercharges themselves. Fixing only the normalization `Y_Q = 1/6`, the linear anomalies give `Y_L = −1/2` and `Y_e = 1`, and the `[U(1)]³` cubic then forces `{Y_u, Y_d} = {−2/3, 1/3}` — the measured assignments come out as a *consequence* of consistency, not an input (`StandardModel::derive_hypercharges`). This is the mechanized form of "accommodate vs derive": here the SM genuinely *derives* its charges.
+The Standard Model also carries `sm.hypercharge-derivation`, which goes one step further than checking cancellation: it **solves** the anomaly conditions for the hypercharges themselves in exact `Ratio` arithmetic. Fixing only the normalization `Y_Q = 1/6`, the linear anomalies give `Y_L = −1/2` and `Y_e = 1`, and the `[U(1)]³` cubic then forces `{Y_u, Y_d} = {−2/3, 1/3}` as roots of a quadratic whose discriminant is the square `1` in Q (`Ratio::checked_sqrt`). The measured assignments come out as a *consequence* of consistency, not an input (`derive_hypercharges`). If the discriminant is not a square, the cell Fails and does not mint P3N. This is the mechanized form of "accommodate vs derive": here the SM genuinely *derives* its charges. That overlay is also `CertifiedNumeric` / P3N, not a Lean receipt.
 
 ## Distinctive critique facts encoded as heuristics / conjectures
 

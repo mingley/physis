@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Exact SM hypercharge solve earns P3N**
+  (`sm.hypercharge-derivation`, `Ratio::checked_sqrt`,
+  `Verdict::with_certified_numeric`). Fixing `Y_Q = 1/6`, the four
+  anomaly conditions are solved in Q. The `{Y_u, Y_d}` quadratic has
+  discriminant `1`, a square; the roots are `{−2/3, 1/3}`. That overlay
+  is `CertifiedNumeric` / P3N, not a Lean receipt, not P3F, not P4, and
+  not the heuristic 3% GQW band. A non-square discriminant Fails without
+  P3N. `inspect trust P3N` lists both SM cells (count 2). Verified:
+  Ratio sqrt tests, exact derivation tests, inspect/why P3N, `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
+- **Exact rational square roots**
+  (`Ratio::checked_sqrt`, `Div`/`Neg`/`Ord`). `Some` only when numerator
+  and denominator are perfect squares. Used by the hypercharge quadratic.
+  Not a kernel proof. Verified: unit tests including the SM discriminant
+  `1`, `fmt`, `clippy -D warnings`.
+
 - **Exact SM anomalies earn P3N**
   (`consistency.anomaly-cancellation`, `Ratio`, `Verdict::with_certified_numeric`).
   The four chiral gauge sums over one generation are exact rationals
