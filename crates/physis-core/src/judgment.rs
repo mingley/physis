@@ -33,6 +33,16 @@
 //! use physis_core::judgment::NumericJudgment;
 //! let _ = NumericJudgment { kind: todo!() };
 //! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::EmpiricalJudgment;
+//! let _ = EmpiricalJudgment::Compatible;
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::EmpiricalJudgment;
+//! let _ = EmpiricalJudgment { kind: todo!() };
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -176,15 +186,56 @@ impl NumericJudgment {
 }
 
 /// Outcome of an empirical claim.
+///
+/// Compatible / excluded values are produced only by [`Judgment::from_lab`]
+/// from a registered empirical overlay. There is no public `Compatible`
+/// constructor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[serde(transparent)]
+pub struct EmpiricalJudgment {
+    kind: EmpiricalKind,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum EmpiricalJudgment {
-    /// Compatible with registered data under stated assumptions.
+enum EmpiricalKind {
     Compatible,
-    /// Excluded by a registered analysis.
     Excluded,
-    /// Data do not decide.
     Inconclusive,
+}
+
+impl EmpiricalJudgment {
+    pub(crate) const fn compatible() -> Self {
+        Self {
+            kind: EmpiricalKind::Compatible,
+        }
+    }
+
+    pub(crate) const fn excluded() -> Self {
+        Self {
+            kind: EmpiricalKind::Excluded,
+        }
+    }
+
+    pub(crate) const fn inconclusive() -> Self {
+        Self {
+            kind: EmpiricalKind::Inconclusive,
+        }
+    }
+
+    /// True when registered data contain the prediction.
+    pub const fn is_compatible(self) -> bool {
+        matches!(self.kind, EmpiricalKind::Compatible)
+    }
+
+    /// Stable kebab-case name (`compatible`, `excluded`, `inconclusive`).
+    pub const fn as_str(self) -> &'static str {
+        match self.kind {
+            EmpiricalKind::Compatible => "compatible",
+            EmpiricalKind::Excluded => "excluded",
+            EmpiricalKind::Inconclusive => "inconclusive",
+        }
+    }
 }
 
 /// Outcome of a statistical procedure (never an LLM-invented confidence).
@@ -521,10 +572,10 @@ impl Judgment {
             ClaimClass::EmpiricalPrediction | ClaimClass::Measurement => {
                 let j = match empirical {
                     EmpiricalStatus::Compatible | EmpiricalStatus::Supported => {
-                        EmpiricalJudgment::Compatible
+                        EmpiricalJudgment::compatible()
                     }
-                    EmpiricalStatus::Excluded => EmpiricalJudgment::Excluded,
-                    _ => EmpiricalJudgment::Inconclusive,
+                    EmpiricalStatus::Excluded => EmpiricalJudgment::excluded(),
+                    _ => EmpiricalJudgment::inconclusive(),
                 };
                 Judgment::Empirical(j)
             }
@@ -539,14 +590,7 @@ impl Judgment {
         match self {
             Judgment::Logical(j) => format!("logical {}", j.as_str()),
             Judgment::Numeric(n) => format!("numeric {}", n.as_str()),
-            Judgment::Empirical(j) => format!(
-                "empirical {}",
-                match j {
-                    EmpiricalJudgment::Compatible => "compatible",
-                    EmpiricalJudgment::Excluded => "excluded",
-                    EmpiricalJudgment::Inconclusive => "inconclusive",
-                }
-            ),
+            Judgment::Empirical(j) => format!("empirical {}", j.as_str()),
             Judgment::Statistical(j) => format!(
                 "statistical {}",
                 match j {
@@ -744,5 +788,41 @@ mod tests {
         assert_eq!(ParameterOrigin::Fitted.as_str(), "fitted");
         assert_eq!(ParameterOrigin::Chosen.as_str(), "chosen");
         assert_eq!(ParameterOrigin::Measured.as_str(), "measured");
+    }
+
+    #[test]
+    fn untested_empirical_holds_is_not_compatible() {
+        let j = Judgment::from_lab(
+            crate::assurance::ClaimClass::EmpiricalPrediction,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::Untested,
+            crate::assurance::DerivationAssurance::Executed,
+            false,
+            None,
+            None,
+        );
+        assert_eq!(j.label(), "empirical inconclusive");
+        assert!(!matches!(&j, Judgment::Empirical(e) if e.is_compatible()));
+        let excluded = Judgment::from_lab(
+            crate::assurance::ClaimClass::EmpiricalPrediction,
+            crate::claim::VerdictKind::Fails,
+            crate::assurance::EmpiricalStatus::Excluded,
+            crate::assurance::DerivationAssurance::Executed,
+            false,
+            None,
+            None,
+        );
+        assert_eq!(excluded.label(), "empirical excluded");
+        let compatible = Judgment::from_lab(
+            crate::assurance::ClaimClass::EmpiricalPrediction,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::Compatible,
+            crate::assurance::DerivationAssurance::Executed,
+            false,
+            None,
+            None,
+        );
+        assert_eq!(compatible.label(), "empirical compatible");
+        assert!(matches!(&compatible, Judgment::Empirical(e) if e.is_compatible()));
     }
 }

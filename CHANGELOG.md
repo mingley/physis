@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **EmpiricalJudgment cannot mint compatible**
+  (`EmpiricalJudgment` is a transparent wrapper with a private kind).
+  Compatible / excluded are produced only by `from_lab` from a
+  registered empirical overlay. Evaluator Holds with `Untested` stays
+  `empirical inconclusive`. Catalog d² hash unchanged. Verified:
+  compile-fail against `EmpiricalJudgment::Compatible` and a kind
+  struct literal; untested Holds is not compatible. Live prove of
+  catalog d² is still Lean+nanoda; `why` of the PDG mixing-angle
+  interval is still empirical excluded / inconclusive as encoded.
+  `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **NumericJudgment cannot mint certified**
   (`NumericJudgment` is a transparent wrapper with a private kind).
   A certified enclosure is produced only by `from_lab` from a
