@@ -28,7 +28,7 @@ computes topology: the first Betti number counts holes, and whether every closed
 
 | knob | effect |
 |---|---|
-| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`), `circle` (`b₁ = 1`), `torus` (`b₁ = 2`), or `klein` (Klein bottle: `b₁ = 1`, `b₂ = 0`). Changing it changes the topology and flips `dec.closed-equals-exact`. |
+| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`, `b₂ = 0`), `circle` (`b₁ = 1`), `torus` (`b₁ = 2`, `b₂ = 1`), `klein` (Klein bottle: `b₁ = 1`, `b₂ = 0`), or `sphere` (`S²`: `b₁ = 0`, `b₂ = 1`, `χ = 2`). Changing it changes the topology and flips `dec.closed-equals-exact` and/or `dec.fundamental-class`. |
 
 ## Claims (all computed theorems)
 
@@ -39,6 +39,7 @@ computes topology: the first Betti number counts holes, and whether every closed
 | `dec.closed-equals-exact` | every closed 1-form is exact (Poincaré) | holds iff `b₁ = 0` |
 | `dec.euler-poincare` | `V−E+F = b₀−b₁+b₂` | the Euler characteristic computed two independent ways, checked equal |
 | `dec.hodge-harmonic` | `dim(harmonic 1-forms) = b₁` (Hodge) | nullity of the Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁`, checked against `b₁` |
+| `dec.fundamental-class` | `b₂ = 1` over ℝ | computed `b₂`; holds for the torus and the 2-sphere, fails for the disk, circle, and Klein bottle |
 
 ## Type-level grade
 
@@ -72,6 +73,7 @@ the *homogeneous* half is an exact topological identity.
 physis run de-rham                # disk: b₁ = 0, closed = exact (Poincaré holds)
 physis set de-rham shape circle   # circle: b₁ = 1, closed ≠ exact
 physis set de-rham shape torus    # torus: b₁ = 2, χ = 0, harmonic dim 2
+physis set de-rham shape sphere   # S²: b₁ = 0, b₂ = 1, χ = 2; Poincaré still holds
 ```
 
 Changing the `shape` changes the topology. The first Betti number, computed from
@@ -115,13 +117,28 @@ Betti numbers, and the disappearance of the `ℤ/2` torsion under real
 coefficients is made concrete. Each construction is validated by
 `Complex::is_closed_surface` (every edge borders exactly two triangles).
 
+## The 2-sphere vs the disk
+
+The `sphere` shape is the boundary of a tetrahedron: 4 vertices, 6 edges, 4
+triangles. It is the simplest closed orientable surface, and it is the
+homology contrast to the disk (which shares `b₁ = 0`):
+
+- `χ = 2`, not 1
+- `b₂ = 1`, not 0 — a fundamental class over ℝ
+- every edge borders exactly two triangles (closed), which the disk does not
+
+So `set de-rham shape sphere` flips `dec.fundamental-class` **fails → holds**
+and does *not* flip Poincaré: both the disk and `S²` are simply connected.
+The torus also has `b₂ = 1`, but `b₁ = 2` and `χ = 0`; the sphere is how the
+lab tells "a 2-cycle" apart from "a 1-hole."
+
 ## Non-goals (this milestone)
 
 - Higher-dimensional complexes (only vertices/edges/triangles, grades 0–2; the
   torus is a genuine closed surface, but simplices stop at triangles).
 - The Hodge *star* and codifferential as first-class operators (the Laplacian
   is built here directly from `d`; a metric-dependent star is a later increment).
-- General mesh input; the two complexes are the disk and the circle.
+- General mesh input; the complexes are disk, circle, torus, Klein bottle, and tetrahedron `S²`.
 
 ## Related
 

@@ -64,6 +64,11 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 - `einstein_temp` — characteristic `Θ` (K): Einstein `Θ_E` or Debye `Θ_D`
 - `oscillators` — number of atoms N
 
+### de-rham
+- `shape` — `disk`, `circle`, `torus`, `klein`, or `sphere` (tetrahedron `S²`).
+  `set de-rham shape sphere` flips `dec.fundamental-class` fails → holds
+  without flipping Poincaré (`b₁` stays 0).
+
 ## Dead knobs
 
 If you find a knob that no claim reads, either wire it or delete it. v0 `cosmological_constant` is *weakly* dead (it appears in the world note, not in a verdict). That is an accepted M0 hole; M1 should give Λ a claim or drop the knob.

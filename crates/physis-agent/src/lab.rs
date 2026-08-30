@@ -564,6 +564,22 @@ mod tests {
     }
 
     #[test]
+    fn turning_de_rham_to_sphere_gains_a_fundamental_class() {
+        let mut lab = Lab::standard();
+        let diffs = lab.set_knob("de-rham", "shape", "sphere").unwrap().2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "dec.fundamental-class"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected fundamental-class Fails→Holds, got {diffs:?}"
+        );
+        assert!(
+            !diffs.iter().any(|d| d.claim == "dec.closed-equals-exact"),
+            "S² shares b₁ = 0 with the disk; Poincaré must not flip, got {diffs:?}"
+        );
+    }
+
+    #[test]
     fn raising_gr_dimension_makes_solar_tests_inapplicable() {
         let mut lab = Lab::standard();
         let diffs = lab.set_knob("general-relativity", "dim", "5").unwrap().2;

@@ -83,7 +83,7 @@ minimal (non-SUSY) SU(5) is honestly **falsified** — it `fails`
 Super-Kamiokande), which a `supersymmetric` knob revives as heuristics.
 
 `physis epistemics` tallies the whole lab's knowledge state by epistemic tag
-(currently ~103 theorems alongside encoded-facts, conjectures, heuristics, and
+(currently ~104 theorems alongside encoded-facts, conjectures, heuristics, and
 honestly-`open` problems). `physis --json <command>` emits the typed matrices and
 verdict diffs for agents.
 
@@ -115,7 +115,7 @@ cargo run -p physis -- set einstein-solid spectrum debye   # T³ fails → holds
 cargo run -p physis -- experiment gravity
 cargo run -p physis -- set general-relativity dim 5
 cargo run -p physis -- experiment bell
-cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus
+cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus/klein/sphere
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
 cargo run -p physis -- set special-relativity absolute_time true
 cargo run -p physis -- run su5-gut          # SU(5): sin²θ_W = 3/8, charge quantization

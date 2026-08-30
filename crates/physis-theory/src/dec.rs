@@ -215,6 +215,16 @@ impl Complex {
         Self::new(n * n, edges, triangles)
     }
 
+    /// The boundary of a tetrahedron: a triangulated 2-sphere `S²`.
+    /// Closed orientable surface with `b₀ = 1`, `b₁ = 0`, `b₂ = 1`, `χ = 2`.
+    pub fn sphere() -> Self {
+        Self::new(
+            4,
+            vec![[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]],
+            vec![[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]],
+        )
+    }
+
     /// True if every edge borders exactly two triangles — the combinatorial
     /// signature of a closed surface (a validity check for the constructions).
     pub fn is_closed_surface(&self) -> bool {
@@ -421,6 +431,8 @@ pub enum Shape {
     Torus,
     /// Triangulated Klein bottle (non-orientable; over ℝ, `b₁ = 1`, `b₂ = 0`).
     Klein,
+    /// Boundary of a tetrahedron — a 2-sphere (`b₁ = 0`, `b₂ = 1`, `χ = 2`).
+    Sphere,
 }
 
 impl Shape {
@@ -430,6 +442,7 @@ impl Shape {
             Shape::Circle => "circle",
             Shape::Torus => "torus",
             Shape::Klein => "klein",
+            Shape::Sphere => "sphere",
         }
     }
     fn from_name(s: &str) -> Option<Self> {
@@ -438,6 +451,7 @@ impl Shape {
             "circle" => Some(Shape::Circle),
             "torus" => Some(Shape::Torus),
             "klein" => Some(Shape::Klein),
+            "sphere" => Some(Shape::Sphere),
             _ => None,
         }
     }
@@ -448,6 +462,7 @@ impl Shape {
             Shape::Circle => 1,
             Shape::Torus => 2,
             Shape::Klein => 1, // ℤ₂ torsion in H₁ is invisible over ℝ
+            Shape::Sphere => 0,
         }
     }
     fn complex(self) -> Complex {
@@ -456,6 +471,7 @@ impl Shape {
             Shape::Circle => Complex::circle(),
             Shape::Torus => Complex::torus(),
             Shape::Klein => Complex::klein_bottle(),
+            Shape::Sphere => Complex::sphere(),
         }
     }
 }
@@ -468,8 +484,9 @@ impl Shape {
 /// - `dec.closed-equals-exact`: every closed 1-form is exact (Poincaré),
 /// - `dec.euler-poincare`: `V−E+F = b₀−b₁+b₂`,
 /// - `dec.hodge-harmonic`: `dim(harmonic 1-forms) = b₁`.
+/// - `dec.fundamental-class`: `b₂ = 1` (an orientable closed surface over ℝ).
 ///
-/// The `shape` knob (`disk`, `circle`, `torus`, `klein`) selects the complex.
+/// The `shape` knob (`disk`, `circle`, `torus`, `klein`, `sphere`) selects the complex.
 #[derive(Clone, Debug)]
 pub struct DeRham {
     /// Which simplicial complex to evaluate on.
@@ -499,13 +516,15 @@ pub const CLOSED_EQUALS_EXACT: &str = "dec.closed-equals-exact";
 pub const EULER_POINCARE: &str = "dec.euler-poincare";
 /// `dec.hodge-harmonic`.
 pub const HODGE_HARMONIC: &str = "dec.hodge-harmonic";
+/// `dec.fundamental-class`: `b₂ = 1` over ℝ.
+pub const FUNDAMENTAL_CLASS: &str = "dec.fundamental-class";
 
-const SHAPE_OPTIONS: &[&str] = &["disk", "circle", "torus", "klein"];
+const SHAPE_OPTIONS: &[&str] = &["disk", "circle", "torus", "klein", "sphere"];
 
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "shape",
     layer: LayerId::Mathematical,
-    doc: "The simplicial complex to evaluate on: disk (b₁=0), circle (b₁=1), torus (b₁=2), or klein (Klein bottle, b₁=1, b₂=0). Changing it changes the topology and the Poincaré verdict.",
+    doc: "The simplicial complex to evaluate on: disk (b₁=0, b₂=0), circle (b₁=1), torus (b₁=2, b₂=1), klein (Klein bottle, b₁=1, b₂=0), or sphere (S², b₁=0, b₂=1, χ=2). Changing it changes the topology.",
     domain: KnobDomain::Choice(SHAPE_OPTIONS),
 }];
 
@@ -551,9 +570,9 @@ impl Theory for DeRham {
     }
     fn summary(&self) -> &'static str {
         "Discrete exterior calculus on a simplicial complex. d²=0 is an exact \
-         theorem of the coboundary; the first Betti number, computed from the \
-         incidence ranks, counts holes; and whether every closed 1-form is exact \
-         (Poincaré) detects the topology — flipped by the `filled` knob."
+         theorem of the coboundary; Betti numbers, computed from incidence ranks, \
+         count holes and voids; Poincaré (closed = exact) and the fundamental \
+         class (b₂ = 1) detect topology — flipped by the `shape` knob."
     }
     fn world(&self) -> Option<World> {
         None // pure mathematics: no spacetime/gauge/spectrum projection
@@ -561,12 +580,16 @@ impl Theory for DeRham {
     fn note(&self) -> String {
         let c = self.complex();
         format!(
-            "simplicial complex: {} ({} vertices, {} edges, {} triangles), b₁ = {}",
+            "simplicial complex: {} ({} vertices, {} edges, {} triangles), \
+             b₀ = {}, b₁ = {}, b₂ = {}, χ = {}",
             self.shape.name(),
             c.n_vertices,
             c.edges.len(),
             c.triangles.len(),
-            c.betti1()
+            c.betti0(),
+            c.betti1(),
+            c.betti2(),
+            c.euler_from_cells()
         )
     }
     fn claims(&self) -> Vec<Claim> {
@@ -598,6 +621,12 @@ impl Theory for DeRham {
             Claim::new(
                 HODGE_HARMONIC,
                 "The dimension of harmonic 1-forms equals b₁ (Hodge theorem).",
+                LayerId::Mathematical,
+                Epistemic::Theorem,
+            ),
+            Claim::new(
+                FUNDAMENTAL_CLASS,
+                "The complex has a fundamental class over ℝ: b₂ = 1.",
                 LayerId::Mathematical,
                 Epistemic::Theorem,
             ),
@@ -656,7 +685,10 @@ impl Theory for DeRham {
                 if b1 == 0 {
                     Verdict::holds(
                         Epistemic::Theorem,
-                        "b₁ = 0: every closed 1-form is exact (Poincaré lemma holds on the disk)",
+                        format!(
+                            "b₁ = 0: every closed 1-form is exact (Poincaré lemma holds on the {})",
+                            self.shape.name()
+                        ),
                     )
                 } else {
                     Verdict::fails(
@@ -711,6 +743,39 @@ impl Theory for DeRham {
                         Epistemic::Theorem,
                         format!("harmonic 1-forms dim {harmonic} ≠ b₁ {b1}"),
                     )
+                }
+            }
+            FUNDAMENTAL_CLASS => {
+                let b2 = c.betti2();
+                if b2 == 1 {
+                    Verdict::holds(
+                        Epistemic::Theorem,
+                        format!(
+                            "b₂ = 1: the {} has a fundamental class over ℝ",
+                            self.shape.name()
+                        ),
+                    )
+                    .with_evidence([format!(
+                        "closed={}, χ = {}, b₀ = {}, b₁ = {}, b₂ = {b2}",
+                        c.is_closed_surface(),
+                        c.euler_from_cells(),
+                        c.betti0(),
+                        c.betti1()
+                    )])
+                } else {
+                    let why = if self.shape == Shape::Klein {
+                        "b₂ = 0: non-orientable surfaces have no fundamental class over ℝ"
+                    } else {
+                        "b₂ ≠ 1: no 2-dimensional fundamental class over ℝ"
+                    };
+                    Verdict::fails(Epistemic::Theorem, why).with_evidence([format!(
+                        "{}: closed={}, χ = {}, b₀ = {}, b₁ = {}, b₂ = {b2}",
+                        self.shape.name(),
+                        c.is_closed_surface(),
+                        c.euler_from_cells(),
+                        c.betti0(),
+                        c.betti1()
+                    )])
                 }
             }
             _ => Verdict::inapplicable("claim not made by the de Rham object"),
@@ -808,8 +873,9 @@ mod tests {
         assert_eq!(kind(&t, D_SQUARED_ZERO), VerdictKind::Holds);
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
-        // The torus has holes, so closed ≠ exact.
+        // The torus has holes, so closed ≠ exact, but it is orientable: b₂ = 1.
         assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Fails);
+        assert_eq!(kind(&t, FUNDAMENTAL_CLASS), VerdictKind::Holds);
         // An unknown shape is rejected by the domain.
         assert!(t.set("shape", KnobValue::Choice("mobius".into())).is_err());
     }
@@ -823,6 +889,48 @@ mod tests {
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
         assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Fails); // it has a hole
+        assert_eq!(kind(&t, FUNDAMENTAL_CLASS), VerdictKind::Fails); // no class over ℝ
+    }
+
+    #[test]
+    fn sphere_is_the_tetrahedron_boundary() {
+        let s = Complex::sphere();
+        assert!(
+            s.is_closed_surface(),
+            "each edge of S² must border exactly 2 faces"
+        );
+        assert_eq!(s.n_vertices, 4);
+        assert_eq!(s.edges.len(), 6);
+        assert_eq!(s.triangles.len(), 4);
+        assert_eq!(s.betti0(), 1);
+        assert_eq!(s.betti1(), 0); // simply connected
+        assert_eq!(s.betti2(), 1); // fundamental class
+        assert_eq!(s.euler_from_cells(), 2); // χ(S²) = 2
+        assert_eq!(s.euler_from_cells(), s.euler_from_betti());
+        assert_eq!(s.harmonic1_dim(), 0);
+        // d² = 0 on a 4-vertex 0-form.
+        let f = Cochain::<G0>::new(vec![0.3, -1.7, 2.9, 0.5]);
+        assert!(s.d1(&s.d0(&f)).is_zero(1e-12));
+        // Disk shares b₁ = 0 (Poincaré) but not χ, b₂, or closedness.
+        let d = Complex::disk();
+        assert_eq!(d.betti1(), s.betti1());
+        assert_ne!(d.betti2(), s.betti2());
+        assert_ne!(d.euler_from_cells(), s.euler_from_cells());
+        assert!(!d.is_closed_surface());
+    }
+
+    #[test]
+    fn sphere_via_the_shape_knob_gains_a_fundamental_class() {
+        let mut t = DeRham::default();
+        assert_eq!(kind(&t, FUNDAMENTAL_CLASS), VerdictKind::Fails); // disk, b₂ = 0
+        assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
+        t.set("shape", KnobValue::Choice("sphere".into())).unwrap();
+        assert_eq!(kind(&t, FUNDAMENTAL_CLASS), VerdictKind::Holds); // S², b₂ = 1
+        assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Holds); // still b₁ = 0
+        assert_eq!(kind(&t, FIRST_BETTI), VerdictKind::Holds);
+        assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        assert_eq!(kind(&t, D_SQUARED_ZERO), VerdictKind::Holds);
     }
 
     #[test]
@@ -862,6 +970,9 @@ mod tests {
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
         t.set("shape", KnobValue::Choice("torus".into())).unwrap();
+        assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        t.set("shape", KnobValue::Choice("sphere".into())).unwrap();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
     }

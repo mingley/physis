@@ -29,6 +29,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   the infrared), and Wien's classical failure is a sampled absence of an
   interior peak.
 
+- **2-sphere: χ = 2, b₂ = 1, Poincaré still holds**
+  (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). The
+  boundary of a tetrahedron is a first-class `sphere` shape: 4 vertices, 6
+  edges, 4 triangles, every edge bordering two faces. It shares `b₁ = 0`
+  with the disk (closed = exact) but **holds** `dec.fundamental-class`
+  (`b₂ = 1`, `χ = 2`) which the disk, circle, and Klein bottle fail. `set
+  de-rham shape sphere` flips that claim fails → holds without touching
+  Poincaré — the homology contrast "a 2-cycle, not a 1-hole." Verified:
+  tetrahedron Betti numbers and closed-surface check, disk vs S² share b₁
+  but not b₂/χ, lab knob-diff, `fmt`, `clippy -D warnings`, full suite, and
+  `run de-rham` / `set de-rham shape sphere`.
+
 - **Einstein vs Debye: exponential freeze-out on trial against T³**
   (`crates/physis-theory/src/solid.rs`, `specs/017-einstein-solid.md`, typed
   `HeatCapacity` in `physis-core`). Einstein's 1907 Bose oscillators hold the
