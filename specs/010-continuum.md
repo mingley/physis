@@ -66,13 +66,15 @@ from the lattice spectrum rather than encoded.
 ## Gauge field on links: `wilson-u1`
 
 A compact U(1) lattice gauge theory whose degrees of freedom live on the links;
-the Wilson action sums `1 − cos(θ_plaquette)`. Knobs: `dimension` (2–4), `beta`
-(β = 1/g²), `sites_per_side`.
+the unimproved Wilson action sums `1 − cos(θ_plaquette)` over 1×1 plaquettes.
+That stencil lives on the IR package. A 2×1 rectangle term is a package
+mutation (`add-rectangle`), not a knob: `gauge.local` fails on the mutant.
+Knobs: `dimension` (2–4), `beta` (β = 1/g²), `sites_per_side`.
 
 | claim | meaning | how it is decided |
 |---|---|---|
-| `gauge.invariant` | invariance under `U_μ(x) → g(x) U_μ(x) g(x+μ̂)†` | structural theorem |
-| `gauge.local` | only neighbouring links couple (plaquettes) | structural theorem |
+| `gauge.invariant` | invariance under `U_μ(x) → g(x) U_μ(x) g(x+μ̂)†` | structural theorem of any Wilson loop |
+| `gauge.local` | only neighbouring links couple (1×1 plaquettes) | structural of the unimproved stencil. Domain: nearest-neighbour Wilson plaquettes. `add-rectangle` appends `wilson-rectangle 2x1` and this cell fails. That is not a knob. SU(N) encodings name the same regime and have no live package |
 | `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap) |
 | `gauge.asymptotic-freedom` | the coupling runs to zero at high energy | U(1) `fails` (Landau pole); SU(N) `holds` (Gross–Wilczek–Politzer) |
 | `gauge.strong-coupling-area-law` | leading strong-coupling expansion gives an area law | **computed**: `σ = −ln(β/2N²) > 0` (theorem of the convergent expansion); fails at weak coupling |
@@ -121,8 +123,13 @@ physis set wilson-su3 beta 100      # weak coupling: strong-coupling area law fa
 ## Non-goals (this milestone seed)
 
 - A full 3+1 lattice field theory or a real-time PDE solver.
-- Interactions / renormalization.
-- Gauge fields on links (Wilson) — planned later in M4.
+- Monte-Carlo sampling behind confinement verdicts (still encoded facts plus
+  one heuristic 4D U(1) transition).
+- Interactions / renormalization beyond the Wilson stencil.
+
+```
+physis hypothesize wilson-u1        # add-rectangle is IR, not set
+```
 
 ## Spacetime projection
 

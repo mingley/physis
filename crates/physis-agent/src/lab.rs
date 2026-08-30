@@ -4447,6 +4447,56 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_wilson_u1_rectangle_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "wilson-u1".into(),
+            knob: "rectangle".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("rectangle"),
+            "{}",
+            blocked.text()
+        );
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("wilson-u1".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-rectangle") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("gauge.local") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("wilson-u1").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "gauge.local" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("beta").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5129,6 +5179,14 @@ mod tests {
         assert!(
             text.contains("encode  klein-gordon"),
             "loop must independently round-trip the Klein-Gordon stencil: {text}"
+        );
+        assert!(
+            text.contains("encode  wilson-u1"),
+            "loop must independently round-trip the Wilson U(1) stencil: {text}"
+        );
+        assert!(
+            !text.contains("encode  wilson-su2"),
+            "SU(N) has no live IR package: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -6267,7 +6325,31 @@ mod tests {
         );
         assert_ne!(nand_id, kg_id);
 
-        for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
+        let u1 = lab
+            .exec(Command::Encode {
+                theory: "wilson-u1".into(),
+            })
+            .text()
+            .to_string();
+        assert!(u1.contains("equations  1"), "{u1}");
+        assert!(u1.contains("round-trip canonical"), "{u1}");
+        assert!(u1.contains("not P3S"), "{u1}");
+        assert!(!u1.contains("receipt"), "{u1}");
+        let u1_id = encoding_package_id(&u1);
+        assert_eq!(
+            u1_id.to_hex(),
+            "d9644435e8775eeb95d5e81638ad61a589686d65ff6929caf0ec3c2769d4423a"
+        );
+        assert_ne!(u1_id, nand_id);
+        assert_ne!(u1_id, kg_id);
+
+        for theory in [
+            "standard-model",
+            "type-iib",
+            "de-rham",
+            "turing-machine",
+            "wilson-su2",
+        ] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
             });
@@ -6296,6 +6378,25 @@ mod tests {
             encoding_package_id(&nand2),
             nand_id,
             "hypothesize must not install the feedback mutant"
+        );
+
+        let hypo_u1 = lab
+            .exec(Command::Hypothesize {
+                theory: Some("wilson-u1".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_u1.contains("add-rectangle"), "{hypo_u1}");
+        let u1_again = lab
+            .exec(Command::Encode {
+                theory: "wilson-u1".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&u1_again),
+            u1_id,
+            "hypothesize must not install the rectangle mutant"
         );
 
         let p3s = lab

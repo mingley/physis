@@ -163,7 +163,7 @@ those tools; a local checkout without them still mints
 | 4 | `physis-numeric`, `physis-data` | Exact `Ratio` / `Interval`; SU(5) `3/8` disjoint from PDG `sin²θ_W(M_Z)` |
 | 5 | `physis-store` | Content-addressed DAG; descendants only are invalidated |
 | 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops. Knob diffs are scientific-axis (`VerdictKind` plus derivation / empirical / projected judgment); legacy kind-only journals still replay |
-| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist and Klein–Gordon stencil are live packages; `physis encode` independently round-trips them; not a Lean replacement |
+| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, and Wilson U(1) 1×1 plaquettes are live packages; `physis encode` independently round-trips them; not a Lean replacement |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review |
@@ -210,7 +210,8 @@ identity; a slug-only review line is not P3S.
   `λ > 100 ×` circuit size. Maxwell's copy of that slug stays encoding-wide.
   `thermo.high-t-classical` names `T/Θ ≥ 8`; `thermo.debye-t3` names the
   `Θ/20` phonon probe; `thermo.rj-ir-limit` names `hν = 0.01 kT`;
-  `gauge.exact-area-law-2d` names 2D plaquette factorization.
+  `gauge.exact-area-law-2d` names 2D plaquette factorization;
+  `gauge.local` names nearest-neighbour Wilson plaquettes.
   Dulong–Petit at the current T stays encoding-wide.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
@@ -223,7 +224,7 @@ identity; a slug-only review line is not P3S.
   rehash a `SourceRecord`; that is `provenance-auditor` (`physis cite`;
   not P3S). A reviewer cannot independently round-trip a live theory
   IR package; that is `encoding-auditor` (`physis encode`; combinational
-  NAND and Klein–Gordon stencil; not P3S). An explorer cannot
+  NAND, Klein–Gordon stencil, and Wilson U(1) plaquettes; not P3S). An explorer cannot
   independently rebuild a `from_lab` judgment; that is `judge`
   (`physis judge`; unique-vacuum stays heuristic failed; JSON cannot
   mint `logical proved`).

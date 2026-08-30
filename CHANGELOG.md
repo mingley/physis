@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Wilson U(1) 2×1 rectangle is an IR mutation**
+  (`wilson-u1`, `add-rectangle`). Locality is the unimproved 1×1
+  Wilson stencil; appending `wilson-rectangle 2x1` flips `gauge.local`
+  holds to fails. Exact 2D area-law factorization does not apply to the
+  rectangle encoding. That is not a knob. Mutants are not installed,
+  not journaled, and not Canonical or P4. SU(N) has no live package.
+  Catalog d² hash unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: IR round-trip; set rectangle is unknown;
+  hypothesize wilson-u1; live stencil restored; encode pin
+  `d9644435e8775eeb95d5e81638ad61a589686d65ff6929caf0ec3c2769d4423a`.
+
 - **Independent from_lab judge is a unique judge op**
   (`physis judge`, `Role::Judge`). Rebuilds `Judgment::from_lab` from live
   evaluator axes and receipts into a JudgmentProjection DAG. Unique-vacuum
@@ -29,7 +40,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 - **Independent IR package encode is a unique encoding-auditor op**
   (`physis encode`, `Role::EncodingAuditor`). Parses, round-trips, and
   reconstructs live theory IR packages (`combinational-circuit` NAND
-  netlist, `klein-gordon` nearest-neighbour stencil). A forged
+  netlist, `klein-gordon` nearest-neighbour stencil, `wilson-u1` 1×1
+  plaquettes). A forged
   `package_hash` cannot mint. Refuses theories with no package.
   Hypothesize mutants are not installed. Not P3S, not a kernel receipt,
   not Canonical, not P4. Loop encodes after cite. Unique-vacuum graph
@@ -37,6 +49,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `762aa72d9eace0c61026eca6ebf71b37f26608797a6786c60b92ba06af4ad8ea`.
   Klein-Gordon package id
   `32b0997d38afb977615e8fc6527ee5d766271e8a31fb5c882912ca740a3b4e4f`.
+  Wilson U(1) package id
+  `d9644435e8775eeb95d5e81638ad61a589686d65ff6929caf0ec3c2769d4423a`.
   Verified: role gates; journal restore; hypothesize does not change
   the live package id.
 
