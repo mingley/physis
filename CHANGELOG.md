@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Naive Dirac doubling is an IR mutation**
+  (`dirac-fermion`, `add-wilson`). Naive 1D lattice Dirac is the live
+  encoding (`dirac naive`); `sin(ka) = 0` at `k = 0` and `k = π/a` so
+  `fermion.no-doublers` fails. Appending `dirac wilson` lifts the edge
+  copy to mass `m + 2r/a` and flips that cell fails to holds. That is
+  not a knob. `sites` / `mass` / `spacing` stay knobs. Mutants stay
+  `dirac-fermion`; they are not a silent Klein–Gordon install.
+  `mass_squared` stays on klein-gordon. Dirac no-doublers names naive
+  1D lattice Dirac; Klein–Gordon locality stays named nearest-neighbour;
+  Dirac locality stays encoding-wide (both encodings are nearest-
+  neighbour). Mutants are not installed, not journaled, and not
+  Canonical or P4. Catalog d² hash unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: IR round-trip; set wilson
+  is unknown; hypothesize dirac-fermion; live naive operator restored;
+  encode pin
+  `62ea25b78eaf5a7d934db096943e401135acf490c4594fc8a0621478581a521a`.
+
 - **Landauer dropped-ln2 bound is an IR mutation**
   (`landauer-engine`, `add-kt`). `kT ln2` is the live
   encoding (`erase kT ln2`); appending `erase kT` makes the

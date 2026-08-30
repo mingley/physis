@@ -13,30 +13,42 @@ sites coupled by a nearest-neighbour discrete Laplacian. Its normal modes are
 of the computation rather than tabulated facts. Next-nearest coupling is an
 IR package mutation (`add-next-nearest`), not a knob.
 
+`dirac-fermion` is a 1D naive lattice Dirac operator on the same kind of
+chain. Doubling is computed: `sin(ka) = 0` at `k = 0` and `k = π/a` when
+`N` is even, so `fermion.no-doublers` fails. A Wilson `r` term is an IR
+package mutation (`add-wilson`), not a mass knob.
+
 ## Objects
 
 | id | object | experiment |
 |---|---|---|
 | `klein-gordon` | real scalar field on an N-site 1D periodic lattice | `field-modes` |
+| `dirac-fermion` | 1D naive lattice Dirac fermion (Wilson r is IR) | `field-modes` |
 | `wilson-u1` | compact U(1) lattice gauge field (links + plaquettes) | `gauge-lattice` |
 | `wilson-su2` | non-abelian SU(2) Wilson lattice gauge field | `gauge-lattice` |
 | `wilson-su3` | non-abelian SU(3) Wilson lattice gauge field (QCD group) | `gauge-lattice` |
 
 ## Knobs
 
-| knob | effect |
-|---|---|
-| `sites` | number of lattice sites N (the local degrees of freedom) |
-| `mass_squared` | m² in natural units; **negative values make the zero mode tachyonic** |
-| `spacing` | lattice spacing a |
+| theory | knob | effect |
+|---|---|---|
+| `klein-gordon` | `sites` | number of lattice sites N (the local degrees of freedom) |
+| `klein-gordon` | `mass_squared` | m² in natural units; **negative values make the zero mode tachyonic** |
+| `klein-gordon` | `spacing` | lattice spacing a. Stencil is not this knob: `add-next-nearest` is an IR mutation |
+| `dirac-fermion` | `sites` | number of lattice sites N |
+| `dirac-fermion` | `mass` | Dirac mass m. Doubling is not this knob: `add-wilson` is an IR mutation |
+| `dirac-fermion` | `spacing` | lattice spacing a |
 
 ## Computed spectrum
 
 ```
-ω_j² = m² + (4/a²) · sin²(π j / N),   j = 0 … N-1
+ω_j² = m² + (4/a²) · sin²(π j / N),   j = 0 … N-1   (klein-gordon)
+E_j  = √( (sin(k_j a)/a)² + M(k_j)² )                 (dirac-fermion)
+M(k) = m                                              (naive)
+M(k) = m + (2r/a) sin²(ka/2)                          (Wilson r = 1)
 ```
 
-There is nothing tabulated here: the module computes ω_j² for every mode.
+There is nothing tabulated here: the module computes ω_j² or E_j for every mode.
 
 ## Claims
 
@@ -46,8 +58,9 @@ There is nothing tabulated here: the module computes ω_j² for every mode.
 | `field.dispersion-continuum-limit` | long-wavelength ω² matches m² + k² | computed relative error < 5% on the longest non-zero mode. Domain: that mode, not Nyquist, not the Richardson `|k a| < 1` probe |
 | `field.stable` | no tachyonic mode | `min_j ω_j² ≥ 0` |
 | `field.causal` | group velocity ≤ c | `max_j |dω/dk| ≤ c` |
-| `field.local` | nearest-neighbour coupling | structural: the IR package is `laplacian nn`. Domain: nearest-neighbour 1D periodic lattice. `add-next-nearest` appends `laplacian nnn` and this cell fails. That is not a knob |
+| `field.local` | nearest-neighbour coupling | structural: the IR package is `laplacian nn` on `klein-gordon`. Domain: nearest-neighbour 1D periodic lattice. `add-next-nearest` appends `laplacian nnn` and this cell fails. That is not a knob. Dirac locality is encoding-wide (naive hopping and the Wilson r term are both nearest-neighbour) |
 | `field.second-order-accurate` | discretization error ∝ a² | computed Richardson order p ≈ 2 when `|k a| < 1` at a fixed probe k. If `|k a| ≥ 1`, **undecidable** / `inconclusive` (`InsufficientPrecision`): too coarse to certify the stencil, not a failed theorem. The 1.8–2.2 window is not P3N. |
+| `fermion.no-doublers` | one light fermion in the Brillouin zone | computed on `dirac-fermion` (named domain: naive 1D lattice Dirac). **fails** on the live encoding: `sin(ka) = 0` at `k = 0` and `k = π/a`. `add-wilson` appends `dirac wilson` and the edge copy has mass `m + 2r/a`, so this cell holds. That is not a knob. Inapplicable on odd `N` (no `k = π/a` mode) and on Klein–Gordon |
 
 ## Knob → verdict
 
@@ -130,13 +143,15 @@ physis set wilson-su3 beta 100      # weak coupling: strong-coupling area law fa
 ```
 physis hypothesize wilson-u1        # add-rectangle is IR, not set
 physis hypothesize wilson-su3       # same 2x1 rectangle fork on SU(3)
+physis hypothesize dirac-fermion    # add-wilson is IR, not set
 ```
 
 ## Spacetime projection
 
-`Theory::world()` returns `Option<World>`. `klein-gordon` reports an honest
-1+1-dimensional world (one time direction, one spatial lattice direction)
-rather than borrowing 3+1 Minkowski; `wilson-u1` reports its lattice dimension.
+`Theory::world()` returns `Option<World>`. `klein-gordon` and `dirac-fermion`
+report an honest 1+1-dimensional world (one time direction, one spatial lattice
+direction) rather than borrowing 3+1 Minkowski; `wilson-u1` reports its lattice
+dimension.
 Non-physics domains (computation) return `None`. This replaced the earlier
 placeholder-world rough edge.
 

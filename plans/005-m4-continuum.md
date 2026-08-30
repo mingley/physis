@@ -46,6 +46,13 @@ Yang–Mills mass-gap Millennium Problem), while U(1) deconfines in 4D. The
 unimproved 1×1 Wilson stencil is a live IR package on both U(1) and SU(N);
 `add-rectangle` is an IR fork, not a knob.
 
+## Dirac fermion on a 1D lattice — ✅ done
+
+New theory `dirac-fermion`: a 1D naive lattice Dirac operator on N sites.
+Doubling is computed from `sin(ka) = 0` at `k = 0` and `k = π/a`. A Wilson
+`r` term is a package mutation (`add-wilson`), not a mass knob:
+`fermion.no-doublers` fails on the live encoding and holds on the mutant.
+
 ## Later in M4
 
 - Genuine 3+1 dynamics / a Monte-Carlo or transfer-matrix computation behind the

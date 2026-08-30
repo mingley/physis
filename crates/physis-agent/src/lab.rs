@@ -18,7 +18,7 @@ use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
 use physis_theory::blackbody::Blackbody;
 use physis_theory::computation::{CombinationalCircuit, LandauerEngine, TuringMachine};
-use physis_theory::continuum::KleinGordonField;
+use physis_theory::continuum::{DiracFermion, KleinGordonField};
 use physis_theory::critique::diff_verdicts;
 use physis_theory::dec::DeRham;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
@@ -85,7 +85,7 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
     ),
     (
         "field-modes",
-        "a Klein–Gordon scalar field's computed spectrum on a lattice",
+        "a Klein–Gordon scalar and a 1D Dirac fermion on a lattice",
     ),
     (
         "gauge-lattice",
@@ -165,6 +165,7 @@ impl Lab {
         lab.insert(Box::new(LandauerEngine::default()));
         // M4 continuum: a scalar field and lattice gauge fields as local objects.
         lab.insert(Box::new(KleinGordonField::default()));
+        lab.insert(Box::new(DiracFermion::default()));
         lab.insert(Box::new(WilsonU1::default()));
         lab.insert(Box::new(WilsonSun::su2()));
         lab.insert(Box::new(WilsonSun::su3()));
@@ -4447,6 +4448,117 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_dirac_fermion_wilson_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["wilson", "r", "wilson_r"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "dirac-fermion".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+        let ms_blocked = lab.exec(Command::Set {
+            theory: "dirac-fermion".into(),
+            knob: "mass_squared".into(),
+            value: "-1".into(),
+        });
+        assert_eq!(ms_blocked.exit_code(), 1, "{}", ms_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("dirac-fermion".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-wilson") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("fermion.no-doublers") && text.contains("fails → holds"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("dirac-fermion").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "fermion.no-doublers" && v.kind == VerdictKind::Fails),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("mass").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("sites").unwrap().display(),
+            "16",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("spacing").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+        let kg = lab.theory("klein-gordon").unwrap();
+        assert_eq!(
+            kg.get("mass_squared").unwrap().display(),
+            "1",
+            "Dirac IR must not convert the Klein-Gordon mass_squared knob"
+        );
+        assert!(
+            kg.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "field.local" && v.kind == VerdictKind::Holds),
+            "Klein-Gordon must stay the live nearest-neighbour object"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "fermion.no-doublers".into(),
+            })
+            .text()
+            .to_string();
+        let df = why_theory_block(&why, "dirac-fermion");
+        assert!(
+            df.contains("naive 1D lattice Dirac"),
+            "dirac no-doublers must name naive Dirac: {df}"
+        );
+        assert!(
+            !df.contains("not yet a machine-checked regime"),
+            "dirac no-doublers must not be encoding-wide: {df}"
+        );
+        let local = lab
+            .exec(Command::Why {
+                claim: "field.local".into(),
+            })
+            .text()
+            .to_string();
+        let kg_local = why_theory_block(&local, "klein-gordon");
+        assert!(
+            kg_local.contains("nearest-neighbour 1D periodic lattice"),
+            "KG locality must stay named: {kg_local}"
+        );
+        let df_local = why_theory_block(&local, "dirac-fermion");
+        assert!(
+            df_local.contains("not yet a machine-checked regime"),
+            "Dirac locality stays encoding-wide (both encodings are nearest-neighbour): {df_local}"
+        );
+    }
+
+    #[test]
     fn hypothesize_wilson_u1_rectangle_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -5795,6 +5907,10 @@ mod tests {
             "loop must independently round-trip the kT ln2 Landauer bound: {text}"
         );
         assert!(
+            text.contains("encode  dirac-fermion"),
+            "loop must independently round-trip the naive Dirac operator: {text}"
+        );
+        assert!(
             !text.contains("encode  general-relativity"),
             "GR is not the Newton IR package: {text}"
         );
@@ -7114,6 +7230,24 @@ mod tests {
         assert_ne!(landauer_id, gas_id);
         assert_ne!(landauer_id, nand_id);
 
+        let dirac = lab
+            .exec(Command::Encode {
+                theory: "dirac-fermion".into(),
+            })
+            .text()
+            .to_string();
+        assert!(dirac.contains("equations  1"), "{dirac}");
+        assert!(dirac.contains("round-trip canonical"), "{dirac}");
+        assert!(dirac.contains("not P3S"), "{dirac}");
+        assert!(!dirac.contains("receipt"), "{dirac}");
+        let dirac_id = encoding_package_id(&dirac);
+        assert_eq!(
+            dirac_id.to_hex(),
+            "62ea25b78eaf5a7d934db096943e401135acf490c4594fc8a0621478581a521a"
+        );
+        assert_ne!(dirac_id, landauer_id);
+        assert_ne!(dirac_id, nand_id);
+
         for theory in [
             "standard-model",
             "type-iib",
@@ -7339,6 +7473,25 @@ mod tests {
             encoding_package_id(&landauer_again),
             landauer_id,
             "hypothesize must not install the dropped-ln2 mutant"
+        );
+
+        let hypo_dirac = lab
+            .exec(Command::Hypothesize {
+                theory: Some("dirac-fermion".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_dirac.contains("add-wilson"), "{hypo_dirac}");
+        let dirac_again = lab
+            .exec(Command::Encode {
+                theory: "dirac-fermion".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&dirac_again),
+            dirac_id,
+            "hypothesize must not install the Wilson-term mutant"
         );
 
         let p3s = lab

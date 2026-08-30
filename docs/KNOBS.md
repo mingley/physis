@@ -76,6 +76,16 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 - `bits_erased` — number of logical bits irreversibly erased
 - `reversible` — logical reversibility (Bennett): erases nothing, so the process can be free. This stays a knob.
 
+### klein-gordon
+- `sites` — number of lattice sites N
+- `mass_squared` — m²; negative values make the zero mode tachyonic. Stencil is not this knob: `add-next-nearest` is an IR mutation
+- `spacing` — lattice spacing a
+
+### dirac-fermion
+- `sites` — number of lattice sites N
+- `mass` — Dirac mass m. Doubling is not this knob: `add-wilson` is an IR mutation
+- `spacing` — lattice spacing a
+
 ### blackbody (`planck`, `rayleigh-jeans`)
 - `quantum` — Planck (true) vs Rayleigh–Jeans (false). Turning `planck`'s
   `quantum` off restores the ultraviolet catastrophe.
