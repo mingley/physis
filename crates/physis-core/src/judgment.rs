@@ -351,20 +351,35 @@ impl Judgment {
     /// is not [`LogicalJudgment::Proved`]. A model-internal evaluation
     /// that overlays [`crate::assurance::EmpiricalStatus::Inconclusive`]
     /// is [`NumericJudgment::Unresolved`] (too coarse to decide), not a
-    /// failed theorem.
+    /// failed theorem. [`crate::assurance::DerivationAssurance::CertifiedNumeric`]
+    /// Holds is [`NumericJudgment::Certified`], not logical undetermined.
     pub fn from_lab(
         class: crate::assurance::ClaimClass,
         kind: crate::claim::VerdictKind,
         empirical: crate::assurance::EmpiricalStatus,
+        derivation: crate::assurance::DerivationAssurance,
         dual_checked: bool,
+        numeric_lo: Option<&str>,
+        numeric_hi: Option<&str>,
     ) -> Self {
-        use crate::assurance::{ClaimClass, EmpiricalStatus};
+        use crate::assurance::{ClaimClass, DerivationAssurance, EmpiricalStatus};
         use crate::claim::VerdictKind;
+        if empirical == EmpiricalStatus::Inconclusive
+            && matches!(
+                class,
+                ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological
+            )
+        {
+            return Judgment::Numeric(NumericJudgment::Unresolved);
+        }
+        if derivation == DerivationAssurance::CertifiedNumeric && kind == VerdictKind::Holds {
+            return Judgment::Numeric(NumericJudgment::Certified {
+                lo: numeric_lo.unwrap_or("").to_string(),
+                hi: numeric_hi.unwrap_or("").to_string(),
+            });
+        }
         match class {
             ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological => {
-                if empirical == EmpiricalStatus::Inconclusive {
-                    return Judgment::Numeric(NumericJudgment::Unresolved);
-                }
                 let j = if dual_checked && kind == VerdictKind::Holds {
                     LogicalJudgment::Proved
                 } else if kind == VerdictKind::Fails {
@@ -494,7 +509,10 @@ mod tests {
             crate::assurance::ClaimClass::Conjecture,
             crate::claim::VerdictKind::Holds,
             crate::assurance::EmpiricalStatus::Untested,
+            crate::assurance::DerivationAssurance::Asserted,
             false,
+            None,
+            None,
         );
         assert_eq!(j.label(), "logical undetermined");
     }
@@ -505,7 +523,45 @@ mod tests {
             crate::assurance::ClaimClass::ModelInternal,
             crate::claim::VerdictKind::Undecidable,
             crate::assurance::EmpiricalStatus::Inconclusive,
+            crate::assurance::DerivationAssurance::Executed,
             false,
+            None,
+            None,
+        );
+        assert_eq!(j.label(), "numeric unresolved");
+    }
+
+    #[test]
+    fn certified_numeric_holds_is_numeric_certified() {
+        let j = Judgment::from_lab(
+            crate::assurance::ClaimClass::ModelInternal,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::NotApplicable,
+            crate::assurance::DerivationAssurance::CertifiedNumeric,
+            false,
+            Some("3/8"),
+            Some("3/8"),
+        );
+        assert_eq!(j.label(), "numeric certified");
+        match j {
+            Judgment::Numeric(NumericJudgment::Certified { lo, hi }) => {
+                assert_eq!(lo, "3/8");
+                assert_eq!(hi, "3/8");
+            }
+            other => panic!("expected numeric certified, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn inconclusive_beats_certified_numeric() {
+        let j = Judgment::from_lab(
+            crate::assurance::ClaimClass::ModelInternal,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::Inconclusive,
+            crate::assurance::DerivationAssurance::CertifiedNumeric,
+            false,
+            Some("3/8"),
+            Some("3/8"),
         );
         assert_eq!(j.label(), "numeric unresolved");
     }

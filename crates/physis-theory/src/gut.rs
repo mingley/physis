@@ -228,7 +228,7 @@ impl Theory for Su5Gut {
                             "the low-energy value is gut.weinberg-angle-mz (GQW running), not this cell"
                                 .to_string(),
                         ])
-                        .with_certified_numeric()
+                        .with_certified_numeric(format!("{s2}"), format!("{s2}"))
                     } else {
                         Verdict::fails(claim, format!("computed sin²θ_W = {s2} ≠ 3/8"))
                     }
@@ -424,6 +424,8 @@ mod tests {
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
         assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo.as_deref(), Some("3/8"));
+        assert_eq!(v.numeric_hi.as_deref(), Some("3/8"));
         assert!(
             v.evidence
                 .iter()

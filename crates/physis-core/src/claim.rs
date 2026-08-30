@@ -73,6 +73,14 @@ pub struct Verdict {
     /// bound, not a missing algorithm. Default false; never a kernel proof.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub intractable: bool,
+    /// Inclusive lower bound of a numeric certificate, as a display string
+    /// (`0`, `3/8`). Authority is the evaluator's `Ratio` / `Interval`, not
+    /// this string. Present only with [`DerivationAssurance::CertifiedNumeric`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub numeric_lo: Option<String>,
+    /// Inclusive upper bound of a numeric certificate, as a display string.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub numeric_hi: Option<String>,
 }
 
 impl Verdict {
@@ -92,6 +100,8 @@ impl Verdict {
             summary: summary.into(),
             evidence,
             intractable: false,
+            numeric_lo: None,
+            numeric_hi: None,
         }
     }
 
@@ -143,11 +153,14 @@ impl Verdict {
         self
     }
 
-    /// Overlay exact-ratio / interval-certificate assurance. Does not mint
-    /// a kernel proof and is not P4.
-    pub fn with_certified_numeric(mut self) -> Self {
+    /// Overlay exact-ratio / interval-certificate assurance, with the
+    /// certified enclosure as display strings (`lo == hi` for a `Ratio`
+    /// identity). Does not mint a kernel proof and is not P4.
+    pub fn with_certified_numeric(mut self, lo: impl Into<String>, hi: impl Into<String>) -> Self {
         debug_assert_eq!(self.kind, VerdictKind::Holds);
         self.derivation = DerivationAssurance::CertifiedNumeric;
+        self.numeric_lo = Some(lo.into());
+        self.numeric_hi = Some(hi.into());
         self
     }
 
@@ -333,9 +346,11 @@ mod tests {
             LayerId::Interaction,
             ClaimClass::ModelInternal,
         );
-        let v = Verdict::holds(&c, "exact Ratio sums vanish").with_certified_numeric();
+        let v = Verdict::holds(&c, "exact Ratio sums vanish").with_certified_numeric("0", "0");
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo.as_deref(), Some("0"));
+        assert_eq!(v.numeric_hi.as_deref(), Some("0"));
         assert_ne!(v.derivation, DerivationAssurance::Asserted);
     }
 

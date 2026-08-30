@@ -581,8 +581,19 @@ impl Lab {
                             let semantic = self.semantic_tag(&c.id.0, v.semantic);
                             let dual = self.receipts.by_statement(c.statement_hash).is_some();
                             let profile = self.profile_for(&c.id.0, v.derivation, semantic);
-                            let judgment = Judgment::from_lab(v.class, v.kind, v.empirical, dual);
+                            let judgment = Judgment::from_lab(
+                                v.class,
+                                v.kind,
+                                v.empirical,
+                                v.derivation,
+                                dual,
+                                v.numeric_lo.as_deref(),
+                                v.numeric_hi.as_deref(),
+                            );
                             text.push_str(&format!("  judgment:   {}\n", judgment.label()));
+                            if let (Some(lo), Some(hi)) = (&v.numeric_lo, &v.numeric_hi) {
+                                text.push_str(&format!("  enclosure:  [{lo}, {hi}]\n"));
+                            }
                             text.push_str(&format!("  trust:      {}\n", profile.display()));
                             if profile.unreviewed_proof_is_dangerous(semantic) {
                                 text.push_str(
@@ -1677,6 +1688,14 @@ fn render_knobs(t: &dyn Theory) -> String {
 mod tests {
     use super::*;
 
+    /// Slice of a `why` dump for one theory. Shared claim ids (SM vs
+    /// Green–Schwarz) must not be judged as a single string.
+    fn why_theory_block<'a>(why: &'a str, theory: &str) -> &'a str {
+        why.split("theory ")
+            .find(|b| b.starts_with(&format!("{theory}\n")))
+            .unwrap_or_else(|| panic!("missing theory {theory} in:\n{why}"))
+    }
+
     #[test]
     fn turning_iib_dimension_flips_critical_claim() {
         let mut lab = Lab::standard();
@@ -1786,40 +1805,66 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(why.contains("derivation: certified-numeric"), "{why}");
-        assert!(why.contains("P3N"), "{why}");
-        assert!(!why.contains("P3F"), "{why}");
-        assert!(why.contains("kernel proof: none"), "{why}");
+        let sm_anom = why_theory_block(&why, "standard-model");
+        assert!(
+            sm_anom.contains("derivation: certified-numeric"),
+            "{sm_anom}"
+        );
+        assert!(
+            sm_anom.contains("judgment:   numeric certified"),
+            "{sm_anom}"
+        );
+        assert!(sm_anom.contains("enclosure:  [0, 0]"), "{sm_anom}");
+        assert!(!sm_anom.contains("logical undetermined"), "{sm_anom}");
+        assert!(sm_anom.contains("P3N"), "{sm_anom}");
+        assert!(!sm_anom.contains("P3F"), "{sm_anom}");
+        assert!(sm_anom.contains("kernel proof: none"), "{sm_anom}");
+        let gs = why_theory_block(&why, "type-iib");
+        assert!(gs.contains("derivation: executed"), "{gs}");
+        assert!(gs.contains("judgment:   logical undetermined"), "{gs}");
+        assert!(!gs.contains("numeric certified"), "{gs}");
         let why_y = lab
             .exec(Command::Why {
                 claim: "sm.hypercharge-derivation".into(),
             })
             .text()
             .to_string();
-        assert!(why_y.contains("derivation: certified-numeric"), "{why_y}");
-        assert!(why_y.contains("P3N"), "{why_y}");
-        assert!(!why_y.contains("P3F"), "{why_y}");
-        assert!(why_y.contains("kernel proof: none"), "{why_y}");
+        let sm_y = why_theory_block(&why_y, "standard-model");
+        assert!(sm_y.contains("derivation: certified-numeric"), "{sm_y}");
+        assert!(sm_y.contains("judgment:   numeric certified"), "{sm_y}");
+        assert!(sm_y.contains("enclosure:  [-1/2, -1/2]"), "{sm_y}");
+        assert!(!sm_y.contains("logical undetermined"), "{sm_y}");
+        assert!(sm_y.contains("P3N"), "{sm_y}");
+        assert!(!sm_y.contains("P3F"), "{sm_y}");
+        assert!(sm_y.contains("kernel proof: none"), "{sm_y}");
         let why_q = lab
             .exec(Command::Why {
                 claim: "empirical.charge-quantization".into(),
             })
             .text()
             .to_string();
-        assert!(why_q.contains("derivation: certified-numeric"), "{why_q}");
-        assert!(why_q.contains("P3N"), "{why_q}");
-        assert!(!why_q.contains("P3F"), "{why_q}");
-        assert!(why_q.contains("kernel proof: none"), "{why_q}");
+        let sm_q = why_theory_block(&why_q, "standard-model");
+        assert!(sm_q.contains("derivation: certified-numeric"), "{sm_q}");
+        assert!(sm_q.contains("judgment:   numeric certified"), "{sm_q}");
+        assert!(sm_q.contains("enclosure:  [0, 0]"), "{sm_q}");
+        assert!(!sm_q.contains("logical undetermined"), "{sm_q}");
+        assert!(sm_q.contains("P3N"), "{sm_q}");
+        assert!(!sm_q.contains("P3F"), "{sm_q}");
+        assert!(sm_q.contains("kernel proof: none"), "{sm_q}");
         let why_s2 = lab
             .exec(Command::Why {
                 claim: "gut.weinberg-angle".into(),
             })
             .text()
             .to_string();
-        assert!(why_s2.contains("derivation: certified-numeric"), "{why_s2}");
-        assert!(why_s2.contains("P3N"), "{why_s2}");
-        assert!(!why_s2.contains("P3F"), "{why_s2}");
-        assert!(why_s2.contains("kernel proof: none"), "{why_s2}");
+        let gut_s2 = why_theory_block(&why_s2, "su5-gut");
+        assert!(gut_s2.contains("derivation: certified-numeric"), "{gut_s2}");
+        assert!(gut_s2.contains("judgment:   numeric certified"), "{gut_s2}");
+        assert!(gut_s2.contains("enclosure:  [3/8, 3/8]"), "{gut_s2}");
+        assert!(!gut_s2.contains("logical undetermined"), "{gut_s2}");
+        assert!(gut_s2.contains("P3N"), "{gut_s2}");
+        assert!(!gut_s2.contains("P3F"), "{gut_s2}");
+        assert!(gut_s2.contains("kernel proof: none"), "{gut_s2}");
         let why_trq = lab
             .exec(Command::Why {
                 claim: "gut.charge-quantization".into(),
@@ -1828,9 +1873,14 @@ mod tests {
             .to_string();
         assert!(why_trq.contains("derivation: executed"), "{why_trq}");
         assert!(
+            why_trq.contains("judgment:   logical undetermined"),
+            "{why_trq}"
+        );
+        assert!(
             !why_trq.contains("derivation: certified-numeric"),
             "Tr Q is the grav anomaly, not a second P3N: {why_trq}"
         );
+        assert!(!why_trq.contains("numeric certified"), "{why_trq}");
         let why_mz = lab
             .exec(Command::Why {
                 claim: "gut.weinberg-angle-mz".into(),
@@ -2280,9 +2330,14 @@ mod tests {
         assert!(why_ok.contains("verdict:    holds"), "{why_ok}");
         assert!(why_ok.contains("derivation: executed"), "{why_ok}");
         assert!(
+            why_ok.contains("judgment:   logical undetermined"),
+            "{why_ok}"
+        );
+        assert!(
             !why_ok.contains("derivation: certified-numeric"),
             "the 1.8–2.2 f64 window is not P3N: {why_ok}"
         );
+        assert!(!why_ok.contains("numeric certified"), "{why_ok}");
 
         let diffs = lab.set_knob("klein-gordon", "spacing", "100").unwrap().2;
         assert!(

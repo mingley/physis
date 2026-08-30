@@ -52,7 +52,9 @@ Every claim answers four questions. They are different Rust types.
 A theory can `Executed`-derive a prediction that nature `Excluded`. That is a feature.
 
 `physis why <claim>` prints assumptions, a typed `judgment` (evaluator
-`holds` is `logical undetermined` until a dual-checked receipt exists),
+`holds` is `logical undetermined` until a dual-checked receipt exists;
+`CertifiedNumeric` Holds is `numeric certified` with a display enclosure,
+not a kernel proof; a coarse lattice is `numeric unresolved`),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
 encoding review; P4 is not assigned from an in-process remint), the
 statement hash, and `kernel proof: none` until `physis prove` records a

@@ -544,7 +544,7 @@ impl Theory for StandardModel {
                         format!("[grav]²U(1) ΣY = {sy}, [U(1)]³ ΣY³ = {sy3} (exact Ratio)"),
                         format!("Witten SU(2): {SM_WEAK_DOUBLETS} doublets (even)"),
                     ])
-                    .with_certified_numeric()
+                    .with_certified_numeric(format!("{sy}"), format!("{sy}"))
                 } else {
                     Verdict::fails(
                         claim,
@@ -579,7 +579,7 @@ impl Theory for StandardModel {
                                 ),
                                 "solved in Q from [SU(2)]²U(1), [SU(3)]²U(1), [grav]²U(1), and [U(1)]³".to_string(),
                             ])
-                            .with_certified_numeric()
+                            .with_certified_numeric(format!("{}", d.y_l), format!("{}", d.y_l))
                         } else {
                             Verdict::fails(
                                 claim,
@@ -634,7 +634,7 @@ impl Theory for StandardModel {
                                 "2 Q_u + Q_d + Q_e = 0; left-handed T₃+Y matches −Y of conjugate singlets; ν is neutral"
                                     .to_string(),
                             ])
-                            .with_certified_numeric()
+                            .with_certified_numeric(format!("{h}"), format!("{h}"))
                         }
                     } else {
                         Verdict::fails(
@@ -741,6 +741,8 @@ mod tests {
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
         assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo.as_deref(), Some("0"));
+        assert_eq!(v.numeric_hi.as_deref(), Some("0"));
         assert!(v.evidence.iter().any(|e| e.contains("exact Ratio")));
     }
 
@@ -762,6 +764,8 @@ mod tests {
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
         assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo.as_deref(), Some("0"));
+        assert_eq!(v.numeric_hi.as_deref(), Some("0"));
         assert!(v.evidence.iter().any(|e| e.contains("Q_u = 2/3")));
     }
 
@@ -830,6 +834,8 @@ mod tests {
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
         assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo.as_deref(), Some("-1/2"));
+        assert_eq!(v.numeric_hi.as_deref(), Some("-1/2"));
         assert!(v.evidence.iter().any(|e| e.contains("Y_L = -1/2")));
         assert!(v.evidence.iter().any(|e| e.contains("-2/3")));
     }

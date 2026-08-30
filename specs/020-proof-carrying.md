@@ -33,8 +33,10 @@ Nothing gains authority merely because an agent wrote code that returns
   formulas, `b₀−b₁+b₂ ≡ V−E+F` is rank-cancellation, not a second path.
   Neither overlay is a Lean receipt. A P3F
   `Unreviewed` result is labelled dangerous. `physis why` prints a typed
-  `Judgment` (evaluator `holds` is `logical undetermined`; a coarse numeric
-  order is `numeric unresolved`, not a failed theorem) and the
+  `Judgment` (evaluator `holds` is `logical undetermined`; a
+  `CertifiedNumeric` Holds is `numeric certified` with a display
+  enclosure, not a kernel proof; a coarse numeric order is `numeric
+  unresolved`, not a failed theorem) and the
   transitive axiom closure from `AxiomLedger`.
 
 ### Milestone 2 — dual-check receipts (exact + Lean)

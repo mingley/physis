@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **P3N why is numeric certified**
+  (`Judgment::from_lab`, `Verdict.numeric_lo` / `numeric_hi`).
+  `CertifiedNumeric` Holds projects `numeric certified` with a display
+  enclosure (`[0, 0]`, `[-1/2, -1/2]`, `[3/8, 3/8]`), not `logical
+  undetermined`. Evaluator Holds without a receipt stays logical
+  undetermined; dual-checked catalog stays `logical proved`; a coarse
+  lattice stays `numeric unresolved`. Enclosure strings are display,
+  not authority. Not Lean, not P3F, not P4. Verified: unit tests,
+  why/inspect, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Coarse second-order is insufficient precision**
   (`field.second-order-accurate`). The O(a²) identity is a long-wavelength
   statement (`|k a| < 1` at the probe). Outside that domain, Richardson
