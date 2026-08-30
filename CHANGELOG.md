@@ -12,6 +12,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Linear-medium Pasteur chirality is an IR mutation**
+  (`linear-medium`, `add-chiral`). Isotropic linear D = εE, B = μH is
+  the live encoding (`constitutive isotropic-linear`); appending
+  `constitutive chiral` makes circular birefringence n_L ≠ n_R and
+  flips `em.constitutive-linear` holds to fails. The residual is
+  2κ = 0.2 and is evidence, not the encoding: κ → 0 recovers a unique
+  index and the cell still fails. That is not a knob. Gauss and
+  charge conservation still hold. Tellegen magnetoelectric mixing
+  remains a separate n₊ ≠ n₋ fork (`add-tellegen`). `epsilon_r` /
+  `mu_r` stay knobs. Constitutive names isotropic linear D = εE,
+  B = μH. Mutants stay `linear-medium`; they are not a silent
+  Maxwell-vacuum or ohm-circuit install. Mutants are not installed,
+  not journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Live encode
+  pin unchanged. Verified: IR round-trip; set chiral is unknown;
+  hypothesize linear-medium; live isotropic-linear restored; encode pin
+  `35df991eb0911875613084efff07327ed6821b5580bfbccb85dd08387c3722eb`.
+
 - **Landauer Maxwell demon is an IR mutation**
   (`landauer-engine`, `add-demon`). The kT ln2 bound is the live
   encoding (`erase kT ln2`); appending `erase demon` makes the

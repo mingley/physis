@@ -36,7 +36,7 @@ lists every fitted knob in the lab.
 - (none — vacuum is the unit medium; magnetic current is an IR mutation (`add-monopole`), not a knob. A Proca mass term is a second IR mutation (`add-proca`), not a knob. `epsilon_r` / `mu_r` stay on linear-medium.)
 
 ### linear-medium
-- `epsilon_r` — relative permittivity; raises n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` is an IR mutation
+- `epsilon_r` — relative permittivity; raises n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` and `add-chiral` are IR mutations
 - `mu_r` — relative permeability
 
 ### ohm-circuit

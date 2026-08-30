@@ -5522,9 +5522,22 @@ mod tests {
             text.contains("add-tellegen") && text.contains("ir structural"),
             "{text}"
         );
+        let marker = "add-tellegen: package → add-tellegen";
+        let start = text.find(marker).expect("add-tellegen hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  linear-medium  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let tellegen_block = &rest[..end];
         assert!(
-            text.contains("em.constitutive-linear") && text.contains("holds → fails"),
-            "{text}"
+            tellegen_block.contains("em.constitutive-linear")
+                && tellegen_block.contains("holds → fails"),
+            "add-tellegen must flip constitutive-linear holds to fails: {tellegen_block}"
+        );
+        assert!(
+            text.contains("add-chiral"),
+            "chiral must still be an IR fork: {text}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -5544,6 +5557,145 @@ mod tests {
             live.get("mu_r").unwrap().display(),
             "1",
             "hypothesize must restore knobs"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "em.constitutive-linear".into(),
+            })
+            .text()
+            .to_string();
+        let medium = why_theory_block(&why, "linear-medium");
+        assert!(
+            medium.contains("isotropic linear D = εE, B = μH"),
+            "constitutive-linear must name D=εE: {medium}"
+        );
+        assert!(
+            !medium.contains("not yet a machine-checked regime"),
+            "constitutive-linear must not be encoding-wide: {medium}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_linear_medium_chiral_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["chiral", "pasteur", "kappa"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "linear-medium".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+        let freq_blocked = lab.exec(Command::Set {
+            theory: "linear-medium".into(),
+            knob: "frequency_hz".into(),
+            value: "1e10".into(),
+        });
+        assert_eq!(freq_blocked.exit_code(), 1, "{}", freq_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("linear-medium".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-chiral") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-chiral: package → add-chiral";
+        let start = text.find(marker).expect("add-chiral hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  linear-medium  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let chiral_block = &rest[..end];
+        assert!(
+            chiral_block.contains("em.constitutive-linear")
+                && chiral_block.contains("holds → fails"),
+            "add-chiral must flip constitutive-linear holds to fails: {chiral_block}"
+        );
+        assert!(
+            !chiral_block.contains("em.wave-speed-c"),
+            "add-chiral on glass must not be the ε_r wave-speed probe: {chiral_block}"
+        );
+        assert!(
+            text.contains("add-tellegen"),
+            "add-tellegen must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("linear-medium").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "em.constitutive-linear" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("epsilon_r").unwrap().display(),
+            "2.25",
+            "hypothesize must restore knobs"
+        );
+        let ohm = lab.theory("ohm-circuit").unwrap();
+        assert_eq!(
+            ohm.get("frequency_hz").unwrap().display(),
+            "1000",
+            "linear-medium IR must not convert the ohm-circuit frequency_hz knob"
+        );
+        let eps = lab.exec(Command::Set {
+            theory: "linear-medium".into(),
+            knob: "epsilon_r".into(),
+            value: "1".into(),
+        });
+        assert_eq!(eps.exit_code(), 0, "{}", eps.text());
+        assert!(
+            eps.text().contains("em.wave-speed-c") && eps.text().contains("fails → holds"),
+            "{}",
+            eps.text()
+        );
+        let live = lab.theory("linear-medium").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "em.constitutive-linear" && v.kind == VerdictKind::Holds
+            }),
+            "epsilon_r still Holds constitutive on the live isotropic encoding"
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "linear-medium".into(),
+            knob: "epsilon_r".into(),
+            value: "2.25".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "em.constitutive-linear".into(),
+            })
+            .text()
+            .to_string();
+        let medium = why_theory_block(&why, "linear-medium");
+        assert!(
+            medium.contains("isotropic linear D = εE, B = μH"),
+            "constitutive-linear must name D=εE: {medium}"
+        );
+        assert!(
+            !medium.contains("not yet a machine-checked regime"),
+            "constitutive-linear must not be encoding-wide: {medium}"
+        );
+        let maxwell = why_theory_block(&why, "maxwell-vacuum");
+        assert!(
+            maxwell.contains("not yet a machine-checked regime"),
+            "Maxwell constitutive stays encoding-wide: {maxwell}"
         );
     }
 
@@ -8407,6 +8559,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_medium.contains("add-tellegen"), "{hypo_medium}");
+        assert!(hypo_medium.contains("add-chiral"), "{hypo_medium}");
         let medium_again = lab
             .exec(Command::Encode {
                 theory: "linear-medium".into(),

@@ -28,7 +28,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 
 | theory | knob | effect |
 |---|---|---|
-| `linear-medium` | `epsilon_r` | relative permittivity ε_r ≥ 1; raises the refractive index n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` is an IR mutation |
+| `linear-medium` | `epsilon_r` | relative permittivity ε_r ≥ 1; raises the refractive index n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` is an IR mutation. Pasteur chirality is not this knob: `add-chiral` is an IR mutation |
 | `linear-medium` | `mu_r` | relative permeability μ_r ≥ 1; raises n |
 | `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation. Lumped KVL is not this knob: `add-flux` is an IR mutation |
 
@@ -43,7 +43,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `em.faraday` | Faraday's law | theorem on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Faraday is lumped KVL (named domain: lumped Kirchhoff voltage). `add-flux` appends `loop dPhi/dt` and the mesh residual of `∮E·dl + dΦ/dt` is `dB/dt × L²`, so this cell fails. That is not a knob |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
-| `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | theorem on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
+| `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | theorem on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. `add-chiral` appends `constitutive chiral` and n_L ≠ n_R, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
 | `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
 | `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit names `λ > 100 ×` circuit size); inapplicable to full Maxwell (encoding-wide) |
 
@@ -101,7 +101,7 @@ rest frame:
 ```
 physis experiment em-vacuum
 physis set linear-medium epsilon_r 1   # n → 1, wave-speed-c and lorentz-invariance flip to holds
-physis hypothesize linear-medium       # add-tellegen is IR, not set
+physis hypothesize linear-medium       # add-tellegen and add-chiral are IR, not set
 physis hypothesize maxwell-vacuum      # add-monopole and add-proca are IR, not set
 physis set ohm-circuit frequency_hz 1e10   # electrically short → lumped model fails
 physis hypothesize ohm-circuit             # add-tline and add-flux are IR, not set
@@ -109,8 +109,9 @@ physis hypothesize ohm-circuit             # add-tline and add-flux are IR, not 
 
 The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
 `em.lorentz-invariance` from `fails` to `holds`. That is orthogonal to
-Tellegen mixing: `em.constitutive-linear` still holds after the knob
-turn, and fails only on the `add-tellegen` IR fork. Homogeneous Faraday
+Tellegen mixing and Pasteur chirality: `em.constitutive-linear` still
+holds after the knob turn, and fails on the `add-tellegen` or
+`add-chiral` IR forks. Homogeneous Faraday
 on Maxwell fails only on the `add-monopole` IR fork. Massless Gauss
 fails only on the `add-proca` IR fork. Neither is an `ε_r` knob and
 neither is a silent linear-medium install.

@@ -13,7 +13,9 @@
 //! constitutive law lives on the IR package. Tellegen magnetoelectric mixing
 //! is a package mutation (`add-tellegen`), not an `ε_r` knob: the unique
 //! index `n = √(ε_r μ_r)` splits (`n₊ ≠ n₋`) and `em.constitutive-linear`
-//! fails. `epsilon_r` / `mu_r` still scale the isotropic-linear index.
+//! fails. Pasteur chirality (`add-chiral`) is a second mutation: circular
+//! birefringence `n_L ≠ n_R` and the same cell fails. `epsilon_r` / `mu_r`
+//! still scale the isotropic-linear index.
 //! Homogeneous Faraday (`dF = 0`) lives on the Maxwell vacuum package.
 //! A magnetic current is a package mutation (`add-monopole`), not a
 //! constitutive knob: the plane-wave residual of `∇×E + ∂B/∂t + J_m`
@@ -196,18 +198,24 @@ const PROCA_EQ: &str = "proca m2 A";
 const PROCA_M2: f64 = 1.0;
 /// Tellegen magnetoelectric mixing, as a dimensionless index split.
 const TELLEGEN_XI: f64 = 0.1;
+/// Pasteur chiral parameter, as a dimensionless circular-index split.
+const CHIRAL_KAPPA: f64 = 0.1;
 /// Isotropic linear constitutive law on the live linear-medium package.
 const LINEAR_EQ: &str = "constitutive isotropic-linear";
 /// Tellegen magnetoelectric mixing (D mixes H, B mixes E).
 const TELLEGEN_EQ: &str = "constitutive tellegen";
+/// Pasteur chiral mixing (circular birefringence n_L ≠ n_R).
+const CHIRAL_EQ: &str = "constitutive chiral";
 
-fn parse_constitutive(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_constitutive(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut linear = false;
     let mut tellegen = false;
+    let mut chiral = false;
     for eq in &pkg.equations {
         match eq.trim() {
             LINEAR_EQ => linear = true,
             TELLEGEN_EQ => tellegen = true,
+            CHIRAL_EQ => chiral = true,
             _ => {}
         }
     }
@@ -217,7 +225,7 @@ fn parse_constitutive(pkg: &TheoryPackage) -> Result<bool, String> {
             pkg.id
         ));
     }
-    Ok(tellegen)
+    Ok((tellegen, chiral))
 }
 
 fn constitutive_domain() -> DomainOfValidity {
@@ -225,7 +233,8 @@ fn constitutive_domain() -> DomainOfValidity {
         vec!["isotropic linear D = εE, B = μH".into()],
         vec!["unique refractive index n = √(ε_r μ_r)".into()],
         "The constitutive cell is the isotropic-linear encoding. Tellegen \
-         magnetoelectric mixing is a new encoding, not a silent ε_r knob.",
+         magnetoelectric mixing or Pasteur chiral mixing is a new encoding, \
+         not a silent ε_r knob.",
     )
 }
 
@@ -270,14 +279,20 @@ fn gauss_domain() -> DomainOfValidity {
 }
 
 /// Circular / magnetoelectric indices. Equal iff the constitutive law is
-/// isotropic linear (no Tellegen ξ).
-fn constitutive_indices(epsilon_r: f64, mu_r: f64, tellegen: bool) -> (f64, f64) {
+/// isotropic linear (no Tellegen ξ, no Pasteur κ).
+fn constitutive_indices(epsilon_r: f64, mu_r: f64, tellegen: bool, chiral: bool) -> (f64, f64) {
     let n = refractive_index(epsilon_r, mu_r);
+    let mut np = n;
+    let mut nm = n;
     if tellegen {
-        (n + TELLEGEN_XI, n - TELLEGEN_XI)
-    } else {
-        (n, n)
+        np += TELLEGEN_XI;
+        nm -= TELLEGEN_XI;
     }
+    if chiral {
+        np += CHIRAL_KAPPA;
+        nm -= CHIRAL_KAPPA;
+    }
+    (np, nm)
 }
 
 fn em_claims() -> Vec<Claim> {
@@ -337,12 +352,13 @@ fn eval_em(
     epsilon_r: f64,
     mu_r: f64,
     tellegen: bool,
+    chiral: bool,
     monopole: bool,
     proca: bool,
     claim: &Claim,
 ) -> Verdict {
     let n = refractive_index(epsilon_r, mu_r);
-    let vacuum = is_vacuum(epsilon_r, mu_r) && !tellegen;
+    let vacuum = is_vacuum(epsilon_r, mu_r) && !tellegen && !chiral;
     match claim.id_str() {
         WAVE_SPEED_C => {
             if vacuum {
@@ -350,8 +366,16 @@ fn eval_em(
                     "ε₀·μ₀·c² = {:.6} (dimensionless, = 1)",
                     epsilon0().value() * mu0().value() * C.value() * C.value()
                 )])
+            } else if chiral {
+                let (nl, nr) = constitutive_indices(epsilon_r, mu_r, false, true);
+                Verdict::fails(
+                    claim,
+                    format!(
+                        "Pasteur chirality: no unique n = √(ε_r μ_r); n_L = {nl:.3}, n_R = {nr:.3}"
+                    ),
+                )
             } else if tellegen {
-                let (np, nm) = constitutive_indices(epsilon_r, mu_r, true);
+                let (np, nm) = constitutive_indices(epsilon_r, mu_r, true, false);
                 Verdict::fails(
                     claim,
                     format!(
@@ -440,21 +464,32 @@ fn eval_em(
             div_curl_residual()
         )]),
         CONSTITUTIVE_LINEAR => {
-            let (np, nm) = constitutive_indices(epsilon_r, mu_r, tellegen);
-            if (np - nm).abs() < 1e-12 {
-                Verdict::holds(
-                    claim,
-                    format!("isotropic linear D = εE, B = μH; unique n = {n:.3}"),
-                )
-                .with_evidence([format!("n₊ = n₋ = {np:.6} = √(ε_r μ_r)")])
-            } else {
+            if chiral {
+                let (nl, nr) = constitutive_indices(epsilon_r, mu_r, false, true);
                 Verdict::fails(
                     claim,
-                    "Tellegen magnetoelectric mixing: D is not εE and B is not μH",
+                    "Pasteur chirality: circular birefringence; D is not εE and B is not μH",
                 )
                 .with_evidence([format!(
-                    "n₊ = {np:.3}, n₋ = {nm:.3} (ξ = {TELLEGEN_XI}); unique n = √(ε_r μ_r) splits"
+                    "n_L = {nl:.3}, n_R = {nr:.3} (κ = {CHIRAL_KAPPA}); unique n = √(ε_r μ_r) splits"
                 )])
+            } else {
+                let (np, nm) = constitutive_indices(epsilon_r, mu_r, tellegen, false);
+                if (np - nm).abs() < 1e-12 {
+                    Verdict::holds(
+                        claim,
+                        format!("isotropic linear D = εE, B = μH; unique n = {n:.3}"),
+                    )
+                    .with_evidence([format!("n₊ = n₋ = {np:.6} = √(ε_r μ_r)")])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        "Tellegen magnetoelectric mixing: D is not εE and B is not μH",
+                    )
+                    .with_evidence([format!(
+                        "n₊ = {np:.3}, n₋ = {nm:.3} (ξ = {TELLEGEN_XI}); unique n = √(ε_r μ_r) splits"
+                    )])
+                }
             }
         }
         LORENTZ_INVARIANCE => {
@@ -610,7 +645,7 @@ impl Theory for MaxwellVacuum {
             .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(1.0, 1.0, false, self.monopole, self.proca, claim)
+        eval_em(1.0, 1.0, false, false, self.monopole, self.proca, claim)
     }
     fn ir_package(&self) -> Option<TheoryPackage> {
         Some(self.package())
@@ -685,13 +720,16 @@ const MEDIUM_SPECS: &[KnobSpec] = &[
 ///
 /// The constitutive law lives on the IR package. Tellegen magnetoelectric
 /// mixing is a package mutation (`add-tellegen`), not a knob: the unique
-/// index n = √(ε_r μ_r) splits. `epsilon_r` / `mu_r` still scale the
-/// isotropic-linear index (electrically ordinary vs vacuum-like).
+/// index n = √(ε_r μ_r) splits. Pasteur chirality (`add-chiral`) is a
+/// second mutation: circular birefringence n_L ≠ n_R. `epsilon_r` / `mu_r`
+/// still scale the isotropic-linear index (electrically ordinary vs
+/// vacuum-like).
 #[derive(Clone, Debug, PartialEq)]
 pub struct LinearMedium {
     epsilon_r: f64,
     mu_r: f64,
     tellegen: bool,
+    chiral: bool,
 }
 
 impl Default for LinearMedium {
@@ -701,18 +739,22 @@ impl Default for LinearMedium {
             epsilon_r: 2.25,
             mu_r: 1.0,
             tellegen: false,
+            chiral: false,
         }
     }
 }
 
 impl LinearMedium {
     /// IR package for this constitutive law. Equations are
-    /// `constitutive isotropic-linear` and, when forked, `constitutive tellegen`.
-    /// ε_r and μ_r stay on the struct.
+    /// `constitutive isotropic-linear` and, when forked, `constitutive tellegen`
+    /// and/or `constitutive chiral`. ε_r and μ_r stay on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![LINEAR_EQ.to_string()];
         if self.tellegen {
             equations.push(TELLEGEN_EQ.to_string());
+        }
+        if self.chiral {
+            equations.push(CHIRAL_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -739,14 +781,20 @@ impl LinearMedium {
                 pkg.id
             ));
         }
+        let (tellegen, chiral) = parse_constitutive(pkg)?;
         Ok(Self {
-            tellegen: parse_constitutive(pkg)?,
+            tellegen,
+            chiral,
             ..Self::default()
         })
     }
 
     fn tellegen_equation() -> String {
         TELLEGEN_EQ.to_string()
+    }
+
+    fn chiral_equation() -> String {
+        CHIRAL_EQ.to_string()
     }
 }
 
@@ -792,7 +840,7 @@ impl Theory for LinearMedium {
          refractive index n = √(ε_r μ_r) slows light below c and picks a rest \
          frame, so the wave-speed and Lorentz-invariance claims fail unless the \
          medium is trivial. Tellegen magnetoelectric mixing is an IR mutation, \
-         not an ε_r knob."
+         not an ε_r knob. Pasteur chirality is a second IR mutation."
     }
     fn world(&self) -> Option<World> {
         Some(em_world(
@@ -818,6 +866,7 @@ impl Theory for LinearMedium {
             self.epsilon_r,
             self.mu_r,
             self.tellegen,
+            self.chiral,
             false,
             false,
             claim,
@@ -830,28 +879,42 @@ impl Theory for LinearMedium {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.tellegen = parsed.tellegen;
+        fork.chiral = parsed.chiral;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.tellegen {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::tellegen_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.tellegen => {
-                let mut fork = self.clone();
-                fork.tellegen = true;
-                vec![("add-tellegen".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.tellegen {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::tellegen_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.tellegen {
+                    let mut fork = self.clone();
+                    fork.tellegen = true;
+                    out.push(("add-tellegen".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.chiral {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::chiral_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.chiral {
+                    let mut fork = self.clone();
+                    fork.chiral = true;
+                    out.push(("add-chiral".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -1246,13 +1309,13 @@ pub fn em_vacuum() -> ExperimentReport {
          Lumped KCL is the ohm-circuit IR netlist (`add-tline` is an IR fork, \
          not a knob). Lumped KVL is Faraday on that netlist (`add-flux` is an \
          IR fork, not a frequency knob). The linear-medium constitutive law is IR (`add-tellegen` \
-         is an IR fork, not an ε_r knob). Homogeneous Faraday is the Maxwell \
+         and `add-chiral` are IR forks, not ε_r knobs). Homogeneous Faraday is the Maxwell \
          vacuum IR (`add-monopole` and `add-proca` are IR forks, not constitutive knobs).",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "Vacuum wave speed is a theorem: ε₀·μ₀·c² = 1 (typed, checked).".into(),
             "A medium with n > 1 slows light and selects a rest frame, so wave-speed and Lorentz-invariance fail.".into(),
-            "`hypothesize linear-medium`: add-tellegen is IR, not set.".into(),
+            "`hypothesize linear-medium`: add-tellegen and add-chiral are IR, not set.".into(),
             "`hypothesize maxwell-vacuum`: add-monopole and add-proca are IR, not set.".into(),
             "`hypothesize ohm-circuit`: add-tline and add-flux are IR, not set.".into(),
         ],
@@ -1567,13 +1630,37 @@ mod tests {
             VerdictKind::Fails
         );
         let probes = LinearMedium::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-tellegen");
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-tellegen"),
+            "live linear-medium must offer add-tellegen: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-chiral"),
+            "live linear-medium must offer add-chiral: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let tellegen_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-tellegen")
+            .expect("add-tellegen");
         assert_eq!(
-            verdict(probes[0].1.as_ref(), CONSTITUTIVE_LINEAR),
+            verdict(tellegen_probe.1.as_ref(), CONSTITUTIVE_LINEAR),
             VerdictKind::Fails
         );
-        assert!(fork.structural_mutations().is_empty());
+        let tellegen_fork_probes = fork.structural_mutations();
+        assert!(
+            tellegen_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-tellegen"),
+            "tellegen fork must not re-offer add-tellegen"
+        );
+        assert!(
+            tellegen_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-chiral"),
+            "tellegen fork must still offer add-chiral"
+        );
         let live = LinearMedium::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -1614,6 +1701,170 @@ mod tests {
         assert_eq!(
             verdict(&ohm, CONSTITUTIVE_LINEAR),
             VerdictKind::Inapplicable
+        );
+    }
+
+    #[test]
+    fn chiral_mixing_is_ir_not_a_knob() {
+        let mut m = LinearMedium::default();
+        assert!(
+            LinearMedium::default()
+                .set("chiral", KnobValue::Bool(true))
+                .is_err(),
+            "Pasteur chirality is an IR mutation, not a knob"
+        );
+        assert!(
+            LinearMedium::default()
+                .set("pasteur", KnobValue::Bool(true))
+                .is_err(),
+            "pasteur is not a knob"
+        );
+        assert!(
+            LinearMedium::default()
+                .set("kappa", KnobValue::Float(0.1))
+                .is_err(),
+            "kappa is not a knob"
+        );
+        assert!(
+            LinearMedium::default()
+                .set("frequency_hz", KnobValue::Float(1.0e10))
+                .is_err(),
+            "linear-medium must not grow a frequency_hz knob; that stays on ohm-circuit"
+        );
+        let src = render_package(&m.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay constitutive isotropic-linear"
+        );
+        assert_eq!(pkg.equations[0], LINEAR_EQ);
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(LinearMedium::chiral_equation()),
+        );
+        let parsed = LinearMedium::from_package(&mutated).unwrap();
+        assert!(parsed.chiral);
+        assert!(!parsed.tellegen);
+        let mut fork = m.clone();
+        fork.chiral = true;
+        assert_eq!(verdict(&fork, CONSTITUTIVE_LINEAR), VerdictKind::Fails);
+        assert_eq!(verdict(&m, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, GAUSS), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CHARGE_CONSERVATION), VerdictKind::Holds);
+        let live_n = refractive_index(2.25, 1.0);
+        let (nl, nr) = constitutive_indices(2.25, 1.0, false, true);
+        assert!(
+            (nl - (live_n + CHIRAL_KAPPA)).abs() < 1e-12
+                && (nr - (live_n - CHIRAL_KAPPA)).abs() < 1e-12,
+            "chiral evidence must be circular birefringence ±κ, got n_L={nl} n_R={nr} n={live_n}"
+        );
+        assert!(
+            (nl - nr).abs() > 0.05,
+            "circular birefringence must be the Pasteur scale, not a unit flag, got {}",
+            nl - nr
+        );
+        let cell = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == CONSTITUTIVE_LINEAR)
+            .unwrap();
+        let v = fork.evaluate(&cell);
+        assert!(
+            !v.summary.contains("Tellegen") && !v.summary.contains("magnetoelectric"),
+            "chiral is not the Tellegen fork: {}",
+            v.summary
+        );
+        m.set("epsilon_r", KnobValue::Float(1.0)).unwrap();
+        assert_eq!(verdict(&m, WAVE_SPEED_C), VerdictKind::Holds);
+        assert_eq!(verdict(&m, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
+        let mut vacuum_chiral = LinearMedium {
+            chiral: true,
+            ..Default::default()
+        };
+        vacuum_chiral
+            .set("epsilon_r", KnobValue::Float(1.0))
+            .unwrap();
+        assert_eq!(
+            verdict(&vacuum_chiral, WAVE_SPEED_C),
+            VerdictKind::Fails,
+            "chiral n_L ≠ n_R is not vacuum even at ε_r = 1"
+        );
+        assert_eq!(
+            verdict(&vacuum_chiral, CONSTITUTIVE_LINEAR),
+            VerdictKind::Fails,
+            "chiral encoding must fail constitutive-linear even when ε_r = 1; κ → 0 would recover unique n and is not the encoding"
+        );
+        let probes = LinearMedium::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-chiral"),
+            "live linear-medium must offer add-chiral: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let chiral_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-chiral")
+            .expect("add-chiral");
+        assert_eq!(
+            verdict(chiral_probe.1.as_ref(), CONSTITUTIVE_LINEAR),
+            VerdictKind::Fails
+        );
+        let chiral_fork_probes = fork.structural_mutations();
+        assert!(
+            chiral_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-chiral"),
+            "chiral fork must not re-offer add-chiral"
+        );
+        assert!(
+            chiral_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-tellegen"),
+            "chiral fork must still offer add-tellegen"
+        );
+        let live = LinearMedium::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("epsilon_r").unwrap(),
+            KnobValue::Float(2.25),
+            "reparse must overlay chiral IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), CONSTITUTIVE_LINEAR),
+            VerdictKind::Holds
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == CONSTITUTIVE_LINEAR)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "linear-medium constitutive must name D=εE: {:?}",
+            cell.domain()
+        );
+        assert!(
+            MaxwellVacuum::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chiral"),
+            "maxwell-vacuum must not grow add-chiral"
+        );
+        assert!(
+            OhmCircuit::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chiral"),
+            "ohm-circuit must not grow add-chiral"
+        );
+        assert!(
+            OhmCircuit::default()
+                .set("frequency_hz", KnobValue::Float(1.0e6))
+                .is_ok(),
+            "ohm-circuit keeps the frequency_hz knob"
         );
     }
 
