@@ -1389,8 +1389,12 @@ fn gap_for(
         return None;
     }
     use physis_core::ClaimClass::*;
+    // Open / conjectural / heuristic stay scientific gaps even when the
+    // evaluator reports Undecidable (P vs NP). A computed Undecidable
+    // (halting) is not a missing lemma.
     match class {
         Conjecture | OpenProblem | Heuristic => Some(GapReason::ScientificOpenProblem),
+        _ if kind == VerdictKind::Undecidable => Some(GapReason::LogicallyUndecidable),
         Mathematical | ModelInternal | Phenomenological
             if derivation != physis_core::DerivationAssurance::Asserted =>
         {
@@ -1401,7 +1405,6 @@ fn gap_for(
         {
             Some(GapReason::MissingDataset)
         }
-        _ if kind == VerdictKind::Undecidable => Some(GapReason::LogicallyUndecidable),
         _ => None,
     }
 }
@@ -2043,6 +2046,25 @@ mod tests {
             .text()
             .to_string();
         assert!(gap.contains("dec.d-squared-zero"), "{gap}");
+        assert!(
+            !gap.lines()
+                .any(|l| l.contains("turing-machine") && l.contains("comp.halts")),
+            "unbounded TM halting is not a missing lemma: {gap}"
+        );
+
+        let undec = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("logically-undecidable".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            undec
+                .lines()
+                .any(|l| l.contains("turing-machine") && l.contains("comp.halts")),
+            "{undec}"
+        );
 
         let p0 = lab
             .exec(Command::Inspect {
@@ -2071,7 +2093,10 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(proved.contains("receipt"), "{proved}");
+        assert!(
+            proved.contains("lean-kernel") || proved.contains("expand-recursive"),
+            "{proved}"
+        );
 
         let p3f = lab
             .exec(Command::Inspect {
@@ -2113,5 +2138,44 @@ mod tests {
             bad.text()
         );
         assert_eq!(bad.exit_code(), 1);
+    }
+
+    #[test]
+    fn gap_for_does_not_call_undecidable_a_missing_theorem() {
+        let halt = gap_for(
+            physis_core::ClaimClass::ModelInternal,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Undecidable,
+            physis_core::EmpiricalStatus::NotApplicable,
+            false,
+        );
+        assert_eq!(halt, Some(GapReason::LogicallyUndecidable));
+
+        let p_vs_np = gap_for(
+            physis_core::ClaimClass::OpenProblem,
+            physis_core::DerivationAssurance::Asserted,
+            VerdictKind::Undecidable,
+            physis_core::EmpiricalStatus::Untested,
+            false,
+        );
+        assert_eq!(p_vs_np, Some(GapReason::ScientificOpenProblem));
+
+        let d2 = gap_for(
+            physis_core::ClaimClass::Mathematical,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Holds,
+            physis_core::EmpiricalStatus::NotApplicable,
+            false,
+        );
+        assert_eq!(d2, Some(GapReason::MissingTheorem));
+
+        let proved = gap_for(
+            physis_core::ClaimClass::Mathematical,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Holds,
+            physis_core::EmpiricalStatus::NotApplicable,
+            true,
+        );
+        assert_eq!(proved, None);
     }
 }

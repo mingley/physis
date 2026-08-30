@@ -19,7 +19,9 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   derive). `physis knobs` prints the origin. `physis inspect
   trust|class|origin|gap <value>` lists matching claims or knobs. P3F
   is empty until `prove`. A proved catalog identity leaves the
-  `missing-theorem` gap. CLI `loop` is wired (it was listed in usage
+  `missing-theorem` gap. Undecidable evaluations (halting) are
+  `logically-undecidable`, not missing lemmas; P vs NP stays a
+  scientific open problem. CLI `loop` is wired (it was listed in usage
   but not parsed). Verified: origin unit tests, inspect lab test,
   `fmt`, `clippy -D warnings`, full suite, CLI.
 
