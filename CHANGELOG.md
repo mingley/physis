@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Landauer dropped-ln2 bound is an IR mutation**
+  (`landauer-engine`, `add-kt`). `kT ln2` is the live
+  encoding (`erase kT ln2`); appending `erase kT` makes the
+  encoding energy `N kT` instead of `N kT ln2` and flips
+  `info.landauer-cost` holds to fails. That is not a knob.
+  Thermodynamically-free still fails on the default irreversible
+  one-bit mutant. `temperature_k` / `bits_erased` / `reversible`
+  stay knobs; `reversible` still flips `info.thermodynamically-free`.
+  Mutants stay `landauer-engine`; they are not a silent
+  Turing-machine install. Landauer cost names the kT ln2 bound.
+  Mutants are not installed, not journaled, and not Canonical or
+  P4. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  P3N count stays 4. Verified: IR round-trip; set kt is unknown;
+  hypothesize landauer-engine; live kT ln2 restored; encode pin
+  `94e8b44c1e141f6e4cbff91a409b805361e5fe00a925121348b62cdbc3e187a9`.
+
 - **Ideal-gas Bose statistics is an IR mutation**
   (`ideal-gas`, `add-bose`). Maxwell–Boltzmann statistics are the live
   encoding (`gas maxwell-boltzmann`); appending `gas bose` makes the

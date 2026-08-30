@@ -71,6 +71,11 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 - `volume_ratio` — V_f/V_i for an isothermal expansion
 - `particles` — number of gas particles N
 
+### landauer-engine
+- `temperature_k` — bath temperature (K); sets `k_B·T·ln2`. The `ln2` factor is not this knob: `add-kt` is an IR mutation
+- `bits_erased` — number of logical bits irreversibly erased
+- `reversible` — logical reversibility (Bennett): erases nothing, so the process can be free. This stays a knob.
+
 ### blackbody (`planck`, `rayleigh-jeans`)
 - `quantum` — Planck (true) vs Rayleigh–Jeans (false). Turning `planck`'s
   `quantum` off restores the ultraviolet catastrophe.

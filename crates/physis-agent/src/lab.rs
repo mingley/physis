@@ -4953,6 +4953,124 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_landauer_engine_kt_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["kt", "drop_ln2", "ln2"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "landauer-engine".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+        let tape_blocked = lab.exec(Command::Set {
+            theory: "landauer-engine".into(),
+            knob: "tape_bound".into(),
+            value: "1000".into(),
+        });
+        assert_eq!(tape_blocked.exit_code(), 1, "{}", tape_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("landauer-engine".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-kt") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("info.landauer-cost") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("landauer-engine").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "info.landauer-cost" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("temperature_k").unwrap().display(),
+            "300",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("bits_erased").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("reversible").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let tm = lab.theory("turing-machine").unwrap();
+        assert_eq!(
+            tm.get("tape_bound").unwrap().display(),
+            "0",
+            "landauer IR must not convert the Turing-machine tape_bound knob"
+        );
+        assert_eq!(
+            tm.get("nondeterministic").unwrap().display(),
+            "false",
+            "landauer IR must not convert the Turing-machine nondeterministic knob"
+        );
+        let rev = lab.exec(Command::Set {
+            theory: "landauer-engine".into(),
+            knob: "reversible".into(),
+            value: "true".into(),
+        });
+        assert_eq!(rev.exit_code(), 0, "{}", rev.text());
+        assert!(
+            rev.text().contains("info.thermodynamically-free")
+                && rev.text().contains("fails → holds"),
+            "{}",
+            rev.text()
+        );
+        let live = lab.theory("landauer-engine").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "info.landauer-cost" && v.kind == VerdictKind::Holds),
+            "reversible still Holds cost on the live ln2 encoding"
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "landauer-engine".into(),
+            knob: "reversible".into(),
+            value: "false".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "info.landauer-cost".into(),
+            })
+            .text()
+            .to_string();
+        let le = why_theory_block(&why, "landauer-engine");
+        assert!(
+            le.contains("kT ln2 Landauer bound"),
+            "landauer-cost must name kT ln2: {le}"
+        );
+        assert!(
+            !le.contains("not yet a machine-checked regime"),
+            "landauer-cost must not be encoding-wide: {le}"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5671,6 +5789,10 @@ mod tests {
         assert!(
             text.contains("encode  ideal-gas"),
             "loop must independently round-trip Maxwell-Boltzmann statistics: {text}"
+        );
+        assert!(
+            text.contains("encode  landauer-engine"),
+            "loop must independently round-trip the kT ln2 Landauer bound: {text}"
         );
         assert!(
             !text.contains("encode  general-relativity"),
@@ -6974,6 +7096,24 @@ mod tests {
         assert_ne!(gas_id, maxwell_id);
         assert_ne!(gas_id, nand_id);
 
+        let landauer = lab
+            .exec(Command::Encode {
+                theory: "landauer-engine".into(),
+            })
+            .text()
+            .to_string();
+        assert!(landauer.contains("equations  1"), "{landauer}");
+        assert!(landauer.contains("round-trip canonical"), "{landauer}");
+        assert!(landauer.contains("not P3S"), "{landauer}");
+        assert!(!landauer.contains("receipt"), "{landauer}");
+        let landauer_id = encoding_package_id(&landauer);
+        assert_eq!(
+            landauer_id.to_hex(),
+            "94e8b44c1e141f6e4cbff91a409b805361e5fe00a925121348b62cdbc3e187a9"
+        );
+        assert_ne!(landauer_id, gas_id);
+        assert_ne!(landauer_id, nand_id);
+
         for theory in [
             "standard-model",
             "type-iib",
@@ -7180,6 +7320,25 @@ mod tests {
             encoding_package_id(&gas_again),
             gas_id,
             "hypothesize must not install the Bose-statistics mutant"
+        );
+
+        let hypo_landauer = lab
+            .exec(Command::Hypothesize {
+                theory: Some("landauer-engine".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_landauer.contains("add-kt"), "{hypo_landauer}");
+        let landauer_again = lab
+            .exec(Command::Encode {
+                theory: "landauer-engine".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&landauer_again),
+            landauer_id,
+            "hypothesize must not install the dropped-ln2 mutant"
         );
 
         let p3s = lab

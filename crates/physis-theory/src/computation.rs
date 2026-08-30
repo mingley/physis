@@ -13,6 +13,13 @@
 //! Computation has no spacetime, gauge, or spectrum, so these theories return
 //! `None` from `Theory::world()` and describe themselves via `Theory::note()`
 //! instead of borrowing a physics-shaped placeholder.
+//!
+//! The Landauer bound lives on the IR package. Dropping `ln2` (`E = N kT`
+//! instead of `N kT ln2`) is a package mutation (`add-kt`), not a
+//! `reversible` knob: the encoding energy is no longer the Landauer floor
+//! and `info.landauer-cost` fails. `temperature_k` / `bits_erased` /
+//! `reversible` still scale the bath and Bennett reversibility. That fork
+//! is still this object, not a silent Turing-machine install.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -548,6 +555,45 @@ pub const INFO_LANDAUER_COST: &str = "info.landauer-cost";
 /// The process erases no information, so it can be thermodynamically free.
 pub const INFO_THERMO_FREE: &str = "info.thermodynamically-free";
 
+/// Landauer bound on the live package: `E = N kT ln2`.
+const LANDAUER_LN2_EQ: &str = "erase kT ln2";
+/// Dropped-ln2 encoding: `E = N kT`.
+const KT_EQ: &str = "erase kT";
+
+fn parse_landauer_bound(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut ln2 = false;
+    let mut drop_ln2 = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            LANDAUER_LN2_EQ => ln2 = true,
+            KT_EQ => drop_ln2 = true,
+            _ => {}
+        }
+    }
+    if !ln2 {
+        return Err(format!("{} package has no kT ln2 Landauer bound", pkg.id));
+    }
+    Ok(drop_ln2)
+}
+
+fn landauer_cost_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["kT ln2 Landauer bound".into()],
+        vec!["E = N k_B T ln2 for irreversible erasure".into()],
+        "The cost cell is the kT ln2 encoding. Dropping ln2 is a new encoding, \
+         not a silent reversible knob.",
+    )
+}
+
+fn landauer_bound_joules(bits: u64, temperature_k: f64) -> f64 {
+    bits as f64 * k_boltzmann().value() * temperature_k * std::f64::consts::LN_2
+}
+
+fn encoding_matches_ln2_bound(encoding: f64, bound: f64) -> bool {
+    let scale = encoding.abs().max(bound.abs()).max(1e-40);
+    (encoding - bound).abs() <= 1e-12 * scale
+}
+
 const LANDAUER_SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "temperature_k",
@@ -585,7 +631,13 @@ const LANDAUER_SPECS: &[KnobSpec] = &[
 /// energy (`Qty<Energy>`), the bridge Landauer 1961 discovered. It is the first
 /// object that reuses substrate from two domains — computation and
 /// thermodynamics — in a single claim.
-#[derive(Clone, Debug)]
+///
+/// The `kT ln2` bound lives on the IR package. Dropping `ln2` is a package
+/// mutation (`add-kt`), not a knob: the encoding energy is `N kT` and
+/// `info.landauer-cost` fails. That fork is still this object, not a silent
+/// Turing-machine install. `temperature_k` / `bits_erased` / `reversible`
+/// stay knobs.
+#[derive(Clone, Debug, PartialEq)]
 pub struct LandauerEngine {
     /// Bath temperature in kelvin.
     temperature_k: f64,
@@ -593,6 +645,8 @@ pub struct LandauerEngine {
     bits_erased: u64,
     /// Whether the computation is logically reversible.
     reversible: bool,
+    /// Whether the encoding dropped `ln2` (`E = N kT`).
+    drop_ln2: bool,
 }
 
 impl Default for LandauerEngine {
@@ -602,6 +656,7 @@ impl Default for LandauerEngine {
             temperature_k: 300.0,
             bits_erased: 1,
             reversible: false,
+            drop_ln2: false,
         }
     }
 }
@@ -613,6 +668,7 @@ impl LandauerEngine {
             temperature_k: 300.0,
             bits_erased: 0,
             reversible: true,
+            drop_ln2: false,
         }
     }
 
@@ -625,13 +681,62 @@ impl LandauerEngine {
         }
     }
 
-    /// The Landauer lower bound on dissipated energy, as a typed quantity.
+    /// Dissipated energy this encoding computes, as a typed quantity.
     ///
-    /// `E_min = N · k_B · T · ln2`. The units fall out of the type system:
-    /// `k_B` carries J/K, `kelvin(T)` carries K, so the product is an energy.
+    /// Live: `E = N · k_B · T · ln2`. Mutant (`add-kt`): `E = N · k_B · T`.
+    /// The units fall out of the type system: `k_B` carries J/K, `kelvin(T)`
+    /// carries K, so the product is an energy.
     pub fn landauer_energy(&self) -> Qty<Energy> {
         let n = self.effective_bits() as f64;
-        k_boltzmann() * kelvin(self.temperature_k) * (n * std::f64::consts::LN_2)
+        let kt_n = k_boltzmann() * kelvin(self.temperature_k) * n;
+        if self.drop_ln2 {
+            kt_n
+        } else {
+            kt_n * std::f64::consts::LN_2
+        }
+    }
+
+    /// IR package for this bound encoding. Equations are `erase kT ln2`
+    /// and, when forked, `erase kT`. Temperature, bits, and reversibility
+    /// stay on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![LANDAUER_LN2_EQ.to_string()];
+        if self.drop_ln2 {
+            equations.push(KT_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["kt-ln2-landauer-bound".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: INFO_LANDAUER_COST.into(),
+                statement: "Erasing a logical bit dissipates at least k_B·T·ln2 of energy.".into(),
+                layer: "statistical".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a bound encoding from a package. Knobs default; overlay them
+    /// from a live engine when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "landauer-engine" {
+            return Err(format!(
+                "landauer-engine package id '{}' is not landauer-engine",
+                pkg.id
+            ));
+        }
+        Ok(Self {
+            drop_ln2: parse_landauer_bound(pkg)?,
+            ..Self::default()
+        })
+    }
+
+    fn kt_equation() -> String {
+        KT_EQ.to_string()
     }
 }
 
@@ -676,7 +781,8 @@ impl Theory for LandauerEngine {
     }
     fn summary(&self) -> &'static str {
         "A computation coupled to a heat bath. Erasing a logical bit costs at \
-         least k_B·T·ln2 of energy (Landauer); a logically reversible \
+         least k_B·T·ln2 of energy (Landauer) on the live encoding; dropping \
+         ln2 is an IR mutation, not a reversible knob. A logically reversible \
          computation erases nothing and can be thermodynamically free (Bennett)."
     }
     fn world(&self) -> Option<World> {
@@ -701,7 +807,8 @@ impl Theory for LandauerEngine {
                 "Erasing a logical bit dissipates at least k_B·T·ln2 of energy.",
                 LayerId::Statistical,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(landauer_cost_domain()),
             Claim::new(
                 INFO_THERMO_FREE,
                 "The computation erases no information and can dissipate no heat.",
@@ -714,21 +821,32 @@ impl Theory for LandauerEngine {
         let e = self.landauer_energy().value();
         match claim.id_str() {
             INFO_LANDAUER_COST => {
-                // A theorem of statistical mechanics; the evidence is the
-                // computed, typed lower bound for the configured erasure.
                 let n = self.effective_bits();
-                let per_bit = k_boltzmann().value() * self.temperature_k * std::f64::consts::LN_2;
-                Verdict::holds(
-                    claim,
-                    format!(
-                        "erasing {n} bit(s) at {} K costs at least {e:.3e} J",
-                        self.temperature_k
-                    ),
-                )
-                .with_evidence([
-                    format!("k_B·T·ln2 = {per_bit:.3e} J/bit"),
-                    format!("E_min = N·k_B·T·ln2 = {e:.3e} J for N = {n}"),
-                ])
+                let bound = landauer_bound_joules(n, self.temperature_k);
+                if encoding_matches_ln2_bound(e, bound) {
+                    Verdict::holds(
+                        claim,
+                        format!(
+                            "erasing {n} bit(s) at {} K costs at least {e:.3e} J",
+                            self.temperature_k
+                        ),
+                    )
+                    .with_evidence([
+                        format!(
+                            "k_B·T·ln2 = {:.3e} J/bit",
+                            landauer_bound_joules(1, self.temperature_k)
+                        ),
+                        format!("E = {e:.3e} J matches N·k_B·T·ln2 for N = {n}"),
+                    ])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        format!("encoding dissipates {e:.3e} J, not N kT ln2 = {bound:.3e} J"),
+                    )
+                    .with_evidence([format!(
+                        "N kT without ln2 is not the Landauer floor (N = {n})"
+                    )])
+                }
             }
             INFO_THERMO_FREE => {
                 if self.effective_bits() == 0 {
@@ -751,6 +869,33 @@ impl Theory for LandauerEngine {
                 }
             }
             _ => Verdict::inapplicable(claim, "claim not made by a Landauer engine"),
+        }
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.drop_ln2 = parsed.drop_ln2;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.drop_ln2 {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(&pkg, &PackageMutation::AppendEquation(Self::kt_equation()));
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.drop_ln2 => {
+                let mut fork = self.clone();
+                fork.drop_ln2 = true;
+                vec![("add-kt".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
         }
     }
 }
@@ -923,7 +1068,6 @@ mod tests {
     fn erasing_bits_forces_dissipation() {
         let e = LandauerEngine::default();
         assert_eq!(verdict(&e, INFO_THERMO_FREE), VerdictKind::Fails);
-        // Landauer's principle itself always holds as a theorem.
         assert_eq!(verdict(&e, INFO_LANDAUER_COST), VerdictKind::Holds);
     }
 
@@ -956,6 +1100,132 @@ mod tests {
         hot.set("temperature_k", KnobValue::Float(600.0)).unwrap();
         let r2 = hot.landauer_energy().value() / one.landauer_energy().value();
         assert!((r2 - 2.0).abs() < 1e-9, "ratio {r2}");
+    }
+
+    #[test]
+    fn kt_without_ln2_is_ir_not_a_knob() {
+        let mut e = LandauerEngine::default();
+        assert!(
+            LandauerEngine::default()
+                .set("kt", KnobValue::Bool(true))
+                .is_err(),
+            "dropping ln2 is an IR mutation, not a knob"
+        );
+        assert!(
+            LandauerEngine::default()
+                .set("drop_ln2", KnobValue::Bool(true))
+                .is_err(),
+            "drop_ln2 is not a knob"
+        );
+        assert!(
+            LandauerEngine::default()
+                .set("ln2", KnobValue::Bool(false))
+                .is_err(),
+            "ln2 is not a knob"
+        );
+        assert!(
+            LandauerEngine::default()
+                .set("tape_bound", KnobValue::UInt(1000))
+                .is_err(),
+            "landauer-engine must not grow a tape_bound knob; that stays on turing-machine"
+        );
+        let src = render_package(&e.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            LandauerEngine::from_package(&pkg).unwrap(),
+            e,
+            "IR round-trip must preserve the kT ln2 bound"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(LandauerEngine::kt_equation()),
+        );
+        let parsed = LandauerEngine::from_package(&mutated).unwrap();
+        assert!(parsed.drop_ln2);
+        let mut fork = e.clone();
+        fork.drop_ln2 = true;
+        assert_eq!(verdict(&fork, INFO_LANDAUER_COST), VerdictKind::Fails);
+        assert_eq!(verdict(&e, INFO_LANDAUER_COST), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, INFO_THERMO_FREE), VerdictKind::Fails);
+        let live_e = e.landauer_energy().value();
+        let mutant_e = fork.landauer_energy().value();
+        let bound = landauer_bound_joules(1, 300.0);
+        assert!(
+            encoding_matches_ln2_bound(live_e, bound),
+            "live energy must be N kT ln2, got {live_e}"
+        );
+        assert!(
+            (mutant_e / live_e - 1.0 / std::f64::consts::LN_2).abs() < 1e-9,
+            "mutant energy must be N kT = (N kT ln2)/ln2, got {mutant_e} / {live_e}"
+        );
+        e.set("reversible", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&e, INFO_THERMO_FREE), VerdictKind::Holds);
+        assert_eq!(verdict(&e, INFO_LANDAUER_COST), VerdictKind::Holds);
+        let mut free_fork = fork.clone();
+        free_fork.set("reversible", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&free_fork, INFO_LANDAUER_COST), VerdictKind::Holds);
+        assert_eq!(verdict(&free_fork, INFO_THERMO_FREE), VerdictKind::Holds);
+        let probes = LandauerEngine::default().structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-kt");
+        assert_eq!(
+            verdict(probes[0].1.as_ref(), INFO_LANDAUER_COST),
+            VerdictKind::Fails
+        );
+        assert!(fork.structural_mutations().is_empty());
+        let live = LandauerEngine::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("temperature_k").unwrap(),
+            KnobValue::Float(300.0),
+            "reparse must overlay bound IR onto live knobs"
+        );
+        assert_eq!(
+            rebuilt.get("bits_erased").unwrap(),
+            KnobValue::UInt(1),
+            "reparse must overlay bound IR onto live knobs"
+        );
+        assert_eq!(
+            rebuilt.get("reversible").unwrap(),
+            KnobValue::Bool(false),
+            "reparse must overlay bound IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), INFO_LANDAUER_COST),
+            VerdictKind::Holds
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == INFO_LANDAUER_COST)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "landauer-cost must name kT ln2: {:?}",
+            cell.domain()
+        );
+        assert!(
+            TuringMachine::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-kt"),
+            "turing-machine must not grow add-kt"
+        );
+        assert!(
+            TuringMachine::default()
+                .set("tape_bound", KnobValue::UInt(1000))
+                .is_ok(),
+            "turing-machine keeps the tape_bound knob"
+        );
+        assert!(
+            TuringMachine::default()
+                .set("nondeterministic", KnobValue::Bool(true))
+                .is_ok(),
+            "turing-machine keeps the nondeterministic knob"
+        );
     }
 
     #[test]
