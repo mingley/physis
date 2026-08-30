@@ -137,6 +137,18 @@ pub enum JournalEvent {
         /// forged hash cannot mint the record.
         source_hash: String,
     },
+    /// An independent IR package round-trip. Restore rebuilds from the
+    /// live theory package. The recorded package hash is not
+    /// deserialized as authority, is not P3S, and is not Canonical or P4.
+    Encode {
+        /// Unix millis.
+        t: u64,
+        /// Theory id.
+        theory: String,
+        /// Content-addressed EncodingPackage node hex. Restore rebuilds;
+        /// a forged hash cannot mint the package.
+        package_hash: String,
+    },
 }
 
 /// Parse JSONL into events, counting non-blank lines that fail to deserialize.
@@ -269,6 +281,15 @@ impl JournalEvent {
             t: now_ms(),
             claim: claim.into(),
             source_hash: source_hash.into(),
+        }
+    }
+
+    /// An independent IR package round-trip, stamped with the current time.
+    pub fn encode(theory: impl Into<String>, package_hash: impl Into<String>) -> Self {
+        JournalEvent::Encode {
+            t: now_ms(),
+            theory: theory.into(),
+            package_hash: package_hash.into(),
         }
     }
 }
@@ -529,6 +550,27 @@ mod tests {
             } => {
                 assert_eq!(claim, "gut.proton-lifetime-sk");
                 assert_eq!(source_hash, "deadbeef");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn encode_event_round_trips_and_is_not_p3s() {
+        let ev = JournalEvent::encode("combinational-circuit", "deadbeef");
+        let s = serde_json::to_string(&ev).unwrap();
+        assert!(s.contains("\"event\":\"encode\""));
+        assert!(s.contains("\"package_hash\":\"deadbeef\""));
+        assert!(!s.contains("receipt"), "{s}");
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Encode {
+                theory,
+                package_hash,
+                ..
+            } => {
+                assert_eq!(theory, "combinational-circuit");
+                assert_eq!(package_hash, "deadbeef");
             }
             other => panic!("{other:?}"),
         }

@@ -340,6 +340,12 @@ impl Theory for CombinationalCircuit {
             _ => Verdict::inapplicable(claim, "claim not made by a computational object"),
         }
     }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        Ok(Box::new(Self::from_package(pkg)?))
+    }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
@@ -856,6 +862,11 @@ mod tests {
         let probes = c.structural_mutations();
         assert_eq!(probes.len(), 1);
         assert_eq!(probes[0].0, "add-feedback");
+        let canonical = physis_ir::certify_round_trip(&c.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = c.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), c.package());
+        assert!(rebuilt.ir_package().unwrap() != probes[0].1.ir_package().unwrap());
     }
 
     #[test]

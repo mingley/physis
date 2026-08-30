@@ -1,6 +1,7 @@
 //! A small scientific IR. Not a replacement for Lean. Points at a formal
 //! backend for sophisticated mathematics. Packages round-trip through
-//! [`parse_package`] / [`render_package`]; [`apply_mutation`] is a
+//! [`parse_package`] / [`render_package`]; [`certify_round_trip`] is an
+//! independent parse check, not a kernel proof. [`apply_mutation`] is a
 //! constrained encoding fork, not a kernel proof.
 
 #![forbid(unsafe_code)]
@@ -215,6 +216,32 @@ pub fn parse_class(s: &str) -> Result<ClaimClass, String> {
     Ok(c)
 }
 
+/// Independently parse and round-trip a package through the line dialect.
+///
+/// Returns the canonical render when `parse(render(pkg))` equals `pkg`,
+/// the second render is stable, and every claim names a known class and
+/// layer. This is not a kernel proof, not semantic review, and not a
+/// mutation.
+pub fn certify_round_trip(pkg: &TheoryPackage) -> Result<String, String> {
+    if pkg.id.is_empty() {
+        return Err("missing id".into());
+    }
+    let rendered = render_package(pkg);
+    let parsed = parse_package(&rendered)?;
+    if parsed != *pkg {
+        return Err("round-trip parse does not match the live package".into());
+    }
+    let again = render_package(&parsed);
+    if again != rendered {
+        return Err("render is not canonical".into());
+    }
+    for c in &pkg.claims {
+        parse_class(&c.class)?;
+        parse_layer(&c.layer)?;
+    }
+    Ok(rendered)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,5 +288,33 @@ lean_ref Physlib.Exterior.d_squared
             parse_package(&render_package(&extra)).unwrap().equations,
             extra.equations
         );
+    }
+
+    #[test]
+    fn certify_round_trip_accepts_a_stable_package() {
+        let pkg = parse_package(
+            "id = combinational-circuit\n\
+             name = Combinational circuit\n\
+             assumption finite-nand-netlist\n\
+             equation nand 0 1 -> 2\n\
+             claim model-internal information comp.acyclic : The gate graph is acyclic.\n",
+        )
+        .unwrap();
+        let canonical = certify_round_trip(&pkg).unwrap();
+        assert_eq!(parse_package(&canonical).unwrap(), pkg);
+        assert!(canonical.contains("nand 0 1 -> 2"));
+    }
+
+    #[test]
+    fn certify_round_trip_rejects_an_unknown_class() {
+        let mut pkg = parse_package("id = fork\nequation nand 0 1 -> 2\n").unwrap();
+        pkg.claims.push(ClaimDecl {
+            id: "x".into(),
+            statement: "nope".into(),
+            layer: "information".into(),
+            class: "not-a-class".into(),
+        });
+        let err = certify_round_trip(&pkg).unwrap_err();
+        assert!(err.contains("unknown class"), "{err}");
     }
 }

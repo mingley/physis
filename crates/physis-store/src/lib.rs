@@ -51,6 +51,11 @@ pub enum NodeKind {
     /// Not a kernel receipt, not Canonical, and not P4. Restore rebuilds
     /// from live overlay strings; a recorded hash is not deserialized.
     NumericCertificate,
+    /// An independent parse / round-trip / reconstruct of a live theory
+    /// IR package. Not P3S, not a kernel receipt, not Canonical, and not
+    /// P4. Restore rebuilds from the live package; a recorded hash is
+    /// not deserialized.
+    EncodingPackage,
 }
 
 /// One DAG node.
@@ -223,5 +228,15 @@ mod tests {
         assert_ne!(enclosure.id, calc.id);
         assert_ne!(enclosure.id, receipt.id);
         assert_eq!(enclosure.kind, NodeKind::NumericCertificate);
+    }
+
+    #[test]
+    fn encoding_package_is_not_a_theory_or_review() {
+        let pkg = Node::new(NodeKind::EncodingPackage, vec![], b"id = fork\n");
+        let theory = Node::new(NodeKind::Theory, vec![], b"id = fork\n");
+        let review = Node::new(NodeKind::SemanticReview, vec![], b"id = fork\n");
+        assert_ne!(pkg.id, theory.id);
+        assert_ne!(pkg.id, review.id);
+        assert_eq!(pkg.kind, NodeKind::EncodingPackage);
     }
 }

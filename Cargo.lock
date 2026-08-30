@@ -164,6 +164,7 @@ dependencies = [
  "physis-audit",
  "physis-core",
  "physis-data",
+ "physis-ir",
  "physis-model",
  "physis-numeric",
  "physis-proof",

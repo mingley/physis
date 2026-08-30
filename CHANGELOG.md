@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Independent IR package encode is a unique encoding-auditor op**
+  (`physis encode`, `Role::EncodingAuditor`). Parses, round-trips, and
+  reconstructs live theory IR packages (`combinational-circuit` NAND
+  netlist, `klein-gordon` nearest-neighbour stencil). A forged
+  `package_hash` cannot mint. Refuses theories with no package.
+  Hypothesize mutants are not installed. Not P3S, not a kernel receipt,
+  not Canonical, not P4. Loop encodes after cite. Unique-vacuum graph
+  id unchanged. P3N count stays 4. Combinational-circuit package id
+  `762aa72d9eace0c61026eca6ebf71b37f26608797a6786c60b92ba06af4ad8ea`.
+  Klein-Gordon package id
+  `32b0997d38afb977615e8fc6527ee5d766271e8a31fb5c882912ca740a3b4e4f`.
+  Verified: role gates; journal restore; hypothesize does not change
+  the live package id.
+
 - **Independent SourceRecord cite is a unique provenance-auditor op**
   (`physis cite`, `Role::ProvenanceAuditor`). Rebuilds live dataset
   (PDG, Super-K) and catalog-dossier locators via `SourceRecord::recheck`.

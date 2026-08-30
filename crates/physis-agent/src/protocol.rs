@@ -164,6 +164,13 @@ pub enum Command {
         /// Claim id.
         claim: String,
     },
+    /// Independently parse, round-trip, and reconstruct a live theory
+    /// IR package. Stores a content-addressed EncodingPackage. Not P3S,
+    /// not a kernel receipt, not Canonical, and not P4.
+    Encode {
+        /// Theory id.
+        theory: String,
+    },
 }
 
 impl Command {
@@ -201,6 +208,7 @@ impl Command {
             Command::Gaps => "gaps",
             Command::Enclose { .. } => "enclose",
             Command::Cite { .. } => "cite",
+            Command::Encode { .. } => "encode",
         }
     }
 }

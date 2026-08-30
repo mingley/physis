@@ -53,6 +53,7 @@ Level-3 trust
   L3 inspect judgment      ✓ physis inspect judgment inverts projected labels; statistical-computed is the PDG GQW cell; empirical-excluded is Super-K; logical-proved requires a receipt
   L3 numerical enclose     ✓ physis enclose independently parses CertifiedNumeric Ratio strings into a NumericCertificate DAG; numerical-verifier unique op; restore rebuilds; not P3F, not Canonical, not P4; P3N count stays 4
   L3 provenance cite       ✓ physis cite independently rebuilds SourceRecord for PDG/Super-K datasets and catalog dossiers; provenance-auditor unique op; restore rebuilds; not P3S, not Canonical, not P4
+  L3 encoding round-trip   ✓ physis encode independently parses, round-trips, and reconstructs live IR packages (combinational NAND, Klein-Gordon stencil); encoding-auditor unique op; restore rebuilds; not P3S, not Canonical, not P4
 ```
 
 Each milestone must:

@@ -510,6 +510,15 @@ impl Theory for KleinGordonField {
             _ => Verdict::inapplicable(claim, "claim not made by a field object"),
         }
     }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.next_nearest = parsed.next_nearest;
+        Ok(Box::new(fork))
+    }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
         if self.next_nearest {
             return Vec::new();
@@ -758,5 +767,10 @@ mod tests {
         assert_eq!(verdict(probes[0].1.as_ref(), LOCAL), VerdictKind::Fails);
         assert_eq!(verdict(&f, LOCAL), VerdictKind::Holds);
         assert!(fork.structural_mutations().is_empty());
+        let canonical = physis_ir::certify_round_trip(&f.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = f.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), f.package());
+        assert_eq!(verdict(rebuilt.as_ref(), LOCAL), VerdictKind::Holds);
     }
 }

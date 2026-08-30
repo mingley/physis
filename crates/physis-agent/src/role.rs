@@ -19,7 +19,9 @@ use crate::protocol::Command;
 /// independently parse a `CertifiedNumeric` enclosure: that is
 /// [`Role::NumericalVerifier`] (not a kernel receipt, not P4). A reviewer
 /// cannot independently rehash a `SourceRecord`: that is
-/// [`Role::ProvenanceAuditor`] (not P3S).
+/// [`Role::ProvenanceAuditor`] (not P3S). A reviewer cannot independently
+/// round-trip a live theory IR package: that is [`Role::EncodingAuditor`]
+/// (not P3S).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Role {
@@ -49,11 +51,15 @@ pub enum Role {
     /// Independently rebuild a live `SourceRecord`. Cannot prove or
     /// review. Not P3S, not Canonical, and not P4.
     ProvenanceAuditor,
+    /// Independently parse, round-trip, and reconstruct a live theory
+    /// IR package. Cannot prove or review. Not P3S, not Canonical, and
+    /// not P4.
+    EncodingAuditor,
 }
 
 impl Role {
     /// Every named role, including the lab.
-    pub const ALL: [Role; 11] = [
+    pub const ALL: [Role; 12] = [
         Role::Lab,
         Role::Explorer,
         Role::Formalizer,
@@ -65,6 +71,7 @@ impl Role {
         Role::EmpiricalAnalyst,
         Role::NumericalVerifier,
         Role::ProvenanceAuditor,
+        Role::EncodingAuditor,
     ];
 
     /// Stable kebab-case name.
@@ -81,6 +88,7 @@ impl Role {
             Role::EmpiricalAnalyst => "empirical-analyst",
             Role::NumericalVerifier => "numerical-verifier",
             Role::ProvenanceAuditor => "provenance-auditor",
+            Role::EncodingAuditor => "encoding-auditor",
         }
     }
 
@@ -92,7 +100,8 @@ impl Role {
 
     /// Observe-only ops: no knob writes, no mint, no review, no audit,
     /// no empirical score, no remint, no independent Ratio enclose, no
-    /// independent SourceRecord rebuild.
+    /// independent SourceRecord rebuild, no independent IR package
+    /// round-trip.
     fn observe(cmd: &Command) -> bool {
         matches!(
             cmd,
@@ -143,6 +152,7 @@ impl Role {
             Role::EmpiricalAnalyst => matches!(cmd, Command::Score { .. }),
             Role::NumericalVerifier => matches!(cmd, Command::Enclose { .. }),
             Role::ProvenanceAuditor => matches!(cmd, Command::Cite { .. }),
+            Role::EncodingAuditor => matches!(cmd, Command::Encode { .. }),
             Role::Explorer | Role::Lab => false,
         }
     }
@@ -328,7 +338,7 @@ mod tests {
         let enclose = Command::Enclose {
             claim: "gut.weinberg-angle".into(),
         };
-        assert_eq!(Role::ALL.len(), 11);
+        assert_eq!(Role::ALL.len(), 12);
         assert!(Role::NumericalVerifier.permits(&enclose));
         assert!(!Role::NumericalVerifier.permits(&prove()));
         assert!(!Role::NumericalVerifier.permits(&Command::Reproduce {
@@ -360,6 +370,32 @@ mod tests {
         assert!(!Role::NumericalVerifier.permits(&cite));
         assert!(Role::Lab.permits(&cite));
         assert!(Role::parse("provenance-auditor") == Some(Role::ProvenanceAuditor));
+    }
+
+    #[test]
+    fn encoding_auditor_can_encode_not_prove_or_review() {
+        let encode = Command::Encode {
+            theory: "combinational-circuit".into(),
+        };
+        assert_eq!(Role::ALL.len(), 12);
+        assert!(Role::EncodingAuditor.permits(&encode));
+        assert!(!Role::EncodingAuditor.permits(&prove()));
+        assert!(!Role::EncodingAuditor.permits(&review()));
+        assert!(!Role::EncodingAuditor.permits(&Command::Cite {
+            claim: "gut.proton-lifetime-sk".into(),
+        }));
+        assert!(!Role::EncodingAuditor.permits(&Command::Enclose {
+            claim: "gut.weinberg-angle".into(),
+        }));
+        assert!(!Role::EncodingAuditor.permits(&Command::Formalize {
+            claim: "dec.d-squared-zero".into(),
+        }));
+        assert!(!Role::Explorer.permits(&encode));
+        assert!(!Role::Reviewer.permits(&encode));
+        assert!(!Role::Formalizer.permits(&encode));
+        assert!(!Role::ProvenanceAuditor.permits(&encode));
+        assert!(Role::Lab.permits(&encode));
+        assert!(Role::parse("encoding-auditor") == Some(Role::EncodingAuditor));
     }
 
     #[test]

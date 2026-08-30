@@ -61,6 +61,8 @@ pub struct Lab {
     numeric_certs: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
     /// Independent SourceRecord rebuilds keyed by statement hash. Not P3S.
     cited_sources: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
+    /// Independent IR package round-trips keyed by theory id. Not P3S.
+    encoded_packages: BTreeMap<String, physis_core::artifact::ArtifactId>,
 }
 
 /// The experiments the lab can run, with one-line descriptions.
@@ -126,6 +128,7 @@ impl Lab {
             budget: ResearchBudget::unlimited(),
             numeric_certs: BTreeMap::new(),
             cited_sources: BTreeMap::new(),
+            encoded_packages: BTreeMap::new(),
         }
     }
 
@@ -271,7 +274,7 @@ impl Lab {
     }
 
     /// Re-apply journaled `set-knob` events and remint prove / review /
-    /// evidence / enclose / cite from live state, **without** recording them again.
+    /// evidence / enclose / cite / encode from live state, **without** recording them again.
     ///
     /// This resumes a persisted session: after loading a journal from a file,
     /// call this so subsequent turns build on the prior ones instead of on
@@ -281,8 +284,10 @@ impl Lab {
     ///
     /// Evidence restore rebuilds the DAG from live evaluations. Enclose
     /// restore rebuilds numeric certificates from live overlay strings.
+    /// Cite restore rebuilds source records from live fields. Encode
+    /// restore rebuilds EncodingPackage nodes from live IR packages.
     /// Recorded hashes are not deserialized as the snapshot: a forged hash
-    /// cannot mint an Evidence or NumericCertificate node.
+    /// cannot mint an Evidence, NumericCertificate, Source, or EncodingPackage node.
     /// [`crate::replay::replay_journal`] still certifies only `set-knob`
     /// diffs.
     pub fn restore_from_journal(&mut self) {
@@ -327,6 +332,11 @@ impl Lab {
                     // Rebuild from live dataset / dossier SourceRecords.
                     // The recorded source hash is not deserialized.
                     let _ = self.build_cite(&claim);
+                }
+                JournalEvent::Encode { theory, .. } => {
+                    // Rebuild from the live IR package. The recorded
+                    // package hash is not deserialized.
+                    let _ = self.build_encoding(&theory);
                 }
                 _ => {}
             }
@@ -631,6 +641,13 @@ impl Lab {
                                     "  source:      none (locator is not an independent SourceRecord rebuild)\n",
                                 );
                             }
+                            if let Some(id) = self.encoded_packages.get(t.id()) {
+                                text.push_str(&format!("  encoding:    {id}\n"));
+                            } else if t.ir_package().is_some() {
+                                text.push_str(
+                                    "  encoding:    none (IR package is not an independent round-trip)\n",
+                                );
+                            }
                             if let Some(nll) = v.statistical_nll() {
                                 text.push_str(&format!("  nll:        {nll}\n"));
                             }
@@ -764,6 +781,7 @@ impl Lab {
             Command::Gaps => self.gaps(),
             Command::Enclose { claim } => self.enclose_claim(&claim),
             Command::Cite { claim } => self.cite_claim(&claim),
+            Command::Encode { theory } => self.encode_theory(&theory),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -1310,6 +1328,84 @@ impl Lab {
         Ok((out, bundle))
     }
 
+    /// Independently parse, round-trip, and reconstruct a live theory
+    /// IR package. Does not raise P3S, does not install mutants, and
+    /// does not mint a kernel receipt, Canonical, or P4.
+    fn encode_theory(&mut self, theory_id: &str) -> Response {
+        match self.build_encoding(theory_id) {
+            Ok((out, id)) => {
+                self.journal
+                    .record(JournalEvent::encode(theory_id, id.to_hex()));
+                Response::ok(out)
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Rebuild an EncodingPackage from the live IR package. Does not
+    /// journal and does not deserialize a recorded package hash.
+    fn build_encoding(
+        &mut self,
+        theory_id: &str,
+    ) -> Result<(String, physis_core::artifact::ArtifactId), String> {
+        if !self.theories.contains_key(theory_id) {
+            return Err(format!("unknown theory '{theory_id}'"));
+        }
+        let pkg = self.theories[theory_id]
+            .ir_package()
+            .ok_or_else(|| format!("encode {theory_id}: no IR package"))?;
+        if pkg.id != theory_id {
+            return Err(format!(
+                "encode {theory_id}: package id '{}' is not the live theory",
+                pkg.id
+            ));
+        }
+        if pkg.equations.is_empty() {
+            return Err(format!("encode {theory_id}: IR package has no equations"));
+        }
+        let canonical =
+            physis_ir::certify_round_trip(&pkg).map_err(|e| format!("encode {theory_id}: {e}"))?;
+        let parsed =
+            physis_ir::parse_package(&canonical).map_err(|e| format!("encode {theory_id}: {e}"))?;
+        let live_ids: BTreeSet<String> = self.theories[theory_id]
+            .claims()
+            .into_iter()
+            .map(|c| c.id_str().to_string())
+            .collect();
+        for decl in &parsed.claims {
+            if !live_ids.contains(&decl.id) {
+                return Err(format!(
+                    "encode {theory_id}: IR claim '{}' is not a live claim",
+                    decl.id
+                ));
+            }
+        }
+        let rebuilt = self.theories[theory_id]
+            .reparse_package(&parsed)
+            .map_err(|e| format!("encode {theory_id}: {e}"))?;
+        let rebuilt_pkg = rebuilt.ir_package().ok_or_else(|| {
+            format!("encode {theory_id}: reconstructed encoding has no IR package")
+        })?;
+        if rebuilt_pkg != pkg {
+            return Err(format!(
+                "encode {theory_id}: reconstructed package does not match the live package"
+            ));
+        }
+        let node = self.store.insert(Node::new(
+            NodeKind::EncodingPackage,
+            vec![],
+            canonical.as_bytes(),
+        ));
+        self.encoded_packages.insert(theory_id.to_string(), node);
+        let mut text = format!("encode  {theory_id}  package {}\n", node.to_hex());
+        text.push_str(&format!("  equations  {}\n", parsed.equations.len()));
+        text.push_str(&format!("  claims     {}\n", parsed.claims.len()));
+        text.push_str("  round-trip canonical\n");
+        text.push_str("  reconstruct  ok\n");
+        text.push_str("  not P3S; not a kernel proof; not P4; not Canonical\n");
+        Ok((text, node))
+    }
+
     /// A dual-checked receipt for this slug counts only when it matches the
     /// live [`physis_core::claim::Claim::statement_hash`]. A stale receipt
     /// for an older identity is not P3F.
@@ -1746,7 +1842,7 @@ impl Lab {
     fn research_loop(&mut self) -> Response {
         let snap = self.snapshot_knobs();
         let mut text = String::from(
-            "loop observe → hypothesize → prove → falsify → enclose → cite → replicate → design → audit → review\n",
+            "loop observe → hypothesize → prove → falsify → enclose → cite → encode → replicate → design → audit → review\n",
         );
 
         let mut holds = 0usize;
@@ -1838,6 +1934,22 @@ impl Lab {
                     text.push_str(&format!("cite  {slug}  {}\n", id.to_hex()));
                 }
                 Err(e) => text.push_str(&format!("cite  {slug}  {e}\n")),
+            }
+        }
+
+        let mut encode_ids = Vec::new();
+        for (id, t) in &self.theories {
+            if t.ir_package().is_some() {
+                encode_ids.push(id.clone());
+            }
+        }
+        for id in encode_ids {
+            match self.build_encoding(&id) {
+                Ok((_, pkg)) => {
+                    self.journal.record(JournalEvent::encode(&id, pkg.to_hex()));
+                    text.push_str(&format!("encode  {id}  {}\n", pkg.to_hex()));
+                }
+                Err(e) => text.push_str(&format!("encode  {id}  {e}\n")),
             }
         }
 
@@ -4347,6 +4459,13 @@ mod tests {
             .unwrap_or_else(|| panic!("expected 64 hex source id in {line}"))
     }
 
+    fn encoding_package_id(text: &str) -> physis_core::artifact::ArtifactId {
+        let line = text.lines().next().expect("empty encode");
+        let hex = line.split_whitespace().last().expect("package hex");
+        physis_core::artifact::ArtifactId::from_hex(hex)
+            .unwrap_or_else(|| panic!("expected 64 hex package id in {line}"))
+    }
+
     fn unique_vacuum_statement(lab: &Lab, theory: &str) -> physis_core::artifact::ArtifactId {
         let (c, _) = lab
             .theory(theory)
@@ -4879,6 +4998,22 @@ mod tests {
         assert!(
             !text.contains("cite  predictivity.unique-vacuum"),
             "unique-vacuum has no precise source artifact: {text}"
+        );
+        assert!(
+            text.contains("encode  combinational-circuit"),
+            "loop must independently round-trip the NAND netlist: {text}"
+        );
+        assert!(
+            text.contains("encode  klein-gordon"),
+            "loop must independently round-trip the Klein-Gordon stencil: {text}"
+        );
+        assert!(
+            !text.contains("encode  standard-model"),
+            "the Standard Model has no IR package: {text}"
+        );
+        assert!(
+            !text.contains("encode  type-iib"),
+            "string constructions have no IR package: {text}"
         );
         assert_eq!(
             lab.theory("type-iib")
@@ -5890,6 +6025,258 @@ mod tests {
         let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
             .expect("64 hex zeros is an ArtifactId");
         assert!(lab3.store.get(forged).is_none());
+    }
+
+    #[test]
+    fn encoding_auditor_round_trips_ir_packages_and_cannot_review() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Encode {
+            theory: "combinational-circuit".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("explorer cannot encode"),
+            "{}",
+            blocked.text()
+        );
+
+        lab.set_role(Role::Reviewer);
+        let blocked_rev = lab.exec(Command::Encode {
+            theory: "combinational-circuit".into(),
+        });
+        assert!(
+            blocked_rev.text().contains("reviewer cannot encode"),
+            "{}",
+            blocked_rev.text()
+        );
+
+        lab.set_role(Role::Formalizer);
+        let blocked_f = lab.exec(Command::Encode {
+            theory: "combinational-circuit".into(),
+        });
+        assert!(
+            blocked_f.text().contains("formalizer cannot encode"),
+            "{}",
+            blocked_f.text()
+        );
+
+        lab.set_role(Role::EncodingAuditor);
+        let review = lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            review.text().contains("encoding-auditor cannot review"),
+            "{}",
+            review.text()
+        );
+        let prove = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            prove.text().contains("encoding-auditor cannot prove"),
+            "{}",
+            prove.text()
+        );
+        let cite = lab.exec(Command::Cite {
+            claim: "gut.proton-lifetime-sk".into(),
+        });
+        assert!(
+            cite.text().contains("encoding-auditor cannot cite"),
+            "{}",
+            cite.text()
+        );
+
+        let nand = lab
+            .exec(Command::Encode {
+                theory: "combinational-circuit".into(),
+            })
+            .text()
+            .to_string();
+        assert!(nand.contains("equations  1"), "{nand}");
+        assert!(nand.contains("round-trip canonical"), "{nand}");
+        assert!(nand.contains("reconstruct  ok"), "{nand}");
+        assert!(nand.contains("not P3S"), "{nand}");
+        assert!(!nand.contains("receipt"), "{nand}");
+        let nand_id = encoding_package_id(&nand);
+        assert_eq!(
+            nand_id.to_hex(),
+            "762aa72d9eace0c61026eca6ebf71b37f26608797a6786c60b92ba06af4ad8ea"
+        );
+        assert_eq!(
+            lab.store.get(nand_id).map(|n| n.kind),
+            Some(NodeKind::EncodingPackage)
+        );
+
+        let kg = lab
+            .exec(Command::Encode {
+                theory: "klein-gordon".into(),
+            })
+            .text()
+            .to_string();
+        assert!(kg.contains("equations  1"), "{kg}");
+        assert!(
+            kg.contains("laplacian nn") || kg.contains("round-trip"),
+            "{kg}"
+        );
+        assert!(kg.contains("not P3S"), "{kg}");
+        assert!(!kg.contains("receipt"), "{kg}");
+        let kg_id = encoding_package_id(&kg);
+        assert_eq!(
+            kg_id.to_hex(),
+            "32b0997d38afb977615e8fc6527ee5d766271e8a31fb5c882912ca740a3b4e4f"
+        );
+        assert_ne!(nand_id, kg_id);
+
+        for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
+            let resp = lab.exec(Command::Encode {
+                theory: theory.into(),
+            });
+            assert_eq!(resp.exit_code(), 1, "{theory} {}", resp.text());
+            assert!(
+                resp.text().contains("no IR package"),
+                "{theory} {}",
+                resp.text()
+            );
+        }
+
+        let hypo = lab
+            .exec(Command::Hypothesize {
+                theory: Some("combinational-circuit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo.contains("add-feedback"), "{hypo}");
+        let nand2 = lab
+            .exec(Command::Encode {
+                theory: "combinational-circuit".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&nand2),
+            nand_id,
+            "hypothesize must not install the feedback mutant"
+        );
+
+        let p3s = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3S".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3s.contains("count 0"), "encode must not raise P3S: {p3s}");
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3n.contains("count 4"), "encode must not mint P3N: {p3n}");
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "comp.acyclic".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains(&format!("encoding:    {nand_id}")), "{why}");
+        assert!(!why.contains("P3S"), "{why}");
+
+        let ev = lab
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            evidence_graph_id(&ev).to_hex(),
+            "6ee50cdc3de02838465b178b47061d8d5b36d6c135baf40f80988ff640a36bc9",
+            "encoding round-trip must not change the unique-vacuum evidence payload"
+        );
+    }
+
+    #[test]
+    fn encoding_package_restores_by_rebuild_not_deserialize() {
+        let mut lab1 = Lab::standard();
+        let first = lab1
+            .exec(Command::Encode {
+                theory: "combinational-circuit".into(),
+            })
+            .text()
+            .to_string();
+        let live = encoding_package_id(&first);
+        assert_eq!(
+            live.to_hex(),
+            "762aa72d9eace0c61026eca6ebf71b37f26608797a6786c60b92ba06af4ad8ea",
+            "journaling must not change the combinational-circuit package payload"
+        );
+        let jsonl = lab1.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"encode\""), "{jsonl}");
+        assert!(
+            jsonl.contains(&format!("\"package_hash\":\"{}\"", live.to_hex())),
+            "{jsonl}"
+        );
+
+        let mut lab2 = Lab::standard();
+        assert_eq!(
+            lab2.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::EncodingPackage)
+                .count(),
+            0
+        );
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        assert_eq!(
+            lab2.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::EncodingPackage)
+                .count(),
+            0,
+            "from_jsonl must not insert EncodingPackage"
+        );
+        let journal_len = lab2.journal().len();
+        lab2.restore_from_journal();
+        assert_eq!(
+            lab2.journal().len(),
+            journal_len,
+            "restore must not journal encode again"
+        );
+        assert_eq!(
+            lab2.store.get(live).map(|n| n.kind),
+            Some(NodeKind::EncodingPackage),
+            "restore rebuilds the live package"
+        );
+
+        let forged_hex = "0".repeat(64);
+        let tampered = format!(
+            r#"{{"event":"encode","t":1,"theory":"combinational-circuit","package_hash":"{forged_hex}"}}"#
+        );
+        let mut lab3 = Lab::standard();
+        *lab3.journal_mut() = Journal::from_jsonl(&tampered);
+        lab3.restore_from_journal();
+        assert_eq!(
+            lab3.store.get(live).map(|n| n.kind),
+            Some(NodeKind::EncodingPackage),
+            "tampered package_hash is not the DAG"
+        );
+        let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
+            .expect("64 hex zeros is an ArtifactId");
+        assert!(
+            lab3.store.get(forged).is_none(),
+            "a forged hash cannot mint the package"
+        );
+        assert_eq!(lab3.journal().len(), 1, "tampered restore must not append");
+
+        let why = lab2
+            .exec(Command::Why {
+                claim: "comp.acyclic".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains(&format!("encoding:    {live}")), "{why}");
     }
 
     #[test]
