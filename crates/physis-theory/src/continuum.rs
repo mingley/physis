@@ -23,9 +23,11 @@
 //! periodic chain. Its poles are *computed*: `sin(ka) = 0` at `k = 0` and
 //! `k = π/a` when `N` is even, so `fermion.no-doublers` fails. A Wilson `r`
 //! term is a package mutation (`add-wilson`), not a mass knob: the edge
-//! copy gets mass `m + 2r/a` and the cell holds. That fork is still this
-//! object, not a silent Klein–Gordon install. `sites` / `mass` / `spacing`
-//! stay knobs.
+//! copy gets mass `m + 2r/a` and the cell holds. Next-nearest hopping is a
+//! second package mutation (`add-next-nearest`): the kinetic piece
+//! `sin(2ka)/a` is not nearest-neighbour and `field.local` fails. Those
+//! forks are still this object, not a silent Klein–Gordon install.
+//! `sites` / `mass` / `spacing` stay knobs.
 
 use std::f64::consts::PI;
 
@@ -627,8 +629,12 @@ impl Theory for KleinGordonField {
 const DIRAC_NAIVE_EQ: &str = "dirac naive";
 /// Wilson r term: `M(k) = m + (2r/a) sin²(ka/2)`.
 const DIRAC_WILSON_EQ: &str = "dirac wilson";
+/// Next-nearest hopping: extra `c sin(2ka)/a` in the kinetic piece.
+const DIRAC_NNN_EQ: &str = "dirac nnn";
 /// Wilson r (natural units). Not a knob; the term is the IR fork.
 const WILSON_R: f64 = 1.0;
+/// Coefficient of the next-nearest kinetic term. Not a knob.
+const NNN_HOP: f64 = 0.5;
 
 const DIRAC_SPECS: &[KnobSpec] = &[
     KnobSpec {
@@ -641,7 +647,7 @@ const DIRAC_SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "mass",
         layer: LayerId::Field,
-        doc: "Dirac mass m in natural units. Doubling is not this knob: add-wilson is an IR mutation.",
+        doc: "Dirac mass m in natural units. Doubling is not this knob: add-wilson is an IR mutation. Hopping range is not this knob: add-next-nearest is an IR mutation.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: -100.0,
@@ -660,20 +666,22 @@ const DIRAC_SPECS: &[KnobSpec] = &[
     },
 ];
 
-fn parse_dirac_operator(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_dirac_operator(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut naive = false;
     let mut wilson = false;
+    let mut nnn = false;
     for eq in &pkg.equations {
         match eq.trim() {
             DIRAC_NAIVE_EQ => naive = true,
             DIRAC_WILSON_EQ => wilson = true,
+            DIRAC_NNN_EQ => nnn = true,
             _ => {}
         }
     }
     if !naive {
         return Err(format!("{} package has no naive Dirac operator", pkg.id));
     }
-    Ok(wilson)
+    Ok((wilson, nnn))
 }
 
 fn no_doublers_domain() -> DomainOfValidity {
@@ -685,14 +693,25 @@ fn no_doublers_domain() -> DomainOfValidity {
     )
 }
 
+fn dirac_local_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["nearest-neighbour 1D lattice Dirac".into()],
+        vec!["naive hopping; Wilson r is also nearest-neighbour".into()],
+        "Dirac locality is nearest-neighbour hopping. A next-nearest hopping \
+         term is a new encoding, not a silent mass knob.",
+    )
+}
+
 /// A Dirac fermion on a finite 1D periodic lattice.
 ///
 /// The operator lives on the IR package. A Wilson r term is a package
 /// mutation (`add-wilson`), not a knob: naive `sin(ka) = 0` has a light
 /// copy at the Brillouin edge and `fermion.no-doublers` fails; Wilson
-/// lifts that copy to mass `m + 2r/a` and the cell holds. That fork is
-/// still this object, not a silent Klein–Gordon install. `sites` /
-/// `mass` / `spacing` stay knobs.
+/// lifts that copy to mass `m + 2r/a` and the cell holds. Next-nearest
+/// hopping is a second mutation (`add-next-nearest`): the kinetic piece
+/// `c sin(2ka)/a` is not nearest-neighbour and `field.local` fails.
+/// Those forks are still this object, not a silent Klein–Gordon install.
+/// `sites` / `mass` / `spacing` stay knobs.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiracFermion {
     sites: u32,
@@ -700,6 +719,8 @@ pub struct DiracFermion {
     spacing: f64,
     /// Wilson r term. Not a knob.
     wilson: bool,
+    /// Next-nearest hopping. Not a knob.
+    next_nearest: bool,
 }
 
 impl Default for DiracFermion {
@@ -709,6 +730,7 @@ impl Default for DiracFermion {
             mass: 1.0,
             spacing: 1.0,
             wilson: false,
+            next_nearest: false,
         }
     }
 }
@@ -729,11 +751,31 @@ impl DiracFermion {
         m + (2.0 * WILSON_R / self.spacing) * (ka / 2.0).sin().powi(2)
     }
 
-    /// Energy of lattice momentum `j`: `E = √( (sin(ka)/a)² + M(k)² )`.
-    fn energy(&self, j: u32) -> f64 {
+    /// Energy of lattice momentum `j`: `E = √( (sin(ka)/a + c sin(2ka)/a)² + M(k)² )`.
+    fn kinetic(&self, j: u32) -> f64 {
         let a = self.spacing;
         let ka = self.k(j) * a;
-        let kin = ka.sin() / a;
+        let nn = ka.sin() / a;
+        let nnn = if self.next_nearest {
+            NNN_HOP * (2.0 * ka).sin() / a
+        } else {
+            0.0
+        };
+        nn + nnn
+    }
+
+    /// Next-nearest kinetic piece at mode `j` (zero on the live encoding).
+    fn nnn_kinetic(&self, j: u32) -> f64 {
+        if !self.next_nearest {
+            return 0.0;
+        }
+        let a = self.spacing;
+        let ka = self.k(j) * a;
+        NNN_HOP * (2.0 * ka).sin() / a
+    }
+
+    fn energy(&self, j: u32) -> f64 {
+        let kin = self.kinetic(j);
         let m = self.dirac_mass(j);
         (kin * kin + m * m).sqrt()
     }
@@ -772,11 +814,14 @@ impl DiracFermion {
     }
 
     /// IR package for this operator. Equations are `dirac naive` and, when
-    /// forked, `dirac wilson`. Knobs stay on the struct.
+    /// forked, `dirac wilson` and/or `dirac nnn`. Knobs stay on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![DIRAC_NAIVE_EQ.to_string()];
         if self.wilson {
             equations.push(DIRAC_WILSON_EQ.to_string());
+        }
+        if self.next_nearest {
+            equations.push(DIRAC_NNN_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -804,14 +849,20 @@ impl DiracFermion {
                 pkg.id
             ));
         }
+        let (wilson, nnn) = parse_dirac_operator(pkg)?;
         Ok(Self {
-            wilson: parse_dirac_operator(pkg)?,
+            wilson,
+            next_nearest: nnn,
             ..Self::default()
         })
     }
 
     fn wilson_equation() -> String {
         DIRAC_WILSON_EQ.to_string()
+    }
+
+    fn nnn_equation() -> String {
+        DIRAC_NNN_EQ.to_string()
     }
 }
 
@@ -857,7 +908,8 @@ impl Theory for DiracFermion {
     fn summary(&self) -> &'static str {
         "A 1D lattice Dirac fermion as an actual local object: N sites with a \
          computed naive operator. Doubling at k = π/a is a package fact; a \
-         Wilson r term is an IR mutation, not a mass knob, and not a silent \
+         Wilson r term is an IR mutation, not a mass knob. Next-nearest hopping \
+         is a second IR mutation, not a mass knob, and not a silent \
          Klein–Gordon install."
     }
     fn world(&self) -> Option<World> {
@@ -910,7 +962,8 @@ impl Theory for DiracFermion {
                 "The coupling is local (nearest-neighbour).",
                 LayerId::Field,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(dirac_local_domain()),
             Claim::new(
                 NO_DOUBLERS,
                 "The Brillouin zone has one light fermion, not a doubler at k = π/a.",
@@ -944,10 +997,28 @@ impl Theory for DiracFermion {
                     )
                 }
             }
-            LOCAL => Verdict::holds(
-                claim,
-                "naive hopping and the Wilson r term are both nearest-neighbour",
-            ),
+            LOCAL => {
+                let r = self.nnn_kinetic(1).abs();
+                if r < 1e-12 {
+                    Verdict::holds(
+                        claim,
+                        "naive hopping and the Wilson r term are both nearest-neighbour",
+                    )
+                    .with_class(ClaimClass::ModelInternal)
+                    .with_evidence([format!(
+                        "longest non-zero mode: max |c sin(2ka)/a| = {r:.1e}"
+                    )])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        "next-nearest hopping: the Dirac operator is not nearest-neighbour",
+                    )
+                    .with_class(ClaimClass::ModelInternal)
+                    .with_evidence([format!(
+                        "longest non-zero mode: |c sin(2ka)/a| = {r:.3} (c = {NNN_HOP})"
+                    )])
+                }
+            }
             NO_DOUBLERS => {
                 let zeros = self.kinetic_zeros().len();
                 if zeros < 2 {
@@ -989,28 +1060,40 @@ impl Theory for DiracFermion {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.wilson = parsed.wilson;
+        fork.next_nearest = parsed.next_nearest;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.wilson {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::wilson_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.wilson => {
-                let mut fork = self.clone();
-                fork.wilson = true;
-                vec![("add-wilson".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.wilson {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::wilson_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.wilson {
+                    let mut fork = self.clone();
+                    fork.wilson = true;
+                    out.push(("add-wilson".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.next_nearest {
+            let mutated =
+                apply_mutation(&pkg, &PackageMutation::AppendEquation(Self::nnn_equation()));
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.next_nearest {
+                    let mut fork = self.clone();
+                    fork.next_nearest = true;
+                    out.push(("add-next-nearest".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -1032,13 +1115,15 @@ pub fn field_modes() -> ExperimentReport {
          ω²; a negative mass_squared knob makes it fail, the same instability as \
          the bosonic string's tachyon. `fermion.no-doublers` reads the light \
          copies of sin(ka)=0; add-wilson is IR, not a mass knob. \
-         `add-quartic` is IR, not mass_squared: V(φ) = ½ m² φ² − φ⁴/4 runs to −∞.",
+         Next-nearest hopping is a second IR fork (`add-next-nearest`): \
+         `field.local` fails. `add-quartic` is IR, not mass_squared: \
+         V(φ) = ½ m² φ² − φ⁴/4 runs to −∞.",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "Modes and dispersion are computed: ω_j² = m² + (4/a²) sin²(π j / N).".into(),
             "`set klein-gordon mass_squared -1` makes the zero mode tachyonic and `field.stable` fails.".into(),
             "`hypothesize klein-gordon`: add-next-nearest and add-quartic are IR, not set.".into(),
-            "`hypothesize dirac-fermion`: add-wilson is IR, not set.".into(),
+            "`hypothesize dirac-fermion`: add-wilson and add-next-nearest are IR, not set.".into(),
         ],
         &field_rows(),
         theories,
@@ -1476,13 +1561,39 @@ mod tests {
         odd.set("sites", KnobValue::UInt(15)).unwrap();
         assert_eq!(verdict(&odd, NO_DOUBLERS), VerdictKind::Inapplicable);
         let probes = DiracFermion::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-wilson");
+        assert_eq!(probes.len(), 2);
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-wilson"),
+            "live Dirac must offer add-wilson: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-next-nearest"),
+            "live Dirac must offer add-next-nearest: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let wilson_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-wilson")
+            .expect("add-wilson");
         assert_eq!(
-            verdict(probes[0].1.as_ref(), NO_DOUBLERS),
+            verdict(wilson_probe.1.as_ref(), NO_DOUBLERS),
             VerdictKind::Holds
         );
-        assert!(fork.structural_mutations().is_empty());
+        assert_eq!(verdict(wilson_probe.1.as_ref(), LOCAL), VerdictKind::Holds);
+        let wilson_fork_probes = fork.structural_mutations();
+        assert!(
+            wilson_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-wilson"),
+            "wilson fork must not re-offer add-wilson"
+        );
+        assert!(
+            wilson_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-next-nearest"),
+            "wilson fork must still offer add-next-nearest"
+        );
         let live = DiracFermion::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -1514,12 +1625,136 @@ mod tests {
             kg.claims().iter().all(|c| c.id_str() != NO_DOUBLERS),
             "klein-gordon must not grow fermion.no-doublers"
         );
+        assert_eq!(verdict(&kg, LOCAL), VerdictKind::Holds);
+        assert!(
+            KleinGordonField::default()
+                .set("mass_squared", KnobValue::Float(-1.0))
+                .is_ok(),
+            "klein-gordon keeps the mass_squared knob"
+        );
+    }
+
+    #[test]
+    fn dirac_nnn_hopping_is_ir_not_a_knob() {
+        let mut d = DiracFermion::default();
+        assert!(
+            d.set("next_nearest", KnobValue::Bool(true)).is_err(),
+            "Dirac next-nearest hopping is an IR mutation, not a knob"
+        );
         assert!(
             DiracFermion::default()
-                .structural_mutations()
+                .set("nnn", KnobValue::Bool(true))
+                .is_err(),
+            "nnn is not a knob"
+        );
+        assert!(
+            DiracFermion::default()
+                .set("mass_squared", KnobValue::Float(-1.0))
+                .is_err(),
+            "dirac-fermion must not grow mass_squared; that stays on klein-gordon"
+        );
+        let src = render_package(&d.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay naive Dirac");
+        assert_eq!(pkg.equations[0], DIRAC_NAIVE_EQ);
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(DiracFermion::nnn_equation()),
+        );
+        let parsed = DiracFermion::from_package(&mutated).unwrap();
+        assert!(parsed.next_nearest);
+        assert!(!parsed.wilson);
+        let mut fork = d.clone();
+        fork.next_nearest = true;
+        assert_eq!(verdict(&fork, LOCAL), VerdictKind::Fails);
+        assert_eq!(verdict(&d, LOCAL), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, NO_DOUBLERS), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, DISPERSION), VerdictKind::Fails);
+        assert_eq!(d.light_copies(), 2);
+        assert_eq!(fork.light_copies(), 2);
+        let r = fork.nnn_kinetic(1).abs();
+        assert!(
+            (r - 0.5 * (2.0 * fork.k(1) * fork.spacing).sin() / fork.spacing).abs() < 1e-12,
+            "nnn kinetic must be c sin(2ka)/a at the longest mode, got {r}"
+        );
+        assert!(
+            (r - 1.0).abs() > 0.3,
+            "nnn residual must be the hopping scale, not a unit flag, got {r}"
+        );
+        assert_eq!(d.nnn_kinetic(1), 0.0);
+        d.set("mass", KnobValue::Float(-1.0)).unwrap();
+        assert_eq!(verdict(&d, NO_DOUBLERS), VerdictKind::Fails);
+        assert_eq!(verdict(&d, LOCAL), VerdictKind::Holds);
+        let probes = DiracFermion::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-next-nearest"),
+            "live Dirac must offer add-next-nearest: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let nnn_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-next-nearest")
+            .expect("add-next-nearest");
+        assert_eq!(verdict(nnn_probe.1.as_ref(), LOCAL), VerdictKind::Fails);
+        assert_eq!(
+            verdict(nnn_probe.1.as_ref(), NO_DOUBLERS),
+            VerdictKind::Fails
+        );
+        let nnn_fork_probes = fork.structural_mutations();
+        assert!(
+            nnn_fork_probes
                 .iter()
                 .all(|(label, _)| label != "add-next-nearest"),
-            "dirac-fermion must not grow add-next-nearest"
+            "nnn fork must not re-offer add-next-nearest"
+        );
+        assert!(
+            nnn_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-wilson"),
+            "nnn fork must still offer add-wilson"
+        );
+        let mut live = DiracFermion::default();
+        live.set("mass", KnobValue::Float(2.0)).unwrap();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("mass").unwrap(),
+            KnobValue::Float(2.0),
+            "reparse must overlay hopping IR onto live mass"
+        );
+        assert_eq!(verdict(rebuilt.as_ref(), LOCAL), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == LOCAL)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "Dirac locality must name nearest-neighbour hopping: {:?}",
+            cell.domain()
+        );
+        let kg = KleinGordonField::default();
+        assert!(
+            kg.structural_mutations()
+                .iter()
+                .any(|(label, _)| label == "add-next-nearest"),
+            "klein-gordon keeps its own add-next-nearest"
+        );
+        let kg_local = kg
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == LOCAL)
+            .unwrap();
+        assert!(
+            kg_local
+                .domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("nearest-neighbour 1D periodic lattice")),
+            "KG locality stays the Laplacian cell: {:?}",
+            kg_local.domain()
         );
         assert!(
             KleinGordonField::default()

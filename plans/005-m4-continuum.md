@@ -61,6 +61,10 @@ New theory `dirac-fermion`: a 1D naive lattice Dirac operator on N sites.
 Doubling is computed from `sin(ka) = 0` at `k = 0` and `k = π/a`. A Wilson
 `r` term is a package mutation (`add-wilson`), not a mass knob:
 `fermion.no-doublers` fails on the live encoding and holds on the mutant.
+Next-nearest hopping is a second package mutation (`add-next-nearest`):
+`field.local` fails on the mutant. That is not a mass knob, and it does
+not change the live encode pin. `add-wilson` remains a separate doubling
+fork.
 
 ## Later in M4
 

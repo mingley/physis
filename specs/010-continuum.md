@@ -18,7 +18,9 @@ knob: `V(φ) = ½ m² φ² − φ⁴/4` runs to −∞ and `field.stable` fails.
 `dirac-fermion` is a 1D naive lattice Dirac operator on the same kind of
 chain. Doubling is computed: `sin(ka) = 0` at `k = 0` and `k = π/a` when
 `N` is even, so `fermion.no-doublers` fails. A Wilson `r` term is an IR
-package mutation (`add-wilson`), not a mass knob.
+package mutation (`add-wilson`), not a mass knob. Next-nearest hopping is
+a second package mutation (`add-next-nearest`): `c sin(2ka)/a` is not
+nearest-neighbour and `field.local` fails.
 
 ## Objects
 
@@ -38,7 +40,7 @@ package mutation (`add-wilson`), not a mass knob.
 | `klein-gordon` | `mass_squared` | m² in natural units; **negative values make the zero mode tachyonic** |
 | `klein-gordon` | `spacing` | lattice spacing a. Stencil is not this knob: `add-next-nearest` is an IR mutation. Potential boundedness is not `mass_squared`: `add-quartic` is an IR mutation |
 | `dirac-fermion` | `sites` | number of lattice sites N |
-| `dirac-fermion` | `mass` | Dirac mass m. Doubling is not this knob: `add-wilson` is an IR mutation |
+| `dirac-fermion` | `mass` | Dirac mass m. Doubling is not this knob: `add-wilson` is an IR mutation. Hopping range is not this knob: `add-next-nearest` is an IR mutation |
 | `dirac-fermion` | `spacing` | lattice spacing a |
 
 ## Computed spectrum
@@ -60,7 +62,7 @@ There is nothing tabulated here: the module computes ω_j² or E_j for every mod
 | `field.dispersion-continuum-limit` | long-wavelength ω² matches m² + k² | computed relative error < 5% on the longest non-zero mode. Domain: that mode, not Nyquist, not the Richardson `|k a| < 1` probe |
 | `field.stable` | vacuum bounded below | `min_j ω_j² ≥ 0` and `V` sampled at a large φ. Domain: quadratic Klein-Gordon potential. `add-quartic` appends `potential minus-phi4` and this cell fails. That is not a knob |
 | `field.causal` | group velocity ≤ c | `max_j |dω/dk| ≤ c` |
-| `field.local` | nearest-neighbour coupling | structural: the IR package is `laplacian nn` on `klein-gordon`. Domain: nearest-neighbour 1D periodic lattice. `add-next-nearest` appends `laplacian nnn` and this cell fails. That is not a knob. Dirac locality is encoding-wide (naive hopping and the Wilson r term are both nearest-neighbour) |
+| `field.local` | nearest-neighbour coupling | structural: the IR package is `laplacian nn` on `klein-gordon`. Domain: nearest-neighbour 1D periodic lattice. `add-next-nearest` appends `laplacian nnn` and this cell fails. That is not a knob. On `dirac-fermion` (named domain: nearest-neighbour 1D lattice Dirac), live hopping is `sin(ka)/a`. `add-next-nearest` appends `dirac nnn` and the kinetic piece `c sin(2ka)/a` is the next-nearest residual, so this cell fails. That is not a knob. Wilson r stays nearest-neighbour |
 | `field.second-order-accurate` | discretization error ∝ a² | computed Richardson order p ≈ 2 when `|k a| < 1` at a fixed probe k. If `|k a| ≥ 1`, **undecidable** / `inconclusive` (`InsufficientPrecision`): too coarse to certify the stencil, not a failed theorem. The 1.8–2.2 window is not P3N. |
 | `fermion.no-doublers` | one light fermion in the Brillouin zone | computed on `dirac-fermion` (named domain: naive 1D lattice Dirac). **fails** on the live encoding: `sin(ka) = 0` at `k = 0` and `k = π/a`. `add-wilson` appends `dirac wilson` and the edge copy has mass `m + 2r/a`, so this cell holds. That is not a knob. Inapplicable on odd `N` (no `k = π/a` mode) and on Klein–Gordon |
 
@@ -146,7 +148,7 @@ physis set wilson-su3 beta 100      # weak coupling: strong-coupling area law fa
 physis hypothesize wilson-u1        # add-rectangle is IR, not set
 physis hypothesize wilson-su3       # same 2x1 rectangle fork on SU(3)
 physis hypothesize klein-gordon     # add-next-nearest and add-quartic are IR, not set
-physis hypothesize dirac-fermion    # add-wilson is IR, not set
+physis hypothesize dirac-fermion    # add-wilson and add-next-nearest are IR, not set
 ```
 
 ## Spacetime projection

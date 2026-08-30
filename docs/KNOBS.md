@@ -86,7 +86,7 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 
 ### dirac-fermion
 - `sites` — number of lattice sites N
-- `mass` — Dirac mass m. Doubling is not this knob: `add-wilson` is an IR mutation
+- `mass` — Dirac mass m. Doubling is not this knob: `add-wilson` is an IR mutation. Hopping range is not this knob: `add-next-nearest` is an IR mutation
 - `spacing` — lattice spacing a
 
 ### blackbody (`planck`, `rayleigh-jeans`)

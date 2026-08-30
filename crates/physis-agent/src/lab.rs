@@ -4579,8 +4579,24 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("fermion.no-doublers") && text.contains("fails → holds"),
-            "{text}"
+            text.contains("add-next-nearest"),
+            "next-nearest must still be an IR fork: {text}"
+        );
+        let marker = "add-wilson: package → add-wilson";
+        let start = text.find(marker).expect("add-wilson hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  dirac-fermion  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let wilson_block = &rest[..end];
+        assert!(
+            wilson_block.contains("fermion.no-doublers") && wilson_block.contains("fails → holds"),
+            "add-wilson must flip no-doublers fails to holds: {wilson_block}"
+        );
+        assert!(
+            !wilson_block.contains("field.local"),
+            "add-wilson is not the next-nearest hopping fork: {wilson_block}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -4646,8 +4662,120 @@ mod tests {
         );
         let df_local = why_theory_block(&local, "dirac-fermion");
         assert!(
-            df_local.contains("not yet a machine-checked regime"),
-            "Dirac locality stays encoding-wide (both encodings are nearest-neighbour): {df_local}"
+            df_local.contains("nearest-neighbour 1D lattice Dirac"),
+            "Dirac locality must name nearest-neighbour hopping: {df_local}"
+        );
+        assert!(
+            !df_local.contains("not yet a machine-checked regime"),
+            "Dirac locality must not be encoding-wide: {df_local}"
+        );
+        assert!(
+            !df_local.contains("nearest-neighbour 1D periodic lattice"),
+            "Dirac locality is not the KG Laplacian cell: {df_local}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_dirac_fermion_next_nearest_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["next_nearest", "nnn", "hopping"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "dirac-fermion".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("dirac-fermion".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-next-nearest") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-next-nearest: package → add-next-nearest";
+        let start = text.find(marker).expect("add-next-nearest hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  dirac-fermion  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let nnn_block = &rest[..end];
+        assert!(
+            nnn_block.contains("field.local") && nnn_block.contains("holds → fails"),
+            "add-next-nearest must flip field.local holds to fails: {nnn_block}"
+        );
+        assert!(
+            !nnn_block.contains("fermion.no-doublers"),
+            "add-next-nearest is not the Wilson doubling fork: {nnn_block}"
+        );
+        assert!(
+            !nnn_block.contains("field.stable"),
+            "add-next-nearest is not the KG quartic fork: {nnn_block}"
+        );
+        assert!(
+            text.contains("add-wilson"),
+            "wilson must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("dirac-fermion").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "field.local" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "fermion.no-doublers" && v.kind == VerdictKind::Fails
+            }),
+            "Wilson mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("mass").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+        let kg = lab.theory("klein-gordon").unwrap();
+        assert_eq!(
+            kg.get("mass_squared").unwrap().display(),
+            "1",
+            "Dirac nnn IR must not convert the Klein-Gordon mass_squared knob"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "field.local".into(),
+            })
+            .text()
+            .to_string();
+        let df = why_theory_block(&why, "dirac-fermion");
+        assert!(
+            df.contains("nearest-neighbour 1D lattice Dirac"),
+            "Dirac locality must name nearest-neighbour hopping: {df}"
+        );
+        assert!(
+            !df.contains("not yet a machine-checked regime"),
+            "Dirac locality must not be encoding-wide: {df}"
+        );
+        let kg_local = why_theory_block(&why, "klein-gordon");
+        assert!(
+            kg_local.contains("nearest-neighbour 1D periodic lattice"),
+            "KG locality must stay the Laplacian cell: {kg_local}"
         );
     }
 
@@ -8020,6 +8148,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_dirac.contains("add-wilson"), "{hypo_dirac}");
+        assert!(hypo_dirac.contains("add-next-nearest"), "{hypo_dirac}");
         let dirac_again = lab
             .exec(Command::Encode {
                 theory: "dirac-fermion".into(),

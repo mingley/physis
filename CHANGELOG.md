@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Dirac next-nearest hopping is an IR mutation**
+  (`dirac-fermion`, `add-next-nearest`). Nearest-neighbour naive hopping
+  is the live encoding (`dirac naive`); appending `dirac nnn` makes the
+  kinetic piece `c sin(2ka)/a` nonzero at the longest mode and flips
+  `field.local` holds to fails. That is not a knob. Doubling still fails
+  (sin(ka) and sin(2ka) share the Brillouin-edge zero). Wilson r remains
+  a separate doubling fork (`add-wilson`). `sites` / `mass` / `spacing`
+  stay knobs. Locality names nearest-neighbour 1D lattice Dirac;
+  Klein–Gordon locality stays nearest-neighbour 1D periodic lattice.
+  Mutants stay `dirac-fermion`; they are not a silent Klein–Gordon
+  install. Mutants are not installed, not journaled, and not Canonical
+  or P4. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  P3N count stays 4. Live encode pin unchanged. Verified: IR round-trip;
+  set next_nearest is unknown; hypothesize dirac-fermion; live naive
+  hopping restored; encode pin
+  `62ea25b78eaf5a7d934db096943e401135acf490c4594fc8a0621478581a521a`.
+
 - **Ohm-circuit unlumped mesh flux is an IR mutation**
   (`ohm-circuit`, `add-flux`). Lumped Kirchhoff voltage is the live
   encoding (`branch R 0 1`); appending `loop dPhi/dt` makes the Faraday
