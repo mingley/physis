@@ -34,7 +34,12 @@ mechanically restores decidability — a clean knob → verdict diff.
 | `landauer-engine` | `bits_erased` | number of logical bits irreversibly erased. |
 | `landauer-engine` | `reversible` | logical reversibility (Bennett): erases nothing, so the process can be free. This stays a knob. |
 
-`combinational-circuit` has no knobs. Its NAND netlist lives on the IR package.
+`combinational-circuit` has no knobs. Its NAND netlist lives on the IR
+package. `add-feedback` appends a cyclic NAND and is an IR mutation.
+`add-contention` appends a second NAND on the same output wire and is
+a second IR mutation: `comp.deterministic` fails. That is still
+`combinational-circuit`, not a silent Turing-machine install.
+`turing-machine` keeps `nondeterministic`.
 
 ## Claims
 
@@ -42,7 +47,7 @@ mechanically restores decidability — a clean knob → verdict diff.
 |---|---|
 | `comp.halts` | the machine halts on every input |
 | `comp.turing-complete` | the model is Turing complete |
-| `comp.deterministic` | the transition function is single-valued |
+| `comp.deterministic` | the transition function is single-valued. On `combinational-circuit` this names unique NAND drivers. `add-contention` appends a second NAND on the same wire and the cell fails. That is not a knob. TM's copy stays encoding-wide; `nondeterministic` stays a knob |
 | `comp.decidable-equivalence` | equivalence of two instances is decidable |
 | `comp.resource-bounded` | the computation runs within an a priori resource bound |
 | `comp.feasible-decision` | a resource-feasible procedure in this lab decides the instance |
@@ -112,11 +117,14 @@ Setting `tape_bound: 0 → 1000` flips:
 
 The combinational circuit is a finite NAND netlist described by an IR
 package (`equation nand a b -> out`). Acyclicity is a graph property of
-that netlist (`comp.acyclic`). `physis hypothesize combinational-circuit`
-forks the package with a feedback equation; that is not a knob
-(`set combinational-circuit feedback` is unknown). A cyclic encoding
-makes `comp.halts` inapplicable (out of the combinational domain). No
-SAT solver and no tape simulator are run.
+that netlist (`comp.acyclic`). Unique drivers are a graph property of
+the same netlist (`comp.deterministic`). `physis hypothesize combinational-circuit`
+forks the package with a feedback equation or a second driver on an
+existing net; those are not knobs (`set combinational-circuit feedback`
+and `set combinational-circuit contention` are unknown). A cyclic
+encoding makes `comp.halts` inapplicable (out of the combinational
+domain). A multi-driven encoding leaves the graph acyclic and fails
+determinism. No SAT solver and no tape simulator are run.
 
 ## No borrowed spacetime
 

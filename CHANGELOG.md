@@ -12,6 +12,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Combinational multi-driven net is an IR mutation**
+  (`combinational-circuit`, `add-contention`). Unique NAND drivers are
+  the live encoding (`nand 0 1 -> 2`); appending `nand 0 0 -> 2` puts a
+  second driver on the same wire and flips `comp.deterministic` holds
+  to fails. The truth-table disagreement is 0.25 (NAND vs NOT on 1 of
+  4 rows) and is evidence, not the encoding: two identical NANDs agree
+  everywhere and the cell still fails. That is not a knob. Acyclicity
+  and combinational halting still hold on the mutant. Feedback remains
+  a separate cycle fork (`add-feedback`). `turing-machine`
+  `nondeterministic` stays a knob. Determinism names unique NAND
+  drivers; TM determinism stays encoding-wide. Mutants stay
+  `combinational-circuit`; they are not a silent Turing-machine
+  install. Mutants are not installed, not journaled, and not Canonical
+  or P4. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  P3N count stays 4. Live encode pin unchanged. Verified: IR
+  round-trip; set contention is unknown; hypothesize
+  combinational-circuit; live unique-driver netlist restored; encode
+  pin
+  `762aa72d9eace0c61026eca6ebf71b37f26608797a6786c60b92ba06af4ad8ea`.
+
 - **Newtonian Yukawa potential is an IR mutation**
   (`newtonian-gravity`, `add-yukawa`). Inverse-square Binet is the live
   encoding (`binet inverse-square`); appending `potential yukawa` makes

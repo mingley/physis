@@ -4378,13 +4378,30 @@ mod tests {
             text.contains("add-feedback") && text.contains("ir structural"),
             "{text}"
         );
+        let marker = "add-feedback: package → add-feedback";
+        let start = text.find(marker).expect("add-feedback hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  combinational-circuit  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let feedback_block = &rest[..end];
         assert!(
-            text.contains("comp.acyclic") && text.contains("holds → fails"),
-            "{text}"
+            feedback_block.contains("comp.acyclic") && feedback_block.contains("holds → fails"),
+            "add-feedback must flip acyclic holds to fails: {feedback_block}"
         );
         assert!(
-            text.contains("comp.halts") && text.contains("holds → inapplicable"),
-            "{text}"
+            feedback_block.contains("comp.halts")
+                && feedback_block.contains("holds → inapplicable"),
+            "add-feedback must make halts inapplicable: {feedback_block}"
+        );
+        assert!(
+            !feedback_block.contains("comp.deterministic"),
+            "add-feedback is not the contention fork: {feedback_block}"
+        );
+        assert!(
+            text.contains("add-contention"),
+            "contention must still be an IR fork: {text}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -4394,6 +4411,106 @@ mod tests {
                 .iter()
                 .any(|(c, v)| c.id_str() == "comp.acyclic" && v.kind == VerdictKind::Holds),
             "IR mutant must not be installed"
+        );
+    }
+
+    #[test]
+    fn hypothesize_circuit_contention_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["contention", "bus", "nondeterministic"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "combinational-circuit".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("combinational-circuit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-contention") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-contention: package → add-contention";
+        let start = text.find(marker).expect("add-contention hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  combinational-circuit  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let contention_block = &rest[..end];
+        assert!(
+            contention_block.contains("comp.deterministic")
+                && contention_block.contains("holds → fails"),
+            "add-contention must flip deterministic holds to fails: {contention_block}"
+        );
+        assert!(
+            !contention_block.contains("comp.acyclic"),
+            "add-contention is not the feedback cycle fork: {contention_block}"
+        );
+        assert!(
+            !contention_block.contains("comp.halts"),
+            "add-contention is not the feedback halts fork: {contention_block}"
+        );
+        assert!(
+            text.contains("add-feedback"),
+            "feedback must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("combinational-circuit").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "comp.deterministic" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "comp.acyclic" && v.kind == VerdictKind::Holds),
+            "feedback mutant must not be installed"
+        );
+        let tm = lab.theory("turing-machine").unwrap();
+        assert_eq!(
+            tm.get("nondeterministic").unwrap().display(),
+            "false",
+            "NAND contention IR must not convert the Turing-machine nondeterministic knob"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "comp.deterministic".into(),
+            })
+            .text()
+            .to_string();
+        let nand = why_theory_block(&why, "combinational-circuit");
+        assert!(
+            nand.contains("unique NAND drivers"),
+            "combinational determinism must name unique NAND drivers: {nand}"
+        );
+        assert!(
+            !nand.contains("not yet a machine-checked regime"),
+            "combinational determinism must not be encoding-wide: {nand}"
+        );
+        let tm_why = why_theory_block(&why, "turing-machine");
+        assert!(
+            tm_why.contains("not yet a machine-checked regime"),
+            "TM determinism stays encoding-wide: {tm_why}"
         );
     }
 
@@ -8028,6 +8145,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo.contains("add-feedback"), "{hypo}");
+        assert!(hypo.contains("add-contention"), "{hypo}");
         let nand2 = lab
             .exec(Command::Encode {
                 theory: "combinational-circuit".into(),

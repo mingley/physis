@@ -14,6 +14,12 @@
 //! `None` from `Theory::world()` and describe themselves via `Theory::note()`
 //! instead of borrowing a physics-shaped placeholder.
 //!
+//! A finite NAND netlist lives on the IR package. Feedback (`add-feedback`)
+//! is a cycle, not a knob. A second NAND writing the same wire
+//! (`add-contention`) is a multi-driven net, not the Turing-machine
+//! `nondeterministic` knob: `comp.deterministic` fails. That fork is still
+//! this object, not a silent Turing-machine install.
+//!
 //! The Landauer bound lives on the IR package. Dropping `ln2` (`E = N kT`
 //! instead of `N kT ln2`) is a package mutation (`add-kt`), not a
 //! `reversible` knob: the encoding energy is no longer the Landauer floor
@@ -114,7 +120,9 @@ fn comp_claims() -> Vec<Claim> {
 }
 
 /// A finite NAND netlist. Structure lives on the IR package (gate equations),
-/// not on knobs. A feedback wire is a package mutation, not `set`.
+/// not on knobs. A feedback wire is a package mutation (`add-feedback`),
+/// not `set`. A second NAND writing the same wire is a second mutation
+/// (`add-contention`): the netlist is not a single-valued function.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CombinationalCircuit {
     gates: Vec<NandGate>,
@@ -182,6 +190,53 @@ impl CombinationalCircuit {
         true
     }
 
+    /// Extra NAND drivers on the most-contended net (`0` iff unique drivers).
+    fn extra_drivers(&self) -> usize {
+        use std::collections::BTreeMap;
+        let mut n: BTreeMap<usize, usize> = BTreeMap::new();
+        for g in &self.gates {
+            *n.entry(g.out).or_default() += 1;
+        }
+        n.values().map(|&c| c.saturating_sub(1)).max().unwrap_or(0)
+    }
+
+    /// Fraction of input assignments on which the first two drivers of the
+    /// most-contended net disagree. Evidence, not the encoding: identical
+    /// extra gates give residual 0 and determinism still fails.
+    fn driver_disagreement(&self) -> f64 {
+        use std::collections::BTreeMap;
+        let mut by_out: BTreeMap<usize, Vec<NandGate>> = BTreeMap::new();
+        for g in &self.gates {
+            by_out.entry(g.out).or_default().push(*g);
+        }
+        let Some(gates) = by_out.values().max_by_key(|gs| gs.len()) else {
+            return 0.0;
+        };
+        if gates.len() < 2 {
+            return 0.0;
+        }
+        let g0 = gates[0];
+        let g1 = gates[1];
+        let mut ids = vec![g0.a, g0.b, g1.a, g1.b];
+        ids.sort_unstable();
+        ids.dedup();
+        let nbits = ids.len();
+        let total = 1usize << nbits;
+        let mut disagree = 0usize;
+        for bits in 0..total {
+            let val = |w: usize| {
+                let idx = ids.iter().position(|&x| x == w).expect("wire");
+                (bits >> idx) & 1 == 1
+            };
+            let o0 = !(val(g0.a) && val(g0.b));
+            let o1 = !(val(g1.a) && val(g1.b));
+            if o0 != o1 {
+                disagree += 1;
+            }
+        }
+        disagree as f64 / total as f64
+    }
+
     /// IR package for this netlist. Equations are `nand a b -> out`.
     pub fn package(&self) -> TheoryPackage {
         TheoryPackage {
@@ -223,6 +278,15 @@ impl CombinationalCircuit {
         let src = self.gates.first().map(|g| g.a).unwrap_or(0);
         format!("nand {sink} {sink} -> {src}")
     }
+
+    fn contention_equation(&self) -> String {
+        let g = self
+            .gates
+            .first()
+            .copied()
+            .unwrap_or(NandGate { a: 0, b: 1, out: 2 });
+        format!("nand {} {} -> {}", g.a, g.a, g.out)
+    }
 }
 
 fn parse_nand(eq: &str) -> Option<NandGate> {
@@ -251,6 +315,15 @@ fn nand_domain() -> DomainOfValidity {
     )
 }
 
+fn unique_driver_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["unique NAND drivers".into()],
+        vec!["one gate writes each net".into()],
+        "Determinism here is a unique driver per net. A second NAND writing \
+         the same wire is a new encoding, not a silent boolean function.",
+    )
+}
+
 impl Knobbed for CombinationalCircuit {
     fn specs(&self) -> &'static [KnobSpec] {
         &[]
@@ -272,8 +345,9 @@ impl Theory for CombinationalCircuit {
     }
     fn summary(&self) -> &'static str {
         "A finite NAND netlist. Acyclicity is a graph property of the IR \
-         package. Feedback is a package mutation, not a knob. No SAT solver \
-         and no tape simulator are run."
+         package. Feedback is a package mutation, not a knob. A second NAND \
+         writing the same wire is a second IR mutation, not the Turing-machine \
+         nondeterministic knob. No SAT solver and no tape simulator are run."
     }
     fn world(&self) -> Option<World> {
         None // computation has no spacetime/gauge/spectrum projection
@@ -290,7 +364,16 @@ impl Theory for CombinationalCircuit {
         )
     }
     fn claims(&self) -> Vec<Claim> {
-        let mut c = comp_claims();
+        let mut c: Vec<Claim> = comp_claims()
+            .into_iter()
+            .map(|cl| {
+                if cl.id_str() == DETERMINISTIC {
+                    cl.with_domain(unique_driver_domain())
+                } else {
+                    cl
+                }
+            })
+            .collect();
         c.push(
             Claim::new(
                 ACYCLIC,
@@ -318,7 +401,26 @@ impl Theory for CombinationalCircuit {
                 claim,
                 "no memory or unbounded tape: a NAND netlist is not Turing complete",
             ),
-            DETERMINISTIC => Verdict::holds(claim, "boolean functions are deterministic"),
+            DETERMINISTIC => {
+                let extra = self.extra_drivers();
+                let r = self.driver_disagreement();
+                if extra == 0 {
+                    Verdict::holds(claim, "each net has one NAND driver")
+                        .with_class(ClaimClass::ModelInternal)
+                        .with_evidence([format!(
+                            "extra drivers = 0; driver disagreement = {r:.2}"
+                        )])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        "a second NAND writes the same wire; the netlist is not single-valued",
+                    )
+                    .with_class(ClaimClass::ModelInternal)
+                    .with_evidence([format!(
+                        "extra drivers = {extra}; driver disagreement = {r:.2} (truth table, not a simulator)"
+                    )])
+                }
+            }
             DECIDABLE_EQUIVALENCE => Verdict::holds(
                 claim,
                 "circuit equivalence is decidable (coNP-complete, but decidable)",
@@ -358,14 +460,30 @@ impl Theory for CombinationalCircuit {
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(self.feedback_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(fork) if fork != *self => vec![("add-feedback".into(), Box::new(fork))],
-            _ => Vec::new(),
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if self.is_acyclic() {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(self.feedback_equation()),
+            );
+            if let Ok(fork) = Self::from_package(&mutated) {
+                if !fork.is_acyclic() {
+                    out.push(("add-feedback".into(), Box::new(fork)));
+                }
+            }
         }
+        if self.extra_drivers() == 0 {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(self.contention_equation()),
+            );
+            if let Ok(fork) = Self::from_package(&mutated) {
+                if fork.extra_drivers() > 0 {
+                    out.push(("add-contention".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -920,6 +1038,7 @@ pub fn computation() -> ExperimentReport {
             "The unbounded Turing machine's `comp.halts` is genuinely `undecidable` — that is the point.".into(),
             "Bounding the tape turns the machine into a finite automaton: halting and equivalence become decidable, but it is no longer Turing complete.".into(),
             "`comp.feasible-decision` is coNP-complete (circuits) / exponential (bounded tape): decidable is not feasible. No simulator is run.".into(),
+            "`hypothesize combinational-circuit`: add-feedback and add-contention are IR, not set.".into(),
         ],
         &computation_rows(),
         theories,
@@ -972,6 +1091,7 @@ mod tests {
         assert_eq!(verdict(&c, DECIDABLE_EQUIVALENCE), VerdictKind::Holds);
         assert_eq!(verdict(&c, FEASIBLE_DECISION), VerdictKind::Undecidable);
         assert_eq!(verdict(&c, ACYCLIC), VerdictKind::Holds);
+        assert_eq!(verdict(&c, DETERMINISTIC), VerdictKind::Holds);
         let claim = c
             .claims()
             .into_iter()
@@ -1005,13 +1125,178 @@ mod tests {
         assert_eq!(verdict(&fork, HALTS), VerdictKind::Inapplicable);
         assert_eq!(verdict(&c, HALTS), VerdictKind::Holds);
         let probes = c.structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-feedback");
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-feedback"),
+            "live NAND must offer add-feedback: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-contention"),
+            "live NAND must offer add-contention: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let feedback_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-feedback")
+            .expect("add-feedback");
+        assert_eq!(
+            verdict(feedback_probe.1.as_ref(), ACYCLIC),
+            VerdictKind::Fails
+        );
+        assert_eq!(
+            verdict(feedback_probe.1.as_ref(), DETERMINISTIC),
+            VerdictKind::Holds
+        );
+        let feedback_fork_probes = feedback_probe.1.structural_mutations();
+        assert!(
+            feedback_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-feedback"),
+            "feedback fork must not re-offer add-feedback"
+        );
+        assert!(
+            feedback_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-contention"),
+            "feedback fork must still offer add-contention"
+        );
         let canonical = physis_ir::certify_round_trip(&c.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
         let rebuilt = c.reparse_package(&parsed).unwrap();
         assert_eq!(rebuilt.ir_package().unwrap(), c.package());
-        assert!(rebuilt.ir_package().unwrap() != probes[0].1.ir_package().unwrap());
+        assert!(rebuilt.ir_package().unwrap() != feedback_probe.1.ir_package().unwrap());
+    }
+
+    #[test]
+    fn ir_contention_mutation_is_not_a_knob() {
+        let c = CombinationalCircuit::default();
+        assert!(
+            CombinationalCircuit::default()
+                .set("contention", KnobValue::Bool(true))
+                .is_err(),
+            "multi-driven net is an IR mutation, not a knob"
+        );
+        assert!(
+            CombinationalCircuit::default()
+                .set("nondeterministic", KnobValue::Bool(true))
+                .is_err(),
+            "combinational-circuit must not grow nondeterministic; that stays on turing-machine"
+        );
+        let src = render_package(&c.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay one NAND");
+        assert_eq!(
+            CombinationalCircuit::from_package(&pkg).unwrap(),
+            c,
+            "IR round-trip must preserve the netlist"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(c.contention_equation()),
+        );
+        let fork = CombinationalCircuit::from_package(&mutated).unwrap();
+        assert_eq!(fork.extra_drivers(), 1);
+        assert_eq!(verdict(&fork, DETERMINISTIC), VerdictKind::Fails);
+        assert_eq!(verdict(&c, DETERMINISTIC), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, ACYCLIC), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, HALTS), VerdictKind::Holds);
+        let r = fork.driver_disagreement();
+        assert!(
+            (r - 0.25).abs() < 1e-12,
+            "NAND(w0,w1) vs NOT w0 disagree on 1 of 4 rows, got {r}"
+        );
+        assert!(
+            (r - 1.0).abs() > 0.5,
+            "driver disagreement must be the truth-table fraction, not a unit flag, got {r}"
+        );
+        assert_eq!(c.driver_disagreement(), 0.0);
+        let mut identical = c.clone();
+        identical.gates.push(identical.gates[0]);
+        assert_eq!(identical.extra_drivers(), 1);
+        assert_eq!(
+            identical.driver_disagreement(),
+            0.0,
+            "identical extra NAND agrees everywhere; residual is not the encoding"
+        );
+        assert_eq!(
+            verdict(&identical, DETERMINISTIC),
+            VerdictKind::Fails,
+            "multi-driven encoding must fail determinism even when the extra driver agrees"
+        );
+        let probes = CombinationalCircuit::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-contention"),
+            "live NAND must offer add-contention: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let contention_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-contention")
+            .expect("add-contention");
+        assert_eq!(
+            verdict(contention_probe.1.as_ref(), DETERMINISTIC),
+            VerdictKind::Fails
+        );
+        assert_eq!(
+            verdict(contention_probe.1.as_ref(), ACYCLIC),
+            VerdictKind::Holds
+        );
+        let contention_fork_probes = contention_probe.1.structural_mutations();
+        assert!(
+            contention_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-contention"),
+            "contention fork must not re-offer add-contention"
+        );
+        assert!(
+            contention_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-feedback"),
+            "contention fork must still offer add-feedback"
+        );
+        let live = CombinationalCircuit::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(verdict(rebuilt.as_ref(), DETERMINISTIC), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id_str() == DETERMINISTIC)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "combinational determinism must name unique NAND drivers: {:?}",
+            cell.domain()
+        );
+        let tm = TuringMachine::default();
+        let tm_det = tm
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id_str() == DETERMINISTIC)
+            .unwrap();
+        assert!(
+            tm_det.domain().is_encoding_wide(),
+            "TM determinism stays encoding-wide (nondeterministic is a knob): {:?}",
+            tm_det.domain()
+        );
+        assert!(
+            tm.structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-contention"),
+            "turing-machine must not grow add-contention"
+        );
+        assert!(
+            tm.structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-feedback"),
+            "turing-machine must not grow add-feedback"
+        );
+        let mut nd = TuringMachine::default();
+        nd.set("nondeterministic", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&nd, DETERMINISTIC), VerdictKind::Fails);
+        assert_eq!(verdict(&live, DETERMINISTIC), VerdictKind::Holds);
     }
 
     #[test]
