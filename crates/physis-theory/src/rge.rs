@@ -102,6 +102,17 @@ impl GaugeRunning {
         z_mass_gev().value() * self.unification_log().exp()
     }
 
+    /// Dimension-6 proton lifetime in units of `10^31` years.
+    ///
+    /// `τ / 10^31 yr = (M_GUT / 10^14 GeV)^4`. This is the Georgi–Glashow
+    /// order-of-magnitude estimate, normalized so `10^14 GeV` yields the
+    /// textbook `10^31 yr`. It is not a lattice matrix element and not a
+    /// dimension-5 operator.
+    pub fn dim6_proton_lifetime_units(&self) -> f64 {
+        let x = self.unification_scale_gev() / 1.0e14;
+        x * x * x * x
+    }
+
     /// Predict `α_3(M_Z)` by demanding line 3 pass through the `α_1`/`α_2`
     /// crossing, then running it back down to `M_Z`.
     pub fn predicted_alpha3_mz(&self) -> f64 {
@@ -273,6 +284,11 @@ mod tests {
         // Its low unification scale (~10^13 GeV) is why proton decay is too fast.
         let m_gut = sm.unification_scale_gev();
         assert!((1e12..1e14).contains(&m_gut), "SM M_GUT = {m_gut:.2e} GeV");
+        let tau = sm.dim6_proton_lifetime_units();
+        assert!(
+            tau < 2400.0,
+            "minimal SU(5) dim-6 lifetime must sit below Super-K: {tau:.3e} × 10^31 yr"
+        );
     }
 
     #[test]
@@ -289,6 +305,11 @@ mod tests {
         assert!(
             (5e15..1e17).contains(&m_gut),
             "MSSM M_GUT = {m_gut:.2e} GeV"
+        );
+        let tau = mssm.dim6_proton_lifetime_units();
+        assert!(
+            tau > 2400.0,
+            "MSSM dim-6 lifetime must sit above Super-K: {tau:.3e} × 10^31 yr"
         );
     }
 

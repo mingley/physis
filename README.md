@@ -95,7 +95,10 @@ that `3/8` down to `M_Z` (Georgi–Quinn–Weinberg, `α_em` and `α_s` only)
 MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
 `gut.coupling-unification`, `gut.weinberg-angle-mz`, and
 `gut.proton-decay-viable` (excluded by Super-Kamiokande), which a
-`supersymmetric` knob revives as heuristics.
+`supersymmetric` knob revives as heuristics. The empirical sibling
+`gut.proton-lifetime-sk` compares the dim-6 `M_GUT^4` scaling to the
+registered Super-K `p→e+π0` Dataset (Takenaka et al. 2020): minimal SU(5)
+is **excluded**; MSSM dim-6 is **compatible**. That is not P3N.
 
 `physis epistemics` tallies the whole lab by class, derivation, and semantic
 assurance (currently hundreds of `executed` model-internal evaluations).

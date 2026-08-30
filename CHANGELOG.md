@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Super-K p→e+π0 is a Dataset**
+  (`sk-2020-p-e-pi0`, Takenaka et al., Phys. Rev. D 102, 112011).
+  `gut.proton-lifetime-sk` compares the dim-6 M_GUT^4 lifetime scaling
+  to that 90% CL allowed hull. The 2.4×10^34 yr figure is the published
+  lower limit, not an invented number. Minimal SU(5) is excluded; MSSM
+  dim-6 is compatible. Decade envelope stands in for missing matrix
+  elements. Not P3N, not a kernel proof, not dimension-5 operators.
+  Domain names p→e+π0 / dim-6 / Super-K 90% CL. Catalog d² hash
+  unchanged. Verified: unit tests on the Dataset and SU(5); CLI why /
+  set / inspect gap / evidence; P3N count stays 4.
+
 - **Evidence graphs group by FormalClaim, not slug**
   (`physis evidence <claim>`). Distinct statement hashes that share a
   lab id are competing encodings, not one theorem. Competing

@@ -20,7 +20,9 @@ pub struct Dataset {
     pub observable: String,
     /// Unit, as a string until the IR owns it.
     pub unit: String,
-    /// Central interval (statistical).
+    /// Central interval (statistical), or the allowed hull of a
+    /// one-sided limit. A Super-K lower limit is `[τ_min, open-end]`,
+    /// not a measurement of a finite lifetime.
     pub statistical: Interval,
     /// Systematic interval, if given as an enclosure.
     pub systematic: Option<Interval>,
@@ -113,13 +115,49 @@ pub fn pdg_2024_sin2theta() -> Dataset {
     )
 }
 
-/// Super-Kamiokande proton lifetime limit. Not a registered artifact.
+/// Dataset id for Super-Kamiokande `p → e⁺π⁰` (Takenaka et al. 2020).
+pub const SK_2020_P_E_PI0: &str = "sk-2020-p-e-pi0";
+
+/// Super-Kamiokande 90% CL lower limit `τ/B(p → e⁺π⁰) > 2.4×10³⁴ yr`.
 ///
-/// The GUT heuristic cell quotes Super-K as prose. That sentence is not
-/// a [`Dataset`]. Returning `None` is the catalog hole MissingDataset
-/// is for. Do not mint a lifetime number to fill it.
-pub fn super_kamiokande_proton_lifetime() -> Option<Dataset> {
-    None
+/// Units are `10^31 yr`, so the published bound is the exact rational
+/// `2400`. Super-K does not measure an upper lifetime; the hull high
+/// end is an open-end placeholder (`10^12` in these units, `10^43 yr`),
+/// not a Super-K observation. Interval-subset then treats the allowed
+/// region as a closed interval. This is Takenaka et al., Phys. Rev. D
+/// **102**, 112011 (2020) (arXiv:2010.16098), not an invented number
+/// and not a dimension-5 operator bound.
+pub fn super_kamiokande_proton_lifetime() -> Dataset {
+    let source = SourceRecord::new(
+        Citation {
+            work: "Takenaka et al. (Super-Kamiokande Collaboration), \
+                 Search for proton decay via p→e+π0 and p→μ+π0 with an \
+                 enlarged fiducial volume in Super-Kamiokande I-IV"
+                .into(),
+            edition: "Phys. Rev. D 102, 112011 (2020); arXiv:2010.16098".into(),
+        },
+        "2020",
+        SourceLocator {
+            page: None,
+            section: Some("Results".into()),
+            equation: None,
+            figure: None,
+            table: None,
+            dataset_range: Some("tau/B(p→e+π0) 90% CL; 450 kton·year".into()),
+            experiment: Some("Super-Kamiokande I-IV".into()),
+        },
+        ArtifactId::of(b"sk-prd-d-102-112011-pepi0"),
+        None,
+    )
+    .expect("Super-K locator names experiment and dataset range");
+    Dataset::new(
+        SK_2020_P_E_PI0,
+        "tau/B(p→e+π0)",
+        "10^31 yr",
+        Interval::new(Ratio::int(2400), Ratio::int(1_000_000_000_000)),
+        None,
+        source,
+    )
 }
 
 /// Receipt of an empirical comparison. Exclusion is this object, not
@@ -217,7 +255,42 @@ mod tests {
     }
 
     #[test]
-    fn super_kamiokande_proton_lifetime_is_not_registered() {
-        assert!(super_kamiokande_proton_lifetime().is_none());
+    fn super_kamiokande_p_e_pi0_is_a_registered_lower_limit() {
+        let d = super_kamiokande_proton_lifetime();
+        assert_eq!(d.id, SK_2020_P_E_PI0);
+        assert_eq!(d.unit, "10^31 yr");
+        assert_eq!(d.statistical.lo, Ratio::int(2400));
+        assert!(d.statistical.hi > d.statistical.lo);
+        assert!(d.source.locator.experiment.as_deref() == Some("Super-Kamiokande I-IV"));
+        assert!(d.source.citation.work.contains("Takenaka"));
+        assert!(!d.source.citation.work.to_lowercase().contains("textbook"));
+    }
+
+    #[test]
+    fn minimal_su5_scaling_is_excluded_by_super_k() {
+        let pred = Interval::point(Ratio::int(1));
+        let rec = EmpiricalReceipt::compare(pred, &super_kamiokande_proton_lifetime());
+        assert!(rec.excluded);
+        assert!(!rec.compatible);
+        assert_eq!(rec.status(), EmpiricalStatus::Excluded);
+    }
+
+    #[test]
+    fn mssm_dim6_scaling_is_compatible_with_super_k() {
+        let pred = Interval::point(Ratio::int(1_600_000_000));
+        let rec = EmpiricalReceipt::compare(pred, &super_kamiokande_proton_lifetime());
+        assert!(rec.compatible);
+        assert!(!rec.excluded);
+        assert_eq!(rec.status(), EmpiricalStatus::Compatible);
+    }
+
+    #[test]
+    fn an_envelope_that_crosses_the_limit_is_inconclusive() {
+        let pred = Interval::new(Ratio::int(1), Ratio::int(1_000_000_000));
+        let rec = EmpiricalReceipt::compare(pred, &super_kamiokande_proton_lifetime());
+        assert!(rec.inconclusive);
+        assert!(!rec.excluded);
+        assert!(!rec.compatible);
+        assert_eq!(rec.status(), EmpiricalStatus::Inconclusive);
     }
 }

@@ -44,6 +44,7 @@ Level-3 trust
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
   L3 hypothesize           ✓ constrained structural mutation of chosen/fitted knobs; measured knobs frozen; explorer can observe; does not mint
   L3 evidence graph        ✓ physis evidence groups by statement hash; competing encodings vs evaluations; derived TrustProfile, not a numeric score
+  L3 Super-K dataset       ✓ gut.proton-lifetime-sk compares dim-6 M_GUT^4 scaling to Takenaka et al. PRD 102 112011; not P3N; not dim-5; Tr Q stays encoding-wide
 ```
 
 Each milestone must:

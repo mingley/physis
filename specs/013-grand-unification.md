@@ -40,7 +40,7 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.weinberg-angle-mz-interval` | the same one-loop centre, ± the heuristic 3% band, vs the PDG hull | **empirical receipt** (interval-subset). Minimal SU(5) excluded; MSSM inconclusive (too coarse). Not GUT-scale `3/8`. Domain: `M_Z` |
 | `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
 | `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`), `heuristic` |
-| `gut.proton-lifetime-sk` | predicted `τ_p` compared to Super-Kamiokande as a **dataset** | **untested**. No Super-K `Dataset` is registered. The heuristic cell's Super-K sentence is not an artifact. Domain stays encoding-wide. |
+| `gut.proton-lifetime-sk` | dim-6 `τ/B(p→e+π0)` from `M_GUT^4` vs Super-Kamiokande **dataset** | **empirical receipt**. Takenaka et al. Phys. Rev. D 102, 112011 (2020), 90% CL `> 2.4×10³⁴ yr`. Minimal SU(5) **excluded**; MSSM dim-6 **compatible**. Decade envelope for missing matrix elements. Not P3N, not dim-5, not `p→μ+π0`. Domain: `p→e+π0` / dim-6 / Super-K 90% CL. |
 
 ## The two computed theorems
 
@@ -153,9 +153,14 @@ flips `gut.coupling-unification`, `gut.proton-decay-viable`, and
 beta coefficients from SM to MSSM brings the computed `α_3(M_Z)` and
 `sin²θ_W(M_Z)` into agreement and raises `M_GUT`. The interval cell
 `gut.weinberg-angle-mz-interval` flips `fails → undecidable`: the 3% band now
-overlaps the PDG hull but is not contained in it. Minimal SU(5) is falsified;
-SUSY SU(5) survives current bounds but requires superpartners that have not been
-seen, and its GQW envelope is too coarse for an empirical support receipt.
+overlaps the PDG hull but is not contained in it. The Super-K cell
+`gut.proton-lifetime-sk` flips `fails → holds` on the empirical axis
+(`excluded → compatible`): the dim-6 `M_GUT^4` envelope sits below the
+Takenaka et al. 90% CL hull for minimal SU(5) and inside it for MSSM dim-6.
+That is not P3N and not a dimension-5 operator. Minimal SU(5) is falsified;
+SUSY SU(5) survives current dim-6 Super-K bounds but requires superpartners
+that have not been seen, and its GQW envelope is too coarse for an empirical
+support receipt.
 
 ## Relation to the string-critique
 
@@ -172,9 +177,9 @@ becomes concrete.
 - SUSY threshold corrections and Yukawa contributions to the two-loop running
   (the gauge-only two-loop RGEs are integrated; thresholds close the residual).
 - A dynamical proton-decay *rate* from the dimension-6 operator coefficients
-  (the verdict uses the computed `M_GUT` qualitatively, not a full lifetime).
-- A Super-Kamiokande `Dataset` artifact. `gut.proton-lifetime-sk` is the
-  honest `MissingDataset` hole; do not mint a lifetime number to fill it.
+  (the verdict uses the computed `M_GUT` in the order-of-magnitude `M_GUT^4`
+  scaling with a decade envelope; not lattice matrix elements).
+- Dimension-5 SUSY proton decay (this cell is the dim-6 `p→e+π0` mode only).
 - SO(10)/E₆ as separate theories (the embedding chain already reaches them).
 
 ## Related

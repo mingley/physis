@@ -16,8 +16,10 @@
 //!   the MSSM predicts ≈0.231 and holds as a heuristic. The companion
 //!   `gut.weinberg-angle-mz-interval` asks the empirical axis: the same 3%
 //!   band as an enclosure against the PDG hull. Overlap is not containment.
-//!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: no
-//!   Super-Kamiokande Dataset is registered, so it stays untested.
+//!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: the
+//!   dimension-6 `M_GUT^4` scaling compared to Super-Kamiokande
+//!   `p → e⁺π⁰` (Takenaka et al., Phys. Rev. D 102, 112011). Minimal
+//!   SU(5) is excluded; MSSM dim-6 is compatible. Not P3N, not dim-5.
 //!
 //! It is also where the lab is honest about *failure*: minimal (non-SUSY)
 //! SU(5) does not unify the gauge couplings and predicts proton decay at a rate
@@ -31,7 +33,9 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::{ClaimCommitments, ParameterOrigin};
-use physis_data::{pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt};
+use physis_data::{
+    pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt, SK_2020_P_E_PI0,
+};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_numeric::{Interval, Ratio};
 
@@ -58,8 +62,13 @@ pub const GUT_WEINBERG_ANGLE_MZ_INTERVAL: &str = "gut.weinberg-angle-mz-interval
 pub const GUT_COUPLING_UNIFICATION: &str = "gut.coupling-unification";
 /// The predicted proton lifetime is consistent with experiment.
 pub const GUT_PROTON_DECAY_VIABLE: &str = "gut.proton-decay-viable";
-/// Predicted proton lifetime compared to Super-Kamiokande as a dataset.
+/// Dimension-6 `τ/B(p → e⁺π⁰)` compared to Super-Kamiokande as a dataset.
 pub const GUT_PROTON_LIFETIME_SK: &str = "gut.proton-lifetime-sk";
+
+/// Decade half-width on the dim-6 lifetime scaling. This stands in for
+/// missing operator coefficients and hadronic matrix elements; it is
+/// not a remainder certificate.
+const DIM6_LIFETIME_DECADE: f64 = 10.0;
 
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "supersymmetric",
@@ -218,10 +227,34 @@ impl Theory for Su5Gut {
             ),
             Claim::new(
                 GUT_PROTON_LIFETIME_SK,
-                "The predicted proton lifetime is compared to Super-Kamiokande as a registered dataset.",
+                "The dimension-6 partial lifetime τ/B(p→e+π0), from the M_GUT^4 scaling, \
+                 lies in the Super-Kamiokande 90% CL allowed region.",
                 LayerId::Effective,
                 ClaimClass::EmpiricalPrediction,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                units: vec!["10^31 yr".into()],
+                boundary: vec!["dimension-6 p→e+π0".into()],
+                datasets: vec![SK_2020_P_E_PI0.into()],
+                definitions: vec!["τ/10^31 yr = (M_GUT / 10^14 GeV)^4".into()],
+                ..ClaimCommitments::unspecified()
+            })
+            .with_domain(DomainOfValidity::new(
+                vec![
+                    "p→e+π0".into(),
+                    "dimension-6 operator".into(),
+                    "Super-K 90% CL lower limit".into(),
+                ],
+                vec![
+                    "order-of-magnitude M_GUT^4 scaling".into(),
+                    "decade envelope for missing matrix elements".into(),
+                    "Super-K hull hi is an open-end placeholder, not a measurement".into(),
+                ],
+                "Takenaka et al. Phys. Rev. D 102, 112011 (2020), 450 kton·year. \
+                 Compatible is prediction ⊆ Super-K allowed region. Not dimension-5 \
+                 SUSY operators, not p→μ+π0, not P3N, not a kernel proof. Using \
+                 GUT-scale 3/8 or GQW here is a new claim.",
+            )),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -417,23 +450,48 @@ impl Theory for Su5Gut {
                 }
             }
             GUT_PROTON_LIFETIME_SK => {
-                // Super-K is cited as heuristic prose on gut.proton-decay-viable.
-                // It is not a physis-data Dataset. Do not mint a lifetime
-                // number to close this gap.
-                match super_kamiokande_proton_lifetime() {
-                    None => Verdict::undecidable(
-                        claim,
-                        "no Super-Kamiokande Dataset is registered",
-                    )
-                    .with_evidence([
-                        "gut.proton-decay-viable quotes Super-K as M_GUT heuristic prose, not as an artifact"
-                            .to_string(),
-                    ]),
-                    Some(_) => Verdict::undecidable(
-                        claim,
-                        "a Super-Kamiokande Dataset is registered but no lifetime enclosure is encoded",
+                let run = if self.supersymmetric {
+                    GaugeRunning::mssm()
+                } else {
+                    GaugeRunning::standard_model()
+                };
+                let m_gut = run.unification_scale_gev();
+                let tau_units = run.dim6_proton_lifetime_units();
+                let envelope = Interval::from_f64_approx(tau_units / DIM6_LIFETIME_DECADE)
+                    .hull(Interval::from_f64_approx(tau_units * DIM6_LIFETIME_DECADE));
+                let dataset = super_kamiokande_proton_lifetime();
+                let rec = EmpiricalReceipt::compare(envelope, &dataset);
+                let evidence = [
+                    format!(
+                        "dim-6 scaling τ/10^31 yr = (M_GUT / 10^14 GeV)^4: M_GUT ≈ {m_gut:.2e} GeV \
+                         → {tau_units:.3e} (decade envelope) vs {} hull",
+                        dataset.id
                     ),
-                }
+                    format!(
+                        "receipt excluded={} compatible={} inconclusive={} \
+                         (interval-subset; decade is missing matrix elements, not a remainder certificate)",
+                        rec.excluded, rec.compatible, rec.inconclusive
+                    ),
+                    "not dimension-5 SUSY operators; not a numeric certificate; Takenaka et al. PRD 102, 112011 90% CL p→e+π0"
+                        .to_string(),
+                ];
+                let v = if rec.excluded {
+                    Verdict::fails(
+                        claim,
+                        "dim-6 lifetime envelope is disjoint from the Super-K allowed region",
+                    )
+                } else if rec.compatible {
+                    Verdict::holds(
+                        claim,
+                        "dim-6 lifetime envelope lies inside the Super-K allowed region",
+                    )
+                } else {
+                    Verdict::undecidable(
+                        claim,
+                        "dim-6 lifetime envelope overlaps the Super-K hull but is not contained in it",
+                    )
+                };
+                v.with_empirical(rec.status()).with_evidence(evidence)
             }
             _ => Verdict::inapplicable(claim, "claim not made by the SU(5) GUT object"),
         }
@@ -518,12 +576,25 @@ mod tests {
             "PDG interval regime: {:?}",
             interval.domain()
         );
-        // Super-K is not a Dataset; inventing a lifetime number would be a lie.
+        // Super-K is a Dataset; the empirical cell names the dim-6 / p→e+π0 regime.
         let sk = claim(GUT_PROTON_LIFETIME_SK);
         assert!(
-            sk.domain().is_encoding_wide(),
-            "Super-K prose is not a named regime: {:?}",
+            !sk.domain().is_encoding_wide(),
+            "Super-K p→e+π0 must name a regime: {:?}",
             sk.domain()
+        );
+        assert!(
+            sk.domain().regimes.iter().any(|r| r.contains("p→e+π0")),
+            "Super-K regime: {:?}",
+            sk.domain()
+        );
+        assert!(
+            sk.commitments()
+                .datasets
+                .iter()
+                .any(|d| d == SK_2020_P_E_PI0),
+            "Super-K cell must commit to the Dataset id: {:?}",
+            sk.commitments()
         );
         let trq = claim(GUT_CHARGE_QUANTIZATION);
         assert!(
@@ -596,17 +667,33 @@ mod tests {
     }
 
     #[test]
-    fn proton_lifetime_sk_stays_untested_without_a_dataset() {
+    fn proton_lifetime_sk_excludes_minimal_su5_and_allows_mssm_dim6() {
         use physis_core::EmpiricalStatus;
         let mut g = Su5Gut::default();
         let v = verdict(&g, GUT_PROTON_LIFETIME_SK);
-        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.kind, VerdictKind::Fails);
         assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
-        assert_eq!(v.empirical(), EmpiricalStatus::Untested);
+        assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert!(
+            v.evidence.iter().any(|e| e.contains(SK_2020_P_E_PI0)),
+            "evidence: {:?}",
+            v.evidence
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("Takenaka") && e.contains("not a numeric certificate")),
+            "evidence must cite Super-K and refuse P3N: {:?}",
+            v.evidence
+        );
         g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
         let u = verdict(&g, GUT_PROTON_LIFETIME_SK);
-        assert_eq!(u.kind, VerdictKind::Undecidable);
-        assert_eq!(u.empirical(), EmpiricalStatus::Untested);
+        assert_eq!(u.kind, VerdictKind::Holds);
+        assert_eq!(u.empirical(), EmpiricalStatus::Compatible);
+        assert_eq!(u.derivation(), DerivationAssurance::Executed);
+        assert_ne!(u.derivation(), DerivationAssurance::CertifiedNumeric);
         assert_eq!(
             verdict(&g, GUT_PROTON_DECAY_VIABLE).kind,
             VerdictKind::Holds

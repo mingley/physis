@@ -2198,6 +2198,10 @@ mod tests {
             "Green-Schwarz stays encoded, not a Ratio certificate: {p3n}"
         );
         assert!(!p3n.contains("predictivity.unique-vacuum"), "{p3n}");
+        assert!(
+            !p3n.contains("gut.proton-lifetime-sk"),
+            "Super-K interval comparison is not P3N: {p3n}"
+        );
 
         let why = lab
             .exec(Command::Why {
@@ -2577,9 +2581,23 @@ mod tests {
             .to_string();
         let skb = why_theory_block(&sk, "su5-gut");
         assert!(
-            skb.contains("not yet a machine-checked regime"),
-            "Super-K stays encoding-wide until it is a Dataset: {skb}"
+            skb.contains("  datasets:") && skb.contains("sk-2020-p-e-pi0"),
+            "{skb}"
         );
+        assert!(skb.contains("p→e+π0"), "{skb}");
+        assert!(skb.contains("regimes:"), "{skb}");
+        assert!(
+            !skb.contains("not yet a machine-checked regime"),
+            "Super-K p→e+π0 must name a regime, not encoding-wide: {skb}"
+        );
+        assert!(skb.contains("empirical:  excluded"), "{skb}");
+        assert!(skb.contains("judgment:   empirical excluded"), "{skb}");
+        assert!(skb.contains("trust:      P1"), "{skb}");
+        assert!(
+            !skb.contains("certified-numeric"),
+            "Super-K exclusion is executed, not P3N: {skb}"
+        );
+        assert!(skb.contains("kernel proof: none"), "{skb}");
 
         let q = lab
             .exec(Command::Why {
@@ -2900,6 +2918,14 @@ mod tests {
             "expected weinberg-angle-mz-interval Fails→Undecidable, got {diffs:?}"
         );
         assert!(
+            diffs.iter().any(|d| d.claim == "gut.proton-lifetime-sk"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds
+                && d.from_empirical.as_deref() == Some("excluded")
+                && d.to_empirical.as_deref() == Some("compatible")),
+            "expected proton-lifetime-sk excluded→compatible, got {diffs:?}"
+        );
+        assert!(
             !diffs
                 .iter()
                 .any(|d| d.claim == "gut.weinberg-angle" || d.claim == "gut.charge-quantization"),
@@ -3008,7 +3034,7 @@ mod tests {
     }
 
     #[test]
-    fn proton_lifetime_sk_is_a_missing_dataset() {
+    fn proton_lifetime_sk_is_compared_to_super_k() {
         let mut lab = Lab::standard();
         let missing = lab
             .exec(Command::Inspect {
@@ -3017,7 +3043,10 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(missing.contains("gut.proton-lifetime-sk"), "{missing}");
+        assert!(
+            !missing.contains("gut.proton-lifetime-sk"),
+            "Super-K is a Dataset; this cell is decided: {missing}"
+        );
         assert!(
             !missing.contains("gut.weinberg-angle-mz-interval"),
             "the GQW interval cell has a PDG dataset: {missing}"
@@ -3030,8 +3059,13 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains("class:      empirical-prediction"), "{why}");
-        assert!(why.contains("empirical:  untested"), "{why}");
-        assert!(why.contains("judgment:   empirical inconclusive"), "{why}");
+        assert!(why.contains("empirical:  excluded"), "{why}");
+        assert!(why.contains("judgment:   empirical excluded"), "{why}");
+        assert!(why.contains("derivation: executed"), "{why}");
+        assert!(
+            !why.contains("derivation: certified-numeric"),
+            "dim-6 scaling is not P3N: {why}"
+        );
 
         lab.set_knob("su5-gut", "supersymmetric", "true").unwrap();
         let after = lab
@@ -3042,8 +3076,34 @@ mod tests {
             .text()
             .to_string();
         assert!(
-            after.contains("gut.proton-lifetime-sk"),
-            "SUSY does not mint a Super-Kamiokande Dataset: {after}"
+            !after.contains("gut.proton-lifetime-sk"),
+            "SUSY dim-6 compatible is a decision, not a missing dataset: {after}"
+        );
+        let why_susy = lab
+            .exec(Command::Why {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_susy.contains("empirical:  compatible"), "{why_susy}");
+        assert!(
+            why_susy.contains("judgment:   empirical compatible"),
+            "{why_susy}"
+        );
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            !p3n.contains("gut.proton-lifetime-sk"),
+            "Super-K compatible is not P3N: {p3n}"
+        );
+        assert!(
+            p3n.lines().any(|l| l.trim() == "count 4"),
+            "P3N stays three SM cells plus GUT-scale 3/8: {p3n}"
         );
     }
 
@@ -3626,6 +3686,27 @@ mod tests {
             qs.contains("encoding-wide") && qs.contains("λ > 100"),
             "Maxwell stays encoding-wide; ohm names λ: {qs}"
         );
+
+        let sk = lab
+            .exec(Command::Evidence {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            sk.contains("this slug is one FormalClaim"),
+            "Super-K lives on su5-gut only: {sk}"
+        );
+        assert!(sk.contains("competing encodings: no"), "{sk}");
+        assert!(sk.contains("p→e+π0"), "{sk}");
+        assert!(!sk.contains("encoding-wide"), "{sk}");
+        assert!(sk.contains("excluded"), "{sk}");
+        assert!(sk.contains("empirical excluded"), "{sk}");
+        assert!(
+            sk.contains("not Canonical") && sk.contains("not P4"),
+            "{sk}"
+        );
+        assert!(!sk.contains("theorem"), "{sk}");
 
         let unknown = lab.exec(Command::Evidence {
             claim: "no.such.claim".into(),
@@ -4562,10 +4643,10 @@ mod tests {
             "unbounded TM feasible-decision is inapplicable, not a cost gap: {before}"
         );
         assert!(
-            before
+            !before
                 .lines()
                 .any(|l| l.contains("gut.proton-lifetime-sk") && l.contains("needs dataset")),
-            "{before}"
+            "Super-K is a Dataset; exclusion is a decision: {before}"
         );
         assert!(before.contains("dec.closed-equals-exact"), "{before}");
         assert!(

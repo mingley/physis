@@ -500,6 +500,28 @@ mod tests {
     }
 
     #[test]
+    fn gut_proton_lifetime_diffs_empirical_excluded_to_compatible() {
+        use crate::gut::{Su5Gut, GUT_PROTON_LIFETIME_SK};
+        use physis_core::knob::KnobValue;
+
+        let mut g = Su5Gut::default();
+        let before = g.evaluate_all();
+        g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
+        let after = g.evaluate_all();
+        let diffs = diff_verdicts(&before, &after);
+        let d = diffs
+            .iter()
+            .find(|d| d.claim == GUT_PROTON_LIFETIME_SK)
+            .expect("super-k row");
+        assert_eq!(d.from, VerdictKind::Fails);
+        assert_eq!(d.to, VerdictKind::Holds);
+        assert_eq!(d.from_empirical.as_deref(), Some("excluded"));
+        assert_eq!(d.to_empirical.as_deref(), Some("compatible"));
+        assert_eq!(d.from_judgment.as_deref(), Some("empirical excluded"));
+        assert_eq!(d.to_judgment.as_deref(), Some("empirical compatible"));
+    }
+
+    #[test]
     fn legacy_kind_only_record_matches_live_axes() {
         use crate::strings::StringTheory;
         use physis_core::knob::KnobValue;

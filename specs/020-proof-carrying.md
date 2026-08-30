@@ -51,8 +51,9 @@ Nothing gains authority merely because an agent wrote code that returns
   the PDG interval name unification-scale / `M_Z` as
   `DomainOfValidity` (not the encoding-wide placeholder). SM anomalies,
   hypercharge solve, and hydrogen neutrality name one generation /
-  hydrogen. Super-K proton lifetime stays encoding-wide until Super-K
-  is a Dataset. `dec.hodge-harmonic` names discrete combinatorial Hodge
+  hydrogen. Super-K `p→e+π0` names the dim-6 / 90% CL regime
+  (Takenaka et al., Phys. Rev. D 102, 112011). GUT `Tr Q` stays
+  encoding-wide. `dec.hodge-harmonic` names discrete combinatorial Hodge
   on finite simplicial 1-cochains, not the smooth Hodge theorem.
   Lean compiler versions live on the receipt, not
   the sentence.
@@ -156,7 +157,7 @@ those tools; a local checkout without them still mints
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize (constrained structural mutation of chosen/fitted knobs) → prove → falsify → replicate → design → audit → review |
 | origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap |
-| gaps | `physis gaps`, `NodeKind::KnowledgeGap` | Live gap graph, content-addressed; rebuilt, not deserialized. `MissingTheorem` only for evaluator-Holds claims without a receipt; Fails is decided, not a missing lemma. `InsufficientPrecision` is overlap without containment on an empirical receipt, **or** a lattice too coarse to certify a numerical order (`field.second-order-accurate`, `|k a| ≥ 1`). `ComputationallyIntractable` is coNP-complete / exponential search, not Rice. `MissingDataset` is an empirical prediction with no registered dataset (`gut.proton-lifetime-sk`); Super-K prose is not a Dataset |
+| gaps | `physis gaps`, `NodeKind::KnowledgeGap` | Live gap graph, content-addressed; rebuilt, not deserialized. `MissingTheorem` only for evaluator-Holds claims without a receipt; Fails is decided, not a missing lemma. `InsufficientPrecision` is overlap without containment on an empirical receipt, **or** a lattice too coarse to certify a numerical order (`field.second-order-accurate`, `|k a| ≥ 1`). `ComputationallyIntractable` is coNP-complete / exponential search, not Rice. `MissingDataset` is an empirical prediction with no registered dataset. Super-K `p→e+π0` is registered; `gut.proton-lifetime-sk` is the dim-6 comparison, not that hole |
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
 | evidence | `physis evidence` | Competing encodings (distinct FormalClaims of one slug) and competing evaluations; confidence is derived TrustProfile, not a numeric score; never Canonical or P4 |
 | trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
@@ -188,7 +189,8 @@ identity; a slug-only review line is not P3S.
   and only `encoding-is-the-model`. Catalog identities name regimes and
   catalog axioms. `field.second-order-accurate` names `|k a| < 1`.
   GUT mixing-angle and SM P3N cells name unification-scale / `M_Z` /
-  one generation / hydrogen. Super-K and GUT `Tr Q` stay encoding-wide.
+  one generation / hydrogen. Super-K `p→e+π0` names dim-6 / Super-K 90% CL;
+  GUT `Tr Q` stays encoding-wide.
   `dec.hodge-harmonic` names discrete combinatorial Hodge; Euler–Poincaré
   and Poincaré stay encoding-wide. `field.dispersion-continuum-limit` names
   the longest lattice mode; ohm-circuit `em.quasi-static-valid` names
@@ -207,7 +209,7 @@ identity; a slug-only review line is not P3S.
 | B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
 | C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; GUT-scale `3/8` is `Ratio` / P3N, not Lean. Those cells name a `DomainOfValidity`. GUT `Tr Q` is `ΣY` already certified, not a second P3N. GQW at `M_Z` is not P3N |
-| D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible |
+| D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset **and** Super-K `p→e+π0`. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible. Super-K is a lower-limit hull, not P3N |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |
 
 ## Pure-Rust rule (revised)
