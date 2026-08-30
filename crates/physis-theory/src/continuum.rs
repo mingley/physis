@@ -12,6 +12,9 @@
 //! long-wavelength dispersion matches the continuum `ω² = m² + k²`, and a
 //! negative `mass_squared` produces a genuine tachyonic mode (`min ω² < 0`) —
 //! the same instability notion as the string bosonic tachyon, but computed.
+//!
+//! Nearest-neighbour coupling lives on the IR package. Next-nearest stencil
+//! is a package mutation (`add-next-nearest`), not a knob.
 
 use std::f64::consts::PI;
 
@@ -22,6 +25,7 @@ use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::EmpiricalStatus;
 use physis_core::ParameterOrigin;
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 
 use crate::critique::{report_from_rows, ExperimentReport};
@@ -90,12 +94,22 @@ const SPECS: &[KnobSpec] = &[
     },
 ];
 
+/// IR equation for the nearest-neighbour discrete Laplacian.
+const NN_EQUATION: &str = "laplacian nn";
+/// IR equation for an extra next-nearest stencil term.
+const NNN_EQUATION: &str = "laplacian nnn";
+
 /// A real scalar (Klein–Gordon) field on a finite 1D periodic lattice.
-#[derive(Clone, Debug)]
+///
+/// The stencil is package structure, not a knob. Next-nearest coupling is
+/// set only by an IR fork.
+#[derive(Clone, Debug, PartialEq)]
 pub struct KleinGordonField {
     sites: u32,
     mass_squared: f64,
     spacing: f64,
+    /// Extra next-nearest Laplacian term. Not a knob.
+    next_nearest: bool,
 }
 
 impl Default for KleinGordonField {
@@ -104,8 +118,18 @@ impl Default for KleinGordonField {
             sites: 16,
             mass_squared: 1.0,
             spacing: 1.0,
+            next_nearest: false,
         }
     }
+}
+
+fn local_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["nearest-neighbour 1D periodic lattice".into()],
+        vec!["discrete Laplacian on N sites".into()],
+        "Locality here is nearest-neighbour. A next-nearest stencil is a new \
+         encoding, not a silent local field.",
+    )
 }
 
 impl KleinGordonField {
@@ -114,7 +138,14 @@ impl KleinGordonField {
         let n = self.sites as f64;
         let a = self.spacing;
         let s = (PI * j as f64 / n).sin();
-        self.mass_squared + (4.0 / (a * a)) * s * s
+        let nn = (4.0 / (a * a)) * s * s;
+        let nnn = if self.next_nearest {
+            let ka = self.k(j) * a;
+            (1.0 / (a * a)) * ka.sin() * ka.sin()
+        } else {
+            0.0
+        };
+        self.mass_squared + nn + nnn
     }
 
     /// Wavenumber of mode `j`.
@@ -148,7 +179,12 @@ impl KleinGordonField {
             let vg = if w2 <= 0.0 {
                 0.0
             } else {
-                ((2.0 / a) * ka.sin()).abs() / (2.0 * w2.sqrt())
+                // NN: d(ω²)/dk = (2/a) sin(ka). NNN adds (2/a) sin(ka) cos(ka).
+                let mut d_w2_dk = (2.0 / a) * ka.sin();
+                if self.next_nearest {
+                    d_w2_dk += (2.0 / a) * ka.sin() * ka.cos();
+                }
+                d_w2_dk.abs() / (2.0 * w2.sqrt())
             };
             max = max.max(vg);
         }
@@ -156,10 +192,18 @@ impl KleinGordonField {
     }
 
     /// Absolute dispersion error of the discrete Laplacian at a fixed physical
-    /// wavenumber `k`, for lattice spacing `a`: `|(4/a²) sin²(ka/2) − k²|`.
+    /// wavenumber `k`, for lattice spacing `a`. Nearest-neighbour is
+    /// `(4/a²) sin²(ka/2)`; a next-nearest term adds `(1/a²) sin²(ka)`.
     fn dispersion_abs_error(&self, k: f64, a: f64) -> f64 {
         let s = (k * a / 2.0).sin();
-        ((4.0 / (a * a)) * s * s - k * k).abs()
+        let nn = (4.0 / (a * a)) * s * s;
+        let nnn = if self.next_nearest {
+            let ka = k * a;
+            (1.0 / (a * a)) * ka.sin() * ka.sin()
+        } else {
+            0.0
+        };
+        (nn + nnn - k * k).abs()
     }
 
     /// Empirical convergence order p, from the error at spacing `a` vs `a/2`:
@@ -198,6 +242,54 @@ impl KleinGordonField {
         } else {
             (lattice - continuum).abs() / continuum.abs()
         }
+    }
+
+    /// IR package for this stencil. Equations are `laplacian nn` and,
+    /// when forked, `laplacian nnn`. Knobs stay on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![NN_EQUATION.to_string()];
+        if self.next_nearest {
+            equations.push(NNN_EQUATION.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["1d-periodic-lattice".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: LOCAL.into(),
+                statement: "The coupling is local (nearest-neighbour).".into(),
+                layer: "field".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a stencil from a package. Knobs default; overlay them from a
+    /// live field when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        let mut nn = false;
+        let mut nnn = false;
+        for eq in &pkg.equations {
+            match eq.trim() {
+                NN_EQUATION => nn = true,
+                NNN_EQUATION => nnn = true,
+                _ => {}
+            }
+        }
+        if !nn {
+            return Err("klein-gordon package has no nearest-neighbour laplacian".into());
+        }
+        Ok(Self {
+            next_nearest: nnn,
+            ..Self::default()
+        })
+    }
+
+    fn nnn_equation() -> String {
+        NNN_EQUATION.to_string()
     }
 }
 
@@ -242,8 +334,9 @@ impl Theory for KleinGordonField {
     }
     fn summary(&self) -> &'static str {
         "A real scalar field as an actual local object: N lattice sites coupled \
-         by a nearest-neighbour Laplacian, with computed normal modes. Its \
-         stability and dispersion are theorems of the computation, not flags."
+         by a nearest-neighbour Laplacian, with computed normal modes. \
+         Next-nearest coupling is an IR package mutation, not a knob. Stability \
+         and dispersion are theorems of the computation, not flags."
     }
     fn world(&self) -> Option<World> {
         // A 1+1 D field: one time direction, one spatial lattice direction.
@@ -309,7 +402,8 @@ impl Theory for KleinGordonField {
                 "The coupling is local (nearest-neighbour).",
                 LayerId::Field,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(local_domain()),
             Claim::new(
                 SECOND_ORDER,
                 "The discretization is second-order accurate (error ∝ a²).",
@@ -370,7 +464,16 @@ impl Theory for KleinGordonField {
                     Verdict::fails(claim, format!("superluminal group velocity {v:.4} > c"))
                 }
             }
-            LOCAL => Verdict::holds(claim, "nearest-neighbour Laplacian: the coupling is local"),
+            LOCAL => {
+                if self.next_nearest {
+                    Verdict::fails(
+                        claim,
+                        "next-nearest stencil: the coupling is not nearest-neighbour",
+                    )
+                } else {
+                    Verdict::holds(claim, "nearest-neighbour Laplacian: the coupling is local")
+                }
+            }
             SECOND_ORDER => {
                 let p = self.convergence_order();
                 let ka = self.probe_ka();
@@ -405,6 +508,24 @@ impl Theory for KleinGordonField {
                 }
             }
             _ => Verdict::inapplicable(claim, "claim not made by a field object"),
+        }
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.next_nearest {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(&pkg, &PackageMutation::AppendEquation(Self::nnn_equation()));
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.next_nearest => {
+                let mut fork = self.clone();
+                fork.next_nearest = true;
+                vec![("add-next-nearest".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
         }
     }
 }
@@ -475,6 +596,25 @@ mod tests {
         assert!(
             stable.domain().is_encoding_wide(),
             "stability is the current lattice encoding, not a hidden continuum regime"
+        );
+        let local = f
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == LOCAL)
+            .unwrap();
+        assert!(
+            !local.domain().is_encoding_wide(),
+            "locality must name nearest-neighbour, not encoding-wide: {:?}",
+            local.domain()
+        );
+        assert!(
+            local
+                .domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("nearest-neighbour")),
+            "local regime: {:?}",
+            local.domain()
         );
     }
 
@@ -585,5 +725,38 @@ mod tests {
                 .copied(),
             Some(VerdictKind::Holds)
         );
+    }
+
+    #[test]
+    fn next_nearest_is_ir_not_a_knob() {
+        let mut f = KleinGordonField::default();
+        assert!(
+            f.set("next_nearest", KnobValue::Bool(true)).is_err(),
+            "next-nearest is an IR mutation, not a knob"
+        );
+        let src = render_package(&f.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            KleinGordonField::from_package(&pkg).unwrap(),
+            f,
+            "IR round-trip must preserve the nearest-neighbour stencil"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(KleinGordonField::nnn_equation()),
+        );
+        let parsed = KleinGordonField::from_package(&mutated).unwrap();
+        assert!(parsed.next_nearest);
+        let mut fork = f.clone();
+        fork.next_nearest = true;
+        assert_eq!(verdict(&fork, LOCAL), VerdictKind::Fails);
+        assert_eq!(verdict(&f, LOCAL), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, DISPERSION), VerdictKind::Fails);
+        let probes = f.structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-next-nearest");
+        assert_eq!(verdict(probes[0].1.as_ref(), LOCAL), VerdictKind::Fails);
+        assert_eq!(verdict(&f, LOCAL), VerdictKind::Holds);
+        assert!(fork.structural_mutations().is_empty());
     }
 }

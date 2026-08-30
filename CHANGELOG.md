@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Klein–Gordon next-nearest coupling is an IR mutation**
+  (`klein-gordon`, `add-next-nearest`). Locality is nearest-neighbour on
+  a 1D periodic lattice; appending `laplacian nnn` flips `field.local`
+  holds to fails. That is not a knob. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. Verified: IR round-trip; set
+  next_nearest is unknown; hypothesize klein-gordon; live stencil
+  restored.
+
 - **Evidence graphs persist across `--journal` restore**
   (`JournalEvent::Evidence`). Restore rebuilds the DAG from live
   evaluations. A tampered `graph_hash` cannot mint the snapshot.

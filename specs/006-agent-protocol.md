@@ -17,7 +17,7 @@ Layer: agent
 | `evidence <claim>` | competing encodings (distinct statement hashes of one slug) and competing evaluations; inserts a content-addressed Evidence DAG (not deserialized); confidence is a derived TrustProfile, not a numeric score; never Canonical or P4 |
 | `prove <claim>` | dual-check a catalogued identity; only `physis-verifier` mints |
 | `falsify <claim>` | search knobs for a failing evaluation |
-| `hypothesize [theory]` | constrained structural mutation: chosen/fitted knob probes **and** IR package forks (`Theory::structural_mutations`); measured/derived knobs stay frozen; package mutants are not installed; does not persist or mint |
+| `hypothesize [theory]` | constrained structural mutation: chosen/fitted knob probes **and** IR package forks (`Theory::structural_mutations`); measured/derived knobs stay frozen; package mutants are not installed; does not persist or mint. `add-feedback` (NAND) and `add-next-nearest` (Klein–Gordon) are not knobs |
 | `sweep <theory> <knob> <v,v,…>` | evaluate many values; report changed claims |
 | `branch` / `checkout` | snapshot / restore knob state |
 | `compare` / `design` | discriminating claims; rank theory pairs |

@@ -10,7 +10,8 @@ M4's seed: represent a **field as an actual local object**, not a boolean flag.
 `klein-gordon` is a real scalar field on a finite 1D periodic lattice of `N`
 sites coupled by a nearest-neighbour discrete Laplacian. Its normal modes are
 *computed*, so stability, causality, and the continuum dispersion are theorems
-of the computation rather than tabulated facts.
+of the computation rather than tabulated facts. Next-nearest coupling is an
+IR package mutation (`add-next-nearest`), not a knob.
 
 ## Objects
 
@@ -45,7 +46,7 @@ There is nothing tabulated here: the module computes ω_j² for every mode.
 | `field.dispersion-continuum-limit` | long-wavelength ω² matches m² + k² | computed relative error < 5% on the longest non-zero mode. Domain: that mode, not Nyquist, not the Richardson `|k a| < 1` probe |
 | `field.stable` | no tachyonic mode | `min_j ω_j² ≥ 0` |
 | `field.causal` | group velocity ≤ c | `max_j |dω/dk| ≤ c` |
-| `field.local` | nearest-neighbour coupling | structural |
+| `field.local` | nearest-neighbour coupling | structural: the IR package is `laplacian nn`. Domain: nearest-neighbour 1D periodic lattice. `add-next-nearest` appends `laplacian nnn` and this cell fails. That is not a knob |
 | `field.second-order-accurate` | discretization error ∝ a² | computed Richardson order p ≈ 2 when `|k a| < 1` at a fixed probe k. If `|k a| ≥ 1`, **undecidable** / `inconclusive` (`InsufficientPrecision`): too coarse to certify the stencil, not a failed theorem. The 1.8–2.2 window is not P3N. |
 
 ## Knob → verdict
