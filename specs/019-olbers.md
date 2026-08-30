@@ -38,7 +38,7 @@ is the finite-age resolution on the standing object without renaming it.
 | `finite_age` | spacetime | true: light-travel horizon at `c t`. Turning this on is the finite-age resolution. |
 | `expanding` | spacetime | true: linear Hubble flow, `z = H r/c`. Independent of finite age. |
 | `age_yr` | spacetime | cosmic age in years. Used when `finite_age` is true. Making the universe old enough that `τ = n σ c t ≳ 1` makes the sky photosphere-bright again. |
-| `cutoff_m` | effective | radial cutoff in metres. Standing-theory verdicts use the improper `R → ∞` limit, not this cutoff (a large but finite cutoff can still look dark). Weakly live: it appears in the world note as `R_eff` when no horizon is tighter. |
+| `cutoff_m` | effective | radial cutoff in metres. Standing-theory verdicts and the world note use the improper `R → ∞` limit or `c t` / `c/H` (`verdict_radius`), not this cutoff. Weakly live: named in the unbounded-static note as what the verdict is *not*. |
 
 ## Claims
 

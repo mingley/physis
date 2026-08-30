@@ -25,7 +25,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::{kelvin, seconds, Qty};
-use physis_core::{Irradiance, Length};
+use physis_core::{Dimensionless, Irradiance, Length};
 use physis_model::constants::{
     cosmic_luminosity_density, hubble_constant, solar_luminosity, solar_radius,
     stefan_boltzmann_constant, C,
@@ -137,10 +137,6 @@ impl OlbersSky {
         seconds(self.age_yr * SECONDS_PER_YEAR)
     }
 
-    fn cutoff(&self) -> Qty<Length> {
-        physis_core::qty::meters(self.cutoff_m)
-    }
-
     /// Light-travel horizon `c t`.
     fn age_horizon(&self) -> Qty<Length> {
         C * self.age()
@@ -151,16 +147,17 @@ impl OlbersSky {
         C / hubble_constant()
     }
 
-    /// Effective cap used when the theory has a horizon (age and/or Hubble).
-    fn horizon(&self) -> Qty<Length> {
-        let mut r = self.cutoff();
+    /// Radius used by notes and dark-sky / finite-sky verdicts (not the cutoff).
+    ///
+    /// Finite age: `c t`. Expanding, infinite age: `c/H`. The `cutoff_m` knob
+    /// is not this radius — standing-theory verdicts use the improper limit,
+    /// and a finite-age sky is judged at `c t` even if the cutoff is smaller.
+    fn verdict_radius(&self) -> Qty<Length> {
         if self.finite_age {
-            let ct = self.age_horizon();
-            if ct.value() < r.value() {
-                r = ct;
-            }
+            self.age_horizon()
+        } else {
+            self.hubble_length()
         }
-        r
     }
 
     /// Unocculted flux from shells out to `r`, as typed irradiance.
@@ -192,10 +189,10 @@ impl OlbersSky {
 
     /// Optical depth to a stellar disk, `τ = n σ R` with `n = ρ_L / L_☉`
     /// and `σ = π R_☉²`. Dimensionless by construction: `(1/L³) · L² · L`.
-    fn optical_depth(&self, r: Qty<Length>) -> f64 {
+    fn optical_depth(&self, r: Qty<Length>) -> Qty<Dimensionless> {
         let n = cosmic_luminosity_density() / solar_luminosity();
         let sigma = solar_radius() * solar_radius() * PI;
-        (n * sigma * r).value()
+        n * sigma * r
     }
 
     fn stellar_surface(&self) -> Qty<Irradiance> {
@@ -272,7 +269,7 @@ impl Theory for OlbersSky {
                 self.cutoff_m
             );
         }
-        let r = self.horizon();
+        let r = self.verdict_radius();
         let f = self.flux_to(r);
         let tau = self.optical_depth(r);
         format!(
@@ -280,7 +277,7 @@ impl Theory for OlbersSky {
             self.name(),
             r.value(),
             f.value(),
-            tau
+            tau.value()
         )
     }
     fn claims(&self) -> Vec<Claim> {
@@ -402,12 +399,8 @@ fn eval_dark(sky: &OlbersSky) -> Verdict {
             sky.stellar_surface().value()
         )])
     } else {
-        let r = if sky.finite_age {
-            sky.age_horizon()
-        } else {
-            sky.hubble_length()
-        };
-        let tau = sky.optical_depth(r);
+        let r = sky.verdict_radius();
+        let tau = sky.optical_depth(r).value();
         let f = sky.flux_to(r);
         let star = sky.stellar_surface();
         let ratio = f.value() / star.value();
@@ -500,7 +493,11 @@ mod tests {
         assert_eq!(verdict(&h, SKY_FINITE), VerdictKind::Holds);
         assert_eq!(verdict(&h, NIGHT_SKY_DARK), VerdictKind::Holds);
         let tau = h.optical_depth(h.age_horizon());
-        assert!(tau < 1e-10, "τ = {tau} should be tiny at a Hubble time");
+        assert!(
+            tau.value() < 1e-10,
+            "τ = {} should be tiny at a Hubble time",
+            tau.value()
+        );
     }
 
     #[test]
@@ -568,6 +565,33 @@ mod tests {
         let f: Qty<Irradiance> = h.flux_to(h.age_horizon());
         let star: Qty<Irradiance> = h.stellar_surface();
         assert!(f.value() > 0.0 && f.value() < star.value());
+        let tau: Qty<Dimensionless> = h.optical_depth(h.age_horizon());
+        assert!(tau.value() > 0.0 && tau.value() < 1e-10);
+    }
+
+    #[test]
+    fn note_uses_the_same_radius_as_the_dark_sky_verdict() {
+        // A huge age with the default cutoff still sitting at 1e28 m: the
+        // note must report c t, not the cutoff, or it would look dark while
+        // night-sky-dark fails.
+        let mut h = OlbersSky::finite_age();
+        h.set("age_yr", KnobValue::Float(1.0e26)).unwrap();
+        assert_eq!(verdict(&h, NIGHT_SKY_DARK), VerdictKind::Fails);
+        let r = h.verdict_radius().value();
+        let ct = h.age_horizon().value();
+        assert!(
+            (r / ct - 1.0).abs() < 1e-12,
+            "verdict radius {r} must be c t {ct}, not cutoff"
+        );
+        let note = h.note();
+        assert!(
+            note.contains(&format!("{:.3e}", ct)),
+            "note must quote c t, got {note}"
+        );
+        assert!(
+            !note.contains("1.000e28"),
+            "note must not quote the cutoff as R_eff, got {note}"
+        );
     }
 
     #[test]

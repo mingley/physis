@@ -30,7 +30,10 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   to infinity. Verified: shell ratio 1 vs Hubble fall-off, flux doubling,
   expanding saturation ≈ 2 (static 100), Hubble-time `τ ~ 10⁻¹⁵`, ancient
   `τ ≳ 1`, cutoff independence, typed `ρ_L × length`, lab knob-diffs,
-  `fmt`, `clippy -D warnings`, full suite, and the CLI experiment.
+  `fmt`, `clippy -D warnings`, full suite, and the CLI experiment. Bugbot
+  follow-up: `note()` and `astro.night-sky-dark` share `verdict_radius`
+  (`c t` or `c/H`, never the cutoff), and `τ = n σ R` is a typed
+  `Qty<Dimensionless>` rather than an `f64` after `.value()`.
 
 - **Rayleigh–Jeans vs Planck: the ultraviolet catastrophe as a computed theorem**
   (`crates/physis-theory/src/blackbody.rs`, `specs/016-blackbody.md`, typed

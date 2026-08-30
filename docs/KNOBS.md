@@ -77,8 +77,9 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
   cancellation holds → fails *and* the two catastrophe cells fails → holds.
 - `age_yr` — cosmic age (years). `set olbers-horizon age_yr 1e26` makes `τ ≳ 1`:
   a finite but ancient sky is photosphere-bright.
-- `cutoff_m` — radial cutoff (metres). Standing-theory verdicts use the improper
-  `R → ∞` limit, not this cutoff (weakly live in the world note).
+- `cutoff_m` — radial cutoff (metres). Standing-theory verdicts and notes use
+  the improper `R → ∞` limit or `c t` / `c/H`, not this cutoff (weakly live
+  in the unbounded-static note as what the verdict is not).
 
 ### su5-gut
 - `supersymmetric` — MSSM matter. Flips `gut.coupling-unification`,
