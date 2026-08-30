@@ -75,7 +75,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `computation` | a combinational circuit vs a Turing machine — the halting problem and P vs NP as honest `undecidable`/`open` |
 | `field-modes` | a Klein–Gordon scalar and a 1D Dirac fermion on a lattice — computed dispersion, a tachyon from `mass² < 0`, unbounded minus-φ⁴ via `add-quartic`, and naive doubling lifted by `add-wilson` |
 | `gauge-lattice` | compact U(1) vs SU(2)/SU(3) — asymptotic freedom, a computed strong-coupling area law, and the 4D mass gap as a `conjecture` |
-| `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly** (needs quantum statistics) |
+| `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly**; `add-bose` / `add-fermi` are IR, not temperature knobs |
 | `blackbody` | cavity radiation — **Rayleigh–Jeans fails** finite energy, T⁴, and Wien's peak; Planck holds them; `set planck quantum false` restores the ultraviolet catastrophe |
 | `solid` | lattice oscillators — **Dulong–Petit fails** the third law; Einstein holds it but **fails T³** (exponential freeze-out); Debye holds both the third law and `C_V ∝ T³` |
 | `gravity` | solar-system gravity — **Newton fails** Eddington's 1.75″ and Mercury's 43″; GR holds them; Soldner's half-angle is the standing claim GR doubles |

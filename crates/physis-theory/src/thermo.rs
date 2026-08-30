@@ -17,9 +17,13 @@
 //! statistics are a package mutation (`add-bose`), not a temperature knob:
 //! the Sackur–Tetrode `ln T` entropy is unbounded below, and
 //! `thermo.third-law` fails; the mutant's low-T Bose entropy vanishes and
-//! the cell holds. `temperature` / `volume_ratio` / `particles` still scale
-//! the classical gas. That fork is still this object, not a silent
-//! Einstein-solid install.
+//! the cell holds. Degenerate Fermi statistics are a second package
+//! mutation (`add-fermi`): Sommerfeld `C_V = (π²/2) N k (T/T_F)` is not
+//! `(3/2) N k`, so `thermo.equipartition` fails. `temperature` /
+//! `volume_ratio` / `particles` still scale the classical gas. Those forks
+//! are still this object, not a silent Einstein-solid install.
+
+use std::f64::consts::PI;
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -60,23 +64,32 @@ pub fn thermo_rows() -> [&'static str; 6] {
 const MAXWELL_BOLTZMANN_EQ: &str = "gas maxwell-boltzmann";
 /// Bose quantum statistics (ideal Bose gas below a schematic T_c).
 const BOSE_EQ: &str = "gas bose";
+/// Degenerate Fermi statistics (Sommerfeld expansion at T ≪ T_F).
+const FERMI_EQ: &str = "gas fermi";
 /// Schematic Bose condensation temperature (K). Default T = 300 K is
 /// deeply non-degenerate, so equipartition stays (3/2) N k.
 const BOSE_TC_K: f64 = 1.0;
+/// Schematic Fermi temperature (K). Default T = 300 K is T/T_F ≪ 1,
+/// so Sommerfeld C_V is not (3/2) N k.
+const FERMI_TF_K: f64 = 5.0e4;
 /// Low-T third-law probe, as a fraction of T_c (same Θ/40 idea as Einstein).
 const THIRD_LAW_T_OVER_TC: f64 = 1.0 / 40.0;
+/// Fermi third-law probe: S/Nk = (π²/2)(T/T_F); T_F/400 keeps it vanishing.
+const FERMI_THIRD_LAW_T_OVER_TF: f64 = 1.0 / 400.0;
 /// (5/2) ζ(5/2)/ζ(3/2): S/Nk = this × (T/T_c)^{3/2} for T < T_c.
 const BOSE_S_PREF: f64 = 1.283_788;
 /// S/Nk below this at the probe counts as vanishing.
 const THIRD_LAW_S_NK: f64 = 0.05;
 
-fn parse_gas_statistics(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_gas_statistics(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut maxwell = false;
     let mut bose = false;
+    let mut fermi = false;
     for eq in &pkg.equations {
         match eq.trim() {
             MAXWELL_BOLTZMANN_EQ => maxwell = true,
             BOSE_EQ => bose = true,
+            FERMI_EQ => fermi = true,
             _ => {}
         }
     }
@@ -86,15 +99,24 @@ fn parse_gas_statistics(pkg: &TheoryPackage) -> Result<bool, String> {
             pkg.id
         ));
     }
-    Ok(bose)
+    Ok((bose, fermi))
 }
 
 fn third_law_domain() -> DomainOfValidity {
     DomainOfValidity::new(
         vec!["classical Maxwell-Boltzmann Sackur-Tetrode".into()],
         vec!["S ∝ ln T with no ground-state cutoff".into()],
-        "The third-law cell is the classical gas encoding. Bose statistics \
-         are a new encoding, not a silent temperature knob.",
+        "The third-law cell is the classical gas encoding. Bose or Fermi \
+         statistics are a new encoding, not a silent temperature knob.",
+    )
+}
+
+fn equipartition_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["classical C_V = 3/2 Nk".into()],
+        vec!["U = 3/2 N k T on Maxwell-Boltzmann and non-degenerate Bose".into()],
+        "The equipartition cell is the classical gas encoding. A degenerate \
+         Fermi sea is a new encoding, not a silent temperature knob.",
     )
 }
 
@@ -135,8 +157,10 @@ const SPECS: &[KnobSpec] = &[
 ///
 /// Statistics live on the IR package. Bose quantum statistics are a
 /// package mutation (`add-bose`), not a knob: the third law fails on the
-/// classical encoding and holds on the mutant. That fork is still this
-/// object, not a silent Einstein-solid install. `temperature` /
+/// classical encoding and holds on the mutant. Degenerate Fermi statistics
+/// are a second mutation (`add-fermi`): Sommerfeld heat capacity is not
+/// (3/2) N k, so equipartition fails. Those forks are still this object,
+/// not a silent Einstein-solid install. `temperature` /
 /// `volume_ratio` / `particles` stay knobs.
 #[derive(Clone, Debug, PartialEq)]
 pub struct IdealGas {
@@ -144,6 +168,8 @@ pub struct IdealGas {
     volume_ratio: f64,
     particles: f64,
     bose: bool,
+    /// Degenerate Fermi sea. Not a knob.
+    fermi: bool,
 }
 
 impl Default for IdealGas {
@@ -153,14 +179,28 @@ impl Default for IdealGas {
             volume_ratio: 2.0,
             particles: 1.0e23,
             bose: false,
+            fermi: false,
         }
     }
 }
 
 impl IdealGas {
-    /// Internal energy U = (3/2) N k T, as a typed energy (kelvin × k_B × N).
+    /// Internal energy. Live / Bose: U = (3/2) N k T. Fermi: Sommerfeld
+    /// U = (3/5) N k T_F [1 + (5π²/12)(T/T_F)²].
     fn internal_energy(&self) -> Qty<Energy> {
-        k_boltzmann() * kelvin(self.temperature_k) * (1.5 * self.particles)
+        if self.fermi {
+            let t = self.temperature_k;
+            let tf = FERMI_TF_K;
+            let ratio = t / tf;
+            let u = 0.6
+                * self.particles
+                * k_boltzmann().value()
+                * tf
+                * (1.0 + (5.0 * PI * PI / 12.0) * ratio * ratio);
+            Qty::new(u)
+        } else {
+            k_boltzmann() * kelvin(self.temperature_k) * (1.5 * self.particles)
+        }
     }
 
     /// Heat capacity C_v = dU/dT, computed by finite difference (should be
@@ -178,12 +218,15 @@ impl IdealGas {
     }
 
     /// IR package for this statistics encoding. Equations are
-    /// `gas maxwell-boltzmann` and, when forked, `gas bose`.
-    /// Temperature, volume ratio, and N stay on the struct.
+    /// `gas maxwell-boltzmann` and, when forked, `gas bose` and/or
+    /// `gas fermi`. Temperature, volume ratio, and N stay on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![MAXWELL_BOLTZMANN_EQ.to_string()];
         if self.bose {
             equations.push(BOSE_EQ.to_string());
+        }
+        if self.fermi {
+            equations.push(FERMI_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -210,8 +253,10 @@ impl IdealGas {
                 pkg.id
             ));
         }
+        let (bose, fermi) = parse_gas_statistics(pkg)?;
         Ok(Self {
-            bose: parse_gas_statistics(pkg)?,
+            bose,
+            fermi,
             ..Self::default()
         })
     }
@@ -220,11 +265,18 @@ impl IdealGas {
         BOSE_EQ.to_string()
     }
 
+    fn fermi_equation() -> String {
+        FERMI_EQ.to_string()
+    }
+
     /// Low-T entropy per particle in units of k. Classical Sackur–Tetrode
     /// is unbounded below (`∝ ln T`). Below T_c an ideal Bose gas has
-    /// `S/Nk = (5/2) ζ(5/2)/ζ(3/2) (T/T_c)^{3/2} → 0`.
+    /// `S/Nk = (5/2) ζ(5/2)/ζ(3/2) (T/T_c)^{3/2} → 0`. A degenerate Fermi
+    /// gas has `S/Nk = (π²/2) (T/T_F) → 0`.
     fn entropy_over_nk_at(&self, temperature_k: f64) -> f64 {
-        if self.bose && temperature_k < BOSE_TC_K {
+        if self.fermi {
+            (PI * PI / 2.0) * (temperature_k / FERMI_TF_K)
+        } else if self.bose && temperature_k < BOSE_TC_K {
             BOSE_S_PREF * (temperature_k / BOSE_TC_K).powf(1.5)
         } else {
             1.5 * temperature_k.ln()
@@ -275,8 +327,9 @@ impl Theory for IdealGas {
         "A monatomic ideal gas on the statistical layer. Equipartition \
          and the second law hold on the classical encoding; the third law \
          fails because Sackur–Tetrode entropy is unbounded below (S ∝ ln T). \
-         Bose statistics are an IR mutation, not a temperature knob, and not \
-         a silent Einstein-solid install."
+         Bose statistics are an IR mutation, not a temperature knob. \
+         Degenerate Fermi statistics are a second IR mutation: Sommerfeld \
+         C_V is not (3/2) N k. Neither fork is a silent Einstein-solid install."
     }
     fn world(&self) -> Option<World> {
         None // thermodynamics lives on the statistical layer, not spacetime
@@ -294,7 +347,8 @@ impl Theory for IdealGas {
                 "Energy is equipartitioned: C_v = (3/2) N k.",
                 LayerId::Statistical,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(equipartition_domain()),
             Claim::new(
                 SECOND_LAW,
                 "A spontaneous free expansion does not decrease entropy.",
@@ -322,7 +376,17 @@ impl Theory for IdealGas {
                             cv / (self.particles * k_boltzmann().value())
                         )])
                 } else {
-                    Verdict::fails(claim, "heat capacity is not (3/2) N k")
+                    Verdict::fails(
+                        claim,
+                        format!(
+                            "heat capacity is not (3/2) N k (C_v/(Nk) = {:.4})",
+                            cv / (self.particles * k_boltzmann().value())
+                        ),
+                    )
+                    .with_evidence([format!(
+                        "Sommerfeld C_V = (π²/2) N k (T/T_F) at T = {} K, T_F = {FERMI_TF_K} K",
+                        self.temperature_k
+                    )])
                 }
             }
             SECOND_LAW => {
@@ -339,7 +403,21 @@ impl Theory for IdealGas {
                 }
             }
             THIRD_LAW => {
-                if self.bose {
+                if self.fermi {
+                    let t_probe = FERMI_TF_K * FERMI_THIRD_LAW_T_OVER_TF;
+                    let s = self.entropy_over_nk_at(t_probe);
+                    if s.abs() < THIRD_LAW_S_NK {
+                        Verdict::holds(claim, "Fermi entropy S/Nk = (π²/2)(T/T_F) → 0 as T → 0")
+                            .with_evidence([format!(
+                                "S/Nk = {s:.3e} at T = T_F/400 = {t_probe:.3} K"
+                            )])
+                    } else {
+                        Verdict::fails(claim, "Fermi entropy at the low-T probe is not vanishing")
+                            .with_evidence([format!(
+                                "S/Nk = {s:.3e} at T = T_F/400 = {t_probe:.3} K"
+                            )])
+                    }
+                } else if self.bose {
                     let t_probe = BOSE_TC_K * THIRD_LAW_T_OVER_TC;
                     let s = self.entropy_over_nk_at(t_probe);
                     if s.abs() < THIRD_LAW_S_NK {
@@ -374,28 +452,42 @@ impl Theory for IdealGas {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.bose = parsed.bose;
+        fork.fermi = parsed.fermi;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.bose {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::bose_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.bose => {
-                let mut fork = self.clone();
-                fork.bose = true;
-                vec![("add-bose".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.bose {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::bose_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.bose {
+                    let mut fork = self.clone();
+                    fork.bose = true;
+                    out.push(("add-bose".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.fermi {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::fermi_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.fermi {
+                    let mut fork = self.clone();
+                    fork.fermi = true;
+                    out.push(("add-fermi".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -410,14 +502,14 @@ pub fn thermodynamics() -> ExperimentReport {
         "Equipartition and the second law are computed; third-law failures are \
          real properties of the classical encodings, not modelling shortcuts. \
          Einstein's exponential freeze-out and Debye's T³ both hold the third-law \
-         row; only Debye holds thermo.debye-t3. Bose statistics on the ideal gas \
-         are IR (`add-bose` is an IR fork, not a temperature knob).",
+         row; only Debye holds thermo.debye-t3. Bose and Fermi statistics on the \
+         ideal gas are IR (`add-bose` / `add-fermi` are IR forks, not temperature knobs).",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "U, C_v and ΔS are computed; T and energy are distinct types.".into(),
             "The classical ideal gas and Dulong–Petit both fail the third law; Einstein and Debye hold it.".into(),
             "`thermo.debye-t3` fails for Einstein (exponential) and holds for Debye (phonon continuum).".into(),
-            "`hypothesize ideal-gas`: add-bose is IR, not set.".into(),
+            "`hypothesize ideal-gas`: add-bose and add-fermi are IR, not set.".into(),
         ],
         &thermo_rows(),
         vec![
@@ -554,10 +646,34 @@ mod tests {
             "Bose S/Nk at T_c/40 must vanish, got {s}"
         );
         let probes = IdealGas::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-bose");
-        assert_eq!(verdict(probes[0].1.as_ref(), THIRD_LAW), VerdictKind::Holds);
-        assert!(fork.structural_mutations().is_empty());
+        assert_eq!(probes.len(), 2);
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-bose"),
+            "live gas must offer add-bose: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-fermi"),
+            "live gas must offer add-fermi: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let bose_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-bose")
+            .unwrap();
+        assert_eq!(
+            verdict(bose_probe.1.as_ref(), THIRD_LAW),
+            VerdictKind::Holds
+        );
+        let bose_probes = fork.structural_mutations();
+        assert!(
+            bose_probes.iter().all(|(label, _)| label != "add-bose"),
+            "bose fork must not re-offer add-bose"
+        );
+        assert!(
+            bose_probes.iter().any(|(label, _)| label == "add-fermi"),
+            "bose fork must still offer add-fermi"
+        );
         let live = IdealGas::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -596,6 +712,127 @@ mod tests {
                 .set("quantum", KnobValue::Bool(false))
                 .is_ok(),
             "Einstein-solid keeps the quantum knob"
+        );
+        assert!(
+            EinsteinSolid::einstein()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-fermi"),
+            "einstein-solid must not grow add-fermi"
+        );
+    }
+
+    #[test]
+    fn fermi_statistics_is_ir_not_a_knob() {
+        let mut g = IdealGas::default();
+        assert!(
+            IdealGas::default()
+                .set("fermi", KnobValue::Bool(true))
+                .is_err(),
+            "Fermi statistics is an IR mutation, not a knob"
+        );
+        assert!(
+            IdealGas::default()
+                .set("fermi_temp", KnobValue::Float(1.0e4))
+                .is_err(),
+            "T_F is not a knob"
+        );
+        assert!(
+            IdealGas::default()
+                .set("quantum", KnobValue::Bool(true))
+                .is_err(),
+            "ideal-gas must not grow a quantum knob; that stays on Einstein-solid"
+        );
+        let src = render_package(&g.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay maxwell-boltzmann"
+        );
+        assert_eq!(pkg.equations[0], MAXWELL_BOLTZMANN_EQ);
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(IdealGas::fermi_equation()),
+        );
+        let parsed = IdealGas::from_package(&mutated).unwrap();
+        assert!(parsed.fermi);
+        let mut fork = g.clone();
+        fork.fermi = true;
+        assert_eq!(verdict(&fork, EQUIPARTITION), VerdictKind::Fails);
+        assert_eq!(verdict(&g, EQUIPARTITION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, THIRD_LAW), VerdictKind::Holds);
+        assert_eq!(verdict(&g, THIRD_LAW), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, SECOND_LAW), VerdictKind::Holds);
+        let cv_over_nk = fork.heat_capacity() / (fork.particles * k_boltzmann().value());
+        let expected = (PI * PI / 2.0) * (fork.temperature_k / FERMI_TF_K);
+        assert!(
+            (cv_over_nk - expected).abs() < 1e-4,
+            "Sommerfeld C_V/(Nk) must match (π²/2)(T/T_F) = {expected}, got {cv_over_nk}"
+        );
+        g.set("volume_ratio", KnobValue::Float(0.5)).unwrap();
+        assert_eq!(verdict(&g, SECOND_LAW), VerdictKind::Fails);
+        assert_eq!(verdict(&g, EQUIPARTITION), VerdictKind::Holds);
+        let t_probe = FERMI_TF_K * FERMI_THIRD_LAW_T_OVER_TF;
+        let s = fork.entropy_over_nk_at(t_probe);
+        assert!(
+            s.abs() < THIRD_LAW_S_NK,
+            "Fermi S/Nk at T_F/400 must vanish, got {s}"
+        );
+        let probes = IdealGas::default().structural_mutations();
+        let f = probes
+            .iter()
+            .find(|(label, _)| label == "add-fermi")
+            .expect("add-fermi");
+        assert_eq!(verdict(f.1.as_ref(), EQUIPARTITION), VerdictKind::Fails);
+        let fermi_probes = fork.structural_mutations();
+        assert!(
+            fermi_probes.iter().all(|(l, _)| l != "add-fermi"),
+            "fermi fork must not re-offer add-fermi"
+        );
+        assert!(
+            fermi_probes.iter().any(|(l, _)| l == "add-bose"),
+            "fermi fork must still offer add-bose"
+        );
+        let live = IdealGas::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("temperature").unwrap(),
+            KnobValue::Float(300.0),
+            "reparse must overlay statistics IR onto live knobs"
+        );
+        assert_eq!(verdict(rebuilt.as_ref(), EQUIPARTITION), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == EQUIPARTITION)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "ideal-gas equipartition must name classical C_V: {:?}",
+            cell.domain()
+        );
+        assert!(
+            EinsteinSolid::einstein()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-fermi"),
+            "einstein-solid must not grow add-fermi"
+        );
+        assert!(
+            EinsteinSolid::einstein()
+                .set("quantum", KnobValue::Bool(false))
+                .is_ok(),
+            "Einstein-solid keeps the quantum knob"
+        );
+        assert!(
+            IdealGas::default()
+                .set("temperature", KnobValue::Float(1.0))
+                .is_ok(),
+            "ideal-gas keeps the temperature knob"
         );
     }
 }

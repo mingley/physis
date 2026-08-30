@@ -67,7 +67,7 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 `empirical.sm-gauge` fail: Spin(10) has no geometric room in a smaller fibre.
 
 ### ideal-gas
-- `temperature` — gas temperature (K). Statistics are not this knob: `add-bose` is an IR mutation
+- `temperature` — gas temperature (K). Statistics are not this knob: `add-bose` and `add-fermi` are IR mutations
 - `volume_ratio` — V_f/V_i for an isothermal expansion
 - `particles` — number of gas particles N
 

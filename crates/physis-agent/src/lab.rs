@@ -5100,6 +5100,10 @@ mod tests {
             "{text}"
         );
         assert!(
+            text.contains("add-fermi"),
+            "fermi must still be an IR fork: {text}"
+        );
+        assert!(
             text.contains("thermo.third-law") && text.contains("fails → holds"),
             "{text}"
         );
@@ -5154,6 +5158,101 @@ mod tests {
         assert!(
             es.contains("not yet a machine-checked regime"),
             "Einstein-solid third law stays encoding-wide: {es}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_ideal_gas_fermi_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["fermi", "fermi_temp", "lambda"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "ideal-gas".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+        let q_blocked = lab.exec(Command::Set {
+            theory: "ideal-gas".into(),
+            knob: "quantum".into(),
+            value: "true".into(),
+        });
+        assert_eq!(q_blocked.exit_code(), 1, "{}", q_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("ideal-gas".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-fermi") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-fermi: package → add-fermi";
+        let start = text.find(marker).expect("add-fermi hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  ideal-gas  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let fermi_block = &rest[..end];
+        assert!(
+            fermi_block.contains("thermo.equipartition") && fermi_block.contains("holds → fails"),
+            "add-fermi must flip equipartition holds to fails: {fermi_block}"
+        );
+        assert!(
+            !fermi_block.contains("thermo.second-law"),
+            "add-fermi is not the volume_ratio knob: {fermi_block}"
+        );
+        assert!(
+            text.contains("add-bose"),
+            "bose must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("ideal-gas").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "thermo.equipartition" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("temperature").unwrap().display(),
+            "300",
+            "hypothesize must restore knobs"
+        );
+        let einstein = lab.theory("einstein-solid").unwrap();
+        assert_eq!(
+            einstein.get("quantum").unwrap().display(),
+            "true",
+            "ideal-gas Fermi IR must not convert the Einstein-solid quantum knob"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "thermo.equipartition".into(),
+            })
+            .text()
+            .to_string();
+        let gas = why_theory_block(&why, "ideal-gas");
+        assert!(
+            gas.contains("classical C_V = 3/2 Nk"),
+            "ideal-gas equipartition must name classical C_V: {gas}"
+        );
+        assert!(
+            !gas.contains("not yet a machine-checked regime"),
+            "ideal-gas equipartition must not be encoding-wide: {gas}"
         );
     }
 
@@ -7557,6 +7656,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_gas.contains("add-bose"), "{hypo_gas}");
+        assert!(hypo_gas.contains("add-fermi"), "{hypo_gas}");
         let gas_again = lab
             .exec(Command::Encode {
                 theory: "ideal-gas".into(),

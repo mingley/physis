@@ -12,6 +12,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Ideal-gas degenerate Fermi statistics is an IR mutation**
+  (`ideal-gas`, `add-fermi`). Maxwell–Boltzmann statistics are the live
+  encoding (`gas maxwell-boltzmann`); appending `gas fermi` makes the
+  Sommerfeld heat capacity `C_V = (π²/2) N k (T/T_F)` instead of
+  `(3/2) N k` and flips `thermo.equipartition` holds to fails. That is
+  not a knob. Third-law also fails to holds (Fermi S/Nk → 0). The second
+  law still holds on the default expansion. `temperature` /
+  `volume_ratio` / `particles` stay knobs; `volume_ratio` still flips
+  `thermo.second-law`. Bose statistics remain a separate fork
+  (`add-bose`). Mutants stay `ideal-gas`; they are not a silent
+  Einstein-solid install. Equipartition names classical C_V = 3/2 Nk.
+  Mutants are not installed, not journaled, and not Canonical or P4.
+  Catalog d² hash unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Live encode pin unchanged. Verified: IR round-trip;
+  set fermi is unknown; hypothesize ideal-gas; live Maxwell–Boltzmann
+  restored; encode pin
+  `fb1dbc123bf6f00bc62cb49b4ba5df49a6b22aba81c6d9434e817c714ea18e06`.
+
 - **Klein–Gordon unbounded minus-φ⁴ is an IR mutation**
   (`klein-gordon`, `add-quartic`). The live scalar potential is
   quadratic; appending `potential minus-phi4` makes
