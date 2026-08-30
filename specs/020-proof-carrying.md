@@ -166,13 +166,13 @@ those tools; a local checkout without them still mints
 | 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist and Klein–Gordon stencil are live packages; `physis encode` independently round-trips them; not a Lean replacement |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
-| 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → enclose → cite → encode → replicate → design → audit → review |
+| 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review |
 | origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap/judgment |
 | gaps | `physis gaps`, `NodeKind::KnowledgeGap` | Live gap graph, content-addressed; rebuilt, not deserialized. `MissingTheorem` only for evaluator-Holds claims without a receipt; Fails is decided, not a missing lemma. `InsufficientPrecision` is overlap without containment on an empirical receipt, **or** a lattice too coarse to certify a numerical order (`field.second-order-accurate`, `|k a| ≥ 1`). `ComputationallyIntractable` is coNP-complete / exponential search, not Rice. `MissingDataset` is an empirical prediction with no registered dataset. Super-K `p→e+π0` is registered; `gut.proton-lifetime-sk` is the dim-6 comparison, not that hole |
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
 | evidence | `physis evidence`, `NodeKind::Evidence` | Competing encodings (distinct FormalClaims of one slug) and competing evaluations; Statement + Evaluation parents; content-addressed, not deserialized; confidence is derived TrustProfile, not a numeric score; never Canonical or P4 |
 | trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
-| roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove or score. Proof-searcher cannot remint. Replication-agent remints (not P4). Empirical-analyst scores. Numerical-verifier encloses. Provenance-auditor cites. Encoding-auditor round-trips live IR packages. Budget is a cap, not a proof |
+| roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove or score. Proof-searcher cannot remint. Replication-agent remints (not P4). Empirical-analyst scores. Numerical-verifier encloses. Provenance-auditor cites. Encoding-auditor round-trips live IR packages. Judge rebuilds `from_lab` (JSON cannot mint `logical proved`). Budget is a cap, not a proof |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus, bound to the catalog FormalClaim; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
@@ -223,8 +223,10 @@ identity; a slug-only review line is not P3S.
   rehash a `SourceRecord`; that is `provenance-auditor` (`physis cite`;
   not P3S). A reviewer cannot independently round-trip a live theory
   IR package; that is `encoding-auditor` (`physis encode`; combinational
-  NAND and Klein–Gordon stencil; not P3S). Judge is not an empty alias
-  for an existing op.
+  NAND and Klein–Gordon stencil; not P3S). An explorer cannot
+  independently rebuild a `from_lab` judgment; that is `judge`
+  (`physis judge`; unique-vacuum stays heuristic failed; JSON cannot
+  mint `logical proved`).
 
 ## Vertical slice
 

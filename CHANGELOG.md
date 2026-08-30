@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Independent from_lab judge is a unique judge op**
+  (`physis judge`, `Role::Judge`). Rebuilds `Judgment::from_lab` from live
+  evaluator axes and receipts into a JudgmentProjection DAG. Unique-vacuum
+  is heuristic failed, not logical proved. Super-K is empirical excluded.
+  GQW NLL is statistical computed. GUT-scale 3/8 is numeric certified.
+  Poincaré stays logical undetermined. Catalog d² is logical proved only
+  after a live dual-check. A forged `projection_hash` cannot mint.
+  Not P3S, not Canonical, not P4. Loop judges after encode. Unique-vacuum
+  graph id unchanged. P3N count stays 4. Unique-vacuum projection
+  `0dadce8d7bfc005efc32e47917f75b4c17ea77900ec9f6592010fd81f0f1ea76`.
+  GUT-scale 3/8 projection
+  `40c991698dbff52a5614093b98edcc3478a3702ddcb5cc545f9818af4a6448ae`.
+  Verified: role gates; journal restore; JSONL cannot mint proved.
+
 - **Independent IR package encode is a unique encoding-auditor op**
   (`physis encode`, `Role::EncodingAuditor`). Parses, round-trips, and
   reconstructs live theory IR packages (`combinational-circuit` NAND

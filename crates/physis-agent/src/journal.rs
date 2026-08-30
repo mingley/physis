@@ -149,6 +149,19 @@ pub enum JournalEvent {
         /// a forged hash cannot mint the package.
         package_hash: String,
     },
+    /// An independent `from_lab` judgment projection. Restore rebuilds
+    /// from live evaluator axes and receipts. The recorded projection
+    /// hash is not deserialized as authority, is not Canonical or P4,
+    /// and cannot mint `logical proved`.
+    Judge {
+        /// Unix millis.
+        t: u64,
+        /// Claim id (lab slug).
+        claim: String,
+        /// Content-addressed JudgmentProjection node hex. Restore
+        /// rebuilds; a forged hash cannot mint the projection.
+        projection_hash: String,
+    },
 }
 
 /// Parse JSONL into events, counting non-blank lines that fail to deserialize.
@@ -290,6 +303,15 @@ impl JournalEvent {
             t: now_ms(),
             theory: theory.into(),
             package_hash: package_hash.into(),
+        }
+    }
+
+    /// An independent from_lab projection, stamped with the current time.
+    pub fn judge(claim: impl Into<String>, projection_hash: impl Into<String>) -> Self {
+        JournalEvent::Judge {
+            t: now_ms(),
+            claim: claim.into(),
+            projection_hash: projection_hash.into(),
         }
     }
 }
@@ -571,6 +593,28 @@ mod tests {
             } => {
                 assert_eq!(theory, "combinational-circuit");
                 assert_eq!(package_hash, "deadbeef");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn judge_event_round_trips_and_cannot_mint_proved() {
+        let ev = JournalEvent::judge("predictivity.unique-vacuum", "deadbeef");
+        let s = serde_json::to_string(&ev).unwrap();
+        assert!(s.contains("\"event\":\"judge\""));
+        assert!(s.contains("\"projection_hash\":\"deadbeef\""));
+        assert!(!s.contains("receipt"), "{s}");
+        assert!(!s.contains("logical proved"), "{s}");
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Judge {
+                claim,
+                projection_hash,
+                ..
+            } => {
+                assert_eq!(claim, "predictivity.unique-vacuum");
+                assert_eq!(projection_hash, "deadbeef");
             }
             other => panic!("{other:?}"),
         }

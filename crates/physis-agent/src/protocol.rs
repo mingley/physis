@@ -171,6 +171,14 @@ pub enum Command {
         /// Theory id.
         theory: String,
     },
+    /// Independently rebuild [`physis_core::judgment::Judgment::from_lab`]
+    /// from live evaluator axes and receipts. Stores a content-addressed
+    /// JudgmentProjection. Not P3S, not a kernel receipt, not Canonical,
+    /// and not P4. JSON cannot mint `logical proved`.
+    Judge {
+        /// Claim id (lab slug).
+        claim: String,
+    },
 }
 
 impl Command {
@@ -209,6 +217,7 @@ impl Command {
             Command::Enclose { .. } => "enclose",
             Command::Cite { .. } => "cite",
             Command::Encode { .. } => "encode",
+            Command::Judge { .. } => "judge",
         }
     }
 }

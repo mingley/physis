@@ -63,6 +63,10 @@ pub struct Lab {
     cited_sources: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
     /// Independent IR package round-trips keyed by theory id. Not P3S.
     encoded_packages: BTreeMap<String, physis_core::artifact::ArtifactId>,
+    /// Independent from_lab projections keyed by statement hash. JSON
+    /// cannot mint `logical proved`.
+    judged_projections:
+        BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
 }
 
 /// The experiments the lab can run, with one-line descriptions.
@@ -129,6 +133,7 @@ impl Lab {
             numeric_certs: BTreeMap::new(),
             cited_sources: BTreeMap::new(),
             encoded_packages: BTreeMap::new(),
+            judged_projections: BTreeMap::new(),
         }
     }
 
@@ -274,7 +279,7 @@ impl Lab {
     }
 
     /// Re-apply journaled `set-knob` events and remint prove / review /
-    /// evidence / enclose / cite / encode from live state, **without** recording them again.
+    /// evidence / enclose / cite / encode / judge from live state, **without** recording them again.
     ///
     /// This resumes a persisted session: after loading a journal from a file,
     /// call this so subsequent turns build on the prior ones instead of on
@@ -287,7 +292,7 @@ impl Lab {
     /// Cite restore rebuilds source records from live fields. Encode
     /// restore rebuilds EncodingPackage nodes from live IR packages.
     /// Recorded hashes are not deserialized as the snapshot: a forged hash
-    /// cannot mint an Evidence, NumericCertificate, Source, or EncodingPackage node.
+    /// cannot mint an Evidence, NumericCertificate, Source, EncodingPackage, or JudgmentProjection node.
     /// [`crate::replay::replay_journal`] still certifies only `set-knob`
     /// diffs.
     pub fn restore_from_journal(&mut self) {
@@ -337,6 +342,11 @@ impl Lab {
                     // Rebuild from the live IR package. The recorded
                     // package hash is not deserialized.
                     let _ = self.build_encoding(&theory);
+                }
+                JournalEvent::Judge { claim, .. } => {
+                    // Rebuild from live from_lab. The recorded
+                    // projection hash is not deserialized.
+                    let _ = self.build_judgment(&claim);
                 }
                 _ => {}
             }
@@ -648,6 +658,13 @@ impl Lab {
                                     "  encoding:    none (IR package is not an independent round-trip)\n",
                                 );
                             }
+                            if let Some(id) = self.judged_projections.get(&c.statement_hash()) {
+                                text.push_str(&format!("  projection:  {id}\n"));
+                            } else {
+                                text.push_str(
+                                    "  projection:  none (judgment is not an independent from_lab rebuild)\n",
+                                );
+                            }
                             if let Some(nll) = v.statistical_nll() {
                                 text.push_str(&format!("  nll:        {nll}\n"));
                             }
@@ -782,6 +799,7 @@ impl Lab {
             Command::Enclose { claim } => self.enclose_claim(&claim),
             Command::Cite { claim } => self.cite_claim(&claim),
             Command::Encode { theory } => self.encode_theory(&theory),
+            Command::Judge { claim } => self.judge_claim(&claim),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -1406,6 +1424,81 @@ impl Lab {
         Ok((text, node))
     }
 
+    /// Independently rebuild [`Judgment::from_lab`] from live evaluator
+    /// axes and receipts. Does not mint, does not raise P3S, and cannot
+    /// deserialize `logical proved`.
+    fn judge_claim(&mut self, claim_id: &str) -> Response {
+        match self.build_judgment(claim_id) {
+            Ok((out, id)) => {
+                self.journal
+                    .record(JournalEvent::judge(claim_id, id.to_hex()));
+                Response::ok(out)
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Rebuild JudgmentProjection nodes from live from_lab. Does not
+    /// journal and does not deserialize a recorded projection hash.
+    fn build_judgment(
+        &mut self,
+        claim_id: &str,
+    ) -> Result<(String, physis_core::artifact::ArtifactId), String> {
+        let mut rows = Vec::new();
+        for t in self.theories.values() {
+            for (c, v) in t.evaluate_all() {
+                if c.id_str() != claim_id {
+                    continue;
+                }
+                let label = self.projected_judgment(&c, &v).label();
+                rows.push((t.id().to_string(), c.statement_hash(), label));
+            }
+        }
+        if rows.is_empty() {
+            return Err(format!("unknown claim '{claim_id}'"));
+        }
+
+        let mut text = format!("judge  {claim_id}\n");
+        let mut node_ids = Vec::new();
+        for (theory, hash, label) in &rows {
+            let stmt = self.store.insert(Node::new(
+                NodeKind::Statement,
+                vec![],
+                hash.to_hex().as_bytes(),
+            ));
+            let node = self.store.insert(Node::new(
+                NodeKind::JudgmentProjection,
+                vec![stmt],
+                label.as_bytes(),
+            ));
+            self.judged_projections.insert(*hash, node);
+            node_ids.push(node);
+            text.push_str(&format!("  identity  {}\n", hash.to_hex()));
+            text.push_str(&format!("    theory      {theory}\n"));
+            text.push_str(&format!("    judgment    {label}\n"));
+            text.push_str(&format!("    projection  {node}\n"));
+            text.push_str("    not P3S; not a kernel proof; not P4; not Canonical\n");
+        }
+        node_ids.sort();
+        let bundle = if node_ids.len() == 1 {
+            node_ids[0]
+        } else {
+            self.store.insert(Node::new(
+                NodeKind::JudgmentProjection,
+                node_ids,
+                claim_id.as_bytes(),
+            ))
+        };
+        let mut out = format!("judge  {claim_id}  projection {}\n", bundle.to_hex());
+        let prefix = format!("judge  {claim_id}\n");
+        if let Some(rest) = text.strip_prefix(&prefix) {
+            out.push_str(rest);
+        } else {
+            out.push_str(&text);
+        }
+        Ok((out, bundle))
+    }
+
     /// A dual-checked receipt for this slug counts only when it matches the
     /// live [`physis_core::claim::Claim::statement_hash`]. A stale receipt
     /// for an older identity is not P3F.
@@ -1842,7 +1935,7 @@ impl Lab {
     fn research_loop(&mut self) -> Response {
         let snap = self.snapshot_knobs();
         let mut text = String::from(
-            "loop observe → hypothesize → prove → falsify → enclose → cite → encode → replicate → design → audit → review\n",
+            "loop observe → hypothesize → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review\n",
         );
 
         let mut holds = 0usize;
@@ -1950,6 +2043,25 @@ impl Lab {
                     text.push_str(&format!("encode  {id}  {}\n", pkg.to_hex()));
                 }
                 Err(e) => text.push_str(&format!("encode  {id}  {e}\n")),
+            }
+        }
+
+        let mut judge_slugs = BTreeSet::new();
+        for spec in CATALOG {
+            judge_slugs.insert(spec.claim_id.to_string());
+        }
+        judge_slugs.insert("predictivity.unique-vacuum".into());
+        judge_slugs.insert("gut.proton-lifetime-sk".into());
+        judge_slugs.insert("gut.weinberg-angle-mz-interval".into());
+        judge_slugs.insert("gut.weinberg-angle".into());
+        judge_slugs.insert("dec.closed-equals-exact".into());
+        for slug in judge_slugs {
+            match self.build_judgment(&slug) {
+                Ok((_, id)) => {
+                    self.journal.record(JournalEvent::judge(&slug, id.to_hex()));
+                    text.push_str(&format!("judge  {slug}  {}\n", id.to_hex()));
+                }
+                Err(e) => text.push_str(&format!("judge  {slug}  {e}\n")),
             }
         }
 
@@ -4466,6 +4578,13 @@ mod tests {
             .unwrap_or_else(|| panic!("expected 64 hex package id in {line}"))
     }
 
+    fn judgment_projection_id(text: &str) -> physis_core::artifact::ArtifactId {
+        let line = text.lines().next().expect("empty judge");
+        let hex = line.split_whitespace().last().expect("projection hex");
+        physis_core::artifact::ArtifactId::from_hex(hex)
+            .unwrap_or_else(|| panic!("expected 64 hex projection id in {line}"))
+    }
+
     fn unique_vacuum_statement(lab: &Lab, theory: &str) -> physis_core::artifact::ArtifactId {
         let (c, _) = lab
             .theory(theory)
@@ -4948,6 +5067,10 @@ mod tests {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
         let text = lab.exec(Command::Loop).text().to_string();
+        assert!(
+            text.contains("encode → judge → replicate"),
+            "loop must project from_lab after encode: {text}"
+        );
         assert!(text.contains("prove  dec.d-squared-zero"), "{text}");
         assert!(text.contains("prove  sr.invariant-interval"), "{text}");
         assert!(text.contains("prove  sr.subluminal-composition"), "{text}");
@@ -5014,6 +5137,22 @@ mod tests {
         assert!(
             !text.contains("encode  type-iib"),
             "string constructions have no IR package: {text}"
+        );
+        assert!(
+            text.contains("judge  predictivity.unique-vacuum"),
+            "loop must independently project unique-vacuum from_lab: {text}"
+        );
+        assert!(
+            text.contains("judge  gut.proton-lifetime-sk"),
+            "loop must project Super-K as empirical, not logical: {text}"
+        );
+        assert!(
+            text.contains("judge  dec.d-squared-zero"),
+            "loop must project catalog identities after prove: {text}"
+        );
+        assert!(
+            text.contains("judge  gut.weinberg-angle"),
+            "loop must project GUT-scale 3/8 as numeric certified: {text}"
         );
         assert_eq!(
             lab.theory("type-iib")
@@ -6277,6 +6416,232 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains(&format!("encoding:    {live}")), "{why}");
+    }
+
+    #[test]
+    fn judge_projects_from_lab_and_cannot_mint_proved() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Judge {
+            claim: "predictivity.unique-vacuum".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("explorer cannot judge"),
+            "{}",
+            blocked.text()
+        );
+
+        lab.set_role(Role::EncodingAuditor);
+        let blocked_enc = lab.exec(Command::Judge {
+            claim: "predictivity.unique-vacuum".into(),
+        });
+        assert!(
+            blocked_enc.text().contains("encoding-auditor cannot judge"),
+            "{}",
+            blocked_enc.text()
+        );
+
+        lab.set_role(Role::Judge);
+        let prove = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            prove.text().contains("judge cannot prove"),
+            "{}",
+            prove.text()
+        );
+
+        let before = lab
+            .exec(Command::Why {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            before.contains("none (judgment is not an independent from_lab rebuild)"),
+            "judge is a unique op, not an observe print:\n{before}"
+        );
+
+        let uniq = lab
+            .exec(Command::Judge {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(uniq.contains("heuristic failed"), "{uniq}");
+        assert!(!uniq.contains("logical proved"), "{uniq}");
+        assert!(uniq.contains("not P3S"), "{uniq}");
+        assert!(!uniq.contains("receipt"), "{uniq}");
+        let uniq_id = judgment_projection_id(&uniq);
+        assert_eq!(
+            uniq_id.to_hex(),
+            "0dadce8d7bfc005efc32e47917f75b4c17ea77900ec9f6592010fd81f0f1ea76"
+        );
+        assert_eq!(
+            lab.store.get(uniq_id).map(|n| n.kind),
+            Some(NodeKind::JudgmentProjection)
+        );
+
+        let sk = lab
+            .exec(Command::Judge {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        assert!(sk.contains("empirical excluded"), "{sk}");
+        assert!(!sk.contains("logical proved"), "{sk}");
+
+        let pdg = lab
+            .exec(Command::Judge {
+                claim: "gut.weinberg-angle-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(pdg.contains("statistical computed"), "{pdg}");
+
+        let gut = lab
+            .exec(Command::Judge {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        assert!(gut.contains("numeric certified"), "{gut}");
+
+        let poincare = lab
+            .exec(Command::Judge {
+                claim: "dec.closed-equals-exact".into(),
+            })
+            .text()
+            .to_string();
+        assert!(poincare.contains("logical undetermined"), "{poincare}");
+        assert!(!poincare.contains("logical proved"), "{poincare}");
+
+        let d2 = lab
+            .exec(Command::Judge {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(d2.contains("logical undetermined"), "{d2}");
+        assert!(!d2.contains("logical proved"), "{d2}");
+
+        lab.set_role(Role::Lab);
+        let _ = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        lab.set_role(Role::Judge);
+        let d2p = lab
+            .exec(Command::Judge {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(d2p.contains("logical proved"), "{d2p}");
+        assert!(!d2p.contains("receipt"), "{d2p}");
+
+        let p3s = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3S".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3s.contains("count 0"), "judge must not raise P3S: {p3s}");
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3n.contains("count 4"), "judge must not mint P3N: {p3n}");
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("projection:  "), "{why}");
+        assert!(
+            !why.contains("none (judgment is not an independent from_lab rebuild)"),
+            "live from_lab rebuild should bind a projection id:\n{why}"
+        );
+        assert!(why.contains("heuristic failed"), "{why}");
+        assert!(!why.contains("logical proved"), "{why}");
+
+        let ev = lab
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            evidence_graph_id(&ev).to_hex(),
+            "6ee50cdc3de02838465b178b47061d8d5b36d6c135baf40f80988ff640a36bc9",
+            "from_lab projection must not change the unique-vacuum evidence payload"
+        );
+    }
+
+    #[test]
+    fn judgment_projection_restores_by_rebuild_not_deserialize() {
+        let mut lab1 = Lab::standard();
+        let first = lab1
+            .exec(Command::Judge {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        let live = judgment_projection_id(&first);
+        assert_eq!(
+            live.to_hex(),
+            "40c991698dbff52a5614093b98edcc3478a3702ddcb5cc545f9818af4a6448ae",
+            "journaling must not change the GUT-scale 3/8 projection payload"
+        );
+        let jsonl = lab1.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"judge\""), "{jsonl}");
+        assert!(
+            jsonl.contains(&format!("\"projection_hash\":\"{}\"", live.to_hex())),
+            "{jsonl}"
+        );
+        assert!(!jsonl.contains("logical proved"), "{jsonl}");
+
+        let mut lab2 = Lab::standard();
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        let journal_len = lab2.journal().len();
+        lab2.restore_from_journal();
+        assert_eq!(lab2.journal().len(), journal_len);
+        assert_eq!(
+            lab2.store.get(live).map(|n| n.kind),
+            Some(NodeKind::JudgmentProjection)
+        );
+
+        let forged_hex = "0".repeat(64);
+        let tampered = format!(
+            r#"{{"event":"judge","t":1,"claim":"gut.weinberg-angle","projection_hash":"{forged_hex}"}}"#
+        );
+        let mut lab3 = Lab::standard();
+        *lab3.journal_mut() = Journal::from_jsonl(&tampered);
+        lab3.restore_from_journal();
+        assert_eq!(
+            lab3.store.get(live).map(|n| n.kind),
+            Some(NodeKind::JudgmentProjection),
+            "tampered projection_hash is not the DAG"
+        );
+        let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
+            .expect("64 hex zeros is an ArtifactId");
+        assert!(lab3.store.get(forged).is_none());
+
+        let why = lab2
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains(&format!("projection:  {live}")), "{why}");
+        assert!(why.contains("numeric certified"), "{why}");
+        assert!(!why.contains("logical proved"), "{why}");
     }
 
     #[test]

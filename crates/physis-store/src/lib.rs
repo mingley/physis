@@ -56,6 +56,11 @@ pub enum NodeKind {
     /// P4. Restore rebuilds from the live package; a recorded hash is
     /// not deserialized.
     EncodingPackage,
+    /// An independent `Judgment::from_lab` projection of live evaluator
+    /// axes and receipts. Not deserialized as authority; never Canonical
+    /// or P4. Restore rebuilds from live `from_lab`; a recorded hash is
+    /// not deserialized. JSON cannot mint `logical proved`.
+    JudgmentProjection,
 }
 
 /// One DAG node.
@@ -238,5 +243,15 @@ mod tests {
         assert_ne!(pkg.id, theory.id);
         assert_ne!(pkg.id, review.id);
         assert_eq!(pkg.kind, NodeKind::EncodingPackage);
+    }
+
+    #[test]
+    fn judgment_projection_is_not_an_evaluation_or_evidence() {
+        let proj = Node::new(NodeKind::JudgmentProjection, vec![], b"heuristic failed");
+        let eval = Node::new(NodeKind::Evaluation, vec![], b"heuristic failed");
+        let graph = Node::new(NodeKind::Evidence, vec![], b"heuristic failed");
+        assert_ne!(proj.id, eval.id);
+        assert_ne!(proj.id, graph.id);
+        assert_eq!(proj.kind, NodeKind::JudgmentProjection);
     }
 }

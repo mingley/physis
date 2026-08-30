@@ -21,7 +21,8 @@ use crate::protocol::Command;
 /// cannot independently rehash a `SourceRecord`: that is
 /// [`Role::ProvenanceAuditor`] (not P3S). A reviewer cannot independently
 /// round-trip a live theory IR package: that is [`Role::EncodingAuditor`]
-/// (not P3S).
+/// (not P3S). An explorer cannot independently rebuild a `from_lab`
+/// judgment: that is [`Role::Judge`] (JSON cannot mint `logical proved`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Role {
@@ -55,11 +56,15 @@ pub enum Role {
     /// IR package. Cannot prove or review. Not P3S, not Canonical, and
     /// not P4.
     EncodingAuditor,
+    /// Independently rebuild [`physis_core::judgment::Judgment::from_lab`].
+    /// Cannot prove. JSON cannot mint `logical proved`. Not Canonical
+    /// and not P4.
+    Judge,
 }
 
 impl Role {
     /// Every named role, including the lab.
-    pub const ALL: [Role; 12] = [
+    pub const ALL: [Role; 13] = [
         Role::Lab,
         Role::Explorer,
         Role::Formalizer,
@@ -72,6 +77,7 @@ impl Role {
         Role::NumericalVerifier,
         Role::ProvenanceAuditor,
         Role::EncodingAuditor,
+        Role::Judge,
     ];
 
     /// Stable kebab-case name.
@@ -89,6 +95,7 @@ impl Role {
             Role::NumericalVerifier => "numerical-verifier",
             Role::ProvenanceAuditor => "provenance-auditor",
             Role::EncodingAuditor => "encoding-auditor",
+            Role::Judge => "judge",
         }
     }
 
@@ -101,7 +108,7 @@ impl Role {
     /// Observe-only ops: no knob writes, no mint, no review, no audit,
     /// no empirical score, no remint, no independent Ratio enclose, no
     /// independent SourceRecord rebuild, no independent IR package
-    /// round-trip.
+    /// round-trip, no independent from_lab projection.
     fn observe(cmd: &Command) -> bool {
         matches!(
             cmd,
@@ -153,6 +160,7 @@ impl Role {
             Role::NumericalVerifier => matches!(cmd, Command::Enclose { .. }),
             Role::ProvenanceAuditor => matches!(cmd, Command::Cite { .. }),
             Role::EncodingAuditor => matches!(cmd, Command::Encode { .. }),
+            Role::Judge => matches!(cmd, Command::Judge { .. }),
             Role::Explorer | Role::Lab => false,
         }
     }
@@ -338,7 +346,7 @@ mod tests {
         let enclose = Command::Enclose {
             claim: "gut.weinberg-angle".into(),
         };
-        assert_eq!(Role::ALL.len(), 12);
+        assert_eq!(Role::ALL.len(), 13);
         assert!(Role::NumericalVerifier.permits(&enclose));
         assert!(!Role::NumericalVerifier.permits(&prove()));
         assert!(!Role::NumericalVerifier.permits(&Command::Reproduce {
@@ -377,7 +385,7 @@ mod tests {
         let encode = Command::Encode {
             theory: "combinational-circuit".into(),
         };
-        assert_eq!(Role::ALL.len(), 12);
+        assert_eq!(Role::ALL.len(), 13);
         assert!(Role::EncodingAuditor.permits(&encode));
         assert!(!Role::EncodingAuditor.permits(&prove()));
         assert!(!Role::EncodingAuditor.permits(&review()));
@@ -396,6 +404,25 @@ mod tests {
         assert!(!Role::ProvenanceAuditor.permits(&encode));
         assert!(Role::Lab.permits(&encode));
         assert!(Role::parse("encoding-auditor") == Some(Role::EncodingAuditor));
+    }
+
+    #[test]
+    fn judge_can_project_not_prove() {
+        let judge = Command::Judge {
+            claim: "predictivity.unique-vacuum".into(),
+        };
+        assert_eq!(Role::ALL.len(), 13);
+        assert!(Role::Judge.permits(&judge));
+        assert!(!Role::Judge.permits(&prove()));
+        assert!(!Role::Judge.permits(&review()));
+        assert!(!Role::Judge.permits(&Command::Encode {
+            theory: "combinational-circuit".into(),
+        }));
+        assert!(!Role::Explorer.permits(&judge));
+        assert!(!Role::EncodingAuditor.permits(&judge));
+        assert!(!Role::ProofSearcher.permits(&judge));
+        assert!(Role::Lab.permits(&judge));
+        assert!(Role::parse("judge") == Some(Role::Judge));
     }
 
     #[test]

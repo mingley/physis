@@ -86,7 +86,7 @@ fn extract_opts(args: &[String]) -> Result<CliOpts, String> {
                 let name = &args[i + 1];
                 role = Role::parse(name).ok_or_else(|| {
                     format!(
-                        "unknown role '{name}' (lab|explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst|numerical-verifier|provenance-auditor|encoding-auditor)"
+                        "unknown role '{name}' (lab|explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst|numerical-verifier|provenance-auditor|encoding-auditor|judge)"
                     )
                 })?;
                 i += 2;
@@ -248,6 +248,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             let theory = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Encode { theory })
         }
+        "judge" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Judge { claim })
+        }
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -273,6 +277,7 @@ USAGE:
     physis enclose <claim-id>
     physis cite <claim-id>
     physis encode <theory>
+    physis judge <claim-id>
     physis falsify <claim-id>
     physis sweep <theory> <knob> <v1,v2,...>
     physis branch <name>

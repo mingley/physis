@@ -54,6 +54,7 @@ Level-3 trust
   L3 numerical enclose     ✓ physis enclose independently parses CertifiedNumeric Ratio strings into a NumericCertificate DAG; numerical-verifier unique op; restore rebuilds; not P3F, not Canonical, not P4; P3N count stays 4
   L3 provenance cite       ✓ physis cite independently rebuilds SourceRecord for PDG/Super-K datasets and catalog dossiers; provenance-auditor unique op; restore rebuilds; not P3S, not Canonical, not P4
   L3 encoding round-trip   ✓ physis encode independently parses, round-trips, and reconstructs live IR packages (combinational NAND, Klein-Gordon stencil); encoding-auditor unique op; restore rebuilds; not P3S, not Canonical, not P4
+  L3 judgment projection   ✓ physis judge independently rebuilds Judgment::from_lab into a JudgmentProjection DAG; judge unique op; unique-vacuum stays heuristic failed; JSON cannot mint logical proved; restore rebuilds; not Canonical, not P4
 ```
 
 Each milestone must:

@@ -30,7 +30,8 @@ Layer: agent
 | `enclose <claim>` | independently parse a `CertifiedNumeric` enclosure as `Ratio` and store a content-addressed NumericCertificate. Succeeds on the four P3N cells; refuses unique-vacuum, Super-K, GQW NLL, and Poincaré. Not a kernel receipt, not Canonical, not P4; P3N count stays 4. Restore rebuilds from live overlay strings |
 | `cite <claim>` | independently rebuild a live `SourceRecord` (PDG/Super-K datasets or catalog dossiers). Not P3S, not a kernel receipt, not Canonical, not P4. Unique-vacuum and GUT-scale 3/8 refuse (no precise source artifact). Restore rebuilds from live fields |
 | `encode <theory>` | independently parse, round-trip, and reconstruct a live theory IR package (`combinational-circuit`, `klein-gordon`). Stores a content-addressed EncodingPackage. Refuses theories with no package. Not P3S, not a kernel receipt, not Canonical, not P4. Restore rebuilds from the live package |
-| `loop` | one research cycle: observe → hypothesize (chosen/fitted knobs and IR package forks; measured frozen) → prove → falsify → enclose → cite → encode → replicate → design → audit → review |
+| `judge <claim>` | independently rebuild `Judgment::from_lab` from live evaluator axes and receipts. Stores a content-addressed JudgmentProjection. Unique-vacuum is heuristic failed (JSON cannot mint `logical proved`). Super-K is empirical excluded. GQW NLL is statistical computed. Not Canonical, not P4. Restore rebuilds from live `from_lab` |
+| `loop` | one research cycle: observe → hypothesize (chosen/fitted knobs and IR package forks; measured frozen) → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |
 | `experiment <id>` | canonical experiment (fresh defaults) |
@@ -40,7 +41,7 @@ Layer: agent
 
 CLI tokens map 1:1 onto `physis_agent::Command`.
 
-`--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst|numerical-verifier|provenance-auditor|encoding-auditor`
+`--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst|numerical-verifier|provenance-auditor|encoding-auditor|judge`
 gates which ops `exec` will dispatch. Named roles may observe (including `hypothesize`); each may
 run one kind of untrusted work. A proof-searcher cannot remint a receipt
 it requested; that is `replication-agent` (still not P4). An explorer
@@ -49,7 +50,9 @@ proof-searcher cannot independently parse a Ratio enclosure; that is
 `numerical-verifier` (not a kernel receipt, not P4). A reviewer cannot
 independently rehash a `SourceRecord`; that is `provenance-auditor`
 (not P3S). A reviewer cannot independently round-trip a live theory IR
-package; that is `encoding-auditor` (not P3S). None of
+package; that is `encoding-auditor` (not P3S). An explorer cannot
+independently rebuild a `from_lab` judgment; that is `judge` (JSON
+cannot mint `logical proved`). None of
 them mint `Verified` — `prove`
 still goes through `physis_verifier::verify`. `loop` and `replay` stay
 lab-only. `--budget prove=N,review=N,set=N` is a research cap on the
@@ -99,6 +102,10 @@ rather than parsing prose. Example: `physis --json set type-iib total_dim 9`.
   recorded hash is not deserialized as authority, is not P3S, and is
   not Canonical or P4. `replay_journal` ignores this event (it still
   certifies only `set-knob`)
+- `judge` — claim id, projection hash; restore rebuilds the
+  JudgmentProjection from live `Judgment::from_lab`. The recorded hash
+  is not deserialized as authority and cannot mint `logical proved`.
+  `replay_journal` ignores this event (it still certifies only `set-knob`)
 
 Append-only. Optional file backend (`Journal::file`).
 
@@ -121,12 +128,12 @@ line against fresh defaults, so to persist a real session across process runs,
 pass `--journal <file.jsonl>`: the lab loads the file and *restores* prior state
 (`Lab::restore_from_journal`) before the new turn, so the accumulated file
 replays faithfully. Restore remints prove/review of recorded identities and
-rebuilds evidence graphs, numeric certificates, source records, and
-encoding packages from live
+rebuilds evidence graphs, numeric certificates, source records,
+encoding packages, and judgment projections from live
 evaluations and packages;
 it does not deserialize a
 `Verified`, a semantic tag, a `graph_hash`, a `certificate_hash`, a
-`source_hash`, or a `package_hash` as the artifact. `physis replay`
+`source_hash`, a `package_hash`, or a `projection_hash` as the artifact. `physis replay`
 still certifies only `set-knob` diffs.
 
 Timestamps (`t`) are Unix milliseconds as `u64` — 128-bit integers do not
