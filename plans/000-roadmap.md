@@ -19,7 +19,7 @@ Level-3 trust
   L3-M7 physis-ir          ✓ line-oriented theory packages
   L3-M8 red-team corpus    ✓ physis audit
   L3-M9 experiment rank    ✓ physis design
-  L3-M10 research loop     planned (orchestrator)
+  L3-M10 research loop     ✓ physis loop (orchestrator)
   L3 Lean/nanoda kernels   planned
 ```
 

@@ -67,6 +67,26 @@ pub enum JournalEvent {
         /// Challenge hash hex.
         challenge_hash: String,
     },
+    /// Semantic review ran. Restore re-runs the dossier review; it does not
+    /// deserialize a semantic-assurance tag as authority.
+    Review {
+        /// Unix millis.
+        t: u64,
+        /// Claim id.
+        claim: String,
+        /// Evidence hash hex (informational; restore re-runs review).
+        evidence_hash: String,
+    },
+    /// One research-cycle summary. Restore is a no-op; inner prove/review
+    /// events re-run their checkers.
+    Loop {
+        /// Unix millis.
+        t: u64,
+        /// Catalog claims proved this cycle.
+        proved: Vec<String>,
+        /// Catalog claims reviewed this cycle.
+        reviewed: Vec<String>,
+    },
 }
 
 /// Parse JSONL into events, counting non-blank lines that fail to deserialize.
@@ -144,6 +164,24 @@ impl JournalEvent {
             t: now_ms(),
             claim: claim.into(),
             challenge_hash: challenge_hash.into(),
+        }
+    }
+
+    /// A successful semantic review, stamped with the current time.
+    pub fn review(claim: impl Into<String>, evidence_hash: impl Into<String>) -> Self {
+        JournalEvent::Review {
+            t: now_ms(),
+            claim: claim.into(),
+            evidence_hash: evidence_hash.into(),
+        }
+    }
+
+    /// A research-cycle summary, stamped with the current time.
+    pub fn research_loop(proved: Vec<String>, reviewed: Vec<String>) -> Self {
+        JournalEvent::Loop {
+            t: now_ms(),
+            proved,
+            reviewed,
         }
     }
 }

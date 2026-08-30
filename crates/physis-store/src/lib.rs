@@ -37,6 +37,8 @@ pub enum NodeKind {
     AgentAction,
     /// A verification receipt.
     VerificationReceipt,
+    /// A semantic-review record (provenance + independent encoding + audit).
+    SemanticReview,
 }
 
 /// One DAG node.

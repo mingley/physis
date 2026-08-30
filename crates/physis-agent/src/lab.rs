@@ -2,12 +2,14 @@
 
 use std::collections::BTreeMap;
 
+use physis_core::assurance::SemanticAssurance;
 use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
 use physis_core::formal::FormalClaim;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobValue};
-use physis_proof::{Challenge, UntrustedProof};
+use physis_proof::{Challenge, UntrustedProof, CATALOG};
+use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
 use physis_theory::blackbody::Blackbody;
 use physis_theory::computation::{CombinationalCircuit, LandauerEngine, TuringMachine};
@@ -42,6 +44,7 @@ pub struct Lab {
     theories: BTreeMap<String, Box<dyn Theory>>,
     journal: Journal,
     receipts: ReceiptStore,
+    reviews: SemanticStore,
     branches: BTreeMap<String, BranchState>,
     store: ArtifactStore,
 }
@@ -101,6 +104,7 @@ impl Lab {
             theories: BTreeMap::new(),
             journal: Journal::memory(),
             receipts: ReceiptStore::empty(),
+            reviews: SemanticStore::empty(),
             branches: BTreeMap::new(),
             store: ArtifactStore::empty(),
         }
@@ -252,6 +256,9 @@ impl Lab {
                 }
                 JournalEvent::Prove { claim, .. } => {
                     let _ = self.remint_exact(&claim);
+                }
+                JournalEvent::Review { claim, .. } => {
+                    let _ = self.remint_review(&claim);
                 }
                 _ => {}
             }
@@ -419,7 +426,7 @@ impl Lab {
                 let mut by_semantic: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
                 let mut total = 0usize;
                 for t in self.theories.values() {
-                    for (_c, v) in t.evaluate_all() {
+                    for (c, v) in t.evaluate_all() {
                         total += 1;
                         let idx = match v.kind {
                             VerdictKind::Holds => 0,
@@ -427,9 +434,10 @@ impl Lab {
                             VerdictKind::Undecidable => 2,
                             VerdictKind::Inapplicable => 3,
                         };
+                        let semantic = self.semantic_tag(&c.id.0, v.semantic);
                         by_derivation.entry(v.derivation.as_str()).or_default()[idx] += 1;
                         by_class.entry(v.class.as_str()).or_default()[idx] += 1;
-                        by_semantic.entry(v.semantic.as_str()).or_default()[idx] += 1;
+                        by_semantic.entry(semantic.as_str()).or_default()[idx] += 1;
                     }
                 }
                 let mut text = String::from(
@@ -505,7 +513,10 @@ impl Lab {
                             text.push_str(&format!("  class:      {}\n", v.class.as_str()));
                             text.push_str(&format!("  derivation: {}\n", v.derivation.as_str()));
                             text.push_str(&format!("  empirical:  {}\n", v.empirical.as_str()));
-                            text.push_str(&format!("  semantic:   {}\n", v.semantic.as_str()));
+                            text.push_str(&format!(
+                                "  semantic:   {}\n",
+                                self.semantic_tag(&c.id.0, v.semantic).as_str()
+                            ));
                             text.push_str(&format!("  identity:   {}\n", c.statement_hash));
                             text.push_str(&format!("  domain:     {}\n", c.domain.notes));
                             text.push_str("  assumptions:\n");
@@ -590,6 +601,8 @@ impl Lab {
             },
             Command::Design { theories } => self.design(&theories),
             Command::Sensitivity { theory, knob } => self.sensitivity(&theory, &knob),
+            Command::Review { claim } => self.review_claim(&claim),
+            Command::Loop => self.research_loop(),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -653,6 +666,13 @@ impl Lab {
         None
     }
 
+    fn semantic_tag(&self, claim_id: &str, fallback: SemanticAssurance) -> SemanticAssurance {
+        self.reviews
+            .by_claim(claim_id)
+            .map(|r| r.assurance())
+            .unwrap_or(fallback)
+    }
+
     /// Re-run the dual checkers. Never deserializes a `Verified` value.
     fn remint_exact(&mut self, claim_id: &str) -> Result<physis_verifier::ProofReceipt, String> {
         let claim = self
@@ -668,6 +688,33 @@ impl Lab {
             r.challenge_hash.to_hex().as_bytes(),
         ));
         Ok(r)
+    }
+
+    /// Re-run semantic review. Never deserializes a `SemanticAssurance` tag.
+    fn remint_review(&mut self, claim_id: &str) -> Result<physis_semantic::SemanticRecord, String> {
+        let rec = physis_semantic::review(claim_id).map_err(|e| e.to_string())?;
+        self.reviews.record(&rec);
+        self.store.insert(Node::new(
+            NodeKind::SemanticReview,
+            vec![rec.source_hash()],
+            rec.evidence_hash().to_hex().as_bytes(),
+        ));
+        Ok(rec)
+    }
+
+    fn review_claim(&mut self, claim_id: &str) -> Response {
+        match self.remint_review(claim_id) {
+            Ok(r) => {
+                self.journal
+                    .record(JournalEvent::review(claim_id, r.evidence_hash().to_hex()));
+                Response::ok(format!(
+                    "review {claim_id}\n  semantic {}\n  evidence {}\n  canonical reserved (not agent-mintable)\n",
+                    r.assurance().as_str(),
+                    r.evidence_hash()
+                ))
+            }
+            Err(e) => Response::err(e),
+        }
     }
 
     fn prove_claim(&mut self, claim_id: &str) -> Response {
@@ -690,6 +737,135 @@ impl Lab {
             }
             Err(e) => Response::err(e),
         }
+    }
+
+    fn research_loop(&mut self) -> Response {
+        let snap = self.snapshot_knobs();
+        let mut text = String::from(
+            "loop observe → hypothesize → prove → falsify → replicate → design → audit → review\n",
+        );
+
+        let mut holds = 0usize;
+        let mut fails = 0usize;
+        let mut asserted = 0usize;
+        for t in self.theories.values() {
+            for (_c, v) in t.evaluate_all() {
+                match v.kind {
+                    VerdictKind::Holds => holds += 1,
+                    VerdictKind::Fails => fails += 1,
+                    _ => {}
+                }
+                if v.derivation == physis_core::DerivationAssurance::Asserted {
+                    asserted += 1;
+                }
+            }
+        }
+        text.push_str(&format!(
+            "observe  holds={holds} fails={fails} asserted={asserted} receipts={}\n",
+            self.receipts.len()
+        ));
+
+        let mut hypo: Vec<&str> = Vec::new();
+        for spec in CATALOG {
+            if self.receipts.by_claim(spec.claim_id).is_none() {
+                hypo.push(spec.claim_id);
+            }
+        }
+        text.push_str(&format!("hypothesize  unproved_catalog={hypo:?}\n"));
+
+        let mut proved = Vec::new();
+        for spec in CATALOG {
+            match self.remint_exact(spec.claim_id) {
+                Ok(r) => {
+                    self.journal.record(JournalEvent::prove(
+                        spec.claim_id,
+                        r.challenge_hash.to_hex(),
+                    ));
+                    proved.push(spec.claim_id.to_string());
+                    text.push_str(&format!("prove  {}  {}\n", spec.claim_id, r.challenge_hash));
+                }
+                Err(e) => text.push_str(&format!("prove  {}  error: {e}\n", spec.claim_id)),
+            }
+        }
+
+        let falsify = self.falsify_claim("consistency.critical-dimension");
+        text.push_str("falsify  consistency.critical-dimension\n");
+        for line in falsify.text().lines().skip(1) {
+            text.push_str(&format!("  {line}\n"));
+        }
+
+        let mut replicate_ok = true;
+        for spec in CATALOG {
+            let before = self
+                .receipts
+                .by_claim(spec.claim_id)
+                .map(|r| r.challenge_hash);
+            match self.remint_exact(spec.claim_id) {
+                Ok(r) if Some(r.challenge_hash) == before => {
+                    text.push_str(&format!("replicate  {}  ok\n", spec.claim_id));
+                }
+                Ok(r) => {
+                    replicate_ok = false;
+                    text.push_str(&format!(
+                        "replicate  {}  hash changed {} → {}\n",
+                        spec.claim_id,
+                        before.map(|h| h.to_hex()).unwrap_or_else(|| "none".into()),
+                        r.challenge_hash
+                    ));
+                }
+                Err(e) => {
+                    replicate_ok = false;
+                    text.push_str(&format!("replicate  {}  error: {e}\n", spec.claim_id));
+                }
+            }
+        }
+
+        let design = self.design(&["olbers-static".into(), "olbers-horizon".into()]);
+        text.push_str("design\n");
+        for line in design.text().lines().skip(1) {
+            if !line.is_empty() {
+                text.push_str(&format!("  {line}\n"));
+            }
+        }
+
+        if let Err(e) = physis_audit::attack() {
+            self.restore_knobs(&snap);
+            return Response::err(format!("loop audit failed: {e}"));
+        }
+        text.push_str("audit  red-team corpus caught\n");
+
+        let mut reviewed = Vec::new();
+        for spec in CATALOG {
+            match self.remint_review(spec.claim_id) {
+                Ok(r) => {
+                    self.journal.record(JournalEvent::review(
+                        spec.claim_id,
+                        r.evidence_hash().to_hex(),
+                    ));
+                    reviewed.push(spec.claim_id.to_string());
+                    text.push_str(&format!(
+                        "review  {}  {}\n",
+                        spec.claim_id,
+                        r.assurance().as_str()
+                    ));
+                }
+                Err(e) => text.push_str(&format!("review  {}  error: {e}\n", spec.claim_id)),
+            }
+        }
+
+        self.restore_knobs(&snap);
+        let dim = self
+            .theory("type-iib")
+            .ok()
+            .and_then(|t| t.get("total_dim").ok())
+            .map(|v| v.display())
+            .unwrap_or_default();
+        text.push_str(&format!(
+            "restore  type-iib total_dim={dim}  replicate_ok={replicate_ok}\n"
+        ));
+        self.journal
+            .record(JournalEvent::research_loop(proved, reviewed));
+        Response::ok(text)
     }
 
     fn falsify_claim(&mut self, claim_id: &str) -> Response {
@@ -1398,5 +1574,98 @@ mod tests {
         });
         let t = lab.theory("type-iib").unwrap();
         assert_eq!(t.get("total_dim").unwrap().display(), "10");
+    }
+
+    #[test]
+    fn review_raises_semantic_and_why_shows_it() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Review {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("adversarially-reviewed"), "{text}");
+        assert!(text.contains("canonical reserved"), "{text}");
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("semantic:   adversarially-reviewed"), "{why}");
+        let epi = lab.exec(Command::Epistemics).text().to_string();
+        assert!(epi.contains("adversarially-reviewed"), "{epi}");
+        let unique = lab
+            .exec(Command::Why {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(unique.contains("semantic:   unreviewed"), "{unique}");
+    }
+
+    #[test]
+    fn review_conjecture_is_refused() {
+        let mut lab = Lab::standard();
+        let resp = lab.exec(Command::Review {
+            claim: "predictivity.unique-vacuum".into(),
+        });
+        assert_eq!(resp.exit_code(), 1);
+        assert!(resp.text().contains("no semantic dossier"));
+    }
+
+    #[test]
+    fn review_restores_by_rerun_not_by_deserialize() {
+        let mut lab = Lab::standard();
+        lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let jsonl = lab.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"review\""));
+        let mut lab2 = Lab::standard();
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab2.restore_from_journal();
+        let why = lab2
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("adversarially-reviewed"), "{why}");
+    }
+
+    #[test]
+    fn research_loop_proves_reviews_and_restores_knobs() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let text = lab.exec(Command::Loop).text().to_string();
+        assert!(text.contains("prove  dec.d-squared-zero"), "{text}");
+        assert!(text.contains("prove  sr.invariant-interval"), "{text}");
+        assert!(text.contains("counterexample"), "{text}");
+        assert!(text.contains("replicate  dec.d-squared-zero  ok"), "{text}");
+        assert!(text.contains("audit  red-team corpus caught"), "{text}");
+        assert!(
+            text.contains("review  dec.d-squared-zero  adversarially-reviewed"),
+            "{text}"
+        );
+        assert!(text.contains("restore  type-iib total_dim=10"), "{text}");
+        assert_eq!(
+            lab.theory("type-iib")
+                .unwrap()
+                .get("total_dim")
+                .unwrap()
+                .display(),
+            "10"
+        );
+        assert!(lab.journal().len() > journal_len);
+        let why = lab
+            .exec(Command::Why {
+                claim: "sr.invariant-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("kernel proof: receipt"), "{why}");
+        assert!(why.contains("adversarially-reviewed"), "{why}");
     }
 }

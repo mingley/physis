@@ -1,0 +1,17 @@
+[package]
+name = "physis-semantic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Semantic assurance from evidence. Agents cannot set the tag."
+
+[dependencies]
+physis-audit.workspace = true
+physis-core.workspace = true
+physis-ir.workspace = true
+physis-proof.workspace = true
+physis-provenance.workspace = true
+serde.workspace = true

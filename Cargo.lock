@@ -93,6 +93,7 @@ dependencies = [
  "physis-core",
  "physis-model",
  "physis-proof",
+ "physis-semantic",
  "physis-store",
  "physis-theory",
  "physis-verifier",
@@ -176,6 +177,18 @@ name = "physis-provenance"
 version = "0.1.0"
 dependencies = [
  "physis-core",
+ "serde",
+]
+
+[[package]]
+name = "physis-semantic"
+version = "0.1.0"
+dependencies = [
+ "physis-audit",
+ "physis-core",
+ "physis-ir",
+ "physis-proof",
+ "physis-provenance",
  "serde",
 ]
 

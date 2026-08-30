@@ -1,6 +1,6 @@
 # 020 — Proof-carrying Physis (Level 3)
 
-Status: active (Milestones 1–9 sliced; Lean/nanoda dual kernel still open)
+Status: active (Milestones 1–10 sliced; Lean/nanoda dual kernel still open)
 Layer: all
 Id: `proof-carrying`
 
@@ -42,7 +42,7 @@ receipt. That is not a Lean kernel proof; the receipt says so.
 
 Still open: Lean 4 + Physlib + Lean kernel + nanoda on the same export.
 
-### Milestones 3–9 — first slices
+### Milestones 3–10 — first slices
 
 | Slice | Crate / CLI | What it does |
 |---|---|---|
@@ -53,6 +53,8 @@ Still open: Lean 4 + Physlib + Lean kernel + nanoda on the same export.
 | 7 | `physis-ir` | Line-oriented theory package (not a Lean replacement) |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
+| 10 | `physis loop` | Observe → hypothesize → prove → falsify → replicate → design → audit → review |
+| semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
 Journal events are hash-linked in memory (`Journal::tip`).
@@ -60,20 +62,18 @@ Journal events are hash-linked in memory (`Journal::tip`).
 ## What is not yet true
 
 - Lean kernel replay + nanoda on a `lean4export` file
-- Semantic review workflow that can raise `SemanticAssurance` above `Unreviewed`
-- Full autonomous research loop (observe → hypothesize → prove → falsify →
-  replicate → design next experiment) as a single scheduled orchestrator
+- `SemanticAssurance::Canonical` (reserved; not agent-mintable)
 - Agents other than the lab protocol (Explorer, Formalizer, … as processes)
 
 ## Vertical slice
 
 | Item | Status |
 |---|---|
-| A. `d² = 0` | Dual-expanded exact identity; `physis prove` mints a receipt |
-| B. Lorentz interval | Same backend |
+| A. `d² = 0` | Dual-expanded exact identity; `physis prove` mints a receipt; `physis review` raises semantic |
+| B. Lorentz interval | Same backends |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset |
-| E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` refuses it |
+| E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |
 
 ## Pure-Rust rule (revised)
 

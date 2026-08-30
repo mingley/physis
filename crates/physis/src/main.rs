@@ -175,6 +175,11 @@ fn parse(args: &[String]) -> Result<Command, String> {
                 knob: args[2].clone(),
             })
         }
+        "review" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Review { claim })
+        }
+        "loop" => Ok(Command::Loop),
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -200,6 +205,8 @@ USAGE:
     physis compare <theory-a> <theory-b>
     physis design <theory> <theory> [...]
     physis sensitivity <theory> <knob>
+    physis review <claim-id>
+    physis loop
     physis audit
     physis experiments
     physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice | thermo | blackbody | solid | gravity | olbers | bell]

@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Level-3 semantic review and research loop**
+  (`physis-semantic`, `physis-agent`, `physis-proof` infix parser).
+  `physis review` raises `SemanticAssurance` only from a trusted dossier:
+  a precise source record, a second IR encoding whose unexpanded tree
+  matches the catalog identity (vacuous `0` is not `d² = 0`), and a
+  passing red-team corpus. `Canonical` is never assigned. Journal restore
+  re-runs review; it does not deserialize the tag. `physis loop` is one
+  scheduled cycle: observe, hypothesize unproved catalog identities,
+  prove, falsify, replicate receipts, design, audit, review. Sweep and
+  sensitivity probes are not journaled. Lean kernel + nanoda replay is
+  still unwired. Verified: compile-fail against SemanticRecord literals
+  and Deserialize, vacuous-zero rejection, review restore, loop restores
+  `total_dim`, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Level-3 dual-check receipts and protocol v2**
   (`physis-proof`, `physis-verifier`, `physis-audit`, `physis-numeric`,
   `physis-provenance`, `physis-store`, `physis-data`, `physis-ir`,

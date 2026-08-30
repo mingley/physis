@@ -13,6 +13,7 @@ members = [
     "crates/physis-data",
     "crates/physis-ir",
     "crates/physis-audit",
+    "crates/physis-semantic",
     "crates/physis-constants",
     "crates/physis",
 ]
@@ -39,6 +40,7 @@ physis-store = { path = "crates/physis-store", version = "0.1.0" }
 physis-data = { path = "crates/physis-data", version = "0.1.0" }
 physis-ir = { path = "crates/physis-ir", version = "0.1.0" }
 physis-audit = { path = "crates/physis-audit", version = "0.1.0" }
+physis-semantic = { path = "crates/physis-semantic", version = "0.1.0" }
 physis-constants = { path = "crates/physis-constants", version = "0.1.0" }
 typenum = { version = "1.17", default-features = false }
 serde = { version = "1.0", features = ["derive"] }

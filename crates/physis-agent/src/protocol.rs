@@ -106,6 +106,14 @@ pub enum Command {
         /// Knob name.
         knob: String,
     },
+    /// Raise semantic assurance from a trusted dossier (not an agent-set tag).
+    Review {
+        /// Claim id.
+        claim: String,
+    },
+    /// One scheduled research cycle: observe, hypothesize, prove, falsify,
+    /// replicate, design, audit, review.
+    Loop,
 }
 
 /// Lab → agent.

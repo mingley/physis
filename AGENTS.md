@@ -5,7 +5,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 ## What you may do
 
 1. Read `specs/`, `plans/`, `docs/`, and crate-level rustdoc.
-2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|falsify|sweep|branch|audit`).
+2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|falsify|sweep|branch|audit|review|loop`).
 3. Turn knobs through `Lab::set_knob` / `physis set`. Illegal values must be rejected by domain checks.
 4. Add tests that demonstrate a knob → verdict diff.
 5. Add a new theory as a `Theory` impl with its own knobs and claims. Do not special-case it in the CLI.
@@ -17,7 +17,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 - Do not treat `VerdictKind::Holds` as “true of nature”. Verdicts are internal to the encoding.
 - Do not treat `DerivationAssurance::Executed` as a kernel proof. It means the evaluator ran.
 - Do not invent a `theorem` tag or a `MachineProved` enum variant. Only `physis-verifier` can mint `Verified<T>`, and that mint is crate-private.
-- Do not silently upgrade `Asserted` (conjecture/heuristic/open) to `Executed`, or `Unreviewed` to a stronger semantic tag, without encoding an actual check.
+- Do not silently upgrade `Asserted` (conjecture/heuristic/open) to `Executed`, or `Unreviewed` to a stronger semantic tag, without encoding an actual check. `physis review` is allowed only because it *runs* provenance, a second encoding, and the red-team corpus. It never assigns `Canonical`.
 - Do not implement Geometric Unity, or claim to. `observer-geometry` is a scaffold.
 - Do not declare string theory false because `predictivity.unique-vacuum` fails. That cell *is* the landscape objection, labelled heuristic.
 - Do not add `unsafe`. The workspace is `#![forbid(unsafe_code)]`.
@@ -51,7 +51,7 @@ Every claim answers four questions. They are different Rust types.
 
 A theory can `Executed`-derive a prediction that nature `Excluded`. That is a feature.
 
-`physis why <claim>` prints assumptions, the statement hash, and `kernel proof: none` until `physis prove` (or `verify`) records a receipt. `ExactCertificate` is not a Lean kernel proof.
+`physis why <claim>` prints assumptions, the statement hash, and `kernel proof: none` until `physis prove` (or `verify`) records a receipt. `ExactCertificate` is not a Lean kernel proof. `physis review` overlays a justified semantic tag from a trusted dossier; journal restore re-runs review rather than deserializing the tag.
 
 ## First lab
 

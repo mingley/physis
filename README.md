@@ -42,6 +42,7 @@ This repository does **not** decide whether string theory is false. It makes the
 | `physis-data` | datasets and empirical receipts |
 | `physis-ir` | declarative theory packages |
 | `physis-audit` | red-team corpus |
+| `physis-semantic` | encoding review from evidence; `Canonical` is reserved |
 | `physis-constants` | versioned constants |
 | `physis-agent` | Lab, protocol v2, hash-linked journal |
 | `physis` | Facade + CLI |
@@ -142,6 +143,8 @@ cargo run -p physis -- epistemics
 cargo run -p physis -- why consistency.critical-dimension
 cargo run -p physis -- prove dec.d-squared-zero
 cargo run -p physis -- prove sr.invariant-interval
+cargo run -p physis -- review dec.d-squared-zero
+cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension
 cargo run -p physis -- sweep type-iib total_dim 8,9,10,11,12
 cargo run -p physis -- audit
