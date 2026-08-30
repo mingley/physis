@@ -1,6 +1,6 @@
 //! General relativity as a classical spacetime theory.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -127,43 +127,43 @@ impl Theory for GeneralRelativity {
                 claims::SPACETIME_STRUCTURE,
                 "Lorentzian manifold of the chosen dimension.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 claims::OBSERVED_4D,
                 "Spacetime dimension is 4.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::GRAVITY,
                 "Gravity is dynamical spacetime.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::FERMIONS,
                 "GR contains the Standard Model fermions.",
                 LayerId::Particle,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::SM_GAUGE,
                 "GR contains the Standard Model gauge group.",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::UV_COMPLETION,
                 "GR is UV-complete as a quantum theory.",
                 LayerId::Quantum,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::UNIQUE_VACUUM,
                 "Einstein gravity plus Λ is a unique classical theory (not a landscape).",
                 LayerId::Spacetime,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
         ];
         c.extend(solar_claims());
@@ -174,35 +174,32 @@ impl Theory for GeneralRelativity {
         match claim.id.0.as_str() {
             claims::SPACETIME_STRUCTURE => {
                 if self.build_world().spacetime.structurally_ok() {
-                    Verdict::holds(Epistemic::Theorem, "Lorentzian, consistent dim")
+                    Verdict::holds(claim, "Lorentzian, consistent dim")
                 } else {
-                    Verdict::fails(Epistemic::Theorem, "inconsistent manifold numbers")
+                    Verdict::fails(claim, "inconsistent manifold numbers")
                 }
             }
             claims::OBSERVED_4D => {
                 if self.dim == 4 {
-                    Verdict::holds(Epistemic::EncodedFact, "D=4")
+                    Verdict::holds(claim, "D=4")
                 } else {
-                    Verdict::fails(Epistemic::EncodedFact, format!("D={}, not 4", self.dim))
+                    Verdict::fails(claim, format!("D={}, not 4", self.dim))
                 }
             }
-            claims::GRAVITY => Verdict::holds(Epistemic::EncodedFact, "Einstein-Hilbert gravity"),
-            claims::FERMIONS | claims::SM_GAUGE => Verdict::fails(
-                Epistemic::EncodedFact,
-                "GR has no Standard Model matter content",
-            ),
+            claims::GRAVITY => Verdict::holds(claim, "Einstein-Hilbert gravity"),
+            claims::FERMIONS | claims::SM_GAUGE => {
+                Verdict::fails(claim, "GR has no Standard Model matter content")
+            }
             claims::UV_COMPLETION => Verdict::fails(
-                Epistemic::EncodedFact,
+                claim,
                 "perturbative quantum GR is not renormalizable; not a UV completion",
             ),
             claims::UNIQUE_VACUUM => Verdict::holds(
-                Epistemic::Heuristic,
+                claim,
                 "classical GR is a unique theory given D and Λ, not a landscape of 10^500 vacua",
             ),
-            NEWTON_HALF | EDDINGTON | MERCURY_PERIHELION => {
-                eval_solar(true, self.dim, claim.id.0.as_str())
-            }
-            _ => Verdict::inapplicable("claim not made by the GR object"),
+            NEWTON_HALF | EDDINGTON | MERCURY_PERIHELION => eval_solar(true, self.dim, claim),
+            _ => Verdict::inapplicable(claim, "claim not made by the GR object"),
         }
     }
 }

@@ -15,7 +15,7 @@
 
 use std::f64::consts::PI;
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -255,60 +255,56 @@ impl Theory for KleinGordonField {
                 FINITE_MODES,
                 "The field has a finite number of normal modes.",
                 LayerId::Field,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 DISPERSION,
                 "The long-wavelength dispersion matches the continuum ω² = m² + k².",
                 LayerId::Field,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 STABLE,
                 "There is no tachyonic mode (min ω² ≥ 0).",
                 LayerId::Field,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 CAUSAL,
                 "The group velocity is bounded by c.",
                 LayerId::Field,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 LOCAL,
                 "The coupling is local (nearest-neighbour).",
                 LayerId::Field,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 SECOND_ORDER,
                 "The discretization is second-order accurate (error ∝ a²).",
                 LayerId::Field,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
-            FINITE_MODES => Verdict::holds(
-                Epistemic::Theorem,
-                format!("{} normal modes on the lattice", self.sites),
-            ),
+            FINITE_MODES => {
+                Verdict::holds(claim, format!("{} normal modes on the lattice", self.sites))
+            }
             DISPERSION => {
                 let err = self.long_wavelength_rel_error();
                 if err < 0.05 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "long-wavelength mode matches continuum ω² = m² + k²",
-                    )
-                    .with_evidence([format!(
-                        "relative error {:.2}% at the longest wavelength",
-                        err * 100.0
-                    )])
+                    Verdict::holds(claim, "long-wavelength mode matches continuum ω² = m² + k²")
+                        .with_evidence([format!(
+                            "relative error {:.2}% at the longest wavelength",
+                            err * 100.0
+                        )])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!(
                             "lattice too coarse: {:.1}% error vs the continuum dispersion",
                             err * 100.0
@@ -319,10 +315,10 @@ impl Theory for KleinGordonField {
             STABLE => {
                 let m = self.min_omega_sq();
                 if m >= -1e-12 {
-                    Verdict::holds(Epistemic::Theorem, format!("min ω² = {m:.4} ≥ 0"))
+                    Verdict::holds(claim, format!("min ω² = {m:.4} ≥ 0"))
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!("tachyonic mode: min ω² = {m:.4} < 0 (unstable)"),
                     )
                     .with_evidence([
@@ -334,23 +330,17 @@ impl Theory for KleinGordonField {
             CAUSAL => {
                 let v = self.max_group_velocity();
                 if v <= 1.0 + 1e-9 {
-                    Verdict::holds(Epistemic::Theorem, format!("max group velocity {v:.4} ≤ c"))
+                    Verdict::holds(claim, format!("max group velocity {v:.4} ≤ c"))
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
-                        format!("superluminal group velocity {v:.4} > c"),
-                    )
+                    Verdict::fails(claim, format!("superluminal group velocity {v:.4} > c"))
                 }
             }
-            LOCAL => Verdict::holds(
-                Epistemic::Theorem,
-                "nearest-neighbour Laplacian: the coupling is local",
-            ),
+            LOCAL => Verdict::holds(claim, "nearest-neighbour Laplacian: the coupling is local"),
             SECOND_ORDER => {
                 let p = self.convergence_order();
                 if (1.8..=2.2).contains(&p) {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         format!("measured convergence order p = {p:.3} ≈ 2 (error ∝ a²)"),
                     )
                     .with_evidence([
@@ -358,15 +348,14 @@ impl Theory for KleinGordonField {
                             .to_string(),
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         format!(
                             "measured order p = {p:.3}: too coarse to be in the second-order regime",
                         ),
                     )
                 }
             }
-            _ => Verdict::inapplicable("claim not made by a field object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a field object"),
         }
     }
 }

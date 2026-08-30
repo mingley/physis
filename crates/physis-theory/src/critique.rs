@@ -48,8 +48,10 @@ pub struct ClaimVerdict {
     pub layer: String,
     /// Verdict kind.
     pub kind: VerdictKind,
-    /// Epistemic status of this verdict.
-    pub epistemic: physis_core::Epistemic,
+    /// Claim class (mathematical, model-internal, conjecture, …).
+    pub class: physis_core::ClaimClass,
+    /// Derivation assurance (executed, asserted, …). Never a kernel proof.
+    pub derivation: physis_core::DerivationAssurance,
     /// Summary.
     pub summary: String,
     /// Evidence lines.
@@ -151,7 +153,8 @@ fn report_of(t: &dyn Theory) -> TheoryReport {
             statement: c.statement,
             layer: c.layer.as_str().into(),
             kind: v.kind,
-            epistemic: v.epistemic,
+            class: v.class,
+            derivation: v.derivation,
             summary: v.summary,
             evidence: v.evidence,
         })
@@ -172,7 +175,7 @@ fn evaluate_id(t: &dyn Theory, id: &str) -> VerdictKind {
         id,
         "",
         physis_core::LayerId::Mathematical,
-        physis_core::Epistemic::Open,
+        physis_core::ClaimClass::OpenProblem,
     );
     t.evaluate(&claim).kind
 }
@@ -207,10 +210,10 @@ pub fn report_from(theories: Vec<Box<dyn Theory>>) -> ExperimentReport {
         "This experiment compares encoded structures. It cannot settle whether \
          nature is a string, a geometry, or something else. Landscape counts are \
          heuristics. Observer-geometry gauge assignment is a conjecture. Critical \
-         dimensions of strings are theorems.",
+         dimensions of strings are executed model-internal claims, not kernel proofs.",
         vec![
             "`holds` / `fails` are *internal to the encoding*.".into(),
-            "Read `epistemic` before treating a cell as physics.".into(),
+            "Read `class` and `derivation` before treating a cell as physics. `executed` is not a kernel proof.".into(),
             "Type IIB uniqueness failing under a landscape heuristic is not a disproof of string theory; it is the predictivity objection made inspectable.".into(),
             "Observer-geometry uniqueness holding as a *conjecture/axiom* is not a proof that geometry succeeds.".into(),
         ],

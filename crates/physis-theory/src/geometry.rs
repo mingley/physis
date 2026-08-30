@@ -13,7 +13,7 @@
 //! room for the assignment — rather than an unexplained choice. It is still a
 //! scaffold, not a derivation of Geometric Unity.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -179,55 +179,55 @@ impl Theory for ObserverGeometry {
                 claims::SPACETIME_STRUCTURE,
                 "Geometric dimension and observed dimension are consistent.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 claims::CRITICAL_DIMENSION,
                 "A worldsheet critical dimension applies.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::OBSERVED_4D,
                 "Observed spacetime is 3+1.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::FERMIONS,
                 "Fermions arise from the geometry.",
                 LayerId::Particle,
-                Epistemic::Conjecture,
+                ClaimClass::Conjecture,
             ),
             claims::c(
                 claims::SM_GAUGE,
                 "The Standard Model gauge group is derived, not postulated.",
                 LayerId::Interaction,
-                Epistemic::Conjecture,
+                ClaimClass::Conjecture,
             ),
             claims::c(
                 claims::THREE_GENERATIONS,
                 "Three generations are selected by the geometry.",
                 LayerId::Particle,
-                Epistemic::Open,
+                ClaimClass::OpenProblem,
             ),
             claims::c(
                 claims::GRAVITY,
                 "Gravity is geometric (metric / Einstein sector).",
                 LayerId::Spacetime,
-                Epistemic::Conjecture,
+                ClaimClass::Conjecture,
             ),
             claims::c(
                 claims::UNIQUE_VACUUM,
                 "The construction selects a unique vacuum.",
                 LayerId::Mathematical,
-                Epistemic::Conjecture,
+                ClaimClass::Conjecture,
             ),
             claims::c(
                 claims::UV_COMPLETION,
                 "The construction is a UV completion of gravity plus matter.",
                 LayerId::Field,
-                Epistemic::Open,
+                ClaimClass::OpenProblem,
             ),
         ]
     }
@@ -236,10 +236,9 @@ impl Theory for ObserverGeometry {
         match claim.id.0.as_str() {
             claims::SPACETIME_STRUCTURE => {
                 if self.build_world().spacetime.structurally_ok() {
-                    Verdict::holds(Epistemic::Theorem, "dimension numbers fit")
+                    Verdict::holds(claim, "dimension numbers fit")
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         "spacetime numbers are not internally consistent",
                     )
                     .with_evidence([format!(
@@ -251,33 +250,30 @@ impl Theory for ObserverGeometry {
                 }
             }
             claims::CRITICAL_DIMENSION => Verdict::inapplicable(
+                claim,
                 "observer-geometry is not a worldsheet theory; it has no Polyakov conformal anomaly",
             ),
             claims::OBSERVED_4D => {
                 if self.observed_dim == 4 {
-                    Verdict::holds(Epistemic::EncodedFact, "observed_dim = 4")
+                    Verdict::holds(claim, "observed_dim = 4")
                 } else {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
+                    Verdict::fails(claim,
                         format!("observed_dim = {}", self.observed_dim),
                     )
                 }
             }
-            claims::FERMIONS => Verdict::undecidable(
-                Epistemic::Conjecture,
+            claims::FERMIONS => Verdict::undecidable(claim,
                 "fermions are *assumed* in the projected spectrum; they are not derived in this encoding",
             ),
             claims::SM_GAUGE => {
                 if !self.derive_gauge {
-                    Verdict::fails(
-                        Epistemic::Conjecture,
+                    Verdict::fails(claim,
                         "derive_gauge is off: SM is postulated, which is the thing this program wanted to avoid",
                     )
                 } else if !self.fibre_can_host_spin10() {
                     // Toy geometric constraint: Spin(10) acts on R^10, so a
                     // fibre smaller than 10 has no room for the assignment.
-                    Verdict::fails(
-                        Epistemic::Conjecture,
+                    Verdict::fails(claim,
                         format!(
                             "fibre_dim = {} < {} has no geometric room for Spin(10)",
                             self.fibre_dim, SPIN10_MIN_FIBRE
@@ -292,8 +288,7 @@ impl Theory for ObserverGeometry {
                         .verified_contains_sm()
                         .unwrap_or_default()
                         .join(" ⊃ ");
-                    Verdict::holds(
-                        Epistemic::Conjecture,
+                    Verdict::holds(claim,
                         "Spin(10) is assigned as a derived group and does contain SM — assignment, not a proof",
                     )
                     .with_evidence([
@@ -302,44 +297,38 @@ impl Theory for ObserverGeometry {
                         "replace this assignment with an actual geometric derivation before treating it as a theorem".to_string(),
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Conjecture,
+                    Verdict::fails(claim,
                         "derived group does not contain SM in this encoding",
                     )
                 }
             }
-            claims::THREE_GENERATIONS => Verdict::undecidable(
-                Epistemic::Open,
+            claims::THREE_GENERATIONS => Verdict::undecidable(claim,
                 "generation count is not selected by any encoded geometric rule yet",
             ),
-            claims::GRAVITY => Verdict::holds(
-                Epistemic::Conjecture,
+            claims::GRAVITY => Verdict::holds(claim,
                 "a metric sector is part of the scaffold; not derived from a theorem here",
             ),
             claims::UNIQUE_VACUUM => {
                 if self.unique_vacuum {
-                    Verdict::holds(
-                        Epistemic::Conjecture,
+                    Verdict::holds(claim,
                         "uniqueness is an axiom of this program (knob unique_vacuum=true), not a computed theorem",
                     )
                     .with_evidence([
                         "this is the contrast class for the string landscape, not evidence that geometry has succeeded",
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Conjecture,
+                    Verdict::fails(claim,
                         "unique_vacuum knob is off; the program has dropped its distinctive demand",
                     )
                 }
             }
-            claims::UV_COMPLETION => Verdict::undecidable(
-                Epistemic::Open,
+            claims::UV_COMPLETION => Verdict::undecidable(claim,
                 "no quantum construction is encoded; UV completeness is open",
             ),
             claims::SUSY_CONSTRUCTION | claims::NO_TACHYON | claims::HIDDEN_EXTRA_DIMS => {
-                Verdict::inapplicable("not a string construction")
+                Verdict::inapplicable(claim, "not a string construction")
             }
-            _ => Verdict::inapplicable("claim not made by observer-geometry"),
+            _ => Verdict::inapplicable(claim, "claim not made by observer-geometry"),
         }
     }
 }
@@ -359,7 +348,7 @@ mod tests {
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.epistemic, Epistemic::Conjecture);
+        assert_eq!(v.class, ClaimClass::Conjecture);
     }
 
     #[test]

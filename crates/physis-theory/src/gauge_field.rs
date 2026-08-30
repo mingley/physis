@@ -17,7 +17,7 @@
 //! result (`gauge.exact-area-law-2d`) is a theorem, in honest contrast to the
 //! 4D Yang–Mills mass gap, which stays a `conjecture`.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -113,19 +113,18 @@ fn strong_coupling_string_tension(beta: f64, n_group: f64) -> f64 {
 }
 
 /// Verdict for the computed strong-coupling area law.
-fn strong_coupling_verdict(beta: f64, n_group: f64) -> Verdict {
+fn strong_coupling_verdict(beta: f64, n_group: f64, claim: &Claim) -> Verdict {
     let sigma = strong_coupling_string_tension(beta, n_group);
     if sigma > 0.0 {
         Verdict::holds(
-            Epistemic::Theorem,
+            claim,
             format!("leading strong-coupling string tension σ = {sigma:.3} > 0: area law"),
         )
         .with_evidence([
             "first term of the convergent strong-coupling expansion of the Wilson loop".to_string(),
         ])
     } else {
-        Verdict::fails(
-            Epistemic::Theorem,
+        Verdict::fails(claim,
             format!(
                 "σ = {sigma:.3} ≤ 0 at β = {beta}: the strong-coupling expansion gives no area law here"
             ),
@@ -271,50 +270,49 @@ impl Theory for WilsonU1 {
                 GAUGE_INVARIANT,
                 "The action is invariant under local gauge transformations of the links.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 GAUGE_LOCAL,
                 "The action couples only neighbouring links (plaquettes).",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 CONFINING,
                 "Static charges are confined.",
                 LayerId::Interaction,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             Claim::new(
                 ASYMPTOTIC_FREEDOM,
                 "The coupling runs to zero at high energy.",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             Claim::new(
                 STRONG_COUPLING_AREA_LAW,
                 "The leading strong-coupling expansion yields an area law.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 EXACT_AREA_LAW_2D,
                 "In 2D the Wilson loop obeys an exact area law at all couplings.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
-            STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, 1.0),
+            STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, 1.0, claim),
             EXACT_AREA_LAW_2D => {
                 if self.dimension == 2 {
                     let sigma = exact_2d_string_tension(self.beta);
                     let ratio = bessel_i1_over_i0(self.beta);
                     if sigma > 0.0 {
-                        Verdict::holds(
-                            Epistemic::Theorem,
+                        Verdict::holds(claim,
                             format!(
                                 "exact 2D string tension σ = −ln(I₁/I₀) = {sigma:.4} > 0 at β = {}: confines at all couplings",
                                 self.beta
@@ -326,32 +324,28 @@ impl Theory for WilsonU1 {
                         ])
                     } else {
                         // Only reachable in the β → ∞ continuum limit (σ → 0⁺).
-                        Verdict::fails(
-                            Epistemic::Theorem,
+                        Verdict::fails(claim,
                             format!("σ = {sigma:.4} ≤ 0 at β = {}", self.beta),
                         )
                     }
                 } else {
                     Verdict::inapplicable(
+                        claim,
                         "the exact plaquette factorization is special to 2D; in higher D see gauge.confining",
                     )
                 }
             }
-            ASYMPTOTIC_FREEDOM => Verdict::fails(
-                Epistemic::EncodedFact,
+            ASYMPTOTIC_FREEDOM => Verdict::fails(claim,
                 "abelian U(1) is not asymptotically free: the coupling grows with energy (Landau pole)",
             ),
-            GAUGE_INVARIANT => Verdict::holds(
-                Epistemic::Theorem,
+            GAUGE_INVARIANT => Verdict::holds(claim,
                 "plaquette action is invariant under U_μ(x) → g(x) U_μ(x) g(x+μ̂)†",
             ),
-            GAUGE_LOCAL => Verdict::holds(
-                Epistemic::Theorem,
+            GAUGE_LOCAL => Verdict::holds(claim,
                 "the action sums over plaquettes: only neighbouring links couple",
             ),
             CONFINING => match self.dimension {
-                2 | 3 => Verdict::holds(
-                    Epistemic::EncodedFact,
+                2 | 3 => Verdict::holds(claim,
                     format!(
                         "compact U(1) confines at all β in {}D (Polyakov)",
                         self.dimension
@@ -359,16 +353,14 @@ impl Theory for WilsonU1 {
                 ),
                 _ => {
                     if self.beta < BETA_C_4D {
-                        Verdict::holds(
-                            Epistemic::Heuristic,
+                        Verdict::holds(claim,
                             format!(
                                 "4D strong coupling β={} < β_c≈{BETA_C_4D}: confining",
                                 self.beta
                             ),
                         )
                     } else {
-                        Verdict::fails(
-                            Epistemic::Heuristic,
+                        Verdict::fails(claim,
                             format!(
                                 "4D weak coupling β={} ≥ β_c≈{BETA_C_4D}: Coulomb (deconfined) phase",
                                 self.beta
@@ -380,7 +372,7 @@ impl Theory for WilsonU1 {
                     }
                 }
             },
-            _ => Verdict::inapplicable("claim not made by a lattice gauge object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a lattice gauge object"),
         }
     }
 }
@@ -522,50 +514,49 @@ impl Theory for WilsonSun {
                 GAUGE_INVARIANT,
                 "The action is invariant under local gauge transformations of the links.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 GAUGE_LOCAL,
                 "The action couples only neighbouring links (plaquettes).",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 CONFINING,
                 "Static charges are confined.",
                 LayerId::Interaction,
-                Epistemic::Conjecture,
+                ClaimClass::Conjecture,
             ),
             Claim::new(
                 ASYMPTOTIC_FREEDOM,
                 "The coupling runs to zero at high energy.",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             Claim::new(
                 STRONG_COUPLING_AREA_LAW,
                 "The leading strong-coupling expansion yields an area law.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 EXACT_AREA_LAW_2D,
                 "In 2D the Wilson loop obeys an exact area law at all couplings.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
-            STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, self.n as f64),
+            STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, self.n as f64, claim),
             EXACT_AREA_LAW_2D => {
                 if self.dimension == 2 {
                     let n = self.n as f64;
                     let sigma = exact_2d_string_tension_sun(n, self.beta);
                     if sigma > 0.0 {
-                        Verdict::holds(
-                            Epistemic::Theorem,
+                        Verdict::holds(claim,
                             format!(
                                 "exact 2D string tension σ = (N²−1)/(2β) = {sigma:.4} > 0 at β = {}: SU({}) confines at all couplings",
                                 self.beta, self.n
@@ -579,36 +570,31 @@ impl Theory for WilsonSun {
                             "unlike 4D, this needs no mass-gap conjecture — it is a theorem".to_string(),
                         ])
                     } else {
-                        Verdict::fails(
-                            Epistemic::Theorem,
+                        Verdict::fails(claim,
                             format!("σ = {sigma:.4} ≤ 0 at β = {}", self.beta),
                         )
                     }
                 } else {
                     Verdict::inapplicable(
+                        claim,
                         "the exact 2D solution is special to two dimensions; in 4D see gauge.confining (mass-gap conjecture)",
                     )
                 }
             }
-            GAUGE_INVARIANT => Verdict::holds(
-                Epistemic::Theorem,
+            GAUGE_INVARIANT => Verdict::holds(claim,
                 "non-abelian plaquette action is gauge invariant by construction",
             ),
-            GAUGE_LOCAL => Verdict::holds(
-                Epistemic::Theorem,
+            GAUGE_LOCAL => Verdict::holds(claim,
                 "the action sums over plaquettes: only neighbouring links couple",
             ),
-            ASYMPTOTIC_FREEDOM => Verdict::holds(
-                Epistemic::EncodedFact,
+            ASYMPTOTIC_FREEDOM => Verdict::holds(claim,
                 "non-abelian SU(N) is asymptotically free (Gross–Wilczek–Politzer 1973)",
             ),
             CONFINING => match self.dimension {
-                2 | 3 => Verdict::holds(
-                    Epistemic::EncodedFact,
+                2 | 3 => Verdict::holds(claim,
                     format!("SU({}) confines in {}D", self.n, self.dimension),
                 ),
-                _ => Verdict::holds(
-                    Epistemic::Conjecture,
+                _ => Verdict::holds(claim,
                     format!(
                         "SU({}) is expected to confine in 4D at all β, but the mass gap is unproven",
                         self.n
@@ -618,7 +604,7 @@ impl Theory for WilsonSun {
                     "4D Yang–Mills existence and mass gap is a Clay Millennium Problem".to_string(),
                 ]),
             },
-            _ => Verdict::inapplicable("claim not made by a lattice gauge object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a lattice gauge object"),
         }
     }
 }
@@ -641,7 +627,7 @@ pub fn gauge_lattice() -> ExperimentReport {
          is asymptotically free and is *expected* to confine in 4D — but that is \
          the unproven Yang–Mills mass gap, so it is honestly a conjecture.",
         vec![
-            "`holds` / `fails` are internal to the encoding; read the `epistemic` tag.".into(),
+            "`holds` / `fails` are internal to the encoding; read `class` and `derivation`.".into(),
             "The gauge field lives on links; the action sums over plaquettes.".into(),
             "U(1): `set wilson-u1 beta 2` deconfines the 4D theory (Coulomb phase).".into(),
             "SU(N): 4D confinement holds as a *conjecture* — the Millennium mass-gap problem."
@@ -663,7 +649,7 @@ mod tests {
     }
 
     #[test]
-    fn gauge_invariance_and_locality_are_theorems() {
+    fn gauge_invariance_and_locality_hold_as_executed_claims() {
         let w = WilsonU1::default();
         assert_eq!(verdict(&w, GAUGE_INVARIANT), VerdictKind::Holds);
         assert_eq!(verdict(&w, GAUGE_LOCAL), VerdictKind::Holds);
@@ -710,7 +696,7 @@ mod tests {
             .unwrap();
         let v = qcd.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.epistemic, Epistemic::Conjecture);
+        assert_eq!(v.class, ClaimClass::Conjecture);
         // Unlike U(1), it stays confining at weak coupling.
         let mut qcd_weak = WilsonSun::su3();
         qcd_weak.set("beta", KnobValue::Float(50.0)).unwrap();

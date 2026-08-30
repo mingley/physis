@@ -97,6 +97,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
         }
         "experiments" => Ok(Command::Experiments),
         "epistemics" => Ok(Command::Epistemics),
+        "why" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Why { claim })
+        }
         "experiment" => {
             let id = args
                 .get(1)
@@ -129,6 +133,7 @@ USAGE:
     physis set <theory> <knob> <value>
     physis score <theory>
     physis epistemics
+    physis why <claim-id>
     physis experiments
     physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice | thermo | blackbody | solid | gravity | olbers | bell]
     physis journal

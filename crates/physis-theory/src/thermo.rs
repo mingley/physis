@@ -13,7 +13,7 @@
 //! Like computation, the ideal gas has no spacetime/gauge/spectrum, so it
 //! returns `None` from `Theory::world()` and describes itself via `note`.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -174,19 +174,19 @@ impl Theory for IdealGas {
                 EQUIPARTITION,
                 "Energy is equipartitioned: C_v = (3/2) N k.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 SECOND_LAW,
                 "A spontaneous free expansion does not decrease entropy.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 THIRD_LAW,
                 "Entropy tends to zero as temperature tends to zero.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
@@ -196,29 +196,22 @@ impl Theory for IdealGas {
                 let cv = self.heat_capacity();
                 let expected = 1.5 * self.particles * k_boltzmann().value();
                 if (cv - expected).abs() <= 1e-6 * expected.abs() {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "C_v = dU/dT = (3/2) N k, verified numerically",
-                    )
-                    .with_evidence([format!(
-                        "computed C_v/(Nk) = {:.4}",
-                        cv / (self.particles * k_boltzmann().value())
-                    )])
+                    Verdict::holds(claim, "C_v = dU/dT = (3/2) N k, verified numerically")
+                        .with_evidence([format!(
+                            "computed C_v/(Nk) = {:.4}",
+                            cv / (self.particles * k_boltzmann().value())
+                        )])
                 } else {
-                    Verdict::fails(Epistemic::Theorem, "heat capacity is not (3/2) N k")
+                    Verdict::fails(claim, "heat capacity is not (3/2) N k")
                 }
             }
             SECOND_LAW => {
                 let ds = self.entropy_change_over_k();
                 if self.volume_ratio >= 1.0 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "ΔS = N k ln(V_f/V_i) ≥ 0 for a free expansion",
-                    )
-                    .with_evidence([format!("ΔS/k = {ds:.3e}")])
+                    Verdict::holds(claim, "ΔS = N k ln(V_f/V_i) ≥ 0 for a free expansion")
+                        .with_evidence([format!("ΔS/k = {ds:.3e}")])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         format!(
                             "ΔS/k = {ds:.3e} < 0: a spontaneous compression would violate the second law"
                         ),
@@ -228,15 +221,14 @@ impl Theory for IdealGas {
             THIRD_LAW => {
                 // Classical S has a (3/2)Nk·ln T term with no lower bound.
                 let s_term = 1.5 * self.temperature_k.ln();
-                Verdict::fails(
-                    Epistemic::Theorem,
+                Verdict::fails(claim,
                     "classical ideal-gas entropy S ∝ (3/2) ln T → −∞ as T → 0; the third law needs quantum statistics",
                 )
                 .with_evidence([format!(
                     "the ln-T term is {s_term:.2} and diverges as T → 0"
                 )])
             }
-            _ => Verdict::inapplicable("claim not made by a thermodynamic object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a thermodynamic object"),
         }
     }
 }

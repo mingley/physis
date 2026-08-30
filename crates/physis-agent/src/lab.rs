@@ -349,10 +349,10 @@ impl Lab {
                         _ => other += 1,
                     }
                     text.push_str(&format!(
-                        "  {:<32} {:<13} {:<12} {}\n",
+                        "  {:<32} {:<13} {:<16} {}\n",
                         c.id.0,
                         v.kind.as_str(),
-                        v.epistemic.as_str(),
+                        v.derivation.as_str(),
                         v.summary
                     ));
                 }
@@ -391,36 +391,124 @@ impl Lab {
                 Err(e) => Response::err(e.to_string()),
             },
             Command::Epistemics => {
-                // How much of the lab is theorem-backed vs conjecture/heuristic/
-                // open — the mission's core metric, tallied mechanically.
-                let mut tally: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
+                // Three orthogonal ledgers. There is no "theorem" row:
+                // executed model-internal claims are not kernel proofs.
+                let mut by_derivation: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
+                let mut by_class: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
+                let mut by_semantic: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
+                let mut total = 0usize;
                 for t in self.theories.values() {
                     for (_c, v) in t.evaluate_all() {
-                        let slot = tally.entry(v.epistemic.as_str()).or_default();
+                        total += 1;
                         let idx = match v.kind {
                             VerdictKind::Holds => 0,
                             VerdictKind::Fails => 1,
                             VerdictKind::Undecidable => 2,
                             VerdictKind::Inapplicable => 3,
                         };
-                        slot[idx] += 1;
+                        by_derivation.entry(v.derivation.as_str()).or_default()[idx] += 1;
+                        by_class.entry(v.class.as_str()).or_default()[idx] += 1;
+                        by_semantic.entry(v.semantic.as_str()).or_default()[idx] += 1;
                     }
                 }
-                let mut text =
-                    String::from("epistemic ledger (all lab theories at current knobs)\n");
-                let mut total = 0usize;
-                for e in ["theorem", "encoded-fact", "conjecture", "heuristic", "open"] {
-                    if let Some(s) = tally.get(e) {
-                        let sum: usize = s.iter().sum();
-                        total += sum;
-                        text.push_str(&format!(
-                            "  {e:<13} {sum:>3}   holds {} fails {} undecidable {} inapplicable {}\n",
-                            s[0], s[1], s[2], s[3]
-                        ));
+                let mut text = String::from(
+                    "assurance ledger (all lab theories at current knobs)\n\
+                     derivation is not a kernel proof: MachineProved is minted only by physis-verifier\n",
+                );
+                fn dump(
+                    text: &mut String,
+                    title: &str,
+                    order: &[&str],
+                    tally: &BTreeMap<&str, [usize; 4]>,
+                ) {
+                    text.push_str(title);
+                    for e in order {
+                        if let Some(s) = tally.get(e) {
+                            let sum: usize = s.iter().sum();
+                            text.push_str(&format!(
+                                "  {e:<22} {sum:>3}   holds {} fails {} undecidable {} inapplicable {}\n",
+                                s[0], s[1], s[2], s[3]
+                            ));
+                        }
                     }
                 }
+                dump(
+                    &mut text,
+                    "\nderivation\n",
+                    &["asserted", "executed", "cross-checked", "certified-numeric"],
+                    &by_derivation,
+                );
+                text.push_str("  machine-proved          0   (none; physis-verifier has minted no receipts)\n");
+                dump(
+                    &mut text,
+                    "\nclass\n",
+                    &[
+                        "mathematical",
+                        "model-internal",
+                        "phenomenological",
+                        "empirical-prediction",
+                        "measurement",
+                        "conjecture",
+                        "heuristic",
+                        "open-problem",
+                    ],
+                    &by_class,
+                );
+                dump(
+                    &mut text,
+                    "\nsemantic\n",
+                    &[
+                        "unreviewed",
+                        "source-anchored",
+                        "independently-encoded",
+                        "adversarially-reviewed",
+                        "canonical",
+                    ],
+                    &by_semantic,
+                );
                 text.push_str(&format!("\ntotal claim-evaluations: {total}\n"));
                 Response::ok(text)
+            }
+            Command::Why { claim } => {
+                let mut text = format!("why {claim}\n");
+                let mut found = 0usize;
+                for t in self.theories.values() {
+                    for (c, v) in t.evaluate_all() {
+                        if c.id.0 == claim {
+                            found += 1;
+                            text.push_str(&format!("theory {}\n", t.id()));
+                            text.push_str(&format!("  statement:  {}\n", c.statement));
+                            text.push_str(&format!("  class:      {}\n", v.class.as_str()));
+                            text.push_str(&format!("  derivation: {}\n", v.derivation.as_str()));
+                            text.push_str(&format!("  empirical:  {}\n", v.empirical.as_str()));
+                            text.push_str(&format!("  semantic:   {}\n", v.semantic.as_str()));
+                            text.push_str(&format!("  identity:   {}\n", c.statement_hash));
+                            text.push_str(&format!("  domain:     {}\n", c.domain.notes));
+                            text.push_str("  assumptions:\n");
+                            for a in &c.assumptions.items {
+                                text.push_str(&format!(
+                                    "    - {} [{}]: {}\n",
+                                    a.id,
+                                    a.class.as_str(),
+                                    a.statement
+                                ));
+                            }
+                            text.push_str(&format!(
+                                "  verdict:    {} — {}\n",
+                                v.kind.as_str(),
+                                v.summary
+                            ));
+                            text.push_str(
+                                "  kernel proof: none (MachineProved is not an enum this lab can set)\n",
+                            );
+                        }
+                    }
+                }
+                if found == 0 {
+                    Response::err(format!("unknown claim '{claim}'"))
+                } else {
+                    Response::ok(text)
+                }
             }
             Command::Experiments => {
                 let mut text = String::from("experiments\n");
@@ -519,13 +607,57 @@ mod tests {
     }
 
     #[test]
-    fn epistemic_ledger_counts_theorems() {
+    fn epistemic_ledger_has_no_theorem_tag() {
         let mut lab = Lab::standard();
         let text = lab.exec(Command::Epistemics).text().to_string();
-        assert!(text.contains("theorem"));
+        assert!(
+            !text.contains("theorem"),
+            "Level-3 forbids a forgeable theorem tag, got {text}"
+        );
+        assert!(text.contains("executed"));
+        assert!(text.contains("machine-proved"));
         assert!(text.contains("total claim-evaluations:"));
-        // The lab has computed theorems, so the theorem row must be non-empty.
-        assert!(text.contains("open") || text.contains("conjecture"));
+        assert!(text.contains("open-problem") || text.contains("conjecture"));
+    }
+
+    #[test]
+    fn why_prints_assumptions_and_denies_a_kernel_proof() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Why {
+                claim: "consistency.critical-dimension".into(),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("derivation: executed"));
+        assert!(text.contains("encoding-is-the-model"));
+        assert!(text.contains("kernel proof: none"));
+        assert!(!text.contains("theorem"));
+    }
+
+    #[test]
+    fn no_lab_verdict_is_a_kernel_proof() {
+        let lab = Lab::standard();
+        for id in lab.theory_ids() {
+            let t = lab.theory(&id).unwrap();
+            for (c, v) in t.evaluate_all() {
+                assert!(
+                    matches!(
+                        v.derivation,
+                        physis_core::DerivationAssurance::Asserted
+                            | physis_core::DerivationAssurance::Executed
+                            | physis_core::DerivationAssurance::CrossChecked
+                            | physis_core::DerivationAssurance::CertifiedNumeric
+                    ),
+                    "{} / {} derivation {:?}",
+                    id,
+                    c.id.0,
+                    v.derivation
+                );
+                assert_eq!(v.semantic, physis_core::SemanticAssurance::Unreviewed);
+                assert!(!c.assumptions.items.is_empty());
+            }
+        }
     }
 
     #[test]

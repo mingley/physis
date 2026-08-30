@@ -1,14 +1,13 @@
 [package]
-name = "physis-core"
+name = "physis-verifier"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "Typed dimensions, layers, knobs, and claims — the substrate of physis."
+description = "Trusted minting of verification receipts. The only crate that can produce Verified<T>."
 
 [dependencies]
-typenum.workspace = true
+physis-core.workspace = true
 serde.workspace = true
-sha2 = "0.10"

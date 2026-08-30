@@ -26,7 +26,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::ops::Add;
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -598,37 +598,37 @@ impl Theory for DeRham {
                 D_SQUARED_ZERO,
                 "The exterior derivative is nilpotent: d ∘ d = 0.",
                 LayerId::Mathematical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 FIRST_BETTI,
                 "The first Betti number counts independent 1-cycles (holes).",
                 LayerId::Mathematical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 CLOSED_EQUALS_EXACT,
                 "Every closed 1-form is exact (the Poincaré lemma).",
                 LayerId::Mathematical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 EULER_POINCARE,
                 "The Euler characteristic V−E+F equals b₀−b₁+b₂.",
                 LayerId::Mathematical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 HODGE_HARMONIC,
                 "The dimension of harmonic 1-forms equals b₁ (Hodge theorem).",
                 LayerId::Mathematical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 FUNDAMENTAL_CLASS,
                 "The complex has a fundamental class over ℝ: b₂ = 1.",
                 LayerId::Mathematical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
@@ -645,16 +645,13 @@ impl Theory for DeRham {
                     worst = worst.max(ddf.values.iter().fold(0.0, |m, v| m.max(v.abs())));
                 }
                 if worst < 1e-12 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "d₁∘d₀ = 0 on every basis 0-form (curl grad = 0)",
-                    )
-                    .with_evidence([format!(
-                        "max |d(d f)| = {worst:.2e} over all {} basis functions",
-                        c.n_vertices
-                    )])
+                    Verdict::holds(claim, "d₁∘d₀ = 0 on every basis 0-form (curl grad = 0)")
+                        .with_evidence([format!(
+                            "max |d(d f)| = {worst:.2e} over all {} basis functions",
+                            c.n_vertices
+                        )])
                 } else {
-                    Verdict::fails(Epistemic::Theorem, format!("d∘d ≠ 0: max = {worst:.2e}"))
+                    Verdict::fails(claim, format!("d∘d ≠ 0: max = {worst:.2e}"))
                 }
             }
             FIRST_BETTI => {
@@ -662,7 +659,7 @@ impl Theory for DeRham {
                 let expected = self.shape.expected_b1();
                 if b1 == expected {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         format!(
                             "b₁ = {b1} for the {} — computed from n_edges − rank(d₁) − rank(d₀)",
                             self.shape.name()
@@ -674,25 +671,21 @@ impl Theory for DeRham {
                         c.betti2()
                     )])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
-                        format!("computed b₁ = {b1}, expected {expected}"),
-                    )
+                    Verdict::fails(claim, format!("computed b₁ = {b1}, expected {expected}"))
                 }
             }
             CLOSED_EQUALS_EXACT => {
                 let b1 = c.betti1();
                 if b1 == 0 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         format!(
                             "b₁ = 0: every closed 1-form is exact (Poincaré lemma holds on the {})",
                             self.shape.name()
                         ),
                     )
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         format!(
                             "b₁ = {b1}: a closed 1-form that is not exact exists (the {} has holes)",
                             self.shape.name()
@@ -709,7 +702,7 @@ impl Theory for DeRham {
                 let chi_betti = c.euler_from_betti();
                 if chi_cells == chi_betti {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         format!("χ = V−E+F = {chi_cells} = b₀−b₁+b₂ (Euler–Poincaré)"),
                     )
                     .with_evidence([format!(
@@ -720,7 +713,7 @@ impl Theory for DeRham {
                     )])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!("χ mismatch: cells {chi_cells} ≠ Betti {chi_betti}"),
                     )
                 }
@@ -730,7 +723,7 @@ impl Theory for DeRham {
                 let b1 = c.betti1();
                 if harmonic == b1 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         format!(
                             "dim(harmonic 1-forms) = {harmonic} = b₁ (Hodge: harmonic ≅ cohomology)"
                         ),
@@ -739,17 +732,14 @@ impl Theory for DeRham {
                         "nullity of Δ₁ = d₀d₀ᵀ + d₁ᵀd₁ is {harmonic}, matching b₁ = {b1}"
                     )])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
-                        format!("harmonic 1-forms dim {harmonic} ≠ b₁ {b1}"),
-                    )
+                    Verdict::fails(claim, format!("harmonic 1-forms dim {harmonic} ≠ b₁ {b1}"))
                 }
             }
             FUNDAMENTAL_CLASS => {
                 let b2 = c.betti2();
                 if b2 == 1 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         format!(
                             "b₂ = 1: the {} has a fundamental class over ℝ",
                             self.shape.name()
@@ -768,7 +758,7 @@ impl Theory for DeRham {
                     } else {
                         "b₂ ≠ 1: no 2-dimensional fundamental class over ℝ"
                     };
-                    Verdict::fails(Epistemic::Theorem, why).with_evidence([format!(
+                    Verdict::fails(claim, why).with_evidence([format!(
                         "{}: closed={}, χ = {}, b₀ = {}, b₁ = {}, b₂ = {b2}",
                         self.shape.name(),
                         c.is_closed_surface(),
@@ -778,7 +768,7 @@ impl Theory for DeRham {
                     )])
                 }
             }
-            _ => Verdict::inapplicable("claim not made by the de Rham object"),
+            _ => Verdict::inapplicable(claim, "claim not made by the de Rham object"),
         }
     }
 }

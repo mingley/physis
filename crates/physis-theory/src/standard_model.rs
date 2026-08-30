@@ -1,7 +1,7 @@
 //! Standard Model as an effective quantum field theory: empirically sharp,
 //! UV-incomplete, many parameters.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -366,85 +366,85 @@ impl Theory for StandardModel {
                 claims::SPACETIME_STRUCTURE,
                 "3+1 Minkowski spacetime, no extra dimensions.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::OBSERVED_4D,
                 "Macroscopic spacetime is 3+1.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::HIDDEN_EXTRA_DIMS,
                 "No extra dimensions in the SM as an effective theory.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::FERMIONS,
                 "Quarks and leptons exist.",
                 LayerId::Particle,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::SM_GAUGE,
                 "Gauge group is exactly the Standard Model.",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::ANOMALY_CANCELLATION,
                 "Chiral gauge anomalies cancel within each generation.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 SM_HYPERCHARGE_DERIVED,
                 "Weak hypercharges are fixed by anomaly cancellation up to normalization.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 claims::THREE_GENERATIONS,
                 "Three generations of fermions.",
                 LayerId::Particle,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::NEUTRINO_MASSES,
                 "Neutrinos have nonzero mass.",
                 LayerId::Particle,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::CHARGE_QUANTIZATION,
                 "Electric charge is quantized so that atoms are exactly neutral.",
                 LayerId::Particle,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 claims::GRAVITY,
                 "Gravity is part of the Standard Model.",
                 LayerId::Field,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::UNIQUE_VACUUM,
                 "The SM vacuum (given its parameters) is the one we use; no string landscape.",
                 LayerId::Effective,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             claims::c(
                 claims::FEW_PARAMETERS,
                 "The theory has few free parameters.",
                 LayerId::Interaction,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             claims::c(
                 claims::UV_COMPLETION,
                 "The Standard Model is a UV-complete theory of nature.",
                 LayerId::Field,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
         ]
     }
@@ -452,10 +452,10 @@ impl Theory for StandardModel {
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
             claims::SPACETIME_STRUCTURE | claims::OBSERVED_4D | claims::HIDDEN_EXTRA_DIMS => {
-                Verdict::holds(Epistemic::EncodedFact, "SM is formulated in 3+1 Minkowski")
+                Verdict::holds(claim, "SM is formulated in 3+1 Minkowski")
             }
-            claims::FERMIONS => Verdict::holds(Epistemic::EncodedFact, "quarks and leptons"),
-            claims::SM_GAUGE => Verdict::holds(Epistemic::EncodedFact, "SU(3)×SU(2)×U(1)"),
+            claims::FERMIONS => Verdict::holds(claim, "quarks and leptons"),
+            claims::SM_GAUGE => Verdict::holds(claim, "SU(3)×SU(2)×U(1)"),
             claims::ANOMALY_CANCELLATION => {
                 let a3 = anomaly_su3_u1();
                 let a2 = anomaly_su2_u1();
@@ -463,8 +463,7 @@ impl Theory for StandardModel {
                 let sy3 = hypercharge_cube_sum();
                 let all_zero = [a3, a2, sy, sy3].iter().all(|x| x.abs() < 1e-12);
                 if all_zero && SM_WEAK_DOUBLETS % 2 == 0 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         "all four SM chiral gauge anomalies cancel within each generation",
                     )
                     .with_evidence([
@@ -473,8 +472,7 @@ impl Theory for StandardModel {
                         format!("Witten SU(2): {SM_WEAK_DOUBLETS} doublets (even)"),
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         format!(
                             "anomaly not cancelled: [SU(3)]²U(1)={a3:.3}, [SU(2)]²U(1)={a2:.3}, ΣY={sy:.3}, ΣY³={sy3:.3}"
                         ),
@@ -496,8 +494,7 @@ impl Theory for StandardModel {
                     && close(d.y_ud[0], stored_ud[0])
                     && close(d.y_ud[1], stored_ud[1]);
                 if matches {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         "anomaly cancellation forces the measured hypercharges (up to normalization Y_Q = 1/6)",
                     )
                     .with_evidence([
@@ -508,8 +505,7 @@ impl Theory for StandardModel {
                         "solved from [SU(2)]²U(1), [SU(3)]²U(1), [grav]²U(1), and [U(1)]³".to_string(),
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         format!(
                             "derived hypercharges {{Y_L={:.4}, Y_e={:.4}, Y_u/d={:?}}} disagree with the catalog",
                             d.y_l, d.y_e, d.y_ud
@@ -519,23 +515,20 @@ impl Theory for StandardModel {
             }
             claims::THREE_GENERATIONS => {
                 if self.generations == 3 {
-                    Verdict::holds(Epistemic::EncodedFact, "three generations")
+                    Verdict::holds(claim, "three generations")
                 } else {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
+                    Verdict::fails(claim,
                         format!("generations = {}, not 3", self.generations),
                     )
                 }
             }
             claims::NEUTRINO_MASSES => {
                 if self.neutrino_masses {
-                    Verdict::holds(
-                        Epistemic::EncodedFact,
+                    Verdict::holds(claim,
                         "neutrino masses included (beyond the minimal SM, e.g. via a seesaw)",
                     )
                 } else {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
+                    Verdict::fails(claim,
                         "minimal SM stores neutrino masses as 0, but oscillations prove they are nonzero",
                     )
                 }
@@ -543,49 +536,42 @@ impl Theory for StandardModel {
             claims::CHARGE_QUANTIZATION => {
                 let h = hydrogen_charge_thirds();
                 if h == 0 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         "a hydrogen atom (uud + e⁻) is exactly neutral",
                     )
                     .with_evidence([
                         "computed from the catalog: 2·Q(u) + Q(d) + Q(e⁻) = 0 (units of e/3)".to_string(),
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         format!("hydrogen net charge = {h}/3 ≠ 0"),
                     )
                 }
             }
             claims::GRAVITY => {
                 if self.include_gravity {
-                    Verdict::holds(
-                        Epistemic::Heuristic,
+                    Verdict::holds(claim,
                         "graviton added by hand; not a UV completion of gravity",
                     )
                 } else {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
+                    Verdict::fails(claim,
                         "the Standard Model does not contain gravity",
                     )
                 }
             }
-            claims::UNIQUE_VACUUM => Verdict::holds(
-                Epistemic::Heuristic,
+            claims::UNIQUE_VACUUM => Verdict::holds(claim,
                 "no landscape; parameters are inputs, not scanned vacua",
             ),
-            claims::FEW_PARAMETERS => Verdict::fails(
-                Epistemic::Heuristic,
+            claims::FEW_PARAMETERS => Verdict::fails(claim,
                 "≈19 free parameters; not few by the standard this lab uses",
             ),
-            claims::UV_COMPLETION => Verdict::fails(
-                Epistemic::EncodedFact,
+            claims::UV_COMPLETION => Verdict::fails(claim,
                 "SM is an effective theory: Landau poles, triviality, no gravity, no dark matter, no neutrino masses in the minimal form",
             ),
             claims::CRITICAL_DIMENSION | claims::SUSY_CONSTRUCTION | claims::NO_TACHYON => {
-                Verdict::inapplicable("not a worldsheet theory")
+                Verdict::inapplicable(claim, "not a worldsheet theory")
             }
-            _ => Verdict::inapplicable("claim not made by the Standard Model object"),
+            _ => Verdict::inapplicable(claim, "claim not made by the Standard Model object"),
         }
     }
 }
@@ -640,7 +626,7 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         // Now a computed theorem, not a stored fact.
-        assert_eq!(v.epistemic, Epistemic::Theorem);
+        assert_eq!(v.class, ClaimClass::ModelInternal);
     }
 
     #[test]
@@ -654,7 +640,7 @@ mod tests {
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.epistemic, Epistemic::Theorem);
+        assert_eq!(v.class, ClaimClass::ModelInternal);
     }
 
     #[test]
@@ -698,7 +684,7 @@ mod tests {
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.epistemic, Epistemic::Theorem);
+        assert_eq!(v.class, ClaimClass::ModelInternal);
     }
 
     #[test]

@@ -30,7 +30,7 @@
 
 use std::f64::consts::PI;
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -408,25 +408,25 @@ impl Theory for EinsteinSolid {
                 DULONG_PETIT,
                 "The heat capacity is 3 N k, independent of temperature (Dulong–Petit).",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 HIGH_T_CLASSICAL,
                 "At T ≫ Θ the heat capacity recovers the classical 3 N k.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 THIRD_LAW,
                 "Heat capacity (and therefore entropy) tends to zero as T → 0.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 DEBYE_T3,
                 "At T ≪ Θ the heat capacity scales as T³ (Debye phonon continuum).",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
@@ -437,7 +437,7 @@ impl Theory for EinsteinSolid {
                 let u = self.internal_energy_at(self.temperature_k);
                 if (ratio - 1.0).abs() < 0.05 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         "C_V = 3 N k at the current temperature (Dulong–Petit)",
                     )
                     .with_evidence([format!(
@@ -451,7 +451,7 @@ impl Theory for EinsteinSolid {
                     } else {
                         "C_V is not 3 N k: Einstein oscillators are frozen out"
                     };
-                    Verdict::fails(Epistemic::Theorem, why).with_evidence([format!(
+                    Verdict::fails(claim, why).with_evidence([format!(
                         "U = {:.4e} J; C_V/(3Nk) = {ratio:.4} at T/Θ = {:.3} (Dulong–Petit requires 1)",
                         u.value(),
                         self.temperature_k / self.einstein_temp_k
@@ -462,22 +462,16 @@ impl Theory for EinsteinSolid {
                 let ratio_t = self.temperature_k / self.einstein_temp_k;
                 let cv = self.cv_over_3nk_at(self.temperature_k);
                 if ratio_t >= HIGH_T_RATIO && (cv - 1.0).abs() < 0.05 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "T ≫ Θ: C_V has recovered the classical 3 N k",
-                    )
-                    .with_evidence([format!("T/Θ = {ratio_t:.2}, C_V/(3Nk) = {cv:.4}")])
+                    Verdict::holds(claim, "T ≫ Θ: C_V has recovered the classical 3 N k")
+                        .with_evidence([format!("T/Θ = {ratio_t:.2}, C_V/(3Nk) = {cv:.4}")])
                 } else if !self.quantum && (cv - 1.0).abs() < 0.05 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "classical C_V = 3 N k at every T, including T ≫ Θ",
-                    )
-                    .with_evidence([format!(
-                        "C_V/(3Nk) = {cv:.4} (independent of T/Θ = {ratio_t:.3})"
-                    )])
+                    Verdict::holds(claim, "classical C_V = 3 N k at every T, including T ≫ Θ")
+                        .with_evidence([format!(
+                            "C_V/(3Nk) = {cv:.4} (independent of T/Θ = {ratio_t:.3})"
+                        )])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "not in the high-T regime: C_V has not recovered 3 N k",
                     )
                     .with_evidence([format!(
@@ -494,12 +488,12 @@ impl Theory for EinsteinSolid {
                     } else {
                         "C_V → 0 as T → 0 (Einstein freeze-out)"
                     };
-                    Verdict::holds(Epistemic::Theorem, why).with_evidence([format!(
+                    Verdict::holds(claim, why).with_evidence([format!(
                         "C_V/(3Nk) = {cv:.3e} at T = Θ/40 = {t_probe:.3} K"
                     )])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "classical C_V = 3 N k down to T → 0; the third law fails",
                     )
                     .with_evidence([format!(
@@ -507,13 +501,13 @@ impl Theory for EinsteinSolid {
                     )])
                 }
             }
-            DEBYE_T3 => eval_debye_t3(self),
-            _ => Verdict::inapplicable("claim not made by a solid-oscillator object"),
+            DEBYE_T3 => eval_debye_t3(self, claim),
+            _ => Verdict::inapplicable(claim, "claim not made by a solid-oscillator object"),
         }
     }
 }
 
-fn eval_debye_t3(solid: &EinsteinSolid) -> Verdict {
+fn eval_debye_t3(solid: &EinsteinSolid, claim: &Claim) -> Verdict {
     let t1 = solid.einstein_temp_k * T3_T_OVER_THETA;
     let t2 = 2.0 * t1;
     let cv1 = solid.cv_over_3nk_at(t1);
@@ -523,34 +517,26 @@ fn eval_debye_t3(solid: &EinsteinSolid) -> Verdict {
     let doubling_ok = (T3_RATIO_LO..=T3_RATIO_HI).contains(&ratio);
     let magnitude_ok = analytic > 0.0 && (cv1 / analytic - 1.0).abs() < T3_ANALYTIC_TOL;
     if solid.is_debye() && doubling_ok && magnitude_ok {
-        Verdict::holds(
-            Epistemic::Theorem,
-            "C_V ∝ T³ at low T (Debye phonon continuum)",
-        )
-        .with_evidence([format!(
-            "C_V(2T)/C_V(T) = {ratio:.3} at T = Θ_D/20 (T³ requires 8); \
+        Verdict::holds(claim, "C_V ∝ T³ at low T (Debye phonon continuum)").with_evidence([
+            format!(
+                "C_V(2T)/C_V(T) = {ratio:.3} at T = Θ_D/20 (T³ requires 8); \
              C_V/(3Nk) = {cv1:.4e} vs (4π⁴/5)(T/Θ)³ = {analytic:.4e}"
-        )])
+            ),
+        ])
     } else if !solid.quantum {
-        Verdict::fails(
-            Epistemic::Theorem,
-            "classical C_V is independent of T, not T³",
-        )
-        .with_evidence([format!(
+        Verdict::fails(claim, "classical C_V is independent of T, not T³").with_evidence([format!(
             "C_V(2T)/C_V(T) = {ratio:.3} at T = Θ/20 (T³ requires 8)"
         )])
     } else if solid.spectrum == PhononSpectrum::Einstein {
-        Verdict::fails(
-            Epistemic::Theorem,
-            "Einstein freeze-out is exponential, not T³",
-        )
-        .with_evidence([format!(
-            "C_V(2T)/C_V(T) = {ratio:.3e} at T = Θ_E/20 (T³ requires 8); \
+        Verdict::fails(claim, "Einstein freeze-out is exponential, not T³").with_evidence([
+            format!(
+                "C_V(2T)/C_V(T) = {ratio:.3e} at T = Θ_E/20 (T³ requires 8); \
              C_V/(3Nk) = {cv1:.3e} vs Debye T³ {analytic:.3e}"
-        )])
+            ),
+        ])
     } else {
         Verdict::fails(
-            Epistemic::Theorem,
+            claim,
             "Debye C_V is not in the T³ window at the low-T probe",
         )
         .with_evidence([format!(

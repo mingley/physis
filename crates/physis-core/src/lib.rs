@@ -67,20 +67,41 @@
 //! let k = m * v * v * 0.5;
 //! assert!((k.value() - joule(9.0).value()).abs() < 1e-12);
 //! ```
+//!
+//! There is no `Epistemic::Theorem` and no `DerivationAssurance::MachineProved`.
+//! A kernel proof cannot be created by setting an enum:
+//!
+//! ```compile_fail
+//! use physis_core::assurance::DerivationAssurance;
+//! let _ = DerivationAssurance::MachineProved;
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::claim::Epistemic;
+//! let _ = Epistemic::Theorem;
+//! ```
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
 
+pub mod artifact;
+pub mod assumption;
+pub mod assurance;
+pub mod axiom;
 pub mod claim;
 pub mod dim;
 pub mod error;
+pub mod formal;
 pub mod id;
 pub mod knob;
 pub mod layer;
 pub mod qty;
 pub mod scale;
 
-pub use claim::{Claim, Epistemic, Verdict, VerdictKind};
+pub use artifact::ArtifactId;
+pub use assumption::{Assumption, AssumptionSet, AssumptionSetId, DomainOfValidity};
+pub use assurance::{ClaimClass, DerivationAssurance, EmpiricalStatus, SemanticAssurance};
+pub use axiom::{AxiomClass, AxiomId, AxiomLedger, AxiomRecord, ReviewStatus};
+pub use claim::{Claim, Verdict, VerdictKind};
 pub use dim::{
     Acceleration, Action, Amount, Charge, Current, Dimensionless, Energy, EnergyDensity, Force,
     Frequency, HeatCapacity, Irradiance, Length, LengthTemperature, LuminosityDensity, Luminous,
@@ -88,6 +109,7 @@ pub use dim::{
     Temperature, Time, Velocity, SI,
 };
 pub use error::CoreError;
+pub use formal::FormalClaim;
 pub use id::{ClaimId, KnobId, LayerId, TheoryId};
 pub use knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 pub use layer::Layer;

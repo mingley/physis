@@ -1,12 +1,12 @@
 //! Superstring / bosonic string / M-theory as knobbed theories.
 //!
 //! Critical dimensions (26, 10, 11) are theorems of the worldsheet
-//! (or membrane) conformal anomaly, encoded here as `Epistemic::Theorem`.
+//! (or membrane) conformal anomaly, encoded here as `ClaimClass::ModelInternal`.
 //! Landscape counts are `Heuristic`. SM embeddings are `EncodedFact`.
 //!
 //! This is a laboratory object, not a compactification engine.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -488,79 +488,79 @@ impl Theory for StringTheory {
                 claims::SPACETIME_STRUCTURE,
                 "Signature, dimension, and compact extra directions are internally consistent.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 claims::CRITICAL_DIMENSION,
                 "Total dimension equals the construction's critical dimension.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 claims::SUSY_CONSTRUCTION,
                 "Supersymmetry is present if and only if the construction requires it.",
                 LayerId::Field,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             claims::c(
                 claims::NO_TACHYON,
                 "The construction does not have a tachyon in its perturbative spectrum.",
                 LayerId::Particle,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::ANOMALY_CANCELLATION,
                 "Chiral gauge/gravitational anomalies cancel (Green–Schwarz in 10D).",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::OBSERVED_4D,
                 "Non-compact spacetime is 3+1.",
                 LayerId::Spacetime,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::HIDDEN_EXTRA_DIMS,
                 "Compact extra dimensions are not visible at electroweak scales.",
                 LayerId::Effective,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             claims::c(
                 claims::FERMIONS,
                 "The low-energy spectrum contains fermions.",
                 LayerId::Particle,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::SM_GAUGE,
                 "The fundamental gauge group can contain the Standard Model.",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::THREE_GENERATIONS,
                 "Low-energy charged leptons come in three generations.",
                 LayerId::Particle,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             claims::c(
                 claims::GRAVITY,
                 "A massless spin-2 is in the spectrum (closed string / graviton).",
                 LayerId::Particle,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             claims::c(
                 claims::UNIQUE_VACUUM,
                 "The theory selects a unique vacuum (no landscape).",
                 LayerId::Effective,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             claims::c(
                 claims::UV_COMPLETION,
                 "The theory is a candidate UV completion of gravity plus matter.",
                 LayerId::Field,
-                Epistemic::Conjecture,
+                ClaimClass::Conjecture,
             ),
         ]
     }
@@ -570,18 +570,16 @@ impl Theory for StringTheory {
         match claim.id.0.as_str() {
             claims::SPACETIME_STRUCTURE => {
                 if w.spacetime.structurally_ok() && self.extra() >= 0 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "dim, signature, and compact extras are consistent",
-                    )
+                    Verdict::holds(claim, "dim, signature, and compact extras are consistent")
                 } else {
-                    Verdict::fails(Epistemic::Theorem, "spacetime numbers do not fit together")
-                        .with_evidence([format!(
+                    Verdict::fails(claim, "spacetime numbers do not fit together").with_evidence([
+                        format!(
                             "dim={} extra={} observed={}",
                             self.total_dim,
                             self.extra(),
                             self.observed_dim
-                        )])
+                        ),
+                    ])
                 }
             }
             claims::CRITICAL_DIMENSION => {
@@ -593,14 +591,11 @@ impl Theory for StringTheory {
                     None => "11D from supergravity; no worldsheet conformal anomaly".to_string(),
                 };
                 if self.total_dim == crit {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        format!("D={crit} equals the critical dimension"),
-                    )
-                    .with_evidence([anomaly_note])
+                    Verdict::holds(claim, format!("D={crit} equals the critical dimension"))
+                        .with_evidence([anomaly_note])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!(
                             "D={} but {} requires D={}",
                             self.total_dim,
@@ -617,7 +612,7 @@ impl Theory for StringTheory {
                 let req = self.kind.requires_susy();
                 if self.supersymmetry == req {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         if req {
                             "supersymmetry on, as the construction requires"
                         } else {
@@ -626,12 +621,12 @@ impl Theory for StringTheory {
                     )
                 } else if req && !self.supersymmetry {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "superstring/M construction with supersymmetry switched off",
                     )
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "bosonic string with supersymmetry switched on is a different theory",
                     )
                 }
@@ -640,7 +635,7 @@ impl Theory for StringTheory {
                 let m2 = self.ground_state_mass_squared();
                 if m2 >= 0.0 {
                     Verdict::holds(
-                        Epistemic::EncodedFact,
+                        claim,
                         format!("ground-state α'm² = {m2:.1} ≥ 0: no tachyon"),
                     )
                     .with_evidence([
@@ -648,8 +643,7 @@ impl Theory for StringTheory {
                             .to_string(),
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
+                    Verdict::fails(claim,
                         format!("ground-state α'm² = {m2:.1} < 0: a tachyon"),
                     )
                     .with_evidence([
@@ -659,28 +653,29 @@ impl Theory for StringTheory {
             }
             claims::ANOMALY_CANCELLATION => match self.kind {
                 StringKind::Bosonic => Verdict::inapplicable(
+                    claim,
                     "non-chiral 26D string: gauge/gravitational anomalies are not the \
                      obstruction here (the tachyon is)",
                 ),
                 StringKind::TypeIIA | StringKind::TypeIIB => Verdict::holds(
-                    Epistemic::EncodedFact,
+                    claim,
                     "Type II 10D spectrum is anomaly-free (no chiral gauge anomaly to cancel)",
                 ),
                 StringKind::MTheory => Verdict::holds(
-                    Epistemic::EncodedFact,
+                    claim,
                     "11D supergravity is anomaly-free; boundary E₈ factors are the \
                      Hořava–Witten mechanism",
                 ),
                 StringKind::TypeI | StringKind::HeteroticSO32 | StringKind::HeteroticE8xE8 => {
                     if self.total_dim != 10 {
                         Verdict::undecidable(
-                            Epistemic::EncodedFact,
+                            claim,
                             "Green–Schwarz cancellation is a 10D statement; off the critical \
                              dimension this encoding does not assert it",
                         )
                     } else if w.gauge.gs_anomaly_free_10d() {
                         Verdict::holds(
-                            Epistemic::EncodedFact,
+                            claim,
                             format!("{} anomalies cancel via Green–Schwarz", w.gauge.name()),
                         )
                         .with_evidence([
@@ -690,7 +685,7 @@ impl Theory for StringTheory {
                         ])
                     } else {
                         Verdict::fails(
-                            Epistemic::EncodedFact,
+                            claim,
                             format!("{} is not a 10D Green–Schwarz solution", w.gauge.name()),
                         )
                     }
@@ -698,10 +693,10 @@ impl Theory for StringTheory {
             },
             claims::OBSERVED_4D => {
                 if self.observed_dim == 4 {
-                    Verdict::holds(Epistemic::EncodedFact, "observed_dim = 4")
+                    Verdict::holds(claim, "observed_dim = 4")
                 } else {
                     Verdict::fails(
-                        Epistemic::EncodedFact,
+                        claim,
                         format!("observed_dim = {}, not 4", self.observed_dim),
                     )
                 }
@@ -715,15 +710,15 @@ impl Theory for StringTheory {
                 let r_eff = self.effective_radius();
                 let probe = Scale::Electroweak.typical_length();
                 if extra <= 0 {
-                    Verdict::holds(Epistemic::Heuristic, "no extra dimensions to hide")
+                    Verdict::holds(claim, "no extra dimensions to hide")
                 } else if r_eff.value() <= probe.value() {
                     Verdict::holds(
-                        Epistemic::Heuristic,
+                        claim,
                         format!("effective R = {r_eff} is below the {probe} electroweak probe"),
                     )
                 } else {
                     Verdict::fails(
-                        Epistemic::Heuristic,
+                        claim,
                         "effective compact size exceeds the electroweak probe length",
                     )
                     .with_evidence([
@@ -738,15 +733,9 @@ impl Theory for StringTheory {
             }
             claims::FERMIONS => {
                 if w.spectrum.has_fermions() {
-                    Verdict::holds(
-                        Epistemic::EncodedFact,
-                        "fermions present in projected spectrum",
-                    )
+                    Verdict::holds(claim, "fermions present in projected spectrum")
                 } else {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
-                        "bosonic string projection has no fermions",
-                    )
+                    Verdict::fails(claim, "bosonic string projection has no fermions")
                 }
             }
             claims::SM_GAUGE => {
@@ -757,8 +746,7 @@ impl Theory for StringTheory {
                         .verified_contains_sm()
                         .unwrap_or_default()
                         .join(" ⊃ ");
-                    Verdict::holds(
-                        Epistemic::EncodedFact,
+                    Verdict::holds(claim,
                         format!("{} contains SM", w.gauge.name()),
                     )
                     .with_evidence([
@@ -769,24 +757,23 @@ impl Theory for StringTheory {
                     self.kind,
                     StringKind::TypeIIA | StringKind::TypeIIB | StringKind::MTheory
                 ) {
-                    Verdict::undecidable(
-                        Epistemic::Heuristic,
+                    Verdict::undecidable(claim,
                         "Type II / M have no 10D/11D GUT group; SM would have to arise from compactification / branes",
                     )
                 } else {
                     Verdict::fails(
-                        Epistemic::EncodedFact,
+                        claim,
                         format!("{} does not contain SM in this encoding", w.gauge.name()),
                     )
                 }
             }
             claims::THREE_GENERATIONS => {
                 if self.kind == StringKind::Bosonic {
-                    Verdict::fails(Epistemic::EncodedFact, "no fermions, so no generations")
+                    Verdict::fails(claim, "no fermions, so no generations")
                 } else {
                     if self.euler_number != 0 && self.euler_number % 2 != 0 {
                         return Verdict::fails(
-                            Epistemic::EncodedFact,
+                            claim,
                             format!(
                                 "χ = {} is odd; a Calabi–Yau threefold has an even Euler number",
                                 self.euler_number
@@ -794,12 +781,10 @@ impl Theory for StringTheory {
                         );
                     }
                     match self.generations_from_topology() {
-                        None => Verdict::undecidable(
-                            Epistemic::Open,
+                        None => Verdict::undecidable(claim,
                             "generation count depends on the compactification topology (set euler_number)",
                         ),
-                        Some(3) => Verdict::holds(
-                            Epistemic::EncodedFact,
+                        Some(3) => Verdict::holds(claim,
                             format!(
                                 "|χ|/2 = 3 generations from χ = {} — accommodated, not derived",
                                 self.euler_number
@@ -808,8 +793,7 @@ impl Theory for StringTheory {
                         .with_evidence([
                             "the topological count |χ|/2 is a real theorem; but *why* χ = ±6 is not derived — this is the predictivity critique made mechanical".to_string(),
                         ]),
-                        Some(g) => Verdict::fails(
-                            Epistemic::EncodedFact,
+                        Some(g) => Verdict::fails(claim,
                             format!("|χ|/2 = {g} generations from χ = {}, not 3", self.euler_number),
                         ),
                     }
@@ -817,24 +801,17 @@ impl Theory for StringTheory {
             }
             claims::GRAVITY => {
                 if w.has_gravity {
-                    Verdict::holds(
-                        Epistemic::EncodedFact,
-                        "closed-string / 11D graviton in the spectrum",
-                    )
+                    Verdict::holds(claim, "closed-string / 11D graviton in the spectrum")
                 } else {
-                    Verdict::fails(Epistemic::EncodedFact, "no graviton in projection")
+                    Verdict::fails(claim, "no graviton in projection")
                 }
             }
             claims::UNIQUE_VACUUM => {
                 let logn = self.landscape_log10();
                 if logn < 0.5 {
-                    Verdict::holds(
-                        Epistemic::Heuristic,
-                        "landscape estimate is ~1 vacuum with current knobs",
-                    )
+                    Verdict::holds(claim, "landscape estimate is ~1 vacuum with current knobs")
                 } else {
-                    Verdict::fails(
-                        Epistemic::Heuristic,
+                    Verdict::fails(claim,
                         format!("landscape estimate ~10^{logn:.1} vacua"),
                     )
                     .with_evidence([
@@ -848,18 +825,16 @@ impl Theory for StringTheory {
                 if self.total_dim == self.kind.critical_dim()
                     && (self.supersymmetry == self.kind.requires_susy())
                 {
-                    Verdict::holds(
-                        Epistemic::Conjecture,
+                    Verdict::holds(claim,
                         "internally consistent construction; UV-completeness is still a conjecture about nature",
                     )
                 } else {
-                    Verdict::fails(
-                        Epistemic::Conjecture,
+                    Verdict::fails(claim,
                         "construction knobs are off-critical or off-SUSY; not the usual UV candidate",
                     )
                 }
             }
-            _ => Verdict::inapplicable("claim not made by this string object"),
+            _ => Verdict::inapplicable(claim, "claim not made by this string object"),
         }
     }
 }

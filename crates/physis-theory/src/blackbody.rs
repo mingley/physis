@@ -22,7 +22,7 @@
 
 use std::f64::consts::PI;
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -376,31 +376,31 @@ impl Theory for Blackbody {
                 MODE_EQUIPARTITION,
                 "Every cavity mode has mean energy kT (classical equipartition).",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 UV_FINITE,
                 "The improper integral ∫_0^∞ u(ν) dν converges to a finite energy density.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 STEFAN_BOLTZMANN,
                 "The integrated energy density scales as T⁴ (Stefan–Boltzmann).",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 WIEN_DISPLACEMENT,
                 "The spectrum has a finite peak and λ_max T is constant (Wien's displacement law).",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 RJ_IR_LIMIT,
                 "In the infrared hν ≪ kT the spectrum agrees with Rayleigh–Jeans.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
@@ -412,18 +412,15 @@ impl Theory for Blackbody {
                     / (k_boltzmann().value() * self.temperature_k);
                 if (ratio - 1.0).abs() < 0.05 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         "a UV mode still carries kT (classical equipartition)",
                     )
                     .with_evidence([format!("<E>/(kT) = {ratio:.4} at hν = {UV_MODE_X} kT")])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
-                        "UV modes freeze out: <E> = hν/(e^{hν/kT}−1) ≪ kT",
-                    )
-                    .with_evidence([format!(
-                        "<E>/(kT) = {ratio:.4e} at hν = {UV_MODE_X} kT (not 1)"
-                    )])
+                    Verdict::fails(claim, "UV modes freeze out: <E> = hν/(e^{hν/kT}−1) ≪ kT")
+                        .with_evidence([format!(
+                            "<E>/(kT) = {ratio:.4e} at hν = {UV_MODE_X} kT (not 1)"
+                        )])
                 }
             }
             UV_FINITE => {
@@ -438,8 +435,7 @@ impl Theory for Blackbody {
                     let analytic = planck_energy_density(kelvin(self.temperature_k));
                     let rel = (full.value() - analytic.value()).abs() / analytic.value();
                     if rel < 1e-3 {
-                        Verdict::holds(
-                            Epistemic::Theorem,
+                        Verdict::holds(claim,
                             "∫ u(ν) dν = a T⁴ is finite (Planck, independent of cutoff)",
                         )
                         .with_evidence([format!(
@@ -449,19 +445,16 @@ impl Theory for Blackbody {
                             self.cutoff_hz / self.thermal_frequency().value()
                         )])
                     } else {
-                        Verdict::fails(
-                            Epistemic::Theorem,
-                            "Planck integral disagrees with analytic a T⁴",
-                        )
-                        .with_evidence([format!(
-                            "u_∞ = {:.4e}, aT⁴ = {:.4e}",
-                            full.value(),
-                            analytic.value()
-                        )])
+                        Verdict::fails(claim, "Planck integral disagrees with analytic a T⁴")
+                            .with_evidence([format!(
+                                "u_∞ = {:.4e}, aT⁴ = {:.4e}",
+                                full.value(),
+                                analytic.value()
+                            )])
                     }
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "ultraviolet catastrophe: the Rayleigh–Jeans integral diverges as ν_max³",
                     )
                     .with_evidence([format!(
@@ -478,24 +471,18 @@ impl Theory for Blackbody {
                     let ratio = u_2t.value() / u_t.value();
                     let analytic = planck_energy_density(kelvin(self.temperature_k));
                     if (ratio - 16.0).abs() / 16.0 < 0.03 {
-                        Verdict::holds(
-                            Epistemic::Theorem,
-                            "u_∞(2T)/u_∞(T) = 16 = 2⁴ (Stefan–Boltzmann)",
-                        )
-                        .with_evidence([
-                            format!("u_∞(2T)/u_∞(T) = {ratio:.3}"),
-                            format!(
-                                "u_∞(T) = {:.4e} J/m³ (analytic aT⁴ = {:.4e})",
-                                u_t.value(),
-                                analytic.value()
-                            ),
-                        ])
+                        Verdict::holds(claim, "u_∞(2T)/u_∞(T) = 16 = 2⁴ (Stefan–Boltzmann)")
+                            .with_evidence([
+                                format!("u_∞(2T)/u_∞(T) = {ratio:.3}"),
+                                format!(
+                                    "u_∞(T) = {:.4e} J/m³ (analytic aT⁴ = {:.4e})",
+                                    u_t.value(),
+                                    analytic.value()
+                                ),
+                            ])
                     } else {
-                        Verdict::fails(
-                            Epistemic::Theorem,
-                            "Planck energy density does not scale as T⁴",
-                        )
-                        .with_evidence([format!("u_∞(2T)/u_∞(T) = {ratio:.3} (expected 16)")])
+                        Verdict::fails(claim, "Planck energy density does not scale as T⁴")
+                            .with_evidence([format!("u_∞(2T)/u_∞(T) = {ratio:.3} (expected 16)")])
                     }
                 } else {
                     let u_t = self.energy_density_to(self.cutoff_hz);
@@ -504,7 +491,7 @@ impl Theory for Blackbody {
                     let u_2t = hot.energy_density_to(self.cutoff_hz);
                     let ratio = u_2t.value() / u_t.value();
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "at fixed bandwidth classical u is linear in T, not T⁴",
                     )
                     .with_evidence([format!(
@@ -517,8 +504,7 @@ impl Theory for Blackbody {
                     let (lam_uv, _, pts) = self.u_lambda_samples();
                     let u_uv = pts.first().map(|p| p.1).unwrap_or(0.0);
                     let u_mid = pts.get(pts.len() / 2).map(|p| p.1).unwrap_or(0.0);
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         "sampled u(λ) has no interior peak; the maximum is at the UV endpoint",
                     )
                     .with_evidence([format!(
@@ -529,21 +515,15 @@ impl Theory for Blackbody {
                     let product = lambda * self.temperature_k;
                     let analytic = wien_constant().value();
                     if (product - analytic).abs() / analytic < 0.02 {
-                        Verdict::holds(
-                            Epistemic::Theorem,
-                            "λ_max T matches the computed Wien constant",
-                        )
-                        .with_evidence([format!(
-                            "λ_max T = {product:.6e} m·K (analytic hc/(k x) = {analytic:.6e})"
-                        )])
+                        Verdict::holds(claim, "λ_max T matches the computed Wien constant")
+                            .with_evidence([format!(
+                                "λ_max T = {product:.6e} m·K (analytic hc/(k x) = {analytic:.6e})"
+                            )])
                     } else {
-                        Verdict::fails(
-                            Epistemic::Theorem,
-                            "computed peak does not match Wien's constant",
-                        )
-                        .with_evidence([format!(
-                            "λ_max T = {product:.6e}, analytic {analytic:.6e}"
-                        )])
+                        Verdict::fails(claim, "computed peak does not match Wien's constant")
+                            .with_evidence([format!(
+                                "λ_max T = {product:.6e}, analytic {analytic:.6e}"
+                            )])
                     }
                 }
             },
@@ -555,22 +535,16 @@ impl Theory for Blackbody {
                 let u_rj = classical.spectral_u_nu(nu).value();
                 let rel = (u - u_rj).abs() / u_rj;
                 if rel < 0.01 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "hν ≪ kT: the spectrum agrees with Rayleigh–Jeans",
-                    )
-                    .with_evidence([format!(
-                        "|u − u_RJ|/u_RJ = {rel:.2e} at hν = {IR_MODE_X} kT"
-                    )])
+                    Verdict::holds(claim, "hν ≪ kT: the spectrum agrees with Rayleigh–Jeans")
+                        .with_evidence([format!(
+                            "|u − u_RJ|/u_RJ = {rel:.2e} at hν = {IR_MODE_X} kT"
+                        )])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
-                        "infrared spectrum disagrees with Rayleigh–Jeans",
-                    )
-                    .with_evidence([format!("|u − u_RJ|/u_RJ = {rel:.3e}")])
+                    Verdict::fails(claim, "infrared spectrum disagrees with Rayleigh–Jeans")
+                        .with_evidence([format!("|u − u_RJ|/u_RJ = {rel:.3e}")])
                 }
             }
-            _ => Verdict::inapplicable("claim not made by a cavity-radiation object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a cavity-radiation object"),
         }
     }
 }

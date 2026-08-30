@@ -14,7 +14,7 @@
 
 use std::f64::consts::PI;
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -203,31 +203,31 @@ impl Theory for BellTest {
                 BORN_NORMALIZATION,
                 "The entangled state is normalized.",
                 LayerId::Quantum,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 QM_CORRELATOR,
                 "The singlet correlator equals ⟨ψ|σ(a)⊗σ(b)|ψ⟩ = −cos(a−b).",
                 LayerId::Quantum,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 BELL_VIOLATION,
                 "The CHSH correlator exceeds the local-realism bound of 2.",
                 LayerId::Quantum,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 TSIRELSON_BOUND,
                 "The CHSH correlator does not exceed Tsirelson's bound 2√2.",
                 LayerId::Quantum,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 LOCAL_REALISM_BOUND,
                 "The local-hidden-variable maximum of |S| is exactly 2.",
                 LayerId::Quantum,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
@@ -238,10 +238,10 @@ impl Theory for BellTest {
                 let n = psi.norm_sqr();
                 let p_sum: f64 = (0..psi.dim()).filter_map(|i| psi.born(i)).sum();
                 if (n - 1.0).abs() < 1e-12 && (p_sum - 1.0).abs() < 1e-12 {
-                    Verdict::holds(Epistemic::Theorem, "⟨ψ|ψ⟩ = 1 and Σ pᵢ = 1")
+                    Verdict::holds(claim, "⟨ψ|ψ⟩ = 1 and Σ pᵢ = 1")
                         .with_evidence([format!("norm² = {n:.6}, Σ pᵢ = {p_sum:.6}")])
                 } else {
-                    Verdict::fails(Epistemic::Theorem, "state is not normalized")
+                    Verdict::fails(claim, "state is not normalized")
                 }
             }
             QM_CORRELATOR => {
@@ -255,7 +255,7 @@ impl Theory for BellTest {
                 }
                 if worst < 1e-12 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         "⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b), computed from the operators",
                     )
                     .with_evidence([format!(
@@ -263,7 +263,7 @@ impl Theory for BellTest {
                     )])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!("operator correlator disagrees with −cos(a−b) by {worst:.2e}"),
                     )
                 }
@@ -272,7 +272,7 @@ impl Theory for BellTest {
                 let s = self.chsh_s();
                 if s > 2.0 + 1e-12 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         format!("CHSH S = {s:.3} > 2: local realism is refuted"),
                     )
                     .with_evidence([
@@ -280,7 +280,7 @@ impl Theory for BellTest {
                     ])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!(
                             "CHSH S = {s:.3} ≤ 2: reproducible by a local hidden-variable model"
                         ),
@@ -293,8 +293,7 @@ impl Theory for BellTest {
                 let smax = self.max_chsh_over_angles();
                 let tsirelson = 2.0 * 2.0_f64.sqrt();
                 if smax <= tsirelson + 1e-6 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         format!(
                             "maximizing over angles gives |S|max = {smax:.4} ≤ 2√2 ≈ {tsirelson:.4}"
                         ),
@@ -304,7 +303,7 @@ impl Theory for BellTest {
                     )])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!("found |S| = {smax:.4} > 2√2 — impossible in quantum mechanics"),
                     )
                 }
@@ -313,8 +312,7 @@ impl Theory for BellTest {
                 // Derive the classical bound by enumerating deterministic models.
                 let lhv = max_chsh_local_hidden_variable();
                 if (lhv - 2.0).abs() < 1e-12 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         "local hidden-variable |S|max = 2, over all 2⁴ deterministic strategies",
                     )
                     .with_evidence([
@@ -322,12 +320,12 @@ impl Theory for BellTest {
                     ])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!("enumerated local-realism max |S| = {lhv:.3} ≠ 2"),
                     )
                 }
             }
-            _ => Verdict::inapplicable("claim not made by a quantum-foundations object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a quantum-foundations object"),
         }
     }
 }

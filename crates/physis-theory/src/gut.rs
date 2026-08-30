@@ -20,7 +20,7 @@
 //! knob revives unification as a `heuristic`, at the price of unobserved
 //! superpartners.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -121,55 +121,53 @@ impl Theory for Su5Gut {
                 GUT_SM_EMBEDDING,
                 "The Standard Model fermions fill complete SU(5) multiplets (5̄ + 10).",
                 LayerId::Interaction,
-                Epistemic::EncodedFact,
+                ClaimClass::Phenomenological,
             ),
             Claim::new(
                 GUT_CHARGE_QUANTIZATION,
                 "Electric charge is quantized (Q is a traceless SU(5) generator).",
                 LayerId::Particle,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 GUT_WEINBERG_ANGLE,
                 "The unification-scale weak mixing angle is sin²θ_W = 3/8.",
                 LayerId::Interaction,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 GUT_WEINBERG_ANGLE_MZ,
                 "Georgi–Quinn–Weinberg running of 3/8 down to M_Z matches the measured sin²θ_W.",
                 LayerId::Effective,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             Claim::new(
                 GUT_COUPLING_UNIFICATION,
                 "The three SM gauge couplings meet at a single scale.",
                 LayerId::Interaction,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
             Claim::new(
                 GUT_PROTON_DECAY_VIABLE,
                 "The predicted proton lifetime is consistent with experiment.",
                 LayerId::Effective,
-                Epistemic::Heuristic,
+                ClaimClass::Heuristic,
             ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
             GUT_SM_EMBEDDING => match GaugeGroup::su5().verified_contains_sm() {
-                Some(chain) => Verdict::holds(
-                    Epistemic::EncodedFact,
-                    "SU(5) ⊃ SU(3)×SU(2)×U(1); one generation = 5̄ ⊕ 10",
-                )
-                .with_evidence([format!("verified chain: {}", chain.join(" ⊃ "))]),
-                None => Verdict::fails(Epistemic::EncodedFact, "no verified SM embedding"),
+                Some(chain) => {
+                    Verdict::holds(claim, "SU(5) ⊃ SU(3)×SU(2)×U(1); one generation = 5̄ ⊕ 10")
+                        .with_evidence([format!("verified chain: {}", chain.join(" ⊃ "))])
+                }
+                None => Verdict::fails(claim, "no verified SM embedding"),
             },
             GUT_CHARGE_QUANTIZATION => {
                 let tr_q = gut_trace_charge();
                 if tr_q.abs() < 1e-12 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         "Tr Q = 0 over a complete SU(5) multiplet forces quantized charges",
                     )
                     .with_evidence([format!(
@@ -177,7 +175,7 @@ impl Theory for Su5Gut {
                     )])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         format!("Tr Q = {tr_q:.3} ≠ 0: charge not quantized by SU(5)"),
                     )
                 }
@@ -185,8 +183,7 @@ impl Theory for Su5Gut {
             GUT_WEINBERG_ANGLE => {
                 let s2 = gut_weinberg_sin2();
                 if (s2 - 3.0 / 8.0).abs() < 1e-12 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         "sin²θ_W = 3/8 at the unification scale (computed from the multiplet)",
                     )
                     .with_evidence([
@@ -195,10 +192,7 @@ impl Theory for Su5Gut {
                             .to_string(),
                     ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
-                        format!("computed sin²θ_W = {s2:.4} ≠ 3/8"),
-                    )
+                    Verdict::fails(claim, format!("computed sin²θ_W = {s2:.4} ≠ 3/8"))
                 }
             }
             GUT_WEINBERG_ANGLE_MZ => {
@@ -221,13 +215,13 @@ impl Theory for Su5Gut {
                 )];
                 if mismatch < 0.03 {
                     Verdict::holds(
-                        Epistemic::Heuristic,
+                        claim,
                         "GQW running of unification lands on the measured sin²θ_W(M_Z)",
                     )
                     .with_evidence(evidence)
                 } else {
                     Verdict::fails(
-                        Epistemic::Heuristic,
+                        claim,
                         "GQW running of unification misses the measured sin²θ_W(M_Z)",
                     )
                     .with_evidence(evidence)
@@ -259,8 +253,7 @@ impl Theory for Su5Gut {
                 ];
                 let two_loop = run.two_loop_unification_mismatch();
                 if mismatch < 0.03 {
-                    Verdict::holds(
-                        Epistemic::Heuristic,
+                    Verdict::holds(claim,
                         format!(
                             "the three couplings meet (1-loop {:.0}%, 2-loop {:.0}% gap) — a celebrated near-success",
                             100.0 * mismatch,
@@ -269,8 +262,7 @@ impl Theory for Su5Gut {
                     )
                     .with_evidence(evidence)
                 } else {
-                    Verdict::fails(
-                        Epistemic::Heuristic,
+                    Verdict::fails(claim,
                         format!(
                             "the couplings miss unification (1-loop {:.0}%, 2-loop {:.0}% off in α_3)",
                             100.0 * mismatch,
@@ -291,14 +283,12 @@ impl Theory for Su5Gut {
                 };
                 let m_gut = run.unification_scale_gev();
                 if self.supersymmetric {
-                    Verdict::holds(
-                        Epistemic::Heuristic,
+                    Verdict::holds(claim,
                         "SUSY raises M_GUT, pushing p → e⁺π⁰ above current limits (not excluded, not seen)",
                     )
                     .with_evidence([format!("computed one-loop M_GUT ≈ {m_gut:.2e} GeV")])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Heuristic,
+                    Verdict::fails(claim,
                         "minimal SU(5) predicts τ_p ~ 10³¹ yr, excluded by Super-Kamiokande (τ > 2.4×10³⁴ yr)",
                     )
                     .with_evidence([format!(
@@ -306,7 +296,7 @@ impl Theory for Su5Gut {
                     )])
                 }
             }
-            _ => Verdict::inapplicable("claim not made by the SU(5) GUT object"),
+            _ => Verdict::inapplicable(claim, "claim not made by the SU(5) GUT object"),
         }
     }
 }
@@ -328,7 +318,7 @@ mod tests {
         let g = Su5Gut::default();
         let v = verdict(&g, GUT_WEINBERG_ANGLE);
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.epistemic, Epistemic::Theorem);
+        assert_eq!(v.class, ClaimClass::ModelInternal);
         // The GUT-scale cell must not pretend 3/8 is the M_Z value.
         assert!(
             !v.evidence
@@ -344,7 +334,7 @@ mod tests {
         let mut g = Su5Gut::default();
         let v = verdict(&g, GUT_WEINBERG_ANGLE_MZ);
         assert_eq!(v.kind, VerdictKind::Fails);
-        assert_eq!(v.epistemic, Epistemic::Heuristic);
+        assert_eq!(v.class, ClaimClass::Heuristic);
         assert!(
             v.evidence
                 .iter()
@@ -364,7 +354,7 @@ mod tests {
         g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
         let u = verdict(&g, GUT_WEINBERG_ANGLE_MZ);
         assert_eq!(u.kind, VerdictKind::Holds);
-        assert_eq!(u.epistemic, Epistemic::Heuristic);
+        assert_eq!(u.class, ClaimClass::Heuristic);
         // A hold must not claim 3/8 at M_Z.
         assert!(
             !u.evidence.iter().any(|e| e.contains("3/8")),
@@ -378,7 +368,7 @@ mod tests {
         let g = Su5Gut::default();
         let v = verdict(&g, GUT_CHARGE_QUANTIZATION);
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.epistemic, Epistemic::Theorem);
+        assert_eq!(v.class, ClaimClass::ModelInternal);
     }
 
     #[test]
@@ -399,7 +389,7 @@ mod tests {
         g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
         let u = verdict(&g, GUT_COUPLING_UNIFICATION);
         assert_eq!(u.kind, VerdictKind::Holds);
-        assert_eq!(u.epistemic, Epistemic::Heuristic);
+        assert_eq!(u.class, ClaimClass::Heuristic);
         assert_eq!(
             verdict(&g, GUT_PROTON_DECAY_VIABLE).kind,
             VerdictKind::Holds

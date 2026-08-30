@@ -12,7 +12,8 @@ Layer: agent
 | `knobs [theory]` | snapshot knobs |
 | `run <theory>` | evaluate all claims |
 | `set <theory> <knob> <value>` | turn a knob, print Δverdicts |
-| `epistemics` | tally every verdict across the lab by epistemic tag |
+| `epistemics` | tally every verdict by class, derivation, and semantic axes (no theorem row) |
+| `why <claim>` | print assumptions, statement hash, and that no kernel receipt exists |
 | `experiments` | list the available experiments |
 | `experiment <id>` | canonical experiment (fresh defaults) |
 | `score <theory>` | grade a theory against the empirical-target fixture |

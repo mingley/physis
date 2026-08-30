@@ -30,8 +30,13 @@ pub enum Command {
         /// Raw value (parsed against the knob domain).
         value: String,
     },
-    /// Tally every verdict across the lab by epistemic tag (the knowledge ledger).
+    /// Tally every verdict across the lab by class / derivation / semantic axes.
     Epistemics,
+    /// Explain a claim's assumptions, identity hash, and assurance (not a proof).
+    Why {
+        /// Claim id (`astro.sky-finite`, `consistency.critical-dimension`, …).
+        claim: String,
+    },
     /// List the available experiments.
     Experiments,
     /// Run a named experiment.

@@ -22,7 +22,7 @@
 
 use std::f64::consts::{FRAC_PI_2, PI};
 
-use physis_core::claim::{Claim, Epistemic, Verdict, VerdictKind};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobSpec, KnobValue, Knobbed};
@@ -180,23 +180,20 @@ fn solar_ready(dim: u8) -> bool {
 }
 
 /// Evaluate the three solar-system claims for Newton (`gr = false`) or GR.
-pub fn eval_solar(gr: bool, dim: u8, claim: &str) -> Verdict {
+pub fn eval_solar(gr: bool, dim: u8, claim: &Claim) -> Verdict {
     if !solar_ready(dim) {
-        return Verdict::new(
-            VerdictKind::Inapplicable,
-            Epistemic::Theorem,
+        return Verdict::inapplicable(
+            claim,
             "solar-system tests are 4D Schwarzschild / inverse-square",
-            Vec::new(),
         );
     }
-    match claim {
+    match claim.id.0.as_str() {
         NEWTON_HALF => {
             let delta = solar_deflection_arcsec(gr);
             let newton = solar_deflection_arcsec(false);
             // Compare against the computed Newtonian integral, not a table.
             if (delta - newton).abs() / newton.max(1e-12) < 0.02 && newton > 0.5 {
-                Verdict::holds(
-                    Epistemic::Theorem,
+                Verdict::holds(claim,
                     "grazing deflection is the Newtonian 2 GM/(c² R)",
                 )
                 .with_evidence([format!(
@@ -205,7 +202,7 @@ pub fn eval_solar(gr: bool, dim: u8, claim: &str) -> Verdict {
                 )])
             } else {
                 Verdict::fails(
-                    Epistemic::Theorem,
+                    claim,
                     "deflection is not the Newtonian half-angle (spatial curvature doubles it)",
                 )
                 .with_evidence([format!(
@@ -218,7 +215,7 @@ pub fn eval_solar(gr: bool, dim: u8, claim: &str) -> Verdict {
             let delta = solar_deflection_arcsec(gr);
             if (delta - EDDINGTON_ARCSEC).abs() / EDDINGTON_ARCSEC < 0.03 {
                 Verdict::holds(
-                    Epistemic::Theorem,
+                    claim,
                     "grazing solar deflection is 1.75″ (Eddington / Schwarzschild)",
                 )
                 .with_evidence([format!(
@@ -227,7 +224,7 @@ pub fn eval_solar(gr: bool, dim: u8, claim: &str) -> Verdict {
                 )])
             } else {
                 Verdict::fails(
-                    Epistemic::Theorem,
+                    claim,
                     "grazing deflection is not 1.75″ (Newtonian / 1911 half-angle)",
                 )
                 .with_evidence([format!(
@@ -240,16 +237,13 @@ pub fn eval_solar(gr: bool, dim: u8, claim: &str) -> Verdict {
             let extra = mercury_arcsec_per_century(gr);
             let analytic = mercury_analytic_arcsec_per_century();
             if (extra - MERCURY_ARCSEC_PER_CENTURY).abs() < 1.5 {
-                Verdict::holds(
-                    Epistemic::Theorem,
-                    "Mercury's extra perihelion is 43″ per century",
-                )
-                .with_evidence([format!(
+                Verdict::holds(claim, "Mercury's extra perihelion is 43″ per century")
+                    .with_evidence([format!(
                     "Δω = {extra:.2}\" / century (analytic 6π GM/(c²a(1−e²)) = {analytic:.2}\"/cy)"
                 )])
             } else {
                 Verdict::fails(
-                    Epistemic::Theorem,
+                    claim,
                     "inverse-square ellipses do not precess; the 43″ remainder is missing",
                 )
                 .with_evidence([format!(
@@ -257,7 +251,7 @@ pub fn eval_solar(gr: bool, dim: u8, claim: &str) -> Verdict {
                 )])
             }
         }
-        _ => Verdict::inapplicable("claim not made by a solar-system gravity object"),
+        _ => Verdict::inapplicable(claim, "claim not made by a solar-system gravity object"),
     }
 }
 
@@ -267,19 +261,19 @@ pub(crate) fn solar_claims() -> Vec<Claim> {
             NEWTON_HALF,
             "Grazing solar light deflection is the Newtonian value 2 GM/(c² R) ≈ 0.87″.",
             LayerId::Spacetime,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             EDDINGTON,
             "Grazing solar light deflection is 1.75″ (Eddington 1919 / full GR).",
             LayerId::Spacetime,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             MERCURY_PERIHELION,
             "Mercury's extra perihelion advance is 43″ per century.",
             LayerId::Spacetime,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
     ]
 }
@@ -329,7 +323,7 @@ impl Theory for NewtonianGravity {
         solar_claims()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_solar(false, 4, claim.id.0.as_str())
+        eval_solar(false, 4, claim)
     }
 }
 

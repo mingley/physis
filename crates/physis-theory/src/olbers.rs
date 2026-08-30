@@ -20,7 +20,7 @@
 
 use std::f64::consts::PI;
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -286,33 +286,33 @@ impl Theory for OlbersSky {
                 SHELL_CANCELLATION,
                 "Inverse-square dilution cancels shell area: dF/dr is independent of r.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 SKY_FINITE,
                 "Integrated sky brightness stays finite as the radial cutoff is removed.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 NIGHT_SKY_DARK,
                 "The night sky is far dimmer than a stellar photosphere.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
-            SHELL_CANCELLATION => eval_shell(self),
-            SKY_FINITE => eval_sky_finite(self),
-            NIGHT_SKY_DARK => eval_dark(self),
-            _ => Verdict::inapplicable("claim not made by an Olbers-sky object"),
+            SHELL_CANCELLATION => eval_shell(self, claim),
+            SKY_FINITE => eval_sky_finite(self, claim),
+            NIGHT_SKY_DARK => eval_dark(self, claim),
+            _ => Verdict::inapplicable(claim, "claim not made by an Olbers-sky object"),
         }
     }
 }
 
-fn eval_shell(sky: &OlbersSky) -> Verdict {
+fn eval_shell(sky: &OlbersSky, claim: &Claim) -> Verdict {
     // Probe well inside the Hubble length so linear Hubble flow is not crazy.
     let r = sky.hubble_length() * 0.1;
     let r2 = r * 2.0;
@@ -321,7 +321,7 @@ fn eval_shell(sky: &OlbersSky) -> Verdict {
     let ratio = d2 / d1;
     if (ratio - 1.0).abs() < 0.02 {
         Verdict::holds(
-            Epistemic::Theorem,
+            claim,
             "dF/dr is independent of r: inverse-square cancels shell area",
         )
         .with_evidence([format!(
@@ -329,7 +329,7 @@ fn eval_shell(sky: &OlbersSky) -> Verdict {
         )])
     } else {
         Verdict::fails(
-            Epistemic::Theorem,
+            claim,
             "Hubble dimming makes dF/dr fall with r; the standing cancellation fails",
         )
         .with_evidence([format!(
@@ -338,14 +338,14 @@ fn eval_shell(sky: &OlbersSky) -> Verdict {
     }
 }
 
-fn eval_sky_finite(sky: &OlbersSky) -> Verdict {
+fn eval_sky_finite(sky: &OlbersSky, claim: &Claim) -> Verdict {
     if sky.is_unbounded_static() {
         // Improper integral: F ∝ R, sampled by doubling a finite probe.
         // Independent of the current cutoff (a large cutoff can still look finite).
         let r = sky.age_horizon();
         let ratio = sky.flux_to(r * 2.0).value() / sky.flux_to(r).value();
         Verdict::fails(
-            Epistemic::Theorem,
+            claim,
             "static Euclidean flux grows without bound: F(2R)/F(R) = 2",
         )
         .with_evidence([format!(
@@ -355,7 +355,7 @@ fn eval_sky_finite(sky: &OlbersSky) -> Verdict {
         let r = sky.age_horizon();
         let f = sky.flux_to(r);
         Verdict::holds(
-            Epistemic::Theorem,
+            claim,
             "finite age caps the integral at R = c t; the sky brightness is finite",
         )
         .with_evidence([format!(
@@ -372,26 +372,23 @@ fn eval_sky_finite(sky: &OlbersSky) -> Verdict {
         let sat = f_inf.value() / f_h.value();
         if (1.5..2.2).contains(&sat) {
             Verdict::holds(
-                Epistemic::Theorem,
+                claim,
                 "Hubble dimming saturates the improper integral at F = ρ_L c/H",
             )
             .with_evidence([format!(
                 "F(100 c/H)/F(c/H) = {sat:.3} (approaches 2 from below; static would be 100)"
             )])
         } else {
-            Verdict::fails(
-                Epistemic::Theorem,
-                "expanding flux did not saturate as ρ_L c/H predicts",
-            )
-            .with_evidence([format!("F(100 c/H)/F(c/H) = {sat:.3} (expected ≈ 2)")])
+            Verdict::fails(claim, "expanding flux did not saturate as ρ_L c/H predicts")
+                .with_evidence([format!("F(100 c/H)/F(c/H) = {sat:.3} (expected ≈ 2)")])
         }
     }
 }
 
-fn eval_dark(sky: &OlbersSky) -> Verdict {
+fn eval_dark(sky: &OlbersSky, claim: &Claim) -> Verdict {
     if sky.is_unbounded_static() {
         Verdict::fails(
-            Epistemic::Theorem,
+            claim,
             "τ = n σ R → ∞ as R → ∞: every line of sight hits a star",
         )
         .with_evidence([format!(
@@ -406,7 +403,7 @@ fn eval_dark(sky: &OlbersSky) -> Verdict {
         let ratio = f.value() / star.value();
         if tau < TAU_DARK && ratio < IRRADIANCE_DARK {
             Verdict::holds(
-                Epistemic::Theorem,
+                claim,
                 "optical depth to a stellar disk is tiny; the night sky is dark",
             )
             .with_evidence([format!(
@@ -415,7 +412,7 @@ fn eval_dark(sky: &OlbersSky) -> Verdict {
             )])
         } else {
             Verdict::fails(
-                Epistemic::Theorem,
+                claim,
                 "the horizon is opaque: τ ≳ 1, the sky is photosphere-bright",
             )
             .with_evidence([format!(

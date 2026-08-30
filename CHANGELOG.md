@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Level-3 Milestone 1: theorem is no longer an enum**
+  (`crates/physis-core` assurance/assumption/artifact/axiom/formal,
+  `crates/physis-verifier`, `specs/020-proof-carrying.md`). Former
+  `Epistemic::Theorem` is `ClaimClass::ModelInternal` (or mathematical /
+  phenomenological) with `DerivationAssurance::Executed`. There is no
+  `MachineProved` variant; `Verified<T>` can be minted only inside
+  `physis-verifier` (`pub(crate)`). Every claim has a SHA-256 statement
+  identity, a non-empty assumption set, and a domain of validity.
+  Semantic assurance starts `Unreviewed`. `physis epistemics` prints
+  derivation/class/semantic ledgers and an explicit zero kernel-proof
+  row. `physis why` prints assumptions and `kernel proof: none`.
+  Existing labs still evaluate; they are not silently promoted.
+  Verified: compile-fail against `DerivationAssurance::MachineProved` and
+  `Verified` struct literals, statement-hash sensitivity, axiom propose
+  is unreviewed, no lab verdict is a kernel proof, `fmt`,
+  `clippy -D warnings`, full suite, CLI `epistemics` / `why`.
+
 - **Olbers' paradox: infinite static Euclidean starlight on trial**
   (`crates/physis-theory/src/olbers.rs`, `specs/019-olbers.md`, typed
   `Irradiance` / `LuminosityDensity` in `physis-core`). A standing

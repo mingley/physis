@@ -19,7 +19,8 @@ Rust is unusually good at this:
 
 - the type system will not let you add kilograms to meters
 - enums make illegal states unrepresentable
-- a claim can carry an epistemic tag (`theorem` vs `heuristic`) as seriously as its verdict (`holds` vs `fails`)
+- a claim carries orthogonal assurance axes (`class`, `derivation`, `empirical`, `semantic`) as seriously as its verdict (`holds` vs `fails`)
+- `executed` means the evaluator ran; it is not a kernel proof. `MachineProved` cannot be set as an enum.
 - a lab journal is an append-only record of knob turns and verdict diffs
 
 `physis` is a **foundational building block**. The flagship experiment is a laboratory for the public argument that string theory took fundamental physics into a landscape of untestable vacua (the family of critiques associated with, among others, Eric Weinstein). The *same* substrate now also hosts **electromagnetism, computation, thermodynamics, and quantum foundations** — not plugins bolted on, but new layers and theories on the same knobs-and-claims machine.
@@ -30,9 +31,10 @@ This repository does **not** decide whether string theory is false. It makes the
 
 | Crate | Role |
 |---|---|
-| `physis-core` | SI dimensions, quantities, layers, knobs, claims, verdicts |
+| `physis-core` | SI dimensions, quantities, layers, knobs, claims, orthogonal assurance, content-addressed identity |
 | `physis-model` | Spacetime, finite Hilbert space, SM spectrum, gauge groups, `World` |
 | `physis-theory` | five domains on one substrate: fundamental physics (SM, GR, strings/M, observer-geometry), **electromagnetism**, **computation**, **thermodynamics**, and **quantum foundations** |
+| `physis-verifier` | the only crate that can mint `Verified<T>`; public store starts empty |
 | `physis-agent` | Lab, protocol, JSONL journal |
 | `physis` | Facade + CLI |
 
@@ -51,7 +53,7 @@ Ten objects sit on one claim matrix:
 - **type-iib** / **type-iia** / **type-i** / **heterotic-e8e8** / **heterotic-so32** / **bosonic** / **m-theory** — string/M constructions with real theorems (critical dimension) and honest heuristics (landscape count)
 - **observer-geometry** — a *scaffold* for unique-geometry programs. **Not Geometric Unity.** Uniqueness is an axiom/conjecture here, not a proof.
 
-Read the `epistemic` column before treating a cell as physics. A `holds` that is a `conjecture` is not the same object as a `holds` that is a `theorem`.
+Read `class` and `derivation` before treating a cell as physics. A `holds` that is a `conjecture` is not the same object as a `holds` that is `executed` model-internal, and neither is a kernel-checked theorem.
 
 ## Five domains, one substrate
 
@@ -86,9 +88,10 @@ MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
 `gut.proton-decay-viable` (excluded by Super-Kamiokande), which a
 `supersymmetric` knob revives as heuristics.
 
-`physis epistemics` tallies the whole lab's knowledge state by epistemic tag
-(currently ~110 theorems alongside encoded-facts, conjectures, heuristics, and
-honestly-`open` problems). `physis --json <command>` emits the typed matrices and
+`physis epistemics` tallies the whole lab by class, derivation, and semantic
+assurance (currently hundreds of `executed` model-internal evaluations and
+zero kernel proofs). `physis why <claim>` prints assumptions and the
+statement hash. `physis --json <command>` emits the typed matrices and
 verdict diffs for agents.
 
 ## Smallest level of modern physics
@@ -128,6 +131,7 @@ cargo run -p physis -- run su5-gut          # SU(5): 3/8 at M_GUT; GQW misses 0.
 cargo run -p physis -- set su5-gut supersymmetric true   # GQW + unification fail → hold
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis -- epistemics
+cargo run -p physis -- why consistency.critical-dimension
 cargo run -p physis --example kinetic_energy
 
 # record a session across runs, then mechanically verify it replays:
@@ -154,7 +158,7 @@ AGENTS.md  standing orders for long-horizon agents
 
 ## Honesty
 
-- Critical dimensions of strings (26 / 10 / 11) are encoded as **theorems**.
+- Critical dimensions of strings (26 / 10 / 11) are **executed model-internal** claims, not kernel proofs. `physis why consistency.critical-dimension` prints `kernel proof: none`.
 - SM embeddings into E₈×E₈, SO(32), SO(10), Spin(10) are **verified by code** — `GaugeGroup::verified_contains_sm` walks the standard maximal-subgroup chain and checks rank/dimension at each step — but remain **encoded facts**, not full root-system branching rules (necessary conditions + an encoded chain, not a proof). Full Dynkin branching is a planned milestone.
 - Green–Schwarz anomaly cancellation is a **mechanical predicate** on the gauge group (dimension 496, exactly SO(32) or E₈×E₈), not a menu — see `GaugeGroup::gs_anomaly_free_10d`. It is an **encoded fact**, not a re-derivation of the anomaly polynomial (that is a later milestone).
 - Landscape counts are **heuristics**. They exist so uniqueness can *flip* when fluxes and extra dimensions move — not because we computed 10⁵⁰⁰ Calabi–Yau flux vacua.

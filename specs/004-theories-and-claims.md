@@ -17,10 +17,16 @@ A claim is a sentence with:
 
 - a stable id (shared across theories when the sentence is the same)
 - a layer
-- a default epistemic tag
-- an evaluator that returns `Verdict { kind, epistemic, summary, evidence }`
+- a `ClaimClass`
+- a `DerivationAssurance` (never `MachineProved` — that is not an enum)
+- an `EmpiricalStatus` and `SemanticAssurance`
+- an explicit `AssumptionSet` and `DomainOfValidity`
+- a content-addressed `statement_hash`
+- an evaluator that returns `Verdict { kind, class, derivation, empirical, semantic, summary, evidence }`
 
 Kinds: `holds`, `fails`, `undecidable`, `inapplicable`.
+
+`Executed` means the evaluator ran inside this encoding. It is not a Lean kernel proof. See `specs/020-proof-carrying.md`.
 
 ## Shared claim ids
 
@@ -39,16 +45,19 @@ A unification story that cannot beat “inapplicable / fails” on empirical row
 
 When encoding a literature result you did not derive:
 
-- tag `EncodedFact`
+- tag `ClaimClass::Phenomenological` (formerly `EncodedFact`)
+- derivation `Executed` if the lab actually checks a table or embedding; `Asserted` if it does not
 - put the citation-class in evidence or rustdoc
-- plan the replacement (`plans/` milestone) if the fact should become a theorem
+- plan the replacement (`specs/020` M2–M3) if the fact should become a verified theorem
 
 When encoding folklore (landscape ~ 10^500):
 
-- tag `Heuristic`
+- tag `ClaimClass::Heuristic`
+- derivation `Asserted`
 - make it *knob-sensitive* so agents can explore, not a magic constant
 
 When encoding a program’s *demand* (unique vacuum):
 
-- tag `Conjecture` if the demand is assumed
-- do not tag `Theorem` because the author wished it
+- tag `ClaimClass::Conjecture` if the demand is assumed
+- do not tag `Executed` model-internal because the author wished it
+- never mint `Verified<T>`

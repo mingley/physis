@@ -11,7 +11,7 @@
 //! `None` from `Theory::world()` and describe themselves via `Theory::note()`
 //! instead of borrowing a physics-shaped placeholder.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -54,37 +54,37 @@ fn comp_claims() -> Vec<Claim> {
             HALTS,
             "The machine halts on every input.",
             LayerId::Information,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             TURING_COMPLETE,
             "The model is Turing complete.",
             LayerId::Information,
-            Epistemic::EncodedFact,
+            ClaimClass::Phenomenological,
         ),
         Claim::new(
             DETERMINISTIC,
             "The transition function is single-valued.",
             LayerId::Information,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             DECIDABLE_EQUIVALENCE,
             "Equivalence of two instances is decidable.",
             LayerId::Mathematical,
-            Epistemic::EncodedFact,
+            ClaimClass::Phenomenological,
         ),
         Claim::new(
             RESOURCE_BOUNDED,
             "The computation runs within an a priori resource bound.",
             LayerId::Information,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             P_EQUALS_NP,
             "Polynomial time equals nondeterministic polynomial time (P = NP).",
             LayerId::Mathematical,
-            Epistemic::Open,
+            ClaimClass::OpenProblem,
         ),
     ]
 }
@@ -127,28 +127,22 @@ impl Theory for CombinationalCircuit {
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
-            HALTS => Verdict::holds(
-                Epistemic::Theorem,
-                "an acyclic combinational circuit always terminates",
-            ),
+            HALTS => Verdict::holds(claim, "an acyclic combinational circuit always terminates"),
             TURING_COMPLETE => Verdict::fails(
-                Epistemic::Theorem,
+                claim,
                 "no memory or feedback: combinational logic is not Turing complete",
             ),
-            DETERMINISTIC => {
-                Verdict::holds(Epistemic::Theorem, "boolean functions are deterministic")
-            }
+            DETERMINISTIC => Verdict::holds(claim, "boolean functions are deterministic"),
             DECIDABLE_EQUIVALENCE => Verdict::holds(
-                Epistemic::EncodedFact,
+                claim,
                 "circuit equivalence is decidable (coNP-complete, but decidable)",
             ),
-            RESOURCE_BOUNDED => {
-                Verdict::holds(Epistemic::Theorem, "bounded by gate count and depth")
-            }
+            RESOURCE_BOUNDED => Verdict::holds(claim, "bounded by gate count and depth"),
             P_EQUALS_NP => Verdict::inapplicable(
+                claim,
                 "P vs NP concerns uniform machine models, not a single fixed circuit",
             ),
-            _ => Verdict::inapplicable("claim not made by a computational object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a computational object"),
         }
     }
 }
@@ -246,14 +240,12 @@ impl Theory for TuringMachine {
         match claim.id.0.as_str() {
             HALTS => {
                 if self.unbounded() {
-                    Verdict::undecidable(
-                        Epistemic::Open,
+                    Verdict::undecidable(claim,
                         "the halting problem: no algorithm decides halting for an unbounded-tape machine",
                     )
                     .with_evidence(["Turing 1936; this is the point of the Undecidable verdict".to_string()])
                 } else {
-                    Verdict::holds(
-                        Epistemic::Theorem,
+                    Verdict::holds(claim,
                         format!(
                             "a {}-cell tape has finitely many configurations; halting is decidable by cycle detection",
                             self.tape_bound
@@ -263,13 +255,10 @@ impl Theory for TuringMachine {
             }
             TURING_COMPLETE => {
                 if self.unbounded() {
-                    Verdict::holds(
-                        Epistemic::EncodedFact,
-                        "an unbounded-tape Turing machine is Turing complete",
-                    )
+                    Verdict::holds(claim, "an unbounded-tape Turing machine is Turing complete")
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "a bounded-tape machine is a finite automaton, not Turing complete",
                     )
                 }
@@ -277,15 +266,15 @@ impl Theory for TuringMachine {
             DETERMINISTIC => {
                 if self.nondeterministic {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "nondeterministic transition relation: multiple next configurations",
                     )
                 } else {
-                    Verdict::holds(Epistemic::Theorem, "single-valued transition function")
+                    Verdict::holds(claim, "single-valued transition function")
                 }
             }
             P_EQUALS_NP => Verdict::undecidable(
-                Epistemic::Open,
+                claim,
                 "P vs NP is an open problem; this encoding does not decide it",
             )
             .with_evidence([
@@ -294,30 +283,24 @@ impl Theory for TuringMachine {
             DECIDABLE_EQUIVALENCE => {
                 if self.unbounded() {
                     Verdict::undecidable(
-                        Epistemic::Open,
+                        claim,
                         "equivalence of Turing machines is undecidable (Rice's theorem)",
                     )
                 } else {
-                    Verdict::holds(
-                        Epistemic::EncodedFact,
-                        "equivalence of finite automata is decidable",
-                    )
+                    Verdict::holds(claim, "equivalence of finite automata is decidable")
                 }
             }
             RESOURCE_BOUNDED => {
                 if self.unbounded() {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "no a priori resource bound on an unbounded-tape machine",
                     )
                 } else {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        format!("bounded by {} tape cells", self.tape_bound),
-                    )
+                    Verdict::holds(claim, format!("bounded by {} tape cells", self.tape_bound))
                 }
             }
-            _ => Verdict::inapplicable("claim not made by a computational object"),
+            _ => Verdict::inapplicable(claim, "claim not made by a computational object"),
         }
     }
 }
@@ -476,13 +459,13 @@ impl Theory for LandauerEngine {
                 INFO_LANDAUER_COST,
                 "Erasing a logical bit dissipates at least k_B·T·ln2 of energy.",
                 LayerId::Statistical,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 INFO_THERMO_FREE,
                 "The computation erases no information and can dissipate no heat.",
                 LayerId::Information,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
@@ -495,7 +478,7 @@ impl Theory for LandauerEngine {
                 let n = self.effective_bits();
                 let per_bit = k_boltzmann().value() * self.temperature_k * std::f64::consts::LN_2;
                 Verdict::holds(
-                    Epistemic::Theorem,
+                    claim,
                     format!(
                         "erasing {n} bit(s) at {} K costs at least {e:.3e} J",
                         self.temperature_k
@@ -509,13 +492,12 @@ impl Theory for LandauerEngine {
             INFO_THERMO_FREE => {
                 if self.effective_bits() == 0 {
                     Verdict::holds(
-                        Epistemic::Theorem,
+                        claim,
                         "no bits erased: the process can be run with zero dissipation",
                     )
                     .with_evidence([format!("Landauer floor E_min = {e:.3e} J")])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
+                    Verdict::fails(claim,
                         format!(
                             "erasing {} bit(s) forces at least {e:.3e} J of dissipation",
                             self.effective_bits()
@@ -527,7 +509,7 @@ impl Theory for LandauerEngine {
                     ])
                 }
             }
-            _ => Verdict::inapplicable("claim not made by a Landauer engine"),
+            _ => Verdict::inapplicable(claim, "claim not made by a Landauer engine"),
         }
     }
 }
@@ -606,7 +588,7 @@ mod tests {
             .unwrap();
         let v = tm.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Undecidable);
-        assert_eq!(v.epistemic, Epistemic::Open);
+        assert_eq!(v.class, ClaimClass::OpenProblem);
         // It does not apply to a single fixed circuit.
         assert_eq!(
             verdict(&CombinationalCircuit, P_EQUALS_NP),

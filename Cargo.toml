@@ -5,6 +5,7 @@ members = [
     "crates/physis-model",
     "crates/physis-theory",
     "crates/physis-agent",
+    "crates/physis-verifier",
     "crates/physis",
 ]
 
@@ -22,6 +23,7 @@ physis-core = { path = "crates/physis-core", version = "0.1.0" }
 physis-model = { path = "crates/physis-model", version = "0.1.0" }
 physis-theory = { path = "crates/physis-theory", version = "0.1.0" }
 physis-agent = { path = "crates/physis-agent", version = "0.1.0" }
+physis-verifier = { path = "crates/physis-verifier", version = "0.1.0" }
 typenum = { version = "1.17", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

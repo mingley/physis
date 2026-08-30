@@ -11,7 +11,7 @@
 //! the refractive index `n = √(ε_r μ_r)` slows light below `c` and selects a
 //! rest frame, so the wave-speed and Lorentz-invariance claims flip.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -164,43 +164,43 @@ fn em_claims() -> Vec<Claim> {
             WAVE_SPEED_C,
             "Electromagnetic waves propagate at c.",
             LayerId::Field,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             GAUSS,
             "Gauss's law relates flux to enclosed charge.",
             LayerId::Field,
-            Epistemic::EncodedFact,
+            ClaimClass::Phenomenological,
         ),
         Claim::new(
             FARADAY,
             "A changing magnetic field induces an electric field.",
             LayerId::Field,
-            Epistemic::EncodedFact,
+            ClaimClass::Phenomenological,
         ),
         Claim::new(
             AMPERE,
             "Currents and changing electric fields source the magnetic field.",
             LayerId::Field,
-            Epistemic::EncodedFact,
+            ClaimClass::Phenomenological,
         ),
         Claim::new(
             CHARGE_CONSERVATION,
             "Electric charge is locally conserved.",
             LayerId::Field,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             LORENTZ_INVARIANCE,
             "The field equations are invariant under Lorentz boosts.",
             LayerId::Spacetime,
-            Epistemic::Theorem,
+            ClaimClass::ModelInternal,
         ),
         Claim::new(
             QUASI_STATIC_VALID,
             "The lumped-element (quasi-static) approximation is valid.",
             LayerId::Effective,
-            Epistemic::EncodedFact,
+            ClaimClass::Phenomenological,
         ),
     ]
 }
@@ -210,15 +210,13 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
     match claim.id.0.as_str() {
         WAVE_SPEED_C => {
             if is_vacuum(epsilon_r, mu_r) {
-                Verdict::holds(Epistemic::Theorem, "wave speed is 1/√(ε₀μ₀) = c").with_evidence([
-                    format!(
-                        "ε₀·μ₀·c² = {:.6} (dimensionless, = 1)",
-                        epsilon0().value() * mu0().value() * C.value() * C.value()
-                    ),
-                ])
+                Verdict::holds(claim, "wave speed is 1/√(ε₀μ₀) = c").with_evidence([format!(
+                    "ε₀·μ₀·c² = {:.6} (dimensionless, = 1)",
+                    epsilon0().value() * mu0().value() * C.value() * C.value()
+                )])
             } else {
                 Verdict::fails(
-                    Epistemic::EncodedFact,
+                    claim,
                     format!("v = c/n with n = {n:.3}; light is slower than c in the medium"),
                 )
             }
@@ -226,42 +224,44 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
         GAUSS => {
             if is_vacuum(epsilon_r, mu_r) {
                 let r = coulomb_gauss_residual();
-                Verdict::holds(Epistemic::Theorem, "∇·E = 0 in vacuum away from charges")
+                Verdict::holds(claim, "∇·E = 0 in vacuum away from charges")
+                    .with_class(ClaimClass::ModelInternal)
                     .with_evidence([format!(
                         "verified numerically on a Coulomb field: max |∇·E| = {r:.1e}"
                     )])
             } else {
-                Verdict::holds(Epistemic::EncodedFact, "∇·D = ρ_free (macroscopic form)")
+                Verdict::holds(claim, "∇·D = ρ_free (macroscopic form)")
             }
         }
         FARADAY => {
             if is_vacuum(epsilon_r, mu_r) {
                 let r = plane_wave_faraday_residual();
-                Verdict::holds(Epistemic::Theorem, "∇×E = −∂B/∂t").with_evidence([format!(
-                    "verified numerically on a vacuum plane wave: max residual {r:.1e}"
-                )])
+                Verdict::holds(claim, "∇×E = −∂B/∂t")
+                    .with_class(ClaimClass::ModelInternal)
+                    .with_evidence([format!(
+                        "verified numerically on a vacuum plane wave: max residual {r:.1e}"
+                    )])
             } else {
-                Verdict::holds(
-                    Epistemic::EncodedFact,
-                    "∇×E = −∂B/∂t (macroscopic form in the medium)",
-                )
+                Verdict::holds(claim, "∇×E = −∂B/∂t (macroscopic form in the medium)")
             }
         }
         AMPERE => {
             if is_vacuum(epsilon_r, mu_r) {
                 let r = plane_wave_ampere_residual();
-                Verdict::holds(Epistemic::Theorem, "∇×B = ∂E/∂t (sourceless)").with_evidence([
-                    format!("verified numerically on a vacuum plane wave: max residual {r:.1e}"),
-                ])
+                Verdict::holds(claim, "∇×B = ∂E/∂t (sourceless)")
+                    .with_class(ClaimClass::ModelInternal)
+                    .with_evidence([format!(
+                        "verified numerically on a vacuum plane wave: max residual {r:.1e}"
+                    )])
             } else {
                 Verdict::holds(
-                    Epistemic::EncodedFact,
+                    claim,
                     "∇×H = J_free + ∂D/∂t (macroscopic form in the medium)",
                 )
             }
         }
         CHARGE_CONSERVATION => Verdict::holds(
-            Epistemic::Theorem,
+            claim,
             "∂ρ/∂t + ∇·J = 0 follows from Gauss + Ampère (divergence of the curl)",
         )
         .with_evidence([format!(
@@ -271,20 +271,21 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
         LORENTZ_INVARIANCE => {
             if is_vacuum(epsilon_r, mu_r) {
                 Verdict::holds(
-                    Epistemic::Theorem,
+                    claim,
                     "vacuum Maxwell equations are invariant under Lorentz boosts",
                 )
             } else {
                 Verdict::fails(
-                    Epistemic::EncodedFact,
+                    claim,
                     "a material medium selects a rest frame, breaking boost invariance",
                 )
             }
         }
-        QUASI_STATIC_VALID => {
-            Verdict::inapplicable("full Maxwell theory, not a lumped-element approximation")
-        }
-        _ => Verdict::inapplicable("claim not made by an electromagnetism object"),
+        QUASI_STATIC_VALID => Verdict::inapplicable(
+            claim,
+            "full Maxwell theory, not a lumped-element approximation",
+        ),
+        _ => Verdict::inapplicable(claim, "claim not made by an electromagnetism object"),
     }
 }
 
@@ -551,40 +552,37 @@ impl Theory for OhmCircuit {
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
             WAVE_SPEED_C => Verdict::inapplicable(
+                claim,
                 "lumped circuits are the quasi-static limit; wave propagation is dropped",
             ),
             GAUSS => Verdict::holds(
-                Epistemic::EncodedFact,
+                claim,
                 "capacitor charge Q = CV is Gauss's law in the lumped limit",
             ),
             FARADAY => Verdict::holds(
-                Epistemic::EncodedFact,
+                claim,
                 "inductor EMF / Kirchhoff's voltage law is Faraday's law",
             ),
-            AMPERE => Verdict::holds(
-                Epistemic::EncodedFact,
-                "displacement current shows up as capacitor current",
-            ),
+            AMPERE => Verdict::holds(claim, "displacement current shows up as capacitor current"),
             CHARGE_CONSERVATION => Verdict::holds(
-                Epistemic::Theorem,
+                claim,
                 "Kirchhoff's current law is exactly charge conservation",
             ),
             LORENTZ_INVARIANCE => Verdict::fails(
-                Epistemic::EncodedFact,
+                claim,
                 "quasi-static circuit theory has a preferred (lab) rest frame",
             ),
             QUASI_STATIC_VALID => {
                 if self.quasi_static_valid() {
                     Verdict::holds(
-                        Epistemic::EncodedFact,
+                        claim,
                         format!(
                             "wavelength {} dwarfs the {CIRCUIT_SIZE_M} m circuit",
                             self.wavelength()
                         ),
                     )
                 } else {
-                    Verdict::fails(
-                        Epistemic::EncodedFact,
+                    Verdict::fails(claim,
                         format!(
                             "wavelength {} is comparable to the {CIRCUIT_SIZE_M} m circuit; lumped model breaks down",
                             self.wavelength()
@@ -592,7 +590,7 @@ impl Theory for OhmCircuit {
                     )
                 }
             }
-            _ => Verdict::inapplicable("claim not made by an electromagnetism object"),
+            _ => Verdict::inapplicable(claim, "claim not made by an electromagnetism object"),
         }
     }
 }
@@ -658,7 +656,7 @@ mod tests {
         );
         let v = MaxwellVacuum;
         let faraday = v.claims().into_iter().find(|c| c.id.0 == FARADAY).unwrap();
-        assert_eq!(v.evaluate(&faraday).epistemic, Epistemic::Theorem);
+        assert_eq!(v.evaluate(&faraday).class, ClaimClass::ModelInternal);
     }
 
     #[test]
@@ -680,7 +678,7 @@ mod tests {
         );
         let v = MaxwellVacuum;
         let gauss = v.claims().into_iter().find(|c| c.id.0 == GAUSS).unwrap();
-        assert_eq!(v.evaluate(&gauss).epistemic, Epistemic::Theorem);
+        assert_eq!(v.evaluate(&gauss).class, ClaimClass::ModelInternal);
         // In a medium, Gauss stays an encoded fact (macroscopic form).
         let glass = LinearMedium::default();
         let gauss_m = glass
@@ -688,7 +686,7 @@ mod tests {
             .into_iter()
             .find(|c| c.id.0 == GAUSS)
             .unwrap();
-        assert_eq!(glass.evaluate(&gauss_m).epistemic, Epistemic::EncodedFact);
+        assert_eq!(glass.evaluate(&gauss_m).class, ClaimClass::Phenomenological);
     }
 
     #[test]

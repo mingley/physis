@@ -1,6 +1,6 @@
 //! Shared claim identifiers so experiments can build comparison matrices.
 
-use physis_core::claim::{Claim, Epistemic};
+use physis_core::claim::{Claim, ClaimClass};
 use physis_core::id::LayerId;
 
 /// Spacetime numbers are internally consistent (dim = time + space, …).
@@ -39,8 +39,8 @@ pub const FEW_PARAMETERS: &str = "predictivity.few-parameters";
 pub const UV_COMPLETION: &str = "predictivity.uv-completion";
 
 /// Build a claim with a shared id.
-pub fn c(id: &str, statement: &str, layer: LayerId, epistemic: Epistemic) -> Claim {
-    Claim::new(id, statement, layer, epistemic)
+pub fn c(id: &str, statement: &str, layer: LayerId, class: ClaimClass) -> Claim {
+    Claim::new(id, statement, layer, class)
 }
 
 /// The comparison rows used by the string-critique lab.

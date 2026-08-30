@@ -13,7 +13,7 @@
 //! invariant, velocities add past `c`, and the mass shell is not preserved.
 //! This is the Galilean→Einstein revolution as a single mechanical knob turn.
 
-use physis_core::claim::{Claim, Epistemic, Verdict};
+use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
@@ -141,19 +141,19 @@ impl Theory for SpecialRelativity {
                 SR_INVARIANT_INTERVAL,
                 "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 SR_SUBLUMINAL_COMPOSITION,
                 "Composing two subluminal velocities stays below c.",
                 LayerId::Spacetime,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
             Claim::new(
                 SR_ENERGY_MOMENTUM,
                 "The mass shell E² − (pc)² = (mc²)² is frame-independent.",
                 LayerId::Particle,
-                Epistemic::Theorem,
+                ClaimClass::ModelInternal,
             ),
         ]
     }
@@ -169,11 +169,11 @@ impl Theory for SpecialRelativity {
                 let s1 = ct1 * ct1 - x1 * x1;
                 let invariant = (s0 - s1).abs() <= 1e-9 * s0.abs();
                 if invariant {
-                    Verdict::holds(Epistemic::Theorem, "s² is unchanged by the Lorentz boost")
+                    Verdict::holds(claim, "s² is unchanged by the Lorentz boost")
                         .with_evidence([format!("s² = {s0:.4e} m² before and {s1:.4e} m² after")])
                 } else {
                     Verdict::fails(
-                        Epistemic::Theorem,
+                        claim,
                         "the interval is not invariant under a Galilean boost",
                     )
                     .with_evidence([format!("s² = {s0:.4e} m² → {s1:.4e} m² (changed)")])
@@ -183,13 +183,10 @@ impl Theory for SpecialRelativity {
                 let (u, v) = (0.8, 0.7);
                 let w = self.compose_speeds(u, v);
                 if w < 1.0 {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "relativistic composition keeps the result below c",
-                    )
-                    .with_evidence([format!("0.8c ⊕ 0.7c = {w:.4}c < c")])
+                    Verdict::holds(claim, "relativistic composition keeps the result below c")
+                        .with_evidence([format!("0.8c ⊕ 0.7c = {w:.4}c < c")])
                 } else {
-                    Verdict::fails(Epistemic::Theorem, "Galilean addition exceeds c")
+                    Verdict::fails(claim, "Galilean addition exceeds c")
                         .with_evidence([format!("0.8c + 0.7c = {w:.4}c ≥ c")])
                 }
             }
@@ -205,29 +202,23 @@ impl Theory for SpecialRelativity {
                 let p1: Qty<Momentum> = Qty::new(pc1 / c);
                 let invariant = (shell - rest).abs() <= 1e-9 * rest.abs();
                 if invariant {
-                    Verdict::holds(
-                        Epistemic::Theorem,
-                        "E² − (pc)² equals (mc²)² in the boosted frame",
-                    )
-                    .with_evidence([
-                        format!(
-                            "mc² = {:.4e} J, boosted |p| = {:.4e} kg·m/s",
-                            mc2.value(),
-                            p1.value()
-                        ),
-                        format!("E² − (pc)² = {shell:.4e} J² vs (mc²)² = {rest:.4e} J²"),
-                    ])
+                    Verdict::holds(claim, "E² − (pc)² equals (mc²)² in the boosted frame")
+                        .with_evidence([
+                            format!(
+                                "mc² = {:.4e} J, boosted |p| = {:.4e} kg·m/s",
+                                mc2.value(),
+                                p1.value()
+                            ),
+                            format!("E² − (pc)² = {shell:.4e} J² vs (mc²)² = {rest:.4e} J²"),
+                        ])
                 } else {
-                    Verdict::fails(
-                        Epistemic::Theorem,
-                        "the mass shell is not preserved by a Galilean boost",
-                    )
-                    .with_evidence([format!(
-                        "E² − (pc)² = {shell:.4e} J² ≠ (mc²)² = {rest:.4e} J²"
-                    )])
+                    Verdict::fails(claim, "the mass shell is not preserved by a Galilean boost")
+                        .with_evidence([format!(
+                            "E² − (pc)² = {shell:.4e} J² ≠ (mc²)² = {rest:.4e} J²"
+                        )])
                 }
             }
-            _ => Verdict::inapplicable("claim not made by the special-relativity object"),
+            _ => Verdict::inapplicable(claim, "claim not made by the special-relativity object"),
         }
     }
 }
