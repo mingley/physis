@@ -28,12 +28,17 @@ paragraph.
 
 Both objects share knobs. The id is fixed at construction: `set planck quantum false`
 restores Rayleigh–Jeans *physics* on the Planck object without renaming it.
+Bose occupation lives on the `planck` IR package (`mode planck-bose`).
+`add-wien` appends `mode wien` and is an IR mutation: truncated
+⟨E⟩ = hν e^{−hν/kT} fails the infrared Rayleigh–Jeans correspondence.
+That is still `planck`, not a silent `quantum false` turn. `rayleigh-jeans`
+has no package. `quantum` still switches Bose occupation to classical `kT`.
 
 ## Knobs
 
 | knob | layer | effect |
 |---|---|---|
-| `quantum` | quantum | true: Planck; false: every mode has energy `kT` |
+| `quantum` | quantum | true: Planck; false: every mode has energy `kT`. Occupation topology is not this knob: `add-wien` is an IR mutation on `planck`. |
 | `temperature` | statistical | cavity temperature (K) |
 | `cutoff_hz` | effective | ultraviolet frequency cutoff (Hz) |
 
@@ -76,7 +81,8 @@ is a compile-fail contract in `physis-core`.
 ```
 physis experiment blackbody
 physis run planck
-physis set planck quantum false   # ultraviolet catastrophe restored
+physis hypothesize planck            # add-wien is IR, not set
+physis set planck quantum false      # ultraviolet catastrophe restored
 physis run rayleigh-jeans
 ```
 
@@ -85,8 +91,8 @@ physis run rayleigh-jeans
 - The Rayleigh–Jeans *failure* is a real property of classical equipartition
   applied to an unbounded frequency tower, not a modelling shortcut.
 - Planck's law here is the photon-gas Bose integral, not a full QED derivation
-  of blackbody radiation from the SM. The epistemic tag is `theorem` of *this*
-  encoding.
+  of blackbody radiation from the SM. The lab evaluation is `executed`
+  model-internal, not a kernel proof.
 - The `rj-ir-limit` correspondence is the statement that Planck contains
   Rayleigh–Jeans at low frequency; it is not a claim that classical theory is
   "approximately true in the UV."

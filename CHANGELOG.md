@@ -26,6 +26,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Planck Wien occupation is an IR mutation**
+  (`planck`, `add-wien`). Planck–Bose is the live encoding
+  (`mode planck-bose`); appending `mode wien` uses ⟨E⟩ = hν e^{−x}
+  and flips `thermo.rj-ir-limit` holds to fails. The residual is
+  |u − u_RJ|/u_RJ ≈ 0.99 at hν = 0.01 kT and is evidence, not the
+  encoding. That is not a knob. UV-finite, Stefan–Boltzmann T⁴, and
+  a spectral peak still hold on the Wien fork. `quantum` stays a
+  knob and still restores the ultraviolet catastrophe. IR
+  correspondence keeps the catalog `hν = 0.01 kT` domain. Mutants
+  stay `planck`; they are not a silent `rayleigh-jeans` install.
+  `rayleigh-jeans` has no package. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  IR round-trip; set wien is unknown; hypothesize planck; live Bose
+  restored; encode pin
+  `7f7e69662ab0960948a1dc7c965078eddda2687e31ea7eebfdc2ab93aa69807b`.
+
 - **SR truncated binomial γ is an IR mutation**
   (`special-relativity`, `add-binomial-gamma`). Exact Lorentz is the
   live encoding (`boost lorentz`); appending `boost binomial-gamma`

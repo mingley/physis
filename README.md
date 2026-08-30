@@ -139,7 +139,6 @@ cargo run -p physis -- experiment field-modes
 cargo run -p physis -- experiment gauge-lattice
 cargo run -p physis -- experiment thermo
 cargo run -p physis -- experiment blackbody
-cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
 cargo run -p physis -- experiment solid
 cargo run -p physis -- set einstein-solid temperature 4000
 cargo run -p physis -- set einstein-solid spectrum debye   # T³ fails → holds
@@ -152,6 +151,8 @@ cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape di
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
 cargo run -p physis -- hypothesize special-relativity  # add-binomial-gamma is IR, not set
 cargo run -p physis -- set special-relativity absolute_time true
+cargo run -p physis -- hypothesize planck              # add-wien is IR, not set
+cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
 cargo run -p physis -- run su5-gut          # SU(5): 3/8 at M_GUT; GQW misses 0.231 at M_Z
 cargo run -p physis -- set su5-gut supersymmetric true   # GQW + unification fail → hold
 cargo run -p physis -- score heterotic-e8e8

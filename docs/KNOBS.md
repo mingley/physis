@@ -97,7 +97,7 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 
 ### blackbody (`planck`, `rayleigh-jeans`)
 - `quantum` — Planck (true) vs Rayleigh–Jeans (false). Turning `planck`'s
-  `quantum` off restores the ultraviolet catastrophe.
+  `quantum` off restores the ultraviolet catastrophe. Occupation is not this knob: `add-wien` is an IR mutation on `planck`
 - `temperature` — cavity temperature (K)
 - `cutoff_hz` — ultraviolet frequency cutoff (Hz). Classical `u ∝ ν_max³`.
 
