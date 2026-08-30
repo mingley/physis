@@ -238,15 +238,26 @@ mod tests {
             stmt,
             physis_core::ClaimCommitments::physlib_forall(),
         ));
+        let catalog = Challenge::generate(
+            &crate::catalog::lookup("dec.d-squared-zero")
+                .unwrap()
+                .formal_claim(),
+        );
         assert_ne!(a.statement_hash(), b.statement_hash());
+        assert_ne!(b.statement_hash(), catalog.statement_hash());
         assert_ne!(a.challenge_hash(), b.challenge_hash());
+        assert_ne!(b.challenge_hash(), catalog.challenge_hash());
         assert!(
             a.identity().is_none(),
             "unspecified d² is not the catalog obligation"
         );
         assert!(
-            b.identity().is_some(),
-            "physlib forall d² is the catalog obligation"
+            b.identity().is_none(),
+            "physlib forall with the encoding-wide placeholder is not the catalog domain"
+        );
+        assert!(
+            catalog.identity().is_some(),
+            "catalog FormalClaim d² is the catalog obligation"
         );
     }
 }

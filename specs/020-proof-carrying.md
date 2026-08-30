@@ -26,7 +26,10 @@ Nothing gains authority merely because an agent wrote code that returns
   identity. Changing ∀/∃, a sign, a unit, a constant, or a boundary is a
   new hash. The lab slug is unchanged. P3F looks up the live hash, not
   the slug. Catalog identities are `forall` in
-  unversioned Physlib; Poincaré is not. `field.second-order-accurate`
+  unversioned Physlib with a named `DomainOfValidity` (discrete coboundary
+  simplex, 1+1 Minkowski `|β|<1`, collinear `|u|<1,|v|<1`). Physlib
+  forall with the encoding-wide placeholder is not those identities.
+  Poincaré is not catalogued. `field.second-order-accurate`
   names `|k a| < 1` as its domain. GUT-scale `3/8` commits to the
   unification-scale boundary; the PDG cell commits to
   `pdg-2024-sin2theta`. Lean compiler versions live on the receipt, not
@@ -131,6 +134,8 @@ identity; a slug-only review line is not P3S.
   (`d²`, interval, Einstein composition, mass shell). The mass-shell
   polynomial is the interval identity on 4-momentum, not a fifth
   algebraic idea. That is not Mathlib.
+- Most non-catalog claims still use the encoding-wide domain placeholder.
+  Catalog identities and `field.second-order-accurate` name regimes.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op.

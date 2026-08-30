@@ -610,7 +610,10 @@ impl Lab {
                                 text.push_str(&line);
                                 text.push('\n');
                             }
-                            text.push_str(&format!("  domain:     {}\n", c.domain.notes));
+                            for line in c.domain.why_lines() {
+                                text.push_str(&line);
+                                text.push('\n');
+                            }
                             if !c.depends_on.is_empty() {
                                 text.push_str("  lemmas:\n");
                                 for dep in &c.depends_on {
@@ -2134,6 +2137,15 @@ mod tests {
         assert!(d2b.contains("quantifier: forall"), "{d2b}");
         assert!(d2b.contains("physlib:unversioned"), "{d2b}");
         assert!(d2b.contains("  units:"), "{d2b}");
+        assert!(d2b.contains("regimes:"), "{d2b}");
+        assert!(
+            d2b.contains("oriented 2-simplex coboundary over Z"),
+            "{d2b}"
+        );
+        assert!(
+            !d2b.contains("not yet a machine-checked regime"),
+            "catalog d² must not be encoding-wide: {d2b}"
+        );
 
         let poincare = lab
             .exec(Command::Why {
@@ -2146,6 +2158,10 @@ mod tests {
         assert!(
             !pb.contains("physlib:unversioned"),
             "Poincaré is not a catalog polynomial: {pb}"
+        );
+        assert!(
+            pb.contains("not yet a machine-checked regime"),
+            "Poincaré stays encoding-wide: {pb}"
         );
 
         let gut = lab
@@ -2197,6 +2213,8 @@ mod tests {
         assert!(ib.contains("quantifier: forall"), "{ib}");
         assert!(ib.contains("c=1"), "{ib}");
         assert!(ib.contains("minkowski-mostly-minus"), "{ib}");
+        assert!(ib.contains("|β| < 1"), "{ib}");
+        assert!(ib.contains("1+1 Minkowski"), "{ib}");
     }
 
     #[test]
@@ -2619,6 +2637,7 @@ mod tests {
             .to_string();
         assert!(why_ok.contains("verdict:    holds"), "{why_ok}");
         assert!(why_ok.contains("derivation: executed"), "{why_ok}");
+        assert!(why_ok.contains("|k a| < 1"), "{why_ok}");
         assert!(
             why_ok.contains("judgment:   logical undetermined"),
             "{why_ok}"

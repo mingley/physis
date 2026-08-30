@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Catalog identities name a DomainOfValidity**
+  (`IdentitySpec.domain`). Encoding-wide Physlib forall is not the
+  catalog FormalClaim: filling in the regime is a new hash. `why`
+  prints regimes and approximations. Poincaré stays encoding-wide.
+  Verified: encoding-wide physlib d² cannot mint ExactIdentity;
+  live catalog claims are not encoding-wide; `why` shows d² simplex
+  coboundary and interval `|β| < 1`. Live prove is still Lean+nanoda
+  (new challenge hash: domain is in the FormalClaim). `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Journal restore binds prove/review to FormalClaim identity**
   (`statement_hash` on prove/review events). Restore remints a prove
   only when the recorded challenge is `Challenge::generate` of the live

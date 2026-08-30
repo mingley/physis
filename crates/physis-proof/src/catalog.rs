@@ -4,6 +4,7 @@
 //! Mutating a sign produces a different challenge hash and, for these
 //! particular identities, a non-zero polynomial that both checkers reject.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::assurance::ClaimClass;
 use physis_core::claim::Claim;
 use physis_core::formal::{ClaimCommitments, FormalClaim};
@@ -26,6 +27,8 @@ pub struct IdentitySpec {
     pub layer: LayerId,
     /// First-class identity fields committed in the statement hash.
     pub commitments: fn() -> ClaimCommitments,
+    /// Named regime. Encoding-wide is not a catalog identity.
+    pub domain: fn() -> DomainOfValidity,
     /// Lean theorem name in [`crate::PHYSLIB_SOURCE`].
     pub lean_theorem: &'static str,
     /// Lean-shaped theorem type the obligation corresponds to.
@@ -38,10 +41,12 @@ pub struct IdentitySpec {
 
 impl IdentitySpec {
     /// Lab claim for this catalog row. Theories that host the identity
-    /// should use this so the live `statement_hash` is the catalog hash.
+    /// should use this so the live `statement_hash` is the catalog hash
+    /// (commitments and named domain, not the encoding-wide placeholder).
     pub fn lab_claim(&self) -> Claim {
         Claim::new(self.claim_id, self.statement, self.layer, self.class)
             .with_commitments((self.commitments)())
+            .with_domain((self.domain)())
     }
 
     /// Formal identity the exact / Lean backends may prove.
@@ -70,6 +75,47 @@ fn einstein_composition_commitments() -> ClaimCommitments {
     let mut c = ClaimCommitments::physlib_forall();
     c.constants = vec!["c=1".into()];
     c
+}
+
+fn d2_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["oriented 2-simplex coboundary over Z".into()],
+        vec!["discrete exterior calculus encoding".into()],
+        "The catalog identity is (b-a)-(c-a)+(c-b)=0 on vertex values. \
+         It is not de Rham cohomology of a smooth manifold. Using it \
+         outside that encoding is a new claim.",
+    )
+}
+
+fn interval_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["1+1 Minkowski".into(), "c = 1".into(), "|β| < 1".into()],
+        vec!["special relativity (no gravity)".into()],
+        "The catalog identity is the polynomial boost of s². |β|<1 over ℝ \
+         remains the evaluator; the polynomial holds as an integer identity. \
+         Using it in curved spacetime is a new claim.",
+    )
+}
+
+fn composition_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["c = 1".into(), "|u| < 1".into(), "|v| < 1".into()],
+        vec!["collinear Einstein velocity addition".into()],
+        "The catalog identity is (1+uv)²-(u+v)²-(1-u²)(1-v²)=0. |w|<1 over ℝ \
+         remains the evaluator. Using it for non-collinear boosts is a new claim.",
+    )
+}
+
+fn mass_shell_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["1+1 Minkowski".into(), "c = 1".into(), "|β| < 1".into()],
+        vec![
+            "special relativity (no gravity)".into(),
+            "on-shell 4-momentum".into(),
+        ],
+        "The catalog identity is the interval polynomial on (E, p), not a new \
+         postulate. The typed rest-mass check remains the evaluator.",
+    )
 }
 
 /// Discrete exterior calculus: `(b − a) − (c − a) + (c − b) ≡ 0`.
@@ -147,6 +193,7 @@ pub const CATALOG: &[IdentitySpec] = &[
         class: ClaimClass::Mathematical,
         layer: LayerId::Mathematical,
         commitments: physlib_d2_commitments,
+        domain: d2_domain,
         lean_theorem: "d_squared_zero",
         lean_type: "∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0",
         axioms: &["integer-arithmetic", "discrete-coboundary"],
@@ -158,6 +205,7 @@ pub const CATALOG: &[IdentitySpec] = &[
         class: ClaimClass::ModelInternal,
         layer: LayerId::Spacetime,
         commitments: minkowski_interval_commitments,
+        domain: interval_domain,
         lean_theorem: "invariant_interval",
         lean_type: "∀ (t x β : Int), (t - β*x)^2 - (x - β*t)^2 = (1 - β^2)*(t^2 - x^2)",
         axioms: &["integer-arithmetic", "minkowski-interval-signature"],
@@ -169,6 +217,7 @@ pub const CATALOG: &[IdentitySpec] = &[
         class: ClaimClass::ModelInternal,
         layer: LayerId::Spacetime,
         commitments: einstein_composition_commitments,
+        domain: composition_domain,
         lean_theorem: "subluminal_composition",
         lean_type: "∀ (u v : Int), (1 + u*v)^2 - (u + v)^2 = (1 - u^2)*(1 - v^2)",
         axioms: &["integer-arithmetic", "einstein-velocity-addition"],
@@ -180,6 +229,7 @@ pub const CATALOG: &[IdentitySpec] = &[
         class: ClaimClass::ModelInternal,
         layer: LayerId::Particle,
         commitments: minkowski_interval_commitments,
+        domain: mass_shell_domain,
         lean_theorem: "energy_momentum_invariant",
         lean_type: "∀ (E p β : Int), (E - β*p)^2 - (p - β*E)^2 = (1 - β^2)*(E^2 - p^2)",
         axioms: &["integer-arithmetic", "minkowski-interval-signature"],
@@ -236,5 +286,26 @@ mod tests {
         assert!(!spec.matches(&unspecified));
         assert!(lookup_matching(&unspecified).is_none());
         assert!(lookup_matching(&spec.formal_claim()).is_some());
+    }
+
+    #[test]
+    fn catalog_identities_are_not_encoding_wide() {
+        for spec in CATALOG {
+            let live = spec.lab_claim();
+            assert!(
+                !live.domain.is_encoding_wide(),
+                "{} must name a regime, not encoding-wide",
+                spec.claim_id
+            );
+            assert!(!live.domain.regimes.is_empty(), "{}", spec.claim_id);
+            let wide = Claim::new(spec.claim_id, spec.statement, spec.layer, spec.class)
+                .with_commitments((spec.commitments)());
+            assert!(wide.domain.is_encoding_wide());
+            assert!(
+                !spec.matches(&FormalClaim::from_claim(&wide)),
+                "physlib forall with the encoding-wide placeholder is not {}",
+                spec.claim_id
+            );
+        }
     }
 }

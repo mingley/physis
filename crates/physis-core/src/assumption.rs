@@ -121,6 +121,24 @@ impl DomainOfValidity {
              silent extrapolation.",
         )
     }
+
+    /// True when this is the M1 placeholder, not a named regime.
+    pub fn is_encoding_wide(&self) -> bool {
+        self.id == Self::encoding_wide().id
+    }
+
+    /// Lines `why` prints for regimes, approximations, and notes.
+    pub fn why_lines(&self) -> Vec<String> {
+        let mut lines = Vec::new();
+        if !self.regimes.is_empty() {
+            lines.push(format!("  regimes:    {}", self.regimes.join(", ")));
+        }
+        if !self.approximations.is_empty() {
+            lines.push(format!("  approx:     {}", self.approximations.join(", ")));
+        }
+        lines.push(format!("  domain:     {}", self.notes));
+        lines
+    }
 }
 
 #[cfg(test)]
@@ -138,5 +156,28 @@ mod tests {
         });
         let b = AssumptionSet::new(items);
         assert_ne!(a.id, b.id);
+    }
+
+    #[test]
+    fn encoding_wide_is_the_named_placeholder() {
+        let d = DomainOfValidity::encoding_wide();
+        assert!(d.is_encoding_wide());
+        assert!(d.regimes.is_empty());
+        let named = DomainOfValidity::new(
+            vec!["|β| < 1".into()],
+            vec!["special relativity".into()],
+            "named regime",
+        );
+        assert!(!named.is_encoding_wide());
+        let lines = named.why_lines();
+        assert!(lines
+            .iter()
+            .any(|l| l.contains("regimes:") && l.contains("|β| < 1")));
+        assert!(lines
+            .iter()
+            .any(|l| l.contains("approx:") && l.contains("special relativity")));
+        assert!(lines
+            .iter()
+            .any(|l| l.contains("domain:") && l.contains("named regime")));
     }
 }
