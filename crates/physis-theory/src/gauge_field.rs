@@ -45,6 +45,43 @@ fn gauge_local_domain() -> DomainOfValidity {
     )
 }
 
+fn parse_wilson_stencil(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut plaquette = false;
+    let mut rectangle = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            PLAQUETTE_EQ => plaquette = true,
+            RECTANGLE_EQ => rectangle = true,
+            _ => {}
+        }
+    }
+    if !plaquette {
+        return Err(format!("{} package has no 1x1 Wilson plaquette", pkg.id));
+    }
+    Ok(rectangle)
+}
+
+fn wilson_package(id: &str, name: &str, rectangle: bool) -> TheoryPackage {
+    let mut equations = vec![PLAQUETTE_EQ.to_string()];
+    if rectangle {
+        equations.push(RECTANGLE_EQ.to_string());
+    }
+    TheoryPackage {
+        id: id.to_string(),
+        name: name.to_string(),
+        parameters: vec![],
+        assumptions: vec!["unimproved-wilson-plaquettes".into()],
+        equations,
+        claims: vec![physis_ir::ClaimDecl {
+            id: GAUGE_LOCAL.into(),
+            statement: "The action couples only neighbouring links (plaquettes).".into(),
+            layer: "interaction".into(),
+            class: "model-internal".into(),
+        }],
+        lean_ref: None,
+    }
+}
+
 /// The action is invariant under local gauge transformations of the links.
 pub const GAUGE_INVARIANT: &str = "gauge.invariant";
 /// The action couples only neighbouring links (plaquettes).
@@ -225,43 +262,14 @@ impl WilsonU1 {
     /// IR package for this Wilson stencil. Equations are `wilson-plaquette 1x1`
     /// and, when forked, `wilson-rectangle 2x1`. Knobs stay on the struct.
     pub fn package(&self) -> TheoryPackage {
-        let mut equations = vec![PLAQUETTE_EQ.to_string()];
-        if self.rectangle {
-            equations.push(RECTANGLE_EQ.to_string());
-        }
-        TheoryPackage {
-            id: self.id().to_string(),
-            name: self.name().to_string(),
-            parameters: vec![],
-            assumptions: vec!["unimproved-wilson-plaquettes".into()],
-            equations,
-            claims: vec![physis_ir::ClaimDecl {
-                id: GAUGE_LOCAL.into(),
-                statement: "The action couples only neighbouring links (plaquettes).".into(),
-                layer: "interaction".into(),
-                class: "model-internal".into(),
-            }],
-            lean_ref: None,
-        }
+        wilson_package(self.id(), self.name(), self.rectangle)
     }
 
     /// Load a Wilson stencil from a package. Knobs default; overlay them from a
     /// live field when forking.
     pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
-        let mut plaquette = false;
-        let mut rectangle = false;
-        for eq in &pkg.equations {
-            match eq.trim() {
-                PLAQUETTE_EQ => plaquette = true,
-                RECTANGLE_EQ => rectangle = true,
-                _ => {}
-            }
-        }
-        if !plaquette {
-            return Err("wilson-u1 package has no 1x1 Wilson plaquette".into());
-        }
         Ok(Self {
-            rectangle,
+            rectangle: parse_wilson_stencil(pkg)?,
             ..Self::default()
         })
     }
@@ -538,12 +546,17 @@ const SUN_SPECS: &[KnobSpec] = &[
 ];
 
 /// Non-abelian SU(N) Wilson lattice gauge theory (N = 2 or 3).
-#[derive(Clone, Debug)]
+///
+/// The unimproved 1×1 plaquette stencil lives on the IR package, same
+/// dialect as [`WilsonU1`]. A 2×1 rectangle term is a package mutation
+/// (`add-rectangle`), not a knob.
+#[derive(Clone, Debug, PartialEq)]
 pub struct WilsonSun {
     n: u8,
     dimension: u8,
     beta: f64,
     sites_per_side: u32,
+    rectangle: bool,
 }
 
 impl WilsonSun {
@@ -554,6 +567,7 @@ impl WilsonSun {
             dimension: 4,
             beta: 2.3,
             sites_per_side: 8,
+            rectangle: false,
         }
     }
 
@@ -564,7 +578,33 @@ impl WilsonSun {
             dimension: 4,
             beta: 6.0,
             sites_per_side: 8,
+            rectangle: false,
         }
+    }
+
+    /// IR package for this Wilson stencil. Knobs stay on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        wilson_package(self.id(), self.name(), self.rectangle)
+    }
+
+    /// Load a Wilson stencil from a package. Group rank comes from the
+    /// package id; knobs default; overlay them from a live field when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        let mut base = match pkg.id.as_str() {
+            "wilson-su2" => Self::su2(),
+            "wilson-su3" => Self::su3(),
+            other => {
+                return Err(format!(
+                    "wilson su(n) package id '{other}' is not wilson-su2 or wilson-su3"
+                ))
+            }
+        };
+        base.rectangle = parse_wilson_stencil(pkg)?;
+        Ok(base)
+    }
+
+    fn rectangle_equation() -> String {
+        RECTANGLE_EQ.to_string()
     }
 }
 
@@ -617,7 +657,8 @@ impl Theory for WilsonSun {
         "Non-abelian Wilson lattice gauge theory. Unlike compact U(1), SU(N) is \
          asymptotically free and is expected to confine at all couplings in 4D — \
          but 4D confinement / the Yang–Mills mass gap is unproven (a Millennium \
-         Problem), so that verdict is honestly a conjecture."
+         Problem), so that verdict is honestly a conjecture. Locality is the \
+         unimproved 1×1 Wilson stencil (a 2×1 rectangle is an IR mutation, not a knob)."
     }
     fn world(&self) -> Option<World> {
         let space = self.dimension.saturating_sub(1);
@@ -690,7 +731,12 @@ impl Theory for WilsonSun {
         match claim.id_str() {
             STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, self.n as f64, claim),
             EXACT_AREA_LAW_2D => {
-                if self.dimension == 2 {
+                if self.rectangle {
+                    Verdict::inapplicable(
+                        claim,
+                        "exact 2D factorization is the unimproved 1x1 Wilson action; a 2x1 rectangle term is a new encoding",
+                    )
+                } else if self.dimension == 2 {
                     let n = self.n as f64;
                     let sigma = exact_2d_string_tension_sun(n, self.beta);
                     if sigma > 0.0 {
@@ -722,9 +768,19 @@ impl Theory for WilsonSun {
             GAUGE_INVARIANT => Verdict::holds(claim,
                 "non-abelian plaquette action is gauge invariant by construction",
             ),
-            GAUGE_LOCAL => Verdict::holds(claim,
-                "the action sums over plaquettes: only neighbouring links couple",
-            ),
+            GAUGE_LOCAL => {
+                if self.rectangle {
+                    Verdict::fails(
+                        claim,
+                        "2x1 rectangle term: the action couples next-nearest links",
+                    )
+                } else {
+                    Verdict::holds(
+                        claim,
+                        "the action sums over 1x1 plaquettes: only neighbouring links couple",
+                    )
+                }
+            }
             ASYMPTOTIC_FREEDOM => Verdict::holds(claim,
                 "non-abelian SU(N) is asymptotically free (Gross–Wilczek–Politzer 1973)",
             ),
@@ -743,6 +799,36 @@ impl Theory for WilsonSun {
                 ]),
             },
             _ => Verdict::inapplicable(claim, "claim not made by a lattice gauge object"),
+        }
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.rectangle = parsed.rectangle;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.rectangle {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::rectangle_equation()),
+        );
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.rectangle => {
+                let mut fork = self.clone();
+                fork.rectangle = true;
+                vec![("add-rectangle".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
         }
     }
 }
@@ -1018,5 +1104,65 @@ mod tests {
         let rebuilt = w.reparse_package(&parsed).unwrap();
         assert_eq!(rebuilt.ir_package().unwrap(), w.package());
         assert_eq!(verdict(rebuilt.as_ref(), GAUGE_LOCAL), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn sun_rectangle_term_is_ir_not_a_knob() {
+        assert_ne!(
+            WilsonSun::su2().package(),
+            WilsonSun::su3().package(),
+            "SU(2) and SU(3) packages must differ by id/name"
+        );
+        for mk in [WilsonSun::su2, WilsonSun::su3] {
+            let mut w = mk();
+            assert!(
+                w.set("rectangle", KnobValue::Bool(true)).is_err(),
+                "2x1 rectangle is an IR mutation, not a knob"
+            );
+            let src = render_package(&w.package());
+            let pkg = parse_package(&src).unwrap();
+            assert_eq!(
+                WilsonSun::from_package(&pkg).unwrap(),
+                w,
+                "IR round-trip must preserve the 1x1 Wilson stencil"
+            );
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(WilsonSun::rectangle_equation()),
+            );
+            let parsed = WilsonSun::from_package(&mutated).unwrap();
+            assert!(parsed.rectangle);
+            let mut fork = w.clone();
+            fork.rectangle = true;
+            assert_eq!(verdict(&fork, GAUGE_LOCAL), VerdictKind::Fails);
+            assert_eq!(verdict(&w, GAUGE_LOCAL), VerdictKind::Holds);
+            assert_eq!(verdict(&fork, GAUGE_INVARIANT), VerdictKind::Holds);
+            let mut two_d = w.clone();
+            two_d.set("dimension", KnobValue::UInt(2)).unwrap();
+            assert_eq!(verdict(&two_d, EXACT_AREA_LAW_2D), VerdictKind::Holds);
+            two_d.rectangle = true;
+            assert_eq!(
+                verdict(&two_d, EXACT_AREA_LAW_2D),
+                VerdictKind::Inapplicable
+            );
+            let probes = w.structural_mutations();
+            assert_eq!(probes.len(), 1);
+            assert_eq!(probes[0].0, "add-rectangle");
+            assert_eq!(
+                verdict(probes[0].1.as_ref(), GAUGE_LOCAL),
+                VerdictKind::Fails
+            );
+            assert_eq!(verdict(&w, GAUGE_LOCAL), VerdictKind::Holds);
+            assert!(fork.structural_mutations().is_empty());
+            let canonical = physis_ir::certify_round_trip(&w.ir_package().unwrap()).unwrap();
+            let parsed = parse_package(&canonical).unwrap();
+            let rebuilt = w.reparse_package(&parsed).unwrap();
+            assert_eq!(rebuilt.ir_package().unwrap(), w.package());
+            assert_eq!(verdict(rebuilt.as_ref(), GAUGE_LOCAL), VerdictKind::Holds);
+        }
+        assert!(
+            WilsonSun::from_package(&WilsonU1::default().package()).is_err(),
+            "SU(N) must not load a U(1) package id"
+        );
     }
 }

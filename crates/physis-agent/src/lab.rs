@@ -4497,6 +4497,56 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_wilson_su3_rectangle_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "wilson-su3".into(),
+            knob: "rectangle".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("rectangle"),
+            "{}",
+            blocked.text()
+        );
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("wilson-su3".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-rectangle") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("gauge.local") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("wilson-su3").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "gauge.local" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("beta").unwrap().display(),
+            "6",
+            "hypothesize must restore knobs"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5185,8 +5235,12 @@ mod tests {
             "loop must independently round-trip the Wilson U(1) stencil: {text}"
         );
         assert!(
-            !text.contains("encode  wilson-su2"),
-            "SU(N) has no live IR package: {text}"
+            text.contains("encode  wilson-su2"),
+            "loop must independently round-trip the Wilson SU(2) stencil: {text}"
+        );
+        assert!(
+            text.contains("encode  wilson-su3"),
+            "loop must independently round-trip the Wilson SU(3) stencil: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -6343,13 +6397,42 @@ mod tests {
         assert_ne!(u1_id, nand_id);
         assert_ne!(u1_id, kg_id);
 
-        for theory in [
-            "standard-model",
-            "type-iib",
-            "de-rham",
-            "turing-machine",
-            "wilson-su2",
-        ] {
+        let su2 = lab
+            .exec(Command::Encode {
+                theory: "wilson-su2".into(),
+            })
+            .text()
+            .to_string();
+        assert!(su2.contains("equations  1"), "{su2}");
+        assert!(su2.contains("round-trip canonical"), "{su2}");
+        assert!(su2.contains("not P3S"), "{su2}");
+        assert!(!su2.contains("receipt"), "{su2}");
+        let su2_id = encoding_package_id(&su2);
+        assert_eq!(
+            su2_id.to_hex(),
+            "32f36c4b5c3dc442b1c1fa970c1949c12fd0601b640f6c784d2317fcb742897a"
+        );
+        assert_ne!(su2_id, u1_id);
+
+        let su3 = lab
+            .exec(Command::Encode {
+                theory: "wilson-su3".into(),
+            })
+            .text()
+            .to_string();
+        assert!(su3.contains("equations  1"), "{su3}");
+        assert!(su3.contains("round-trip canonical"), "{su3}");
+        assert!(su3.contains("not P3S"), "{su3}");
+        assert!(!su3.contains("receipt"), "{su3}");
+        let su3_id = encoding_package_id(&su3);
+        assert_eq!(
+            su3_id.to_hex(),
+            "03bd82af34a6e36ee04985c243a0e2a35ab9fe56a1b28d3ad0bb63ea8461d8d3"
+        );
+        assert_ne!(su3_id, su2_id);
+        assert_ne!(su3_id, u1_id);
+
+        for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
             });
@@ -6397,6 +6480,44 @@ mod tests {
             encoding_package_id(&u1_again),
             u1_id,
             "hypothesize must not install the rectangle mutant"
+        );
+
+        let hypo_su2 = lab
+            .exec(Command::Hypothesize {
+                theory: Some("wilson-su2".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_su2.contains("add-rectangle"), "{hypo_su2}");
+        let su2_again = lab
+            .exec(Command::Encode {
+                theory: "wilson-su2".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&su2_again),
+            su2_id,
+            "hypothesize must not install the SU(2) rectangle mutant"
+        );
+
+        let hypo_su3 = lab
+            .exec(Command::Hypothesize {
+                theory: Some("wilson-su3".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_su3.contains("add-rectangle"), "{hypo_su3}");
+        let su3_again = lab
+            .exec(Command::Encode {
+                theory: "wilson-su3".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&su3_again),
+            su3_id,
+            "hypothesize must not install the SU(3) rectangle mutant"
         );
 
         let p3s = lab

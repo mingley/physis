@@ -12,12 +12,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Wilson SU(N) 2×1 rectangle is an IR mutation**
+  (`wilson-su2`, `wilson-su3`, `add-rectangle`). Same stencil dialect as
+  U(1): locality is the unimproved 1×1 Wilson stencil; appending
+  `wilson-rectangle 2x1` flips `gauge.local` holds to fails. Exact 2D
+  area-law factorization does not apply to the rectangle encoding.
+  That is not a knob. Mutants are not installed, not journaled, and not
+  Canonical or P4. 4D SU(N) confinement stays a conjecture Holds.
+  Catalog d² hash unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: IR round-trip; set rectangle is unknown;
+  hypothesize wilson-su3; live stencil restored; encode pins
+  `32f36c4b5c3dc442b1c1fa970c1949c12fd0601b640f6c784d2317fcb742897a`
+  (SU(2)) and
+  `03bd82af34a6e36ee04985c243a0e2a35ab9fe56a1b28d3ad0bb63ea8461d8d3`
+  (SU(3)).
+
 - **Wilson U(1) 2×1 rectangle is an IR mutation**
   (`wilson-u1`, `add-rectangle`). Locality is the unimproved 1×1
   Wilson stencil; appending `wilson-rectangle 2x1` flips `gauge.local`
   holds to fails. Exact 2D area-law factorization does not apply to the
   rectangle encoding. That is not a knob. Mutants are not installed,
-  not journaled, and not Canonical or P4. SU(N) has no live package.
+  not journaled, and not Canonical or P4.
   Catalog d² hash unchanged. Unique-vacuum graph id unchanged. P3N
   count stays 4. Verified: IR round-trip; set rectangle is unknown;
   hypothesize wilson-u1; live stencil restored; encode pin
@@ -40,8 +55,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 - **Independent IR package encode is a unique encoding-auditor op**
   (`physis encode`, `Role::EncodingAuditor`). Parses, round-trips, and
   reconstructs live theory IR packages (`combinational-circuit` NAND
-  netlist, `klein-gordon` nearest-neighbour stencil, `wilson-u1` 1×1
-  plaquettes). A forged
+  netlist, `klein-gordon` nearest-neighbour stencil, `wilson-u1` /
+  `wilson-su2` / `wilson-su3` 1×1 plaquettes). A forged
   `package_hash` cannot mint. Refuses theories with no package.
   Hypothesize mutants are not installed. Not P3S, not a kernel receipt,
   not Canonical, not P4. Loop encodes after cite. Unique-vacuum graph
@@ -51,6 +66,10 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `32b0997d38afb977615e8fc6527ee5d766271e8a31fb5c882912ca740a3b4e4f`.
   Wilson U(1) package id
   `d9644435e8775eeb95d5e81638ad61a589686d65ff6929caf0ec3c2769d4423a`.
+  Wilson SU(2) package id
+  `32f36c4b5c3dc442b1c1fa970c1949c12fd0601b640f6c784d2317fcb742897a`.
+  Wilson SU(3) package id
+  `03bd82af34a6e36ee04985c243a0e2a35ab9fe56a1b28d3ad0bb63ea8461d8d3`.
   Verified: role gates; journal restore; hypothesize does not change
   the live package id.
 

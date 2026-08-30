@@ -42,7 +42,9 @@ experiment `gauge-lattice`). The gauge field lives on links; the action sums
 `wilson-su2` and `wilson-su3` (`WilsonSun`) contrast with compact U(1) in the
 `gauge-lattice` matrix: SU(N) is asymptotically free (`gauge.asymptotic-freedom`
 holds; U(1) fails) and its 4D confinement holds as a **conjecture** (the
-Yang–Mills mass-gap Millennium Problem), while U(1) deconfines in 4D.
+Yang–Mills mass-gap Millennium Problem), while U(1) deconfines in 4D. The
+unimproved 1×1 Wilson stencil is a live IR package on both U(1) and SU(N);
+`add-rectangle` is an IR fork, not a knob.
 
 ## Later in M4
 
