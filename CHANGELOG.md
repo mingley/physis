@@ -39,6 +39,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   failure. The `thermo` experiment now shares the third-law row across ideal
   gas, Dulong–Petit, and Einstein.
 
+- **Newton vs Einstein: Eddington 1.75″ and Mercury 43″ as computed theorems**
+  (`crates/physis-theory/src/gravity.rs`, `specs/018-light-deflection.md`).
+  Inverse-square gravity is a first-class theory (`newtonian-gravity`): RK4 on
+  the Binet equation holds Soldner's `2 GM/(c² R) ≈ 0.87″` and a closed
+  Mercury ellipse, and **fails** Eddington's 1.75″ and the 43″/century
+  remainder. Schwarzschild geodesics reverse the matrix (`u'' + u = 3 (GM/c²)
+  u²` for light; Kepler plus that term for Mercury). `GM/c²` is a typed
+  length from the IAU solar `GM`. `set general-relativity dim 5` makes the
+  4D solar tests inapplicable.
+
 - **Two-loop RG running for gauge-coupling unification**
   (`crates/physis-theory/src/rge.rs`, `crates/physis-theory/src/gut.rs`,
   `specs/013-grand-unification.md`). `GaugeRunning` now integrates the *coupled

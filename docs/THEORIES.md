@@ -6,7 +6,9 @@ A theory is not a PDF. It is an object that can be wrong *inside the lab*.
 
 **Standard Model.** The thing that actually describes collider physics. Fails gravity. Fails UV-completion. Holds three generations (until you turn the knob).
 
-**General relativity.** The thing that actually describes gravity. Fails SM matter. Fails perturbative UV-completion.
+**General relativity.** The thing that actually describes gravity. Grazing solar deflection 1.75″ and Mercury's 43″ perihelion are computed Schwarzschild integrals. Fails SM matter. Fails perturbative UV-completion.
+
+**Newtonian gravity.** Inverse-square control. Holds Soldner's 0.87″ half-angle and closed ellipses; fails Eddington and the 43″ remainder.
 
 ## String constructions
 

@@ -8,6 +8,7 @@ use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
 
 use crate::claims;
 use crate::framework::Theory;
+use crate::gravity::{eval_solar, solar_claims, EDDINGTON, MERCURY_PERIHELION, NEWTON_HALF};
 
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
@@ -111,7 +112,9 @@ impl Theory for GeneralRelativity {
     }
     fn summary(&self) -> &'static str {
         "Classical dynamical spacetime. Matches gravity from tabletop to cosmology. \
-         Not a quantum theory. Not a theory of the Standard Model spectrum."
+         Grazing solar deflection (1.75″) and Mercury's 43″ perihelion are computed \
+         Schwarzschild integrals, not slogans. Not a quantum theory. Not a theory \
+         of the Standard Model spectrum."
     }
 
     fn world(&self) -> Option<World> {
@@ -119,7 +122,7 @@ impl Theory for GeneralRelativity {
     }
 
     fn claims(&self) -> Vec<Claim> {
-        vec![
+        let mut c = vec![
             claims::c(
                 claims::SPACETIME_STRUCTURE,
                 "Lorentzian manifold of the chosen dimension.",
@@ -162,7 +165,9 @@ impl Theory for GeneralRelativity {
                 LayerId::Spacetime,
                 Epistemic::Heuristic,
             ),
-        ]
+        ];
+        c.extend(solar_claims());
+        c
     }
 
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -194,6 +199,9 @@ impl Theory for GeneralRelativity {
                 Epistemic::Heuristic,
                 "classical GR is a unique theory given D and Λ, not a landscape of 10^500 vacua",
             ),
+            NEWTON_HALF | EDDINGTON | MERCURY_PERIHELION => {
+                eval_solar(true, self.dim, claim.id.0.as_str())
+            }
             _ => Verdict::inapplicable("claim not made by the GR object"),
         }
     }

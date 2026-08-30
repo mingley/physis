@@ -1,0 +1,81 @@
+# 018 — Solar-system gravity (Newton vs Einstein)
+
+Status: active
+Layer: spacetime
+Id: `gravity`
+
+## Purpose
+
+Put inverse-square gravity on trial with the two solar-system numbers that
+ended its monopoly: Eddington's 1.75″ solar light deflection and Mercury's
+43″/century perihelion remainder. Both are RK4 integrals of the Binet
+equation, not slogans.
+
+Newtonian corpuscular light (Soldner 1801; Einstein's 1911 equivalence
+result) deflects by `2 GM/(c² R)`. Schwarzschild null geodesics deflect by
+`4 GM/(c² R)`. Inverse-square bound orbits are closed ellipses; the
+Schwarzschild term `3 (GM/c²) u²` advances perihelion by
+`6π GM / (c² a (1−e²))` per orbit.
+
+## Objects
+
+| id | object |
+|---|---|
+| `newtonian-gravity` | inverse-square gravity, corpuscular light |
+| `general-relativity` | Einstein gravity (also in `string-critique`) |
+
+## Knobs
+
+`newtonian-gravity` has none: the standing theory is a single inverse-square
+law. `general-relativity` keeps `dim` and `cosmological_constant`. The solar
+tests are 4D; `set general-relativity dim 5` makes them **inapplicable**.
+
+## Claims
+
+| id | meaning | Newton | GR (D=4) |
+|---|---|---|---|
+| `gr.newton-half-deflection` | grazing δ = `2 GM/(c² R)` ≈ 0.87″ | **holds** | **fails** (twice that) |
+| `gr.eddington-deflection` | grazing δ = 1.75″ | **fails** | **holds** |
+| `gr.mercury-perihelion` | extra Δω = 43″/century | **fails** (closed ellipses) | **holds** |
+
+## What is computed
+
+Shared RK4 on `u'' + u = rhs(u)` (`u = 1/r`):
+
+| problem | Newtonian `rhs` | GR `rhs` |
+|---|---|---|
+| light, periapsis `u = 1/R` | `(GM/c²)/R²` | `3 (GM/c²) u²` |
+| Mercury, perihelion `u = (1+e)/a` | `1/(a(1−e²))` | Kepler + `3 (GM/c²) u²` |
+
+Light: integrate from periapsis until `u = 0`; deflection is
+`2 (φ_∞ − π/2)`. Mercury: next perihelion minus `2π`, times orbits per
+Julian century, in arcseconds. Both are checked against `2 GM/(c² R)`,
+`4 GM/(c² R)`, and `6π GM/(c² a (1−e²))`.
+
+`GM_☉` is the IAU standard gravitational parameter, so `GM/c²` is a typed
+`Qty<Length>` (half the Schwarzschild radius) without folding in the
+uncertainty on `G`.
+
+## Knob → verdict
+
+```
+physis experiment gravity
+physis run newtonian-gravity
+physis run general-relativity
+physis set general-relativity dim 5   # solar tests become inapplicable
+```
+
+## Honesty
+
+- The 43″ is the *remainder* after Newtonian perturbations of the other
+  planets (~531″), which this lab does not integrate. The theorem is that
+  the Schwarzschild geodesic supplies that remainder, while a 1/r² ellipse
+  supplies none.
+- Weak-field RK4, not a full numerical relativity evolution.
+- Einstein 1911 (equivalence only) agrees with Newton on light; 1915 spatial
+  curvature doubles it. This lab's "Newton" column is that half-angle.
+
+## Related
+
+- `specs/014-special-relativity.md` (flat-space kinematics; `absolute_time` knob)
+- `specs/005-string-critique.md` (GR as a control on the string matrix)

@@ -13,6 +13,7 @@ use physis_theory::critique::diff_verdicts;
 use physis_theory::dec::DeRham;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
 use physis_theory::gauge_field::{WilsonSun, WilsonU1};
+use physis_theory::gravity::NewtonianGravity;
 use physis_theory::quantum::BellTest;
 use physis_theory::solid::EinsteinSolid;
 use physis_theory::thermo::IdealGas;
@@ -60,6 +61,10 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
         "solid heat capacity: Dulong–Petit vs Einstein (third law)",
     ),
     (
+        "gravity",
+        "solar-system gravity: Newton vs GR (Eddington 1.75″, Mercury 43″)",
+    ),
+    (
         "bell",
         "quantum foundations: a CHSH Bell test refuting local realism",
     ),
@@ -85,6 +90,7 @@ impl Lab {
         let mut lab = Self::empty();
         lab.insert(Box::new(StandardModel::default()));
         lab.insert(Box::new(GeneralRelativity::default()));
+        lab.insert(Box::new(NewtonianGravity));
         lab.insert(Box::new(SpecialRelativity::default()));
         lab.insert(Box::new(StringTheory::type_iib()));
         lab.insert(Box::new(StringTheory::type_iia()));
@@ -262,6 +268,11 @@ impl Lab {
             }
             "solid" => {
                 let report = physis_theory::solid();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "gravity" => {
+                let report = physis_theory::gravity();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
@@ -533,6 +544,18 @@ mod tests {
                 && d.from == VerdictKind::Fails
                 && d.to == VerdictKind::Holds),
             "expected dulong-petit Fails→Holds, got {diffs:?}"
+        );
+    }
+
+    #[test]
+    fn raising_gr_dimension_makes_solar_tests_inapplicable() {
+        let mut lab = Lab::standard();
+        let diffs = lab.set_knob("general-relativity", "dim", "5").unwrap().2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "gr.eddington-deflection"
+                && d.from == VerdictKind::Holds
+                && d.to == VerdictKind::Inapplicable),
+            "expected eddington Holds→Inapplicable, got {diffs:?}"
         );
     }
 

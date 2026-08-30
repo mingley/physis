@@ -10,7 +10,7 @@ Finest to coarsest:
 | Layer | What lives here | v0 encoding |
 |---|---|---|
 | mathematical | groups, algebras, type-level proofs | `typenum` SI, `SimpleGroup` |
-| spacetime | dimension, signature, extras, topology hint | `Manifold` |
+| spacetime | dimension, signature, extras, topology hint | `Manifold`; solar-system Newton vs GR (`gravity` lab, `specs/018`) |
 | quantum | amplitudes, operators | finite `Ket`, Pauli, CHSH Bell test (`bell` lab, `specs/012`) |
 | field | local DoF, Lagrangians | string kind, SUSY flag (placeholder) |
 | particle | spectrum | SM catalog + graviton |

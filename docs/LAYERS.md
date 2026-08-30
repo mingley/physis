@@ -10,7 +10,7 @@ A claim names a layer. A knob names a layer. Worlds are slices across layers. Wh
 
 **mathematical.** Type-level SI; Lie groups as enums.
 
-**spacetime.** `Manifold { dim, signature, compact_extra, compact_radius_planck, topology }`. Observed 4D is a claim, not an assumption of the substrate (the substrate *allows* `dim=26`).
+**spacetime.** `Manifold { dim, signature, compact_extra, compact_radius_planck, topology }`. Observed 4D is a claim, not an assumption of the substrate (the substrate *allows* `dim=26`). Solar-system gravity: Newton vs GR (`gravity` lab, `specs/018`).
 
 **quantum.** Finite kets, Born rule, Pauli. Enough to prove the layer is real. Not QFT.
 

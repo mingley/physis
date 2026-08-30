@@ -43,6 +43,34 @@ pub fn proton_mass() -> Qty<Mass> {
     kg(1.672_621_923_69e-27)
 }
 
+/// Solar standard gravitational parameter GM_☉ (IAU 2015), m³ s⁻².
+///
+/// Using `GM` rather than `G · M_☉` keeps the solar-system theorems free of
+/// the relatively large uncertainty on `G`.
+pub fn solar_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>> {
+    Qty::new(1.327_124_4e20)
+}
+
+/// Nominal solar radius (IAU 2015), metres.
+pub fn solar_radius() -> Qty<Length> {
+    meters(6.957e8)
+}
+
+/// Mercury's semi-major axis, metres (JPL DE).
+pub fn mercury_semi_major() -> Qty<Length> {
+    meters(5.790_917_5e10)
+}
+
+/// Mercury's orbital eccentricity (JPL DE).
+pub fn mercury_eccentricity() -> Qty<Dimensionless> {
+    Qty::new(0.205_630)
+}
+
+/// Mercury sidereal orbits per Julian century (36525 days / 87.969 d).
+pub fn mercury_orbits_per_century() -> f64 {
+    36525.0 / 87.969
+}
+
 /// Planck length (derived constant, CODATA-style value).
 pub fn planck_length() -> Qty<Length> {
     meters(1.616_255e-35)
@@ -236,5 +264,17 @@ mod tests {
         // a T⁴ ≈ 7.5657e-16 * 6.25e14 ≈ 0.473 J/m³.
         assert!(u.value() > 0.4 && u.value() < 0.55, "u = {}", u.value());
         assert!(u.value().is_finite());
+    }
+
+    #[test]
+    fn solar_schwarzschild_radius_is_a_length() {
+        // GM/c² is a length by construction (half the Schwarzschild radius).
+        let m: Qty<Length> = solar_gm() / (C * C);
+        // 1.477 km.
+        assert!(
+            m.value() > 1.4e3 && m.value() < 1.5e3,
+            "GM/c² = {}",
+            m.value()
+        );
     }
 }

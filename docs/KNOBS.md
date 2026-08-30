@@ -18,8 +18,11 @@ Knobs are the only way an agent is allowed to change a theory. They have:
 - `neutrino_masses` — minimal SM stores them as 0; oscillations show they are nonzero (`empirical.neutrino-masses`)
 
 ### general-relativity
-- `dim`
+- `dim` — solar-system tests (Eddington, Mercury) are 4D; other values make them inapplicable
 - `cosmological_constant` (Planck units, order-of-magnitude)
+
+### newtonian-gravity
+- (none — inverse-square is a single law; the contrast is the theory identity)
 
 ### string / M constructions (type-iib, type-iia, type-i, heterotic-e8e8, heterotic-so32, bosonic, m-theory)
 - `kind`

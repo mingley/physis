@@ -74,4 +74,5 @@ the mass shell, all at once.
 
 - `specs/001-type-system.md` — the typed quantities the mass shell relies on
 - `crates/physis-theory/src/relativity.rs` — general relativity (gravity)
+- `specs/018-light-deflection.md` — Newton vs GR: Eddington and Mercury
 - `specs/002-ontology-layers.md` — the spacetime layer
