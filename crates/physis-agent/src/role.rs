@@ -75,6 +75,7 @@ impl Role {
                 | Command::Epistemics
                 | Command::Why { .. }
                 | Command::Inspect { .. }
+                | Command::Gaps
                 | Command::Experiments
                 | Command::Experiment { .. }
                 | Command::Journal
@@ -231,6 +232,7 @@ mod tests {
         assert!(!Role::Explorer.permits(&Command::Reproduce {
             claim: "dec.d-squared-zero".into(),
         }));
+        assert!(Role::Explorer.permits(&Command::Gaps));
     }
 
     #[test]

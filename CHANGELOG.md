@@ -12,6 +12,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Live knowledge-gap graph**
+  (`physis gaps`, `NodeKind::KnowledgeGap`). Rebuilt from current
+  verdicts and receipts, content-addressed in the artifact DAG, never
+  deserialized as authority. A proved catalog identity leaves
+  `needs receipt`. Explorer may observe the graph. Verified: gap graph
+  hash moves after prove, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **In-process reproduce is not P4**
   (`physis reproduce`). Requires a prior receipt, remints through
   `verify`, and matches challenge hash plus checkers. The output says

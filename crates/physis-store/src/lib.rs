@@ -39,6 +39,8 @@ pub enum NodeKind {
     VerificationReceipt,
     /// A semantic-review record (provenance + independent encoding + audit).
     SemanticReview,
+    /// A rebuilt knowledge-gap snapshot (not deserialized as authority).
+    KnowledgeGap,
 }
 
 /// One DAG node.

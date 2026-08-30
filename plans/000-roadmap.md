@@ -24,6 +24,7 @@ Level-3 trust
   L3 inspect / origin      ✓ ParameterOrigin; physis inspect
   L3 roles / budget        ✓ Role gates exec; formalize is untrusted; budget caps prove/review/set
   L3 reproduce             ✓ in-process remint of a stored receipt; explicitly not P4
+  L3 gap graph             ✓ physis gaps rebuilds a content-addressed snapshot
 ```
 
 Each milestone must:

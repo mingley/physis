@@ -685,6 +685,7 @@ impl Lab {
             Command::Inspect { axis, value } => self.inspect(axis.as_deref(), value.as_deref()),
             Command::Formalize { claim } => self.formalize_claim(&claim),
             Command::Reproduce { claim } => self.reproduce_claim(&claim),
+            Command::Gaps => self.gaps(),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -911,6 +912,53 @@ impl Lab {
             }
             (Some(other), _) => Response::err(format!("unknown inspect axis '{other}'")),
         }
+    }
+
+    /// Rebuild the knowledge-gap graph from live verdicts. The snapshot is
+    /// content-addressed; it is not deserialized as scientific authority.
+    fn gaps(&mut self) -> Response {
+        let mut buckets: BTreeMap<&'static str, Vec<String>> = BTreeMap::new();
+        let mut n = 0usize;
+        for (id, t) in &self.theories {
+            for (c, verdict) in t.evaluate_all() {
+                let dual = self.receipts.by_claim(&c.id.0).is_some();
+                if let Some(g) = gap_for(
+                    verdict.class,
+                    verdict.derivation,
+                    verdict.kind,
+                    verdict.empirical,
+                    dual,
+                    c.layer,
+                ) {
+                    n += 1;
+                    buckets.entry(g.as_str()).or_default().push(format!(
+                        "  {id:<20} {:<36} needs {}\n",
+                        c.id.0,
+                        need_for(g)
+                    ));
+                }
+            }
+        }
+        let mut body = String::from("gaps\n");
+        for reason in GapReason::ALL {
+            let rows = buckets.remove(reason.as_str()).unwrap_or_default();
+            body.push_str(&format!("{}  {}\n", reason.as_str(), rows.len()));
+            for row in rows {
+                body.push_str(&row);
+            }
+        }
+        body.push_str(&format!("count {n}\n"));
+        let id = self
+            .store
+            .insert(Node::new(NodeKind::KnowledgeGap, vec![], body.as_bytes()));
+        let mut text = format!("gaps  graph {}\n", id.to_hex());
+        // Skip the leading "gaps\n" — the graph id is the authority line.
+        if let Some(rest) = body.strip_prefix("gaps\n") {
+            text.push_str(rest);
+        } else {
+            text.push_str(&body);
+        }
+        Response::ok(text)
     }
 
     /// Re-run the dual checkers. Never deserializes a `Verified` value.
@@ -1525,6 +1573,18 @@ fn gap_for(
             Some(GapReason::MissingDataset)
         }
         _ => None,
+    }
+}
+
+fn need_for(g: GapReason) -> &'static str {
+    match g {
+        GapReason::MissingTheorem => "receipt",
+        GapReason::MissingDataset => "dataset",
+        GapReason::InsufficientPrecision => "tighter-enclosure",
+        GapReason::UnsupportedFormalPrimitive => "encoding",
+        GapReason::ComputationallyIntractable => "resources",
+        GapReason::LogicallyUndecidable => "computability",
+        GapReason::ScientificOpenProblem => "science",
     }
 }
 
@@ -2531,5 +2591,55 @@ mod tests {
             "{}",
             blocked.text()
         );
+    }
+
+    #[test]
+    fn gaps_graph_drops_a_proved_identity() {
+        let mut lab = Lab::standard();
+        let before = lab.exec(Command::Gaps).text().to_string();
+        assert!(before.starts_with("gaps  graph "), "{before}");
+        assert!(
+            before
+                .lines()
+                .any(|l| l.contains("dec.d-squared-zero") && l.contains("needs receipt")),
+            "{before}"
+        );
+        assert!(
+            before
+                .lines()
+                .any(|l| l.contains("predictivity.unique-vacuum") && l.contains("needs science")),
+            "{before}"
+        );
+        assert!(
+            before.lines().any(|l| l.contains("turing-machine")
+                && l.contains("comp.halts")
+                && l.contains("computability")),
+            "{before}"
+        );
+
+        let proved = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            proved.contains("lean-kernel") || proved.contains("expand-recursive"),
+            "{proved}"
+        );
+
+        let after = lab.exec(Command::Gaps).text().to_string();
+        assert!(
+            !after
+                .lines()
+                .any(|l| l.contains("dec.d-squared-zero") && l.contains("needs receipt")),
+            "proved catalog identity must leave the gap graph: {after}"
+        );
+        let h1 = before.lines().next().unwrap();
+        let h2 = after.lines().next().unwrap();
+        assert_ne!(h1, h2, "gap graph hash must move after prove");
+
+        lab.set_role(Role::Explorer);
+        assert_eq!(lab.exec(Command::Gaps).exit_code(), 0);
     }
 }

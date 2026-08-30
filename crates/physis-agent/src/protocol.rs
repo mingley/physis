@@ -132,6 +132,8 @@ pub enum Command {
         /// Claim id.
         claim: String,
     },
+    /// Rebuild the knowledge-gap graph from live verdicts and receipts.
+    Gaps,
 }
 
 impl Command {
@@ -164,6 +166,7 @@ impl Command {
             Command::Inspect { .. } => "inspect",
             Command::Formalize { .. } => "formalize",
             Command::Reproduce { .. } => "reproduce",
+            Command::Gaps => "gaps",
         }
     }
 }
