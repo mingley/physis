@@ -24,7 +24,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   sensitivity probes are not journaled. Lean kernel + nanoda replay is
   still unwired. Verified: compile-fail against SemanticRecord literals
   and Deserialize, vacuous-zero rejection, review restore, loop restores
-  `total_dim`, `fmt`, `clippy -D warnings`, full suite, CLI.
+  `total_dim`, journal tip test uses frozen timestamps (wall-clock `t` is
+  in the Merkle payload), `fmt`, `clippy -D warnings`, full suite, CLI.
 
 - **Level-3 dual-check receipts and protocol v2**
   (`physis-proof`, `physis-verifier`, `physis-audit`, `physis-numeric`,

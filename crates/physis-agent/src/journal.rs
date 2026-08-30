@@ -314,19 +314,35 @@ impl fmt::Display for Journal {
 mod tests {
     use super::*;
 
+    fn boot_at(t: u64, theories: Vec<String>) -> JournalEvent {
+        JournalEvent::Boot { t, theories }
+    }
+
+    fn run_at(t: u64, theory: &str, holds: usize, fails: usize, other: usize) -> JournalEvent {
+        JournalEvent::Run {
+            t,
+            theory: theory.into(),
+            holds,
+            fails,
+            other,
+        }
+    }
+
     #[test]
     fn rewriting_history_changes_the_tip() {
+        // Wall-clock helpers stamp `t`; the Merkle tip includes it, so this
+        // comparison has to use a frozen timestamp or it flakes across a ms.
         let mut j = Journal::memory();
-        j.record(JournalEvent::boot(vec!["a".into()]));
-        j.record(JournalEvent::run("a", 1, 0, 0));
+        j.record(boot_at(1, vec!["a".into()]));
+        j.record(run_at(2, "a", 1, 0, 0));
         let tip = j.tip();
         let mut k = Journal::memory();
-        k.record(JournalEvent::boot(vec!["a".into()]));
-        k.record(JournalEvent::run("a", 0, 1, 0));
+        k.record(boot_at(1, vec!["a".into()]));
+        k.record(run_at(2, "a", 0, 1, 0));
         assert_ne!(tip, k.tip());
         let mut j2 = Journal::memory();
-        j2.record(JournalEvent::boot(vec!["a".into()]));
-        j2.record(JournalEvent::run("a", 1, 0, 0));
+        j2.record(boot_at(1, vec!["a".into()]));
+        j2.record(run_at(2, "a", 1, 0, 0));
         assert_eq!(j.tip(), j2.tip());
     }
 }
