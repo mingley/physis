@@ -66,7 +66,7 @@ pub(crate) fn check_source(
     challenge: &Challenge,
     source: &str,
 ) -> Result<(CheckerReceipt, CheckerReceipt), VerifyError> {
-    let want = compact_lean_type(&challenge.lean_type);
+    let want = compact_lean_type(challenge.lean_type());
     let thm = extract_theorems(source)
         .into_iter()
         .find(|t| compact_lean_type(&t.ty) == want)

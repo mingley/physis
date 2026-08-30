@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Challenge is generate-only**
+  (`Challenge` private fields, no Deserialize). The solver cannot
+  construct the obligation it is judged against. `generate` fills the
+  Lean type and polynomial from the matching catalog FormalClaim.
+  Verified: compile-fail against Challenge literals and Deserialize;
+  a generated challenge is hash-consistent; unspecified slug still
+  cannot mint ExactIdentity. Live `prove` of catalog d² is still
+  Lean+nanoda; challenge hash unchanged. `fmt`, `clippy -D warnings`,
+  full suite, CLI.
+
 - **Catalog obligation is the FormalClaim, not the slug**
   (`IdentitySpec::lab_claim`, `lookup_matching`, `bind_catalog`).
   ExactIdentity and encoding review mint only when the live identity is

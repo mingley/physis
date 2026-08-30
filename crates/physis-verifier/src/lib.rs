@@ -189,15 +189,7 @@ pub fn verify(
     challenge: &Challenge,
     artifact: &UntrustedProof,
 ) -> Result<Verified<CheckedProof>, VerifyError> {
-    let recomputed = ArtifactId::of(Challenge::canonical_bytes(
-        &challenge.claim_id,
-        challenge.statement_hash,
-        challenge.assumption_hash,
-        &challenge.lean_type,
-        challenge.identity.as_ref(),
-        &challenge.axioms,
-    ));
-    if recomputed != challenge.challenge_hash {
+    if !challenge.hash_is_consistent() {
         return Err(VerifyError::ChallengeTampered);
     }
     bind_catalog(challenge)?;
@@ -223,15 +215,15 @@ pub fn verify(
 fn bind_catalog(challenge: &Challenge) -> Result<(), VerifyError> {
     if let Some(spec) = CATALOG
         .iter()
-        .find(|s| s.formal_claim().statement_hash == challenge.statement_hash)
+        .find(|s| s.formal_claim().statement_hash == challenge.statement_hash())
     {
-        if spec.claim_id != challenge.claim_id {
+        if spec.claim_id != challenge.claim_id() {
             return Err(VerifyError::NoExactIdentity);
         }
-        if challenge.lean_type != spec.lean_type {
+        if challenge.lean_type() != spec.lean_type {
             return Err(VerifyError::StatementMismatch);
         }
-        match &challenge.identity {
+        match challenge.identity() {
             Some(id) if id.canonical() == (spec.identity)().canonical() => {}
             Some(_) => {
                 return Err(VerifyError::IdentityFailed(
@@ -243,10 +235,10 @@ fn bind_catalog(challenge: &Challenge) -> Result<(), VerifyError> {
         return Ok(());
     }
     for spec in CATALOG {
-        if challenge.lean_type == spec.lean_type {
+        if challenge.lean_type() == spec.lean_type {
             return Err(VerifyError::NoExactIdentity);
         }
-        if let Some(id) = &challenge.identity {
+        if let Some(id) = challenge.identity() {
             if id.canonical() == (spec.identity)().canonical() {
                 return Err(VerifyError::NoExactIdentity);
             }
@@ -256,10 +248,7 @@ fn bind_catalog(challenge: &Challenge) -> Result<(), VerifyError> {
 }
 
 fn verify_exact(challenge: &Challenge) -> Result<Verified<CheckedProof>, VerifyError> {
-    let identity = challenge
-        .identity
-        .as_ref()
-        .ok_or(VerifyError::NoExactIdentity)?;
+    let identity = challenge.identity().ok_or(VerifyError::NoExactIdentity)?;
     identity_is_zero(identity).map_err(VerifyError::IdentityFailed)?;
 
     let primary = CheckerReceipt::ran("expand-recursive", "physis-exact-0", true);
@@ -271,21 +260,26 @@ fn verify_exact(challenge: &Challenge) -> Result<Verified<CheckedProof>, VerifyE
     }
 
     let receipt = ProofReceipt {
-        claim_id: challenge.claim_id.clone(),
-        statement_hash: challenge.statement_hash,
-        assumption_hash: challenge.assumption_hash,
-        challenge_hash: challenge.challenge_hash,
+        claim_id: challenge.claim_id().to_string(),
+        statement_hash: challenge.statement_hash(),
+        assumption_hash: challenge.assumption_hash(),
+        challenge_hash: challenge.challenge_hash(),
         proof_artifact_hash: ArtifactId::of(identity.canonical().as_bytes()),
         formal_backend: FormalBackend::ExactCertificate,
         formal_backend_version: "physis-exact-0".into(),
         library_lock_hash: ArtifactId::of(b"expand-recursive+expand-postfix"),
         primary_checker: primary,
         secondary_checker: secondary,
-        axioms_used: challenge.axioms.iter().cloned().map(AxiomId::new).collect(),
+        axioms_used: challenge
+            .axioms()
+            .iter()
+            .cloned()
+            .map(AxiomId::new)
+            .collect(),
     };
     Ok(Verified::mint(
         CheckedProof {
-            challenge_hash: challenge.challenge_hash,
+            challenge_hash: challenge.challenge_hash(),
             backend: FormalBackend::ExactCertificate,
         },
         receipt,
@@ -303,12 +297,12 @@ fn verify_lean(challenge: &Challenge, source: &str) -> Result<Verified<CheckedPr
         .into_iter()
         .map(AxiomId::new)
         .collect();
-    axioms.extend(challenge.axioms.iter().cloned().map(AxiomId::new));
+    axioms.extend(challenge.axioms().iter().cloned().map(AxiomId::new));
     let receipt = ProofReceipt {
-        claim_id: challenge.claim_id.clone(),
-        statement_hash: challenge.statement_hash,
-        assumption_hash: challenge.assumption_hash,
-        challenge_hash: challenge.challenge_hash,
+        claim_id: challenge.claim_id().to_string(),
+        statement_hash: challenge.statement_hash(),
+        assumption_hash: challenge.assumption_hash(),
+        challenge_hash: challenge.challenge_hash(),
         proof_artifact_hash: ArtifactId::of(source.as_bytes()),
         formal_backend: FormalBackend::Lean4,
         formal_backend_version: "lean-4.34.0-rc2+nanoda-0.4.16".into(),
@@ -319,7 +313,7 @@ fn verify_lean(challenge: &Challenge, source: &str) -> Result<Verified<CheckedPr
     };
     Ok(Verified::mint(
         CheckedProof {
-            challenge_hash: challenge.challenge_hash,
+            challenge_hash: challenge.challenge_hash(),
             backend: FormalBackend::Lean4,
         },
         receipt,
@@ -384,7 +378,7 @@ mod tests {
     use physis_core::formal::FormalClaim;
     use physis_core::id::LayerId;
     use physis_proof::catalog::discrete_d2;
-    use physis_proof::expr::{add, sub, Expr};
+    use physis_proof::expr::{add, Expr};
     use physis_proof::lookup;
 
     use super::*;
@@ -420,37 +414,11 @@ mod tests {
     }
 
     #[test]
-    fn one_byte_lean_type_mutation_invalidates_the_challenge() {
+    fn generated_challenge_is_consistent() {
         let claim = d2_claim();
-        let mut challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
-        challenge.lean_type.push('x');
-        let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
-        assert_eq!(err, VerifyError::ChallengeTampered);
-    }
-
-    #[test]
-    fn mutated_identity_is_not_zero() {
-        let claim = d2_claim();
-        let mut challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
-        // Flip the last plus to a minus, then recompute the hash so the
-        // tamper check passes and the expanders have to reject the math.
-        let a = Expr::var("a");
-        let b = Expr::var("b");
-        let c = Expr::var("c");
-        challenge.identity = Some(sub(
-            sub(sub(b.clone(), a.clone()), sub(c.clone(), a)),
-            sub(c, b),
-        ));
-        challenge.challenge_hash = ArtifactId::of(Challenge::canonical_bytes(
-            &challenge.claim_id,
-            challenge.statement_hash,
-            challenge.assumption_hash,
-            &challenge.lean_type,
-            challenge.identity.as_ref(),
-            &challenge.axioms,
-        ));
-        let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
-        assert!(matches!(err, VerifyError::IdentityFailed(_)));
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        assert!(challenge.hash_is_consistent());
+        verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
     }
 
     #[test]
@@ -587,22 +555,6 @@ mod tests {
         );
         let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
         let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
-        assert_eq!(err, VerifyError::NoExactIdentity);
-
-        let spec = lookup("dec.d-squared-zero").unwrap();
-        let mut stolen = challenge.clone();
-        stolen.identity = Some((spec.identity)());
-        stolen.lean_type = spec.lean_type.into();
-        stolen.axioms = spec.axioms.iter().map(|a| (*a).to_string()).collect();
-        stolen.challenge_hash = ArtifactId::of(Challenge::canonical_bytes(
-            &stolen.claim_id,
-            stolen.statement_hash,
-            stolen.assumption_hash,
-            &stolen.lean_type,
-            stolen.identity.as_ref(),
-            &stolen.axioms,
-        ));
-        let err = verify(&stolen, &UntrustedProof::ExactIdentity).unwrap_err();
         assert_eq!(err, VerifyError::NoExactIdentity);
     }
 

@@ -1,32 +1,48 @@
 //! Immutable proof challenge. Generated on the trusted side from a
-//! [`physis_core::FormalClaim`]. The solver never chooses the statement.
+//! [`physis_core::FormalClaim`]. The solver never chooses the statement,
+//! the Lean type, or the polynomial: those are private fields filled only
+//! by [`Challenge::generate`]. JSON cannot mint a challenge.
+//!
+//! ```compile_fail
+//! use physis_proof::Challenge;
+//! let _ = Challenge {
+//!     claim_id: String::new(),
+//!     statement_hash: todo!(),
+//!     assumption_hash: todo!(),
+//!     lean_type: String::new(),
+//!     identity: None,
+//!     axioms: Vec::new(),
+//!     challenge_hash: todo!(),
+//! };
+//! ```
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_proof::Challenge>();
+//! }
+//! ```
 
 use physis_core::artifact::ArtifactId;
 use physis_core::formal::FormalClaim;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::catalog;
 use crate::expr::Expr;
 
 /// Trusted challenge a candidate proof is judged against.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Constructed only by [`Challenge::generate`]. There is no
+/// [`serde::Deserialize`] impl.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Challenge {
-    /// Lab claim id.
-    pub claim_id: String,
-    /// Hash of the formal claim identity (statement, assumptions, domain, …).
-    pub statement_hash: ArtifactId,
-    /// Hash of the assumption set.
-    pub assumption_hash: ArtifactId,
-    /// Lean-shaped type of the obligation.
-    pub lean_type: String,
-    /// Algebraic identity that must be the zero polynomial, when the exact
-    /// backend applies.
-    pub identity: Option<Expr>,
-    /// Axiom ids the receipt must list (and only these).
-    pub axioms: Vec<String>,
-    /// Hash of the canonical challenge bytes. A one-byte mutation of the
-    /// theorem statement changes this.
-    pub challenge_hash: ArtifactId,
+    claim_id: String,
+    statement_hash: ArtifactId,
+    assumption_hash: ArtifactId,
+    lean_type: String,
+    identity: Option<Expr>,
+    axioms: Vec<String>,
+    challenge_hash: ArtifactId,
 }
 
 impl Challenge {
@@ -64,6 +80,54 @@ impl Challenge {
             s.push('\n');
         }
         s.into_bytes()
+    }
+
+    /// True when [`Self::challenge_hash`] matches [`Self::canonical_bytes`].
+    pub fn hash_is_consistent(&self) -> bool {
+        ArtifactId::of(Self::canonical_bytes(
+            &self.claim_id,
+            self.statement_hash,
+            self.assumption_hash,
+            &self.lean_type,
+            self.identity.as_ref(),
+            &self.axioms,
+        )) == self.challenge_hash
+    }
+
+    /// Lab claim id.
+    pub fn claim_id(&self) -> &str {
+        &self.claim_id
+    }
+
+    /// Hash of the formal claim identity.
+    pub fn statement_hash(&self) -> ArtifactId {
+        self.statement_hash
+    }
+
+    /// Hash of the assumption set.
+    pub fn assumption_hash(&self) -> ArtifactId {
+        self.assumption_hash
+    }
+
+    /// Lean-shaped type of the obligation.
+    pub fn lean_type(&self) -> &str {
+        &self.lean_type
+    }
+
+    /// Algebraic identity that must be the zero polynomial, when the exact
+    /// backend applies.
+    pub fn identity(&self) -> Option<&Expr> {
+        self.identity.as_ref()
+    }
+
+    /// Axiom ids the receipt must list (and only these).
+    pub fn axioms(&self) -> &[String] {
+        &self.axioms
+    }
+
+    /// Hash of the canonical challenge bytes.
+    pub fn challenge_hash(&self) -> ArtifactId {
+        self.challenge_hash
     }
 
     /// Build a challenge from a formal claim. Exact identities are looked up
@@ -149,17 +213,10 @@ mod tests {
             "dec.d-squared-zero",
             "The exterior derivative is nilpotent: d ∘ d = 0.",
         ));
+        assert!(c.hash_is_consistent());
         let mut mutated = c.clone();
-        mutated.lean_type = c.lean_type.replace("= 0", "= 1");
-        let h = ArtifactId::of(Challenge::canonical_bytes(
-            &mutated.claim_id,
-            mutated.statement_hash,
-            mutated.assumption_hash,
-            &mutated.lean_type,
-            mutated.identity.as_ref(),
-            &mutated.axioms,
-        ));
-        assert_ne!(c.challenge_hash, h);
+        mutated.lean_type.push('x');
+        assert!(!mutated.hash_is_consistent());
     }
 
     #[test]
@@ -167,8 +224,8 @@ mod tests {
         let a = claim("math.example", "forall x, P(x)");
         let b = claim("math.example", "exists x, P(x)");
         assert_ne!(
-            Challenge::generate(&a).statement_hash,
-            Challenge::generate(&b).statement_hash
+            Challenge::generate(&a).statement_hash(),
+            Challenge::generate(&b).statement_hash()
         );
     }
 
@@ -181,14 +238,14 @@ mod tests {
             stmt,
             physis_core::ClaimCommitments::physlib_forall(),
         ));
-        assert_ne!(a.statement_hash, b.statement_hash);
-        assert_ne!(a.challenge_hash, b.challenge_hash);
+        assert_ne!(a.statement_hash(), b.statement_hash());
+        assert_ne!(a.challenge_hash(), b.challenge_hash());
         assert!(
-            a.identity.is_none(),
+            a.identity().is_none(),
             "unspecified d² is not the catalog obligation"
         );
         assert!(
-            b.identity.is_some(),
+            b.identity().is_some(),
             "physlib forall d² is the catalog obligation"
         );
     }

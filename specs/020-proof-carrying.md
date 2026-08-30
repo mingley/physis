@@ -17,6 +17,9 @@ Nothing gains authority merely because an agent wrote code that returns
   `SemanticAssurance`. No `Epistemic::Theorem`. No `MachineProved` enum.
 - `Verified<T>` has private fields, crate-private mint, and **no
   `Deserialize` impl** (JSON cannot mint a kernel proof).
+- `Challenge` has private fields, is constructed only by
+  `Challenge::generate`, and has **no `Deserialize` impl** (the solver
+  cannot choose the statement, Lean type, or polynomial).
 - Every claim has assumptions, a domain, and a SHA-256 statement identity
   that also commits to quantifiers, units, constants, boundary conditions,
   conventions, theory version, definitions, datasets, and formal-library
@@ -51,9 +54,9 @@ Nothing gains authority merely because an agent wrote code that returns
 
 ### Milestone 2 — dual-check receipts (exact + Lean)
 
-Trusted side: `physis-proof::Challenge::generate` from a `FormalClaim`.
-Untrusted side: `UntrustedProof`. The only public mint is
-`physis_verifier::verify`, which *runs* two checkers.
+Trusted side: `physis-proof::Challenge::generate` from a `FormalClaim`
+(private fields; no Deserialize). Untrusted side: `UntrustedProof`. The
+only public mint is `physis_verifier::verify`, which *runs* two checkers.
 
 Catalogued polynomial identities, dual-expanded (recursive AST vs postfix
 stack) *and* kernel-checked as Physlib theorems (`formal/physlib`):
