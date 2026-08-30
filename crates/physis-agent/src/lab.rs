@@ -780,30 +780,46 @@ impl Lab {
         if !self.theories.contains_key(theory) {
             return Response::err(format!("unknown theory '{theory}'"));
         }
+        let spec = match self.theories[theory].spec(knob) {
+            Ok(s) => s,
+            Err(e) => return Response::err(e.to_string()),
+        };
         let original = match self.theories[theory].get(knob) {
             Ok(v) => v,
             Err(e) => return Response::err(e.to_string()),
         };
+        let baseline = self.theories[theory].evaluate_all();
         let mut text = format!("sweep {theory} {knob}\n");
         for raw in values {
+            let value = match KnobValue::parse_in_domain(raw, &spec.domain) {
+                Ok(v) => v,
+                Err(e) => {
+                    text.push_str(&format!("  {raw:<8} error: {e}\n"));
+                    continue;
+                }
+            };
+            {
+                let t = self.theories.get_mut(theory).unwrap();
+                if let Err(e) = t.set(knob, value) {
+                    text.push_str(&format!("  {raw:<8} error: {e}\n"));
+                    let _ = t.set(knob, original.clone());
+                    continue;
+                }
+            }
+            let after = self.theories[theory].evaluate_all();
+            let diffs = diff_verdicts(&baseline, &after);
+            let changed: Vec<_> = diffs.iter().map(|d| d.claim.as_str()).collect();
+            text.push_str(&format!(
+                "  {raw:<8} changed_claims={} {:?}\n",
+                changed.len(),
+                changed
+            ));
             let _ = self
                 .theories
                 .get_mut(theory)
                 .unwrap()
                 .set(knob, original.clone());
-            match self.set_knob(theory, knob, raw) {
-                Ok((_, _, diffs)) => {
-                    let changed: Vec<_> = diffs.iter().map(|d| d.claim.as_str()).collect();
-                    text.push_str(&format!(
-                        "  {raw:<8} changed_claims={} {:?}\n",
-                        changed.len(),
-                        changed
-                    ));
-                }
-                Err(e) => text.push_str(&format!("  {raw:<8} error: {e}\n")),
-            }
         }
-        let _ = self.theories.get_mut(theory).unwrap().set(knob, original);
         Response::ok(text)
     }
 
@@ -894,19 +910,29 @@ impl Lab {
             Err(e) => return Response::err(e.to_string()),
         };
         let probes = domain_probes(&spec.domain, &current);
+        let baseline = self.theories[theory].evaluate_all();
         let mut text = format!("sensitivity {theory} {knob} (from {})\n", current.display());
         let mut max_flips = 0usize;
         for cand in probes {
             if cand == current {
                 continue;
             }
-            match self.set_knob(theory, knob, &cand.display()) {
-                Ok((_, _, diffs)) => {
-                    max_flips = max_flips.max(diffs.len());
-                    text.push_str(&format!("  → {}  flips={}\n", cand.display(), diffs.len()));
+            {
+                let t = self.theories.get_mut(theory).unwrap();
+                if let Err(e) = t.set(knob, cand.clone()) {
+                    text.push_str(&format!("  → {}  error: {e}\n", cand.display()));
+                    let _ = t.set(knob, current.clone());
+                    continue;
                 }
-                Err(e) => text.push_str(&format!("  → {}  error: {e}\n", cand.display())),
             }
+            let after = self.theories[theory].evaluate_all();
+            let diffs = diff_verdicts(&baseline, &after);
+            max_flips = max_flips.max(diffs.len());
+            text.push_str(&format!(
+                "  → {}  flips={}\n",
+                cand.display(),
+                diffs.len()
+            ));
             let _ = self
                 .theories
                 .get_mut(theory)
@@ -1330,6 +1356,7 @@ mod tests {
     #[test]
     fn sweep_and_compare_and_audit() {
         let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
         let sweep = lab
             .exec(Command::Sweep {
                 theory: "type-iib".into(),
@@ -1338,6 +1365,19 @@ mod tests {
             })
             .text()
             .to_string();
+        assert_eq!(
+            lab.journal().len(),
+            journal_len,
+            "sweep must not persist knob turns"
+        );
+        assert_eq!(
+            lab.theory("type-iib")
+                .unwrap()
+                .get("total_dim")
+                .unwrap()
+                .display(),
+            "10"
+        );
         assert!(sweep.contains("changed_claims"), "{sweep}");
         assert!(
             sweep.contains("9        changed_claims=2") || sweep.contains("changed_claims=2"),
