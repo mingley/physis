@@ -434,7 +434,7 @@ impl Lab {
                     }
                     text.push_str(&format!(
                         "  {:<32} {:<13} {:<16} {}\n",
-                        c.id.0,
+                        c.id_str(),
                         v.kind.as_str(),
                         v.derivation().as_str(),
                         v.summary
@@ -575,7 +575,7 @@ impl Lab {
                 let mut found = 0usize;
                 for t in self.theories.values() {
                     for (c, v) in t.evaluate_all() {
-                        if c.id.0 == claim {
+                        if c.id_str() == claim {
                             found += 1;
                             text.push_str(&format!("theory {}\n", t.id()));
                             text.push_str(&format!("  statement:  {}\n", c.statement()));
@@ -798,7 +798,7 @@ impl Lab {
     fn find_claim(&self, claim_id: &str) -> Option<physis_core::claim::Claim> {
         for t in self.theories.values() {
             for (c, _) in t.evaluate_all() {
-                if c.id.0 == claim_id {
+                if c.id_str() == claim_id {
                     return Some(c);
                 }
             }
@@ -875,7 +875,7 @@ impl Lab {
                             n += 1;
                             text.push_str(&format!(
                                 "  {id:<20} {:<36} {}\n",
-                                c.id.0,
+                                c.id_str(),
                                 profile.display()
                             ));
                         }
@@ -901,7 +901,7 @@ impl Lab {
                             n += 1;
                             text.push_str(&format!(
                                 "  {id:<20} {:<36} {}\n",
-                                c.id.0,
+                                c.id_str(),
                                 verdict.kind.as_str()
                             ));
                         }
@@ -964,7 +964,7 @@ impl Lab {
                                 n += 1;
                                 text.push_str(&format!(
                                     "  {id:<20} {:<36} {}\n",
-                                    c.id.0,
+                                    c.id_str(),
                                     g.as_str()
                                 ));
                             }
@@ -1003,7 +1003,7 @@ impl Lab {
                     verdict.intractable(),
                 ) {
                     n += 1;
-                    let mut row = format!("  {id:<20} {:<36} needs {}\n", c.id.0, need_for(g));
+                    let mut row = format!("  {id:<20} {:<36} needs {}\n", c.id_str(), need_for(g));
                     for dep in &c.depends_on {
                         let status = if self.has_live_receipt(&dep.0) {
                             "have receipt"
@@ -1409,7 +1409,7 @@ impl Lab {
             let Some((claim, verdict)) = t
                 .evaluate_all()
                 .into_iter()
-                .find(|(c, _)| c.id.0 == claim_id)
+                .find(|(c, _)| c.id_str() == claim_id)
             else {
                 continue;
             };
@@ -1444,7 +1444,7 @@ impl Lab {
                     let now = self.theories[&id]
                         .evaluate_all()
                         .into_iter()
-                        .find(|(c, _)| c.id.0 == claim_id)
+                        .find(|(c, _)| c.id_str() == claim_id)
                         .map(|(_, v)| v.kind);
                     {
                         let t = self.theories.get_mut(&id).unwrap();
@@ -1455,7 +1455,7 @@ impl Lab {
                             "  counterexample: {id} {name} {} → {}  ({} holds → fails)\n",
                             current.display(),
                             cand.display(),
-                            claim.id.0
+                            claim.id_str()
                         ));
                         break;
                     }
@@ -1557,17 +1557,17 @@ impl Lab {
         let eb: BTreeMap<_, _> = tb
             .evaluate_all()
             .into_iter()
-            .map(|(c, v)| (c.id.0, v))
+            .map(|(c, v)| (c.id_str().to_string(), v))
             .collect();
         let mut text = format!("compare {a} vs {b}\n");
         let mut n = 0usize;
         for (c, va) in ea {
-            if let Some(vb) = eb.get(&c.id.0) {
+            if let Some(vb) = eb.get(c.id_str()) {
                 if va.kind != vb.kind {
                     n += 1;
                     text.push_str(&format!(
                         "  {:<32} {} vs {}\n",
-                        c.id.0,
+                        c.id_str(),
                         va.kind.as_str(),
                         vb.kind.as_str()
                     ));
@@ -2442,7 +2442,7 @@ mod tests {
                     ),
                     "{} / {} derivation {:?}",
                     id,
-                    c.id.0,
+                    c.id_str(),
                     v.derivation()
                 );
                 assert_eq!(v.semantic(), physis_core::SemanticAssurance::Unreviewed);

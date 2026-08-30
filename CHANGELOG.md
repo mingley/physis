@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Claim cannot rebind the lab slug**
+  (`Claim.id` is private; `id()` / `id_str()` are the getters).
+  A public assignment cannot attach a kernel receipt to a different
+  slug. Lemma edges stay public and are not in the statement hash.
+  Catalog d² hash unchanged. Verified: compile-fail against assigning
+  `Claim.id`. Live prove of catalog d² is still Lean+nanoda. `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Claim cannot assign class or rebind commitments**
   (`Claim` class, layer, assumptions, domain, and commitments are
   private). Overlays remain `with_commitments`, `with_domain`, and

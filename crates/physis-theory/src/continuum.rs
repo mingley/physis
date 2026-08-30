@@ -325,7 +325,7 @@ impl Theory for KleinGordonField {
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             FINITE_MODES => {
                 Verdict::holds(claim, format!("{} normal modes on the lattice", self.sites))
             }
@@ -438,7 +438,7 @@ mod tests {
     use physis_core::claim::VerdictKind;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 
@@ -452,7 +452,7 @@ mod tests {
         let disp = f
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == DISPERSION)
+            .find(|c| c.id_str() == DISPERSION)
             .unwrap();
         assert!(
             !disp.domain().is_encoding_wide(),
@@ -467,7 +467,11 @@ mod tests {
             "dispersion regime: {:?}",
             disp.domain()
         );
-        let stable = f.claims().into_iter().find(|c| c.id.0 == STABLE).unwrap();
+        let stable = f
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == STABLE)
+            .unwrap();
         assert!(
             stable.domain().is_encoding_wide(),
             "stability is the current lattice encoding, not a hidden continuum regime"
@@ -521,7 +525,7 @@ mod tests {
             let c = f
                 .claims()
                 .into_iter()
-                .find(|c| c.id.0 == SECOND_ORDER)
+                .find(|c| c.id_str() == SECOND_ORDER)
                 .unwrap();
             f.evaluate(&c)
         };
@@ -530,7 +534,7 @@ mod tests {
         let order_claim = f
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == SECOND_ORDER)
+            .find(|c| c.id_str() == SECOND_ORDER)
             .unwrap();
         assert!(
             order_claim
@@ -548,7 +552,7 @@ mod tests {
         let c = coarse
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == SECOND_ORDER)
+            .find(|c| c.id_str() == SECOND_ORDER)
             .unwrap();
         let u = coarse.evaluate(&c);
         assert_eq!(u.kind, VerdictKind::Undecidable);

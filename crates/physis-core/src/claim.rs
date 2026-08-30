@@ -261,8 +261,8 @@ impl Verdict {
 /// kernel receipt, and same-module mutation still cannot keep a stale hash.
 /// Class, layer, assumptions, domain, and commitments are private too:
 /// overlays are [`Self::with_commitments`], [`Self::with_domain`], and
-/// [`Self::with_assumptions`]. The slug [`ClaimId`] and lemma edges stay
-/// public.
+/// [`Self::with_assumptions`]. The slug is private ([`Self::id`] /
+/// [`Self::id_str`]); lemma edges stay public.
 ///
 /// Derivation, empirical, and semantic axes are private: a public field
 /// cannot mint [`DerivationAssurance::CertifiedNumeric`] or an
@@ -307,10 +307,19 @@ impl Verdict {
 /// );
 /// c.class = physis_core::ClaimClass::Conjecture;
 /// ```
+///
+/// ```compile_fail
+/// let mut c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// c.id = physis_core::ClaimId::new("forged");
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Claim {
-    /// Stable id, `theory.slug`.
-    pub id: ClaimId,
+    id: ClaimId,
     statement: String,
     layer: LayerId,
     class: ClaimClass,
@@ -363,7 +372,7 @@ impl Claim {
     /// hash attached to a kernel receipt.
     pub fn statement_hash(&self) -> ArtifactId {
         ArtifactId::of(FormalClaim::canonical_bytes(
-            &self.id.0,
+            self.id_str(),
             self.statement(),
             self.class(),
             self.layer(),
@@ -377,6 +386,17 @@ impl Claim {
     /// rebind a kernel receipt to different English.
     pub fn statement(&self) -> &str {
         &self.statement
+    }
+
+    /// Stable lab slug (`theory.slug`). Private so a public assignment cannot
+    /// rebind the hashed identity to a different name.
+    pub fn id(&self) -> &ClaimId {
+        &self.id
+    }
+
+    /// Borrow the slug as a string.
+    pub fn id_str(&self) -> &str {
+        &self.id.0
     }
 
     /// Layer the statement is about.
@@ -531,7 +551,7 @@ mod tests {
         let b = a
             .clone()
             .with_commitments(ClaimCommitments::physlib_forall());
-        assert_eq!(a.id, b.id);
+        assert_eq!(a.id(), b.id());
         assert_ne!(a.statement_hash(), b.statement_hash());
         assert_eq!(
             b.commitments().quantifier,
@@ -552,7 +572,7 @@ mod tests {
             vec!["O(a^2) stencil at long wavelength".into()],
             "Outside |k a| < 1 the Richardson order is not a stencil verdict.",
         ));
-        assert_eq!(a.id, b.id);
+        assert_eq!(a.id(), b.id());
         assert_ne!(a.statement_hash(), b.statement_hash());
         assert!(b.domain().regimes.iter().any(|r| r.contains("|k a| < 1")));
     }
@@ -572,7 +592,7 @@ mod tests {
             class: crate::AxiomClass::ModelAssumption,
         });
         let b = a.clone().with_assumptions(AssumptionSet::new(items));
-        assert_eq!(a.id, b.id);
+        assert_eq!(a.id(), b.id());
         assert_ne!(a.statement_hash(), b.statement_hash());
         assert!(b
             .assumptions()

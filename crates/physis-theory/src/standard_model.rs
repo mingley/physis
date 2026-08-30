@@ -562,7 +562,7 @@ impl Theory for StandardModel {
     }
 
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             claims::SPACETIME_STRUCTURE | claims::OBSERVED_4D | claims::HIDDEN_EXTRA_DIMS => {
                 Verdict::holds(claim, "SM is formulated in 3+1 Minkowski")
             }
@@ -741,13 +741,13 @@ mod tests {
         let gens = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == claims::THREE_GENERATIONS)
+            .find(|c| c.id_str() == claims::THREE_GENERATIONS)
             .unwrap();
         assert_eq!(t.evaluate(&gens).kind, VerdictKind::Holds);
         let g = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == claims::GRAVITY)
+            .find(|c| c.id_str() == claims::GRAVITY)
             .unwrap();
         assert_eq!(t.evaluate(&g).kind, VerdictKind::Fails);
     }
@@ -758,7 +758,7 @@ mod tests {
             let c = t
                 .claims()
                 .into_iter()
-                .find(|c| c.id.0 == claims::NEUTRINO_MASSES)
+                .find(|c| c.id_str() == claims::NEUTRINO_MASSES)
                 .unwrap();
             t.evaluate(&c).kind
         };
@@ -775,7 +775,7 @@ mod tests {
         let c = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == claims::ANOMALY_CANCELLATION)
+            .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
@@ -798,7 +798,7 @@ mod tests {
         let c = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == claims::CHARGE_QUANTIZATION)
+            .find(|c| c.id_str() == claims::CHARGE_QUANTIZATION)
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
@@ -868,7 +868,7 @@ mod tests {
         let c = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == SM_HYPERCHARGE_DERIVED)
+            .find(|c| c.id_str() == SM_HYPERCHARGE_DERIVED)
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
@@ -883,7 +883,7 @@ mod tests {
     #[test]
     fn p3n_cells_name_a_domain() {
         let t = StandardModel::default();
-        let claim = |id: &str| t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let claim = |id: &str| t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         let anom = claim(claims::ANOMALY_CANCELLATION);
         assert!(
             !anom.domain().is_encoding_wide(),
@@ -941,7 +941,7 @@ mod tests {
         let gens = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == claims::THREE_GENERATIONS)
+            .find(|c| c.id_str() == claims::THREE_GENERATIONS)
             .unwrap();
         assert_eq!(t.evaluate(&gens).kind, VerdictKind::Fails);
     }

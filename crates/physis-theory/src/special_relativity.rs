@@ -155,7 +155,7 @@ impl Theory for SpecialRelativity {
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         let c = C.value();
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             SR_INVARIANT_INTERVAL => {
                 // A timelike event, boosted by BETA.
                 let ct0 = c * 1.0e-8; // c·(10 ns)
@@ -225,7 +225,7 @@ mod tests {
     use physis_core::claim::VerdictKind;
 
     fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 
@@ -255,7 +255,7 @@ mod tests {
         let em = sr
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == SR_ENERGY_MOMENTUM)
+            .find(|c| c.id_str() == SR_ENERGY_MOMENTUM)
             .unwrap();
         assert_eq!(em.depends_on[0].0, SR_INVARIANT_INTERVAL);
     }

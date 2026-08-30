@@ -209,7 +209,7 @@ fn em_claims() -> Vec<Claim> {
 
 fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
     let n = refractive_index(epsilon_r, mu_r);
-    match claim.id.0.as_str() {
+    match claim.id_str() {
         WAVE_SPEED_C => {
             if is_vacuum(epsilon_r, mu_r) {
                 Verdict::holds(claim, "wave speed is 1/√(ε₀μ₀) = c").with_evidence([format!(
@@ -555,7 +555,7 @@ impl Theory for OhmCircuit {
         em_claims()
             .into_iter()
             .map(|c| {
-                if c.id.0 == QUASI_STATIC_VALID {
+                if c.id_str() == QUASI_STATIC_VALID {
                     c.with_domain(DomainOfValidity::new(
                         vec!["λ > 100 × 0.1 m circuit".into()],
                         vec!["lumped elements; no wave propagation".into()],
@@ -570,7 +570,7 @@ impl Theory for OhmCircuit {
             .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             WAVE_SPEED_C => Verdict::inapplicable(
                 claim,
                 "lumped circuits are the quasi-static limit; wave propagation is dropped",
@@ -648,7 +648,7 @@ mod tests {
     use physis_core::claim::VerdictKind;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 
@@ -675,7 +675,11 @@ mod tests {
             plane_wave_ampere_residual()
         );
         let v = MaxwellVacuum;
-        let faraday = v.claims().into_iter().find(|c| c.id.0 == FARADAY).unwrap();
+        let faraday = v
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FARADAY)
+            .unwrap();
         assert_eq!(v.evaluate(&faraday).class, ClaimClass::ModelInternal);
     }
 
@@ -697,14 +701,18 @@ mod tests {
             coulomb_gauss_residual()
         );
         let v = MaxwellVacuum;
-        let gauss = v.claims().into_iter().find(|c| c.id.0 == GAUSS).unwrap();
+        let gauss = v
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == GAUSS)
+            .unwrap();
         assert_eq!(v.evaluate(&gauss).class, ClaimClass::ModelInternal);
         // In a medium, Gauss stays an encoded fact (macroscopic form).
         let glass = LinearMedium::default();
         let gauss_m = glass
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == GAUSS)
+            .find(|c| c.id_str() == GAUSS)
             .unwrap();
         assert_eq!(glass.evaluate(&gauss_m).class, ClaimClass::Phenomenological);
     }
@@ -756,7 +764,7 @@ mod tests {
         let qs = c
             .claims()
             .into_iter()
-            .find(|cl| cl.id.0 == QUASI_STATIC_VALID)
+            .find(|cl| cl.id_str() == QUASI_STATIC_VALID)
             .unwrap();
         assert!(
             !qs.domain().is_encoding_wide(),
@@ -767,7 +775,7 @@ mod tests {
         let mqs = maxwell
             .claims()
             .into_iter()
-            .find(|cl| cl.id.0 == QUASI_STATIC_VALID)
+            .find(|cl| cl.id_str() == QUASI_STATIC_VALID)
             .unwrap();
         assert!(
             mqs.domain().is_encoding_wide(),

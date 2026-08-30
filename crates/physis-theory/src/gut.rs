@@ -225,7 +225,7 @@ impl Theory for Su5Gut {
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             GUT_SM_EMBEDDING => match GaugeGroup::su5().verified_contains_sm() {
                 Some(chain) => {
                     Verdict::holds(claim, "SU(5) ⊃ SU(3)×SU(2)×U(1); one generation = 5̄ ⊕ 10")
@@ -447,7 +447,7 @@ mod tests {
     use physis_core::DerivationAssurance;
 
     fn verdict(t: &dyn Theory, id: &str) -> Verdict {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c)
     }
 
@@ -483,7 +483,7 @@ mod tests {
     #[test]
     fn weinberg_cells_name_a_domain() {
         let g = Su5Gut::default();
-        let claim = |id: &str| g.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let claim = |id: &str| g.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         for id in [
             GUT_WEINBERG_ANGLE,
             GUT_WEINBERG_ANGLE_MZ,

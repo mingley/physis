@@ -238,7 +238,7 @@ impl Theory for ObserverGeometry {
     }
 
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             claims::SPACETIME_STRUCTURE => {
                 if self.build_world().spacetime.structurally_ok() {
                     Verdict::holds(claim, "dimension numbers fit")
@@ -363,7 +363,7 @@ mod tests {
         let c = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == claims::UNIQUE_VACUUM)
+            .find(|c| c.id_str() == claims::UNIQUE_VACUUM)
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
@@ -376,13 +376,13 @@ mod tests {
         let c = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == claims::CRITICAL_DIMENSION)
+            .find(|c| c.id_str() == claims::CRITICAL_DIMENSION)
             .unwrap();
         assert_eq!(t.evaluate(&c).kind, VerdictKind::Inapplicable);
     }
 
     fn verdict(t: &ObserverGeometry, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 

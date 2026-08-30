@@ -309,7 +309,7 @@ impl FormalClaim {
     /// there is no stored hash to copy through.
     pub fn from_claim(claim: &Claim) -> Self {
         let statement_hash = ArtifactId::of(Self::canonical_bytes(
-            &claim.id.0,
+            claim.id_str(),
             claim.statement(),
             claim.class(),
             claim.layer(),
@@ -318,7 +318,7 @@ impl FormalClaim {
             claim.commitments(),
         ));
         Self {
-            id: claim.id.clone(),
+            id: claim.id().clone(),
             statement: claim.statement().to_string(),
             statement_hash,
             assumptions: claim.assumptions().id.clone(),

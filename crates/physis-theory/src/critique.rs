@@ -149,7 +149,7 @@ fn report_of(t: &dyn Theory) -> TheoryReport {
         .evaluate_all()
         .into_iter()
         .map(|(c, v)| ClaimVerdict {
-            id: c.id.0.clone(),
+            id: c.id_str().to_string(),
             statement: c.statement().to_string(),
             layer: c.layer().as_str().into(),
             kind: v.kind,
@@ -262,10 +262,10 @@ pub fn report_from_rows(
 pub fn diff_verdicts(before: &[(Claim, Verdict)], after: &[(Claim, Verdict)]) -> Vec<VerdictDiff> {
     let mut diffs = Vec::new();
     for (c, vb) in before {
-        if let Some((_, va)) = after.iter().find(|(ca, _)| ca.id == c.id) {
+        if let Some((_, va)) = after.iter().find(|(ca, _)| ca.id() == c.id()) {
             if va.kind != vb.kind {
                 diffs.push(VerdictDiff {
-                    claim: c.id.0.clone(),
+                    claim: c.id_str().to_string(),
                     from: vb.kind,
                     to: va.kind,
                 });

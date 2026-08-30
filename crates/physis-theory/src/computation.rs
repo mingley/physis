@@ -139,7 +139,7 @@ impl Theory for CombinationalCircuit {
         comp_claims()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             HALTS => Verdict::holds(claim, "an acyclic combinational circuit always terminates"),
             TURING_COMPLETE => Verdict::fails(
                 claim,
@@ -261,7 +261,7 @@ impl Theory for TuringMachine {
         comp_claims()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             HALTS => {
                 if self.unbounded() {
                     Verdict::undecidable(claim,
@@ -519,7 +519,7 @@ impl Theory for LandauerEngine {
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         let e = self.landauer_energy().value();
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             INFO_LANDAUER_COST => {
                 // A theorem of statistical mechanics; the evidence is the
                 // computed, typed lower bound for the configured erasure.
@@ -594,7 +594,7 @@ mod tests {
     use physis_core::claim::VerdictKind;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 
@@ -621,7 +621,7 @@ mod tests {
         let claim = tm
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == FEASIBLE_DECISION)
+            .find(|c| c.id_str() == FEASIBLE_DECISION)
             .unwrap();
         assert!(tm.evaluate(&claim).intractable());
     }
@@ -636,7 +636,7 @@ mod tests {
         let claim = c
             .claims()
             .into_iter()
-            .find(|cl| cl.id.0 == FEASIBLE_DECISION)
+            .find(|cl| cl.id_str() == FEASIBLE_DECISION)
             .unwrap();
         assert!(c.evaluate(&claim).intractable());
     }
@@ -648,7 +648,7 @@ mod tests {
         let claim = tm
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == FEASIBLE_DECISION)
+            .find(|c| c.id_str() == FEASIBLE_DECISION)
             .unwrap();
         assert!(!tm.evaluate(&claim).intractable());
     }
@@ -660,7 +660,7 @@ mod tests {
         let c = tm
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == P_EQUALS_NP)
+            .find(|c| c.id_str() == P_EQUALS_NP)
             .unwrap();
         let v = tm.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Undecidable);

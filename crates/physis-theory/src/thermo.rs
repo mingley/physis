@@ -195,7 +195,7 @@ impl Theory for IdealGas {
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             EQUIPARTITION => {
                 let cv = self.heat_capacity();
                 let expected = 1.5 * self.particles * k_boltzmann().value();
@@ -271,7 +271,7 @@ mod tests {
     use physis_core::claim::VerdictKind;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 

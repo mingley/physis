@@ -29,7 +29,7 @@ Nothing gains authority merely because an agent wrote code that returns
   domain, and first-class commitments (quantifiers, units, constants,
   boundary conditions, conventions, theory version, definitions, datasets,
   and formal-library identity). There is no stored `Claim.statement_hash`
-  field and no `Deserialize` on `Claim`: `Claim.statement`, class, layer,
+  field and no `Deserialize` on `Claim`: `Claim.statement`, id, class, layer,
   assumptions, domain, and commitments are private so a public assignment
   cannot rebind a kernel receipt. Same-module mutation of the sentence
   still cannot keep a stale hash. JSON cannot mint a catalog

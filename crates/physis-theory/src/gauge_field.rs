@@ -309,7 +309,7 @@ impl Theory for WilsonU1 {
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, 1.0, claim),
             EXACT_AREA_LAW_2D => {
                 if self.dimension == 2 {
@@ -556,7 +556,7 @@ impl Theory for WilsonSun {
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             STRONG_COUPLING_AREA_LAW => strong_coupling_verdict(self.beta, self.n as f64, claim),
             EXACT_AREA_LAW_2D => {
                 if self.dimension == 2 {
@@ -651,7 +651,7 @@ mod tests {
     use physis_core::claim::VerdictKind;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 
@@ -699,7 +699,7 @@ mod tests {
         let c = qcd
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == CONFINING)
+            .find(|c| c.id_str() == CONFINING)
             .unwrap();
         let v = qcd.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);

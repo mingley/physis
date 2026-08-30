@@ -643,7 +643,7 @@ impl Theory for DeRham {
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         let c = self.complex();
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             D_SQUARED_ZERO => {
                 // d₁(d₀ f) = 0 for a basis of 0-cochains ⇒ d∘d = 0 exactly.
                 let mut worst = 0.0_f64;
@@ -794,12 +794,12 @@ mod tests {
     use physis_core::{DerivationAssurance, Quantifier};
 
     fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 
     fn derivation(t: &dyn Theory, id: &str) -> DerivationAssurance {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).derivation()
     }
 
@@ -973,7 +973,7 @@ mod tests {
     #[test]
     fn hodge_names_a_discrete_regime() {
         let t = DeRham::default();
-        let claim = |id: &str| t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let claim = |id: &str| t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         let hodge = claim(HODGE_HARMONIC);
         assert!(
             !hodge.domain().is_encoding_wide(),
@@ -1061,7 +1061,7 @@ mod tests {
         let hodge = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == HODGE_HARMONIC)
+            .find(|c| c.id_str() == HODGE_HARMONIC)
             .unwrap();
         assert!(
             !hodge.domain().is_encoding_wide(),
@@ -1080,7 +1080,7 @@ mod tests {
         let euler = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == EULER_POINCARE)
+            .find(|c| c.id_str() == EULER_POINCARE)
             .unwrap();
         assert!(
             euler.domain().is_encoding_wide(),
@@ -1095,7 +1095,7 @@ mod tests {
         let d2 = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == D_SQUARED_ZERO)
+            .find(|c| c.id_str() == D_SQUARED_ZERO)
             .unwrap();
         assert_eq!(d2.commitments().quantifier, Quantifier::ForAll);
         assert!(d2
@@ -1106,7 +1106,7 @@ mod tests {
         let poincare = t
             .claims()
             .into_iter()
-            .find(|c| c.id.0 == CLOSED_EQUALS_EXACT)
+            .find(|c| c.id_str() == CLOSED_EQUALS_EXACT)
             .unwrap();
         assert_eq!(poincare.commitments().quantifier, Quantifier::Unspecified);
         assert!(

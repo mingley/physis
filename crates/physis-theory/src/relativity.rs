@@ -174,7 +174,7 @@ impl Theory for GeneralRelativity {
     }
 
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             claims::SPACETIME_STRUCTURE => {
                 if self.build_world().spacetime.structurally_ok() {
                     Verdict::holds(claim, "Lorentzian, consistent dim")

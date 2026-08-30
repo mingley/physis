@@ -187,7 +187,7 @@ pub fn eval_solar(gr: bool, dim: u8, claim: &Claim) -> Verdict {
             "solar-system tests are 4D Schwarzschild / inverse-square",
         );
     }
-    match claim.id.0.as_str() {
+    match claim.id_str() {
         NEWTON_HALF => {
             let delta = solar_deflection_arcsec(gr);
             let newton = solar_deflection_arcsec(false);
@@ -361,7 +361,7 @@ mod tests {
     use physis_core::Dimensionless;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 

@@ -168,6 +168,18 @@
 //! c.class = physis_core::ClaimClass::Conjecture;
 //! ```
 //!
+//! The lab slug is private too:
+//!
+//! ```compile_fail
+//! let mut c = physis_core::claim::Claim::new(
+//!     "x",
+//!     "y",
+//!     physis_core::LayerId::Mathematical,
+//!     physis_core::ClaimClass::Mathematical,
+//! );
+//! c.id = physis_core::ClaimId::new("forged");
+//! ```
+//!
 //! JSON cannot mint a [`claim::Verdict`] overlay either (`certified-numeric`
 //! Holds is not a deserializable tag):
 //!

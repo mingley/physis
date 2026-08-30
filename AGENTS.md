@@ -83,8 +83,8 @@ different commitments, the encoding-wide domain placeholder, or only
 `encoding-is-the-model` cannot borrow ExactIdentity or Physlib. `FormalClaim`
 is from_claim-only (private fields, no Deserialize; the hash is recomputed
 from the live sentence). `Claim::statement_hash` is derived from the live
-sentence (`Claim.statement`, class, layer, assumptions, domain, and
-commitments are private; slug and lemma edges stay public; no stored hash
+sentence (`Claim.statement`, id, class, layer, assumptions, domain, and
+commitments are private; lemma edges stay public; no stored hash
 field, no Deserialize). `Challenge`
 is generate-only (private fields, no Deserialize). Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
 an agent can set. `physis review` overlays a justified semantic tag from a

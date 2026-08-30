@@ -308,7 +308,7 @@ impl Theory for OlbersSky {
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        match claim.id.0.as_str() {
+        match claim.id_str() {
             SHELL_CANCELLATION => eval_shell(self, claim),
             SKY_FINITE => eval_sky_finite(self, claim),
             NIGHT_SKY_DARK => eval_dark(self, claim),
@@ -464,7 +464,7 @@ mod tests {
     use physis_core::qty::meters;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
-        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
     }
 
