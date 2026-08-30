@@ -1,5 +1,15 @@
 //! Typed scientific judgments. `Holds` is too broad: a proved lemma and a
 //! compatible dataset are different Rust types.
+//!
+//! [`Judgment::from_lab`] projects evaluator + receipts. JSON cannot mint
+//! [`LogicalJudgment::Proved`].
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::judgment::Judgment>();
+//! }
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +17,10 @@ use crate::artifact::ArtifactId;
 
 /// Top-level judgment. Distinct from [`crate::claim::VerdictKind`], which is
 /// the Level-2 evaluator result. A Level-3 claim carries one of these.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+///
+/// Constructed by [`Judgment::from_lab`]. There is no [`serde::Deserialize`]
+/// impl: JSON cannot mint [`LogicalJudgment::Proved`].
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Judgment {
     /// Deductive / formal.
@@ -23,7 +36,7 @@ pub enum Judgment {
 }
 
 /// Outcome of a logical claim.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum LogicalJudgment {
     /// Independently checked proof of the challenge statement.
@@ -35,7 +48,7 @@ pub enum LogicalJudgment {
 }
 
 /// Outcome of a numeric claim.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum NumericJudgment {
     /// Rigorous enclosure.
@@ -55,7 +68,7 @@ pub enum NumericJudgment {
 }
 
 /// Outcome of an empirical claim.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum EmpiricalJudgment {
     /// Compatible with registered data under stated assumptions.
@@ -67,7 +80,7 @@ pub enum EmpiricalJudgment {
 }
 
 /// Outcome of a statistical procedure (never an LLM-invented confidence).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StatisticalJudgment {
     /// No formal statistical object exists.
@@ -77,7 +90,7 @@ pub enum StatisticalJudgment {
 }
 
 /// Heuristic judgment — explicitly not a proof.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum HeuristicJudgment {
     /// Order-of-magnitude / folklore, labelled as such.
@@ -515,6 +528,32 @@ mod tests {
             None,
         );
         assert_eq!(j.label(), "logical undetermined");
+    }
+
+    #[test]
+    fn evaluator_holds_is_not_proved_without_a_receipt() {
+        let open = Judgment::from_lab(
+            crate::assurance::ClaimClass::Mathematical,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::NotApplicable,
+            crate::assurance::DerivationAssurance::Executed,
+            false,
+            None,
+            None,
+        );
+        assert_eq!(open.label(), "logical undetermined");
+        assert_ne!(open, Judgment::Logical(LogicalJudgment::Proved));
+        let proved = Judgment::from_lab(
+            crate::assurance::ClaimClass::Mathematical,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::NotApplicable,
+            crate::assurance::DerivationAssurance::Executed,
+            true,
+            None,
+            None,
+        );
+        assert_eq!(proved.label(), "logical proved");
+        assert_eq!(proved, Judgment::Logical(LogicalJudgment::Proved));
     }
 
     #[test]

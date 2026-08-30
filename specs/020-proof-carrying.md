@@ -47,6 +47,10 @@ Nothing gains authority merely because an agent wrote code that returns
   Lean compiler versions live on the receipt, not
   the sentence.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
+  `Judgment` has no `Deserialize` impl: JSON cannot mint
+  `LogicalJudgment::Proved`. The lab projects `Judgment` from evaluator
+  + receipts via `from_lab`. Evaluator `holds` without a dual-checked
+  receipt is `logical undetermined`.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set
   as an enum; P4 is not assigned from an in-process remint. P3N is
   earned when an evaluator overlays `CertifiedNumeric` after an exact

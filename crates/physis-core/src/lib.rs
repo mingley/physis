@@ -89,6 +89,16 @@
 //!     needs_deserialize::<physis_core::judgment::TrustProfile>();
 //! }
 //! ```
+//!
+//! JSON cannot mint a typed [`judgment::Judgment`] either (`LogicalJudgment::Proved`
+//! is not a deserializable tag):
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::judgment::Judgment>();
+//! }
+//! ```
 
 #![forbid(unsafe_code)]
 

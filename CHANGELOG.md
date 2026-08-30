@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Judgment is not JSON-mintable**
+  (`Judgment` and `LogicalJudgment` have no Deserialize). `from_lab`
+  projects evaluator plus receipts; JSON cannot mint `logical proved`.
+  Evaluator Holds without a dual-checked receipt stays undetermined.
+  Catalog d² hash unchanged. Verified: compile-fail against Judgment
+  Deserialize; from_lab Holds is not Proved until a receipt. Live
+  prove of catalog d² is still Lean+nanoda; why after prove is still
+  `logical proved`. `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Long-wavelength cells name a DomainOfValidity**
   (`field.dispersion-continuum-limit`, ohm-circuit `em.quasi-static-valid`).
   Encoding-wide "long-wavelength" is a hidden regime. Dispersion is the

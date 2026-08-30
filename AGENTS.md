@@ -54,7 +54,8 @@ A theory can `Executed`-derive a prediction that nature `Excluded`. That is a fe
 `physis why <claim>` prints assumptions, a typed `judgment` (evaluator
 `holds` is `logical undetermined` until a dual-checked receipt exists;
 `CertifiedNumeric` Holds is `numeric certified` with a display enclosure,
-not a kernel proof; a coarse lattice is `numeric unresolved`),
+not a kernel proof; a coarse lattice is `numeric unresolved`; `Judgment`
+has no `Deserialize`, so JSON cannot mint `logical proved`),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
 encoding review of the live `statement_hash`, not the slug; P4 is not assigned from an in-process remint), the
 statement hash (which commits to quantifiers, units, constants, boundary

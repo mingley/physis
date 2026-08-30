@@ -37,6 +37,7 @@ Level-3 trust
   L3 P2 cross-check        ✓ Hodge Laplacian nullity vs b1; Euler–Poincaré is rank-cancellation, not P2
   L3 Hodge domain          ✓ dec.hodge-harmonic names discrete Laplacian DomainOfValidity; Euler and Poincaré stay encoding-wide
   L3 long-wavelength domain ✓ dispersion and ohm-circuit quasi-static name DomainOfValidity; Maxwell copy stays encoding-wide
+  L3 judgment seal         ✓ Judgment has no Deserialize; from_lab projects Proved from a receipt; JSON cannot mint a theorem
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
 ```
 
