@@ -31,6 +31,12 @@
 //! already excluded by Super-Kamiokande. Those claims `fail`. A `supersymmetric`
 //! knob revives unification as a `heuristic`, at the price of unobserved
 //! superpartners.
+//!
+//! Complete `5̄ + 10` lives on the IR package of `su5-gut`. A missing 10
+//! (`add-missing-10`) is a package mutation, not a `supersymmetric` knob:
+//! the SM fermions no longer fill a complete generation, so
+//! `gut.sm-embedding` fails, while `Tr Q = 0` and GUT-scale `3/8` still
+//! hold as SU(5) generator identities. That is not MSSM matter.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -42,6 +48,7 @@ use physis_data::{
     pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt, PDG_2022_ALPHA_S_MZ,
     PDG_2022_INV_ALPHA_EM_MZ, SK_2020_P_E_PI0,
 };
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_numeric::{Interval, Ratio};
 
@@ -78,16 +85,55 @@ const DIM6_LIFETIME_DECADE: f64 = 10.0;
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "supersymmetric",
     layer: LayerId::Field,
-    doc: "Whether the GUT is supersymmetric (MSSM matter). SUSY revives gauge-coupling unification and raises the proton-decay scale, at the price of unobserved superpartners.",
+    doc: "Whether the GUT is supersymmetric (MSSM matter). SUSY revives gauge-coupling unification and raises the proton-decay scale, at the price of unobserved superpartners. A missing 10 is not this knob: add-missing-10 is an IR mutation.",
     origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Bool,
 }];
 
+/// Live complete-generation law on the `su5-gut` package.
+const EMBEDDING_EQ: &str = "5bar + 10";
+/// Incomplete encoding: the 10 is absent, covering of SM fermions fails.
+const MISSING_EQ: &str = "missing 10";
+
+fn parse_gut_embedding(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut complete = false;
+    let mut missing = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            EMBEDDING_EQ => complete = true,
+            MISSING_EQ => missing = true,
+            _ => {}
+        }
+    }
+    if !complete {
+        return Err(format!(
+            "{} package has no complete 5bar + 10 generation",
+            pkg.id
+        ));
+    }
+    Ok(missing)
+}
+
+fn sm_embedding_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["complete 5bar + 10 generation".into()],
+        vec!["SU(5) contains SM; fermions fill 5bar + 10".into()],
+        "Embedding here is a complete 5bar + 10. A missing 10 is a new \
+         encoding, not a silent supersymmetric knob.",
+    )
+}
+
 /// The Georgi–Glashow SU(5) grand unified theory.
-#[derive(Clone, Debug, Default)]
+///
+/// Complete `5̄ + 10` lives on the IR package. A missing 10
+/// (`add-missing-10`) is a package mutation, not a knob.
+/// `supersymmetric` stays a knob.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Su5Gut {
     /// Whether the theory is supersymmetric (SUSY SU(5) / MSSM).
     supersymmetric: bool,
+    /// Whether the encoding is missing the 10 (`5bar` only).
+    missing_10: bool,
 }
 
 impl Knobbed for Su5Gut {
@@ -118,6 +164,49 @@ impl Knobbed for Su5Gut {
     }
 }
 
+impl Su5Gut {
+    /// IR package for this embedding. Equations are `5bar + 10` and, when
+    /// forked, `missing 10`. `supersymmetric` stays on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![EMBEDDING_EQ.to_string()];
+        if self.missing_10 {
+            equations.push(MISSING_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["complete-5bar-plus-10".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: GUT_SM_EMBEDDING.into(),
+                statement: "The Standard Model fermions fill complete SU(5) multiplets (5̄ + 10)."
+                    .into(),
+                layer: "interaction".into(),
+                class: "phenomenological".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load an embedding from a package. Knobs default; overlay them from
+    /// a live su5-gut object when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "su5-gut" {
+            return Err(format!("su5-gut package id '{}' is not su5-gut", pkg.id));
+        }
+        let missing_10 = parse_gut_embedding(pkg)?;
+        Ok(Self {
+            missing_10,
+            ..Self::default()
+        })
+    }
+
+    fn missing_equation() -> String {
+        MISSING_EQ.to_string()
+    }
+}
+
 impl Theory for Su5Gut {
     fn id(&self) -> &'static str {
         "su5-gut"
@@ -130,7 +219,8 @@ impl Theory for Su5Gut {
          derives charge quantization and sin²θ_W = 3/8 at unification. Running \
          that 3/8 down to M_Z with Georgi–Quinn–Weinberg, minimal SU(5) misses \
          the measured 0.231; a supersymmetric knob revives the heuristic match. \
-         The PDG interval comparison is a separate empirical cell."
+         The PDG interval comparison is a separate empirical cell. A missing 10 \
+         is an IR mutation on su5-gut, not that knob."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -156,7 +246,8 @@ impl Theory for Su5Gut {
                 "The Standard Model fermions fill complete SU(5) multiplets (5̄ + 10).",
                 LayerId::Interaction,
                 ClaimClass::Phenomenological,
-            ),
+            )
+            .with_domain(sm_embedding_domain()),
             Claim::new(
                 GUT_CHARGE_QUANTIZATION,
                 "Electric charge is quantized (Q is a traceless SU(5) generator).",
@@ -270,10 +361,18 @@ impl Theory for Su5Gut {
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id_str() {
             GUT_SM_EMBEDDING => match GaugeGroup::su5().verified_contains_sm() {
-                Some(chain) => {
+                Some(chain) if !self.missing_10 => {
                     Verdict::holds(claim, "SU(5) ⊃ SU(3)×SU(2)×U(1); one generation = 5̄ ⊕ 10")
                         .with_evidence([format!("verified chain: {}", chain.join(" ⊃ "))])
                 }
+                Some(_) => Verdict::fails(
+                    claim,
+                    "missing 10: SM fermions do not fill a complete 5bar + 10",
+                )
+                .with_evidence([
+                    "5bar + 10 is the live encoding; missing 10 is not a supersymmetric knob"
+                        .to_string(),
+                ]),
                 None => Verdict::fails(claim, "no verified SM embedding"),
             },
             GUT_CHARGE_QUANTIZATION => {
@@ -525,6 +624,36 @@ impl Theory for Su5Gut {
             }
             _ => Verdict::inapplicable(claim, "claim not made by the SU(5) GUT object"),
         }
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.missing_10 = parsed.missing_10;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.missing_10 {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::missing_equation()),
+        );
+        if let Ok(parsed) = Self::from_package(&mutated) {
+            if parsed.missing_10 {
+                let mut fork = self.clone();
+                fork.missing_10 = true;
+                return vec![("add-missing-10".into(), Box::new(fork))];
+            }
+        }
+        Vec::new()
     }
 }
 
@@ -826,6 +955,179 @@ mod tests {
     fn sm_embeds_in_su5() {
         let g = Su5Gut::default();
         assert_eq!(verdict(&g, GUT_SM_EMBEDDING).kind, VerdictKind::Holds);
+        let cell = g
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == GUT_SM_EMBEDDING)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "embedding must name complete 5bar + 10: {:?}",
+            cell.domain()
+        );
+        assert!(
+            cell.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("complete 5bar + 10")),
+            "embedding regime: {:?}",
+            cell.domain()
+        );
+    }
+
+    #[test]
+    fn missing_10_is_ir_not_a_knob() {
+        assert!(
+            Su5Gut::default()
+                .set("missing_10", KnobValue::Bool(true))
+                .is_err(),
+            "missing 10 is an IR mutation, not a knob"
+        );
+        assert!(
+            Su5Gut::default()
+                .set("missing-10", KnobValue::Bool(true))
+                .is_err(),
+            "missing-10 is not a knob"
+        );
+        assert!(
+            Su5Gut::default()
+                .set("add-missing-10", KnobValue::Bool(true))
+                .is_err(),
+            "add-missing-10 is not a knob"
+        );
+        let g = Su5Gut::default();
+        assert!(!g.missing_10);
+        let src = render_package(&g.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay 5bar + 10");
+        assert_eq!(pkg.equations[0], EMBEDDING_EQ);
+        assert_eq!(
+            Su5Gut::from_package(&pkg).unwrap(),
+            g,
+            "IR round-trip must preserve complete 5bar + 10"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Su5Gut::missing_equation()),
+        );
+        let parsed = Su5Gut::from_package(&mutated).unwrap();
+        assert!(parsed.missing_10);
+        let mut fork = g.clone();
+        fork.missing_10 = true;
+        assert_eq!(fork.id(), "su5-gut");
+        assert_eq!(verdict(&fork, GUT_SM_EMBEDDING).kind, VerdictKind::Fails);
+        assert_eq!(
+            verdict(&fork, GUT_CHARGE_QUANTIZATION).kind,
+            VerdictKind::Holds
+        );
+        assert_eq!(verdict(&fork, GUT_WEINBERG_ANGLE).kind, VerdictKind::Holds);
+        assert_eq!(verdict(&g, GUT_SM_EMBEDDING).kind, VerdictKind::Holds);
+        let cell = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == GUT_SM_EMBEDDING)
+            .unwrap();
+        let v = fork.evaluate(&cell);
+        assert!(
+            !v.summary.contains("supersymmetric") && !v.summary.contains("MSSM"),
+            "missing 10 is not a knob: {}",
+            v.summary
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("5bar + 10") || e.contains("missing 10")),
+            "got {:?}",
+            v.evidence
+        );
+
+        let mut susy = fork.clone();
+        susy.set("supersymmetric", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&susy, GUT_SM_EMBEDDING).kind, VerdictKind::Fails);
+        assert_eq!(
+            verdict(&susy, GUT_WEINBERG_ANGLE_MZ).kind,
+            VerdictKind::Holds
+        );
+
+        let probes = Su5Gut::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-missing-10"),
+            "live su5-gut must offer add-missing-10: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-missing-10")
+            .expect("add-missing-10");
+        assert_eq!(
+            verdict(probe.1.as_ref(), GUT_SM_EMBEDDING).kind,
+            VerdictKind::Fails
+        );
+        assert_eq!(
+            verdict(probe.1.as_ref(), GUT_WEINBERG_ANGLE).kind,
+            VerdictKind::Holds
+        );
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-missing-10"),
+            "missing-10 fork must not re-offer add-missing-10"
+        );
+        let live = Su5Gut::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut susy_live = Su5Gut::default();
+        susy_live
+            .set("supersymmetric", KnobValue::Bool(true))
+            .unwrap();
+        let rebuilt = susy_live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("supersymmetric").unwrap(),
+            KnobValue::Bool(true),
+            "reparse must overlay missing-10 IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), GUT_SM_EMBEDDING).kind,
+            VerdictKind::Holds,
+            "live complete 5bar + 10 still Holds embedding"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), GUT_WEINBERG_ANGLE_MZ).kind,
+            VerdictKind::Holds
+        );
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            verdict(live_rebuilt.as_ref(), GUT_SM_EMBEDDING).kind,
+            VerdictKind::Holds
+        );
+        assert!(
+            crate::olbers::OlbersSky::static_euclidean()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-10"),
+            "olbers-static must not grow add-missing-10"
+        );
+        assert!(
+            crate::computation::TuringMachine::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-10"),
+            "turing-machine must not grow add-missing-10"
+        );
+        assert!(
+            crate::blackbody::Blackbody::planck()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-10"),
+            "planck must not grow add-missing-10"
+        );
+        assert!(
+            Su5Gut::default()
+                .set("supersymmetric", KnobValue::Bool(true))
+                .is_ok(),
+            "su5-gut keeps the supersymmetric knob"
+        );
     }
 
     #[test]

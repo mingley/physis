@@ -90,8 +90,9 @@ forks the bound (`add-kt` / `add-demon`) so `info.landauer-cost` `holds → fail
 
 The `su5-gut` theory mechanizes "accommodate vs derive" with real stakes:
 embedding one SM generation in a complete SU(5) multiplet **derives** charge
-quantization (`Tr Q = 0`) and `sin²θ_W = 3/8` as computed theorems. Running
-that `3/8` down to `M_Z` (Georgi–Quinn–Weinberg, `α_em` and `α_s` only)
+quantization (`Tr Q = 0`) and `sin²θ_W = 3/8` as computed theorems.
+`hypothesize su5-gut` forks a missing 10 as IR, not the `supersymmetric` knob.
+Running that `3/8` down to `M_Z` (Georgi–Quinn–Weinberg, `α_em` and `α_s` only)
 **fails** for minimal SU(5) (`≈0.207` vs measured `0.231`) and holds for the
 MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
 `gut.coupling-unification`, `gut.weinberg-angle-mz`, and
@@ -155,6 +156,7 @@ cargo run -p physis -- set special-relativity absolute_time true
 cargo run -p physis -- hypothesize planck              # add-wien is IR, not set
 cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
 cargo run -p physis -- run su5-gut          # SU(5): 3/8 at M_GUT; GQW misses 0.231 at M_Z
+cargo run -p physis -- hypothesize su5-gut  # add-missing-10 is IR, not set
 cargo run -p physis -- set su5-gut supersymmetric true   # GQW + unification fail → hold
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis -- epistemics
@@ -187,6 +189,7 @@ cargo run -p physis -- hypothesize type-iib
 cargo run -p physis -- hypothesize combinational-circuit
 cargo run -p physis -- hypothesize turing-machine  # add-oracle is IR, not set
 cargo run -p physis -- hypothesize olbers-static   # add-tired-light is IR, not set
+cargo run -p physis -- hypothesize su5-gut         # add-missing-10 is IR, not set
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- enclose gut.weinberg-angle
 cargo run -p physis -- cite gut.proton-lifetime-sk

@@ -32,6 +32,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **SU(5) missing 10 is an IR mutation**
+  (`su5-gut`, `add-missing-10`). Complete `5bar + 10` is the live
+  encoding; appending `missing 10` flips `gut.sm-embedding` holds
+  to fails. `Tr Q = 0` and GUT-scale `3/8` still hold as SU(5)
+  generator identities, so the P3N cell is not a unit flag and not
+  MSSM matter. That is not a knob. `supersymmetric` stays a knob.
+  Mutants stay `su5-gut`. Mutants are not installed, not journaled,
+  and not Canonical or P4. Catalog d² hash unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4. Verified: IR round-trip;
+  set missing_10 is unknown; hypothesize su5-gut; live 5bar + 10
+  restored; encode pin
+  `fc8614b387c901cc2806fbf456e05d5221131de9cb0d5205e5e4e7ea6a10309e`.
+
 - **Olbers tired light is an IR mutation**
   (`olbers-static`, `add-tired-light`). Inverse-square Euclidean
   shells are the live encoding (`dF = rho dr`); appending

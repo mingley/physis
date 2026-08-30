@@ -6395,6 +6395,114 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_su5_missing_10_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["missing_10", "missing-10", "add-missing-10"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "su5-gut".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("su5-gut".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-missing-10") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-missing-10: package → add-missing-10";
+        let start = text.find(marker).expect("add-missing-10 hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  su5-gut  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let missing_block = &rest[..end];
+        assert!(
+            missing_block.contains("gut.sm-embedding") && missing_block.contains("holds → fails"),
+            "add-missing-10 must flip embedding holds to fails: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("gut.weinberg-angle-mz"),
+            "missing 10 is not the supersymmetric knob: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("gut.weinberg-angle ")
+                && !missing_block.contains("gut.weinberg-angle\n"),
+            "GUT-scale 3/8 must still hold on a missing 10: {missing_block}"
+        );
+        assert!(
+            text.contains("supersymmetric"),
+            "supersymmetric must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("su5-gut").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| { c.id_str() == "gut.sm-embedding" && v.kind == VerdictKind::Holds }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("supersymmetric").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let susy = lab.exec(Command::Set {
+            theory: "su5-gut".into(),
+            knob: "supersymmetric".into(),
+            value: "true".into(),
+        });
+        assert_eq!(susy.exit_code(), 0, "{}", susy.text());
+        assert!(
+            susy.text().contains("gut.weinberg-angle-mz") && susy.text().contains("fails → holds"),
+            "supersymmetric still flips GQW: {}",
+            susy.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "su5-gut".into(),
+            knob: "supersymmetric".into(),
+            value: "false".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "gut.sm-embedding".into(),
+            })
+            .text()
+            .to_string();
+        let gut = why_theory_block(&why, "su5-gut");
+        assert!(
+            gut.contains("complete 5bar + 10"),
+            "embedding must name complete 5bar + 10: {gut}"
+        );
+        assert!(
+            !gut.contains("not yet a machine-checked regime"),
+            "embedding must not be encoding-wide: {gut}"
+        );
+        assert!(
+            gut.contains("encoding:    none"),
+            "hypothesize must not encode: {gut}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -7966,6 +8074,10 @@ mod tests {
             "loop must independently round-trip inverse-square Euclidean shells: {text}"
         );
         assert!(
+            text.contains("encode  su5-gut"),
+            "loop must independently round-trip complete 5bar + 10: {text}"
+        );
+        assert!(
             !text.contains("encode  olbers-horizon"),
             "olbers-horizon has no IR package: {text}"
         );
@@ -9415,6 +9527,24 @@ mod tests {
         assert_ne!(olbers_id, tm_id);
         assert_ne!(olbers_id, nand_id);
 
+        let gut = lab
+            .exec(Command::Encode {
+                theory: "su5-gut".into(),
+            })
+            .text()
+            .to_string();
+        assert!(gut.contains("equations  1"), "{gut}");
+        assert!(gut.contains("round-trip canonical"), "{gut}");
+        assert!(gut.contains("not P3S"), "{gut}");
+        assert!(!gut.contains("receipt"), "{gut}");
+        let gut_id = encoding_package_id(&gut);
+        assert_eq!(
+            gut_id.to_hex(),
+            "fc8614b387c901cc2806fbf456e05d5221131de9cb0d5205e5e4e7ea6a10309e"
+        );
+        assert_ne!(gut_id, olbers_id);
+        assert_ne!(gut_id, nand_id);
+
         for theory in [
             "standard-model",
             "type-iib",
@@ -9804,6 +9934,25 @@ mod tests {
             encoding_package_id(&olbers_again),
             olbers_id,
             "hypothesize must not install the tired-light mutant"
+        );
+
+        let hypo_gut = lab
+            .exec(Command::Hypothesize {
+                theory: Some("su5-gut".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_gut.contains("add-missing-10"), "{hypo_gut}");
+        let gut_again = lab
+            .exec(Command::Encode {
+                theory: "su5-gut".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&gut_again),
+            gut_id,
+            "hypothesize must not install the missing-10 mutant"
         );
 
         let p3s = lab

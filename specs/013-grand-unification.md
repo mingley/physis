@@ -11,6 +11,8 @@ Model and sharpens the lab's central theme — **accommodate vs derive** — wit
 real empirical stakes. The SM *accommodates* charge quantization and the weak
 mixing angle as inputs; SU(5) *derives* both from the single requirement that
 one generation of fermions fills a complete SU(5) multiplet (`5̄ ⊕ 10`).
+Complete `5bar + 10` lives on the IR package of `su5-gut`. A missing 10
+(`add-missing-10`) is not a `supersymmetric` knob.
 
 It is equally a lesson in honest failure: minimal (non-SUSY) SU(5) does **not**
 unify the gauge couplings and predicts proton decay at a rate already excluded
@@ -21,19 +23,19 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 
 | id | object |
 |---|---|
-| `su5-gut` | Georgi–Glashow SU(5) (with a `supersymmetric` knob) |
+| `su5-gut` | Georgi–Glashow SU(5). Complete `5bar + 10` lives on the IR package; `add-missing-10` is not a knob |
 
 ## Knob
 
 | knob | effect |
 |---|---|
-| `supersymmetric` | MSSM matter. Flips `gut.coupling-unification` and `gut.proton-decay-viable` from `fails` to `holds` (as `heuristic`s), at the price of unobserved superpartners. |
+| `supersymmetric` | MSSM matter. Flips `gut.coupling-unification` and `gut.proton-decay-viable` from `fails` to `holds` (as `heuristic`s), at the price of unobserved superpartners. A missing 10 is not this knob: `add-missing-10` is an IR mutation. |
 
 ## Claims
 
 | id | meaning | status |
 |---|---|---|
-| `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10` | `encoded-fact`, holds (verified chain) |
+| `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10`. On `su5-gut` this names a complete 5bar + 10 generation. `add-missing-10` appends `missing 10` and the cell fails. That is not a knob. `supersymmetric` stays a knob | `encoded-fact`, holds (verified chain). Domain: complete 5bar + 10 generation |
 | `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **executed** (`ΣY`, already the grav anomaly; not a second P3N) |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **exact Ratio** / P3N, not GQW at `M_Z`. Domain: unification-scale |
 | `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive, `heuristic`. Domain: `M_Z` |
@@ -150,10 +152,19 @@ SUSY threshold corrections, which this milestone does not model.
 
 ```
 physis run su5-gut               # coupling-unification, proton-decay, weinberg-angle-mz: fail
+physis hypothesize su5-gut       # add-missing-10 is IR, not set
+physis encode su5-gut            # complete 5bar + 10; not P3S, not a kernel proof
 physis set su5-gut supersymmetric true
 ```
 
-flips `gut.coupling-unification`, `gut.proton-decay-viable`, and
+`physis hypothesize su5-gut` forks the package with a missing 10
+(`equation missing 10`); that is not a knob (`set su5-gut missing_10`
+is unknown). The incomplete encoding fails `gut.sm-embedding` while
+GUT-scale `3/8` still holds. `supersymmetric` stays a knob. Mutants
+are not installed.
+
+`set su5-gut supersymmetric true` flips `gut.coupling-unification`,
+`gut.proton-decay-viable`, and
 `gut.weinberg-angle-mz` `fails → holds` (as `heuristic`s), because switching the
 beta coefficients from SM to MSSM brings the computed `α_3(M_Z)` and
 `sin²θ_W(M_Z)` into agreement and raises `M_GUT`. The interval cell
