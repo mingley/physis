@@ -4547,6 +4547,56 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_ohm_circuit_tline_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "ohm-circuit".into(),
+            knob: "tline".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("tline"),
+            "{}",
+            blocked.text()
+        );
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("ohm-circuit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-tline") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("em.charge-conservation") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("ohm-circuit").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(
+                |(c, v)| c.id_str() == "em.charge-conservation" && v.kind == VerdictKind::Holds
+            ),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("frequency_hz").unwrap().display(),
+            "1000",
+            "hypothesize must restore knobs"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5241,6 +5291,10 @@ mod tests {
         assert!(
             text.contains("encode  wilson-su3"),
             "loop must independently round-trip the Wilson SU(3) stencil: {text}"
+        );
+        assert!(
+            text.contains("encode  ohm-circuit"),
+            "loop must independently round-trip the lumped Kirchhoff netlist: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -6432,6 +6486,24 @@ mod tests {
         assert_ne!(su3_id, su2_id);
         assert_ne!(su3_id, u1_id);
 
+        let ohm = lab
+            .exec(Command::Encode {
+                theory: "ohm-circuit".into(),
+            })
+            .text()
+            .to_string();
+        assert!(ohm.contains("equations  1"), "{ohm}");
+        assert!(ohm.contains("round-trip canonical"), "{ohm}");
+        assert!(ohm.contains("not P3S"), "{ohm}");
+        assert!(!ohm.contains("receipt"), "{ohm}");
+        let ohm_id = encoding_package_id(&ohm);
+        assert_eq!(
+            ohm_id.to_hex(),
+            "fb14d2c8a8cf2c51fe67c2f334a9307860c6ebb5cfbeca1c35467d61f1387af1"
+        );
+        assert_ne!(ohm_id, nand_id);
+        assert_ne!(ohm_id, u1_id);
+
         for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
@@ -6518,6 +6590,25 @@ mod tests {
             encoding_package_id(&su3_again),
             su3_id,
             "hypothesize must not install the SU(3) rectangle mutant"
+        );
+
+        let hypo_ohm = lab
+            .exec(Command::Hypothesize {
+                theory: Some("ohm-circuit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_ohm.contains("add-tline"), "{hypo_ohm}");
+        let ohm_again = lab
+            .exec(Command::Encode {
+                theory: "ohm-circuit".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&ohm_again),
+            ohm_id,
+            "hypothesize must not install the tline mutant"
         );
 
         let p3s = lab

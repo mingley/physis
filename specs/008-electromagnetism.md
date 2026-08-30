@@ -22,7 +22,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|
 | `maxwell-vacuum` | Classical EM in vacuum: a U(1) gauge field of light |
 | `linear-medium` | Classical EM in a linear medium (`ε_r`, `μ_r` knobs) |
-| `ohm-circuit` | Lumped-element circuit theory: the quasi-static effective limit of Maxwell (`frequency_hz` knob) |
+| `ohm-circuit` | Lumped-element circuit theory: the quasi-static effective limit of Maxwell (`frequency_hz` knob; lumped branch IR) |
 
 ## Knobs
 
@@ -30,7 +30,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|---|
 | `linear-medium` | `epsilon_r` | relative permittivity ε_r ≥ 1; raises the refractive index n = √(ε_r μ_r) |
 | `linear-medium` | `mu_r` | relative permeability μ_r ≥ 1; raises n |
-| `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit |
+| `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation |
 
 `maxwell-vacuum` has no knobs (vacuum is the unit medium).
 
@@ -42,19 +42,23 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `em.gauss` | Gauss's law | theorem (vacuum: `∇·E = 0` verified on a Coulomb field); encoded-fact in a medium |
 | `em.faraday` | Faraday's law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
-| `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem (backed by a numerically-verified `∇·(∇×A) = 0`) |
+| `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
 | `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
 | `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit names `λ > 100 ×` circuit size); inapplicable to full Maxwell (encoding-wide) |
 
 ## The control: `ohm-circuit`
 
 Lumped circuit theory is the quasi-static, long-wavelength limit of Maxwell.
-Kirchhoff's current law *is* charge conservation; Kirchhoff's voltage law *is*
-Faraday's law. Wave propagation is dropped (`em.wave-speed-c` inapplicable) and
-the theory has a preferred rest frame (`em.lorentz-invariance` fails). It is
-valid only while the wavelength `c/f` dwarfs the circuit: raising `frequency_hz`
-past that point flips `em.quasi-static-valid` from `holds` to `fails`, using
-typed `Qty<Length>` wavelengths. The ohm-circuit cell names that
+Kirchhoff's current law *is* charge conservation on a lumped node graph;
+Kirchhoff's voltage law *is* Faraday's law. Wave propagation is dropped
+(`em.wave-speed-c` inapplicable) and the theory has a preferred rest frame
+(`em.lorentz-invariance` fails). The lumped branch lives on the IR package
+(`branch R 0 1`). A transmission-line delay is a package mutation
+(`add-tline`), not a knob: `em.charge-conservation` fails on the mutant.
+It is valid only while the wavelength `c/f` dwarfs the circuit: raising
+`frequency_hz` past that point flips `em.quasi-static-valid` from `holds`
+to `fails`, using typed `Qty<Length>` wavelengths. That frequency knob is
+orthogonal to the tline encoding. The ohm-circuit quasi-static cell names
 `λ > 100 ×` circuit-size regime; Maxwell's copy of the slug stays
 encoding-wide and inapplicable.
 
@@ -88,6 +92,8 @@ rest frame:
 ```
 physis experiment em-vacuum
 physis set linear-medium epsilon_r 1   # n → 1, wave-speed-c and lorentz-invariance flip to holds
+physis set ohm-circuit frequency_hz 1e10   # electrically short → lumped model fails
+physis hypothesize ohm-circuit             # add-tline is IR, not set
 ```
 
 The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
@@ -98,7 +104,8 @@ The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
 - A PDE field solver or a numerical FDTD engine.
 - Typed exterior calculus / differential forms (a later milestone may encode
   Faraday/Ampère as `dF = 0`, `d⋆F = ⋆J`).
-- Circuit theory (`ohm-circuit`) as an effective layer — planned, not yet built.
+- Circuit theory (`ohm-circuit`) as a full SPICE engine or transmission-line
+  PDE. The IR fork is a delay equation, not a simulator.
 
 ## Related
 

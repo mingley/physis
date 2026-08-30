@@ -10,7 +10,7 @@ New theory `maxwell-vacuum` (and later `linear-medium`):
 - Claims:
   - `1/√(ε₀μ₀) = c` as a **theorem** of the encoding
   - Faraday / Ampere structure as encoded facts, then as typed exterior calculus if we get that far
-- Control: ✅ `ohm-circuit` — lumped circuit theory as the quasi-static effective limit of Maxwell. Charge conservation = Kirchhoff's current law; wave propagation dropped (`wave-speed-c` inapplicable), preferred frame (`lorentz-invariance` fails). The `frequency_hz` knob flips `em.quasi-static-valid` when the wavelength stops dwarfing the circuit.
+- Control: ✅ `ohm-circuit` — lumped circuit theory as the quasi-static effective limit of Maxwell. Charge conservation = Kirchhoff's current law on a lumped IR netlist (`add-tline` is an IR fork, not a knob); wave propagation dropped (`wave-speed-c` inapplicable), preferred frame (`lorentz-invariance` fails). The `frequency_hz` knob flips `em.quasi-static-valid` when the wavelength stops dwarfing the circuit.
 
 This domain is chosen because it *needs* `Qty` immediately (cannot add volts to amperes) and produces clean knob diffs (`epsilon_r` changes wave speed).
 

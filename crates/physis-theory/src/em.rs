@@ -17,6 +17,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{epsilon0, mu0, C};
 use physis_model::{GaugeGroup, Manifold, SimpleGroup, Species, Spectrum, World};
 
@@ -449,6 +450,35 @@ impl Theory for LinearMedium {
 const CIRCUIT_SIZE_M: f64 = 0.1;
 /// The lumped approximation needs the wavelength to dwarf the circuit.
 const QUASI_STATIC_MARGIN: f64 = 100.0;
+/// Lumped two-terminal resistor on nodes 0–1.
+const BRANCH_EQ: &str = "branch R 0 1";
+/// Distributed delay (transmission line) on the same nodes.
+const TLINE_EQ: &str = "tline 0 1";
+
+fn parse_ohm_netlist(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut branch = false;
+    let mut tline = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            BRANCH_EQ => branch = true,
+            TLINE_EQ => tline = true,
+            _ => {}
+        }
+    }
+    if !branch {
+        return Err(format!("{} package has no lumped branch", pkg.id));
+    }
+    Ok(tline)
+}
+
+fn kcl_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["lumped Kirchhoff nodes".into()],
+        vec!["instantaneous current balance".into()],
+        "KCL is the lumped node encoding. A transmission-line delay is a new \
+         encoding, not a silent lumped circuit.",
+    )
+}
 
 const OHM_SPECS: &[KnobSpec] = &[KnobSpec {
     name: "frequency_hz",
@@ -462,9 +492,14 @@ const OHM_SPECS: &[KnobSpec] = &[KnobSpec {
 }];
 
 /// Ohm's-law lumped circuit theory: the quasi-static effective limit of Maxwell.
-#[derive(Clone, Debug)]
+///
+/// The lumped branch lives on the IR package. A transmission-line delay is a
+/// package mutation (`add-tline`), not a knob: Kirchhoff current law fails
+/// on the mutant. `frequency_hz` stays a knob (electrically short vs not).
+#[derive(Clone, Debug, PartialEq)]
 pub struct OhmCircuit {
     frequency_hz: f64,
+    tline: bool,
 }
 
 impl Default for OhmCircuit {
@@ -472,11 +507,54 @@ impl Default for OhmCircuit {
         // 1 kHz: comfortably quasi-static for a 0.1 m circuit.
         Self {
             frequency_hz: 1.0e3,
+            tline: false,
         }
     }
 }
 
 impl OhmCircuit {
+    /// IR package for this lumped netlist. Equations are `branch R 0 1`
+    /// and, when forked, `tline 0 1`. Frequency stays on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![BRANCH_EQ.to_string()];
+        if self.tline {
+            equations.push(TLINE_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["lumped-kirchhoff-nodes".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: CHARGE_CONSERVATION.into(),
+                statement: "Kirchhoff's current law is charge conservation.".into(),
+                layer: "field".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a lumped netlist from a package. Frequency defaults; overlay it
+    /// from a live circuit when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "ohm-circuit" {
+            return Err(format!(
+                "ohm-circuit package id '{}' is not ohm-circuit",
+                pkg.id
+            ));
+        }
+        Ok(Self {
+            tline: parse_ohm_netlist(pkg)?,
+            ..Self::default()
+        })
+    }
+
+    fn tline_equation() -> String {
+        TLINE_EQ.to_string()
+    }
+
     /// Wavelength c/f as a typed length (infinite at DC).
     fn wavelength(&self) -> physis_core::Qty<physis_core::Length> {
         let lambda = if self.frequency_hz <= 0.0 {
@@ -529,9 +607,10 @@ impl Theory for OhmCircuit {
     }
     fn summary(&self) -> &'static str {
         "Lumped-element circuit theory: the quasi-static, long-wavelength limit \
-         of Maxwell. Kirchhoff's laws are charge conservation and Faraday's law \
-         in disguise; wave propagation is dropped and there is a preferred rest \
-         frame. Valid only while the wavelength dwarfs the circuit."
+         of Maxwell. Kirchhoff's current law is charge conservation on a lumped \
+         node graph (a transmission-line delay is an IR mutation, not a knob). \
+         Wave propagation is dropped and there is a preferred rest frame. \
+         Valid only while the wavelength dwarfs the circuit."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -563,6 +642,8 @@ impl Theory for OhmCircuit {
                          when c/f is comparable to the circuit is a new claim, \
                          not a silent extrapolation.",
                     ))
+                } else if c.id_str() == CHARGE_CONSERVATION {
+                    c.with_domain(kcl_domain())
                 } else {
                     c
                 }
@@ -584,10 +665,19 @@ impl Theory for OhmCircuit {
                 "inductor EMF / Kirchhoff's voltage law is Faraday's law",
             ),
             AMPERE => Verdict::holds(claim, "displacement current shows up as capacitor current"),
-            CHARGE_CONSERVATION => Verdict::holds(
-                claim,
-                "Kirchhoff's current law is exactly charge conservation",
-            ),
+            CHARGE_CONSERVATION => {
+                if self.tline {
+                    Verdict::fails(
+                        claim,
+                        "transmission-line delay: Kirchhoff current law is not instantaneous",
+                    )
+                } else {
+                    Verdict::holds(
+                        claim,
+                        "Kirchhoff's current law is exactly charge conservation",
+                    )
+                }
+            }
             LORENTZ_INVARIANCE => Verdict::fails(
                 claim,
                 "quasi-static circuit theory has a preferred (lab) rest frame",
@@ -613,6 +703,36 @@ impl Theory for OhmCircuit {
             _ => Verdict::inapplicable(claim, "claim not made by an electromagnetism object"),
         }
     }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.tline = parsed.tline;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.tline {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::tline_equation()),
+        );
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.tline => {
+                let mut fork = self.clone();
+                fork.tline = true;
+                vec![("add-tline".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
+        }
+    }
 }
 
 /// The electromagnetism experiment: Maxwell in vacuum vs a linear medium vs the
@@ -631,7 +751,9 @@ pub fn em_vacuum() -> ExperimentReport {
          out as a theorem (1/√(ε₀μ₀) = c) that a medium can mechanically break?",
         "Maxwell's equations are encoded facts here; the vacuum wave speed and \
          charge conservation are theorems of the encoding. A linear medium is a \
-         knob-controlled effective description, not new fundamental physics.",
+         knob-controlled effective description, not new fundamental physics. \
+         Lumped KCL is the ohm-circuit IR netlist (`add-tline` is an IR fork, \
+         not a knob).",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "Vacuum wave speed is a theorem: ε₀·μ₀·c² = 1 (typed, checked).".into(),
@@ -791,5 +913,73 @@ mod tests {
         assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Holds);
         c.set("frequency_hz", KnobValue::Float(1.0e10)).unwrap();
         assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn tline_delay_is_ir_not_a_knob() {
+        let mut c = OhmCircuit::default();
+        assert!(
+            c.set("tline", KnobValue::Bool(true)).is_err(),
+            "transmission-line delay is an IR mutation, not a knob"
+        );
+        let src = render_package(&c.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            OhmCircuit::from_package(&pkg).unwrap(),
+            c,
+            "IR round-trip must preserve the lumped branch"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(OhmCircuit::tline_equation()),
+        );
+        let parsed = OhmCircuit::from_package(&mutated).unwrap();
+        assert!(parsed.tline);
+        let mut fork = c.clone();
+        fork.tline = true;
+        assert_eq!(verdict(&fork, CHARGE_CONSERVATION), VerdictKind::Fails);
+        assert_eq!(verdict(&c, CHARGE_CONSERVATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, QUASI_STATIC_VALID), VerdictKind::Holds);
+        c.set("frequency_hz", KnobValue::Float(1.0e10)).unwrap();
+        assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Fails);
+        assert_eq!(verdict(&c, CHARGE_CONSERVATION), VerdictKind::Holds);
+        let probes = OhmCircuit::default().structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-tline");
+        assert_eq!(
+            verdict(probes[0].1.as_ref(), CHARGE_CONSERVATION),
+            VerdictKind::Fails
+        );
+        assert!(fork.structural_mutations().is_empty());
+        let live = OhmCircuit::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            verdict(rebuilt.as_ref(), CHARGE_CONSERVATION),
+            VerdictKind::Holds
+        );
+        let kcl = live
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id_str() == CHARGE_CONSERVATION)
+            .unwrap();
+        assert!(
+            !kcl.domain().is_encoding_wide(),
+            "ohm-circuit KCL must name lumped nodes: {:?}",
+            kcl.domain()
+        );
+        let maxwell = MaxwellVacuum;
+        let mkcl = maxwell
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id_str() == CHARGE_CONSERVATION)
+            .unwrap();
+        assert!(
+            mkcl.domain().is_encoding_wide(),
+            "Maxwell continuity stays encoding-wide: {:?}",
+            mkcl.domain()
+        );
     }
 }
