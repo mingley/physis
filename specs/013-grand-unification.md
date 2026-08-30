@@ -39,7 +39,8 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive, `heuristic` |
 | `gut.weinberg-angle-mz-interval` | the same one-loop centre, ± the heuristic 3% band, vs the PDG hull | **empirical receipt** (interval-subset). Minimal SU(5) excluded; MSSM inconclusive (too coarse). Not GUT-scale `3/8`. |
 | `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
-| `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`) |
+| `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`), `heuristic` |
+| `gut.proton-lifetime-sk` | predicted `τ_p` compared to Super-Kamiokande as a **dataset** | **untested**. No Super-K `Dataset` is registered. The heuristic cell's Super-K sentence is not an artifact. |
 
 ## The two computed theorems
 
@@ -167,6 +168,8 @@ becomes concrete.
   (the gauge-only two-loop RGEs are integrated; thresholds close the residual).
 - A dynamical proton-decay *rate* from the dimension-6 operator coefficients
   (the verdict uses the computed `M_GUT` qualitatively, not a full lifetime).
+- A Super-Kamiokande `Dataset` artifact. `gut.proton-lifetime-sk` is the
+  honest `MissingDataset` hole; do not mint a lifetime number to fill it.
 - SO(10)/E₆ as separate theories (the embedding chain already reaches them).
 
 ## Related

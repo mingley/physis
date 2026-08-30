@@ -1866,6 +1866,7 @@ mod tests {
             .text()
             .to_string();
         assert!(class.contains("gut.weinberg-angle-mz-interval"), "{class}");
+        assert!(class.contains("gut.proton-lifetime-sk"), "{class}");
 
         let before = lab
             .exec(Command::Inspect {
@@ -1925,6 +1926,46 @@ mod tests {
             .text()
             .to_string();
         assert!(folklore.contains("class:      heuristic"), "{folklore}");
+    }
+
+    #[test]
+    fn proton_lifetime_sk_is_a_missing_dataset() {
+        let mut lab = Lab::standard();
+        let missing = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("missing-dataset".into()),
+            })
+            .text()
+            .to_string();
+        assert!(missing.contains("gut.proton-lifetime-sk"), "{missing}");
+        assert!(
+            !missing.contains("gut.weinberg-angle-mz-interval"),
+            "the GQW interval cell has a PDG dataset: {missing}"
+        );
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("class:      empirical-prediction"), "{why}");
+        assert!(why.contains("empirical:  untested"), "{why}");
+        assert!(why.contains("judgment:   empirical inconclusive"), "{why}");
+
+        lab.set_knob("su5-gut", "supersymmetric", "true").unwrap();
+        let after = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("missing-dataset".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            after.contains("gut.proton-lifetime-sk"),
+            "SUSY does not mint a Super-Kamiokande Dataset: {after}"
+        );
     }
 
     #[test]
@@ -3014,6 +3055,12 @@ mod tests {
                 .lines()
                 .any(|l| l.contains("turing-machine") && l.contains("comp.feasible-decision")),
             "unbounded TM feasible-decision is inapplicable, not a cost gap: {before}"
+        );
+        assert!(
+            before
+                .lines()
+                .any(|l| l.contains("gut.proton-lifetime-sk") && l.contains("needs dataset")),
+            "{before}"
         );
         assert!(before.contains("dec.closed-equals-exact"), "{before}");
         assert!(

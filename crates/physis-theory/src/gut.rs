@@ -15,6 +15,8 @@
 //!   the MSSM predicts ≈0.231 and holds as a heuristic. The companion
 //!   `gut.weinberg-angle-mz-interval` asks the empirical axis: the same 3%
 //!   band as an enclosure against the PDG hull. Overlap is not containment.
+//!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: no
+//!   Super-Kamiokande Dataset is registered, so it stays untested.
 //!
 //! It is also where the lab is honest about *failure*: minimal (non-SUSY)
 //! SU(5) does not unify the gauge couplings and predicts proton decay at a rate
@@ -27,7 +29,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
-use physis_data::{pdg_2024_sin2theta, EmpiricalReceipt};
+use physis_data::{pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_numeric::{Interval, Ratio};
 
@@ -54,6 +56,8 @@ pub const GUT_WEINBERG_ANGLE_MZ_INTERVAL: &str = "gut.weinberg-angle-mz-interval
 pub const GUT_COUPLING_UNIFICATION: &str = "gut.coupling-unification";
 /// The predicted proton lifetime is consistent with experiment.
 pub const GUT_PROTON_DECAY_VIABLE: &str = "gut.proton-decay-viable";
+/// Predicted proton lifetime compared to Super-Kamiokande as a dataset.
+pub const GUT_PROTON_LIFETIME_SK: &str = "gut.proton-lifetime-sk";
 
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "supersymmetric",
@@ -173,6 +177,12 @@ impl Theory for Su5Gut {
                 "The predicted proton lifetime is consistent with experiment.",
                 LayerId::Effective,
                 ClaimClass::Heuristic,
+            ),
+            Claim::new(
+                GUT_PROTON_LIFETIME_SK,
+                "The predicted proton lifetime is compared to Super-Kamiokande as a registered dataset.",
+                LayerId::Effective,
+                ClaimClass::EmpiricalPrediction,
             ),
         ]
     }
@@ -360,6 +370,25 @@ impl Theory for Su5Gut {
                     )])
                 }
             }
+            GUT_PROTON_LIFETIME_SK => {
+                // Super-K is cited as heuristic prose on gut.proton-decay-viable.
+                // It is not a physis-data Dataset. Do not mint a lifetime
+                // number to close this gap.
+                match super_kamiokande_proton_lifetime() {
+                    None => Verdict::undecidable(
+                        claim,
+                        "no Super-Kamiokande Dataset is registered",
+                    )
+                    .with_evidence([
+                        "gut.proton-decay-viable quotes Super-K as M_GUT heuristic prose, not as an artifact"
+                            .to_string(),
+                    ]),
+                    Some(_) => Verdict::undecidable(
+                        claim,
+                        "a Super-Kamiokande Dataset is registered but no lifetime enclosure is encoded",
+                    ),
+                }
+            }
             _ => Verdict::inapplicable(claim, "claim not made by the SU(5) GUT object"),
         }
     }
@@ -453,6 +482,24 @@ mod tests {
         assert_eq!(u.empirical, EmpiricalStatus::Inconclusive);
         // Heuristic folklore can still hold while the interval receipt cannot.
         assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Holds);
+    }
+
+    #[test]
+    fn proton_lifetime_sk_stays_untested_without_a_dataset() {
+        use physis_core::EmpiricalStatus;
+        let mut g = Su5Gut::default();
+        let v = verdict(&g, GUT_PROTON_LIFETIME_SK);
+        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
+        assert_eq!(v.empirical, EmpiricalStatus::Untested);
+        g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
+        let u = verdict(&g, GUT_PROTON_LIFETIME_SK);
+        assert_eq!(u.kind, VerdictKind::Undecidable);
+        assert_eq!(u.empirical, EmpiricalStatus::Untested);
+        assert_eq!(
+            verdict(&g, GUT_PROTON_DECAY_VIABLE).kind,
+            VerdictKind::Holds
+        );
     }
 
     #[test]

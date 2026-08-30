@@ -113,6 +113,15 @@ pub fn pdg_2024_sin2theta() -> Dataset {
     )
 }
 
+/// Super-Kamiokande proton lifetime limit. Not a registered artifact.
+///
+/// The GUT heuristic cell quotes Super-K as prose. That sentence is not
+/// a [`Dataset`]. Returning `None` is the catalog hole MissingDataset
+/// is for. Do not mint a lifetime number to fill it.
+pub fn super_kamiokande_proton_lifetime() -> Option<Dataset> {
+    None
+}
+
 /// Receipt of an empirical comparison. Exclusion is this object, not
 /// `prediction != known_number`.
 ///
@@ -205,5 +214,10 @@ mod tests {
         assert!(!rec.compatible);
         assert!(rec.inconclusive);
         assert_eq!(rec.status(), EmpiricalStatus::Inconclusive);
+    }
+
+    #[test]
+    fn super_kamiokande_proton_lifetime_is_not_registered() {
+        assert!(super_kamiokande_proton_lifetime().is_none());
     }
 }

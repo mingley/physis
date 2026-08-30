@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Super-K prose is not a dataset**
+  (`gut.proton-lifetime-sk`, `super_kamiokande_proton_lifetime`).
+  The empirical proton-lifetime cell stays `untested` because no
+  Super-Kamiokande Dataset is registered. The heuristic
+  `gut.proton-decay-viable` still quotes Super-K as M_GUT prose and
+  still flips with SUSY. Do not mint a lifetime number to close the
+  gap. `inspect gap missing-dataset` lists the cell. Not P4.
+  Verified: physis-data None test, GUT and lab tests, `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Decidable is not feasible**
   (`comp.feasible-decision`, `gap_for`). Circuit equivalence is
   coNP-complete; a bounded tape has a finite configuration graph this
