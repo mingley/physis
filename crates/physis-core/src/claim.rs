@@ -123,6 +123,13 @@ impl Verdict {
         self.empirical = class.default_empirical();
         self
     }
+
+    /// Overlay the empirical axis after a dataset receipt. Cannot mint a
+    /// kernel proof.
+    pub fn with_empirical(mut self, empirical: EmpiricalStatus) -> Self {
+        self.empirical = empirical;
+        self
+    }
 }
 
 /// A sentence a theory is willing to be judged on.
@@ -258,5 +265,22 @@ mod tests {
             ClaimClass::Conjecture,
         );
         assert_eq!(c.derivation, DerivationAssurance::Asserted);
+    }
+
+    #[test]
+    fn empirical_overlay_does_not_change_class_or_derivation() {
+        let c = Claim::new(
+            "gut.sin2",
+            "sin²θ_W(M_Z) lies in the PDG hull",
+            LayerId::Effective,
+            ClaimClass::EmpiricalPrediction,
+        );
+        assert_eq!(c.empirical, EmpiricalStatus::Untested);
+        let v = Verdict::undecidable(&c, "overlap is not containment")
+            .with_empirical(EmpiricalStatus::Inconclusive);
+        assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
+        assert_eq!(v.derivation, DerivationAssurance::Executed);
+        assert_eq!(v.empirical, EmpiricalStatus::Inconclusive);
+        assert_eq!(v.kind, VerdictKind::Undecidable);
     }
 }

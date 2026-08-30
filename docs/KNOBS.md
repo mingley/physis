@@ -89,7 +89,9 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 ### su5-gut
 - `supersymmetric` — MSSM matter. Flips `gut.coupling-unification`,
   `gut.proton-decay-viable`, and `gut.weinberg-angle-mz` fails → holds
-  (heuristics). The GUT-scale `3/8` theorem is independent of this knob.
+  (heuristics). `gut.weinberg-angle-mz-interval` flips fails →
+  undecidable (PDG overlap without containment). The GUT-scale `3/8`
+  theorem is independent of this knob.
 
 ## Dead knobs
 

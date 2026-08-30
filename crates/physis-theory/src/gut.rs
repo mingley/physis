@@ -12,7 +12,9 @@
 //!   unification scale (`gut.weinberg-angle`, a computed theorem). Georgi–Quinn–
 //!   Weinberg running of that boundary condition down to `M_Z` is a separate
 //!   claim (`gut.weinberg-angle-mz`): minimal SU(5) predicts ≈0.21 and **fails**;
-//!   the MSSM predicts ≈0.231 and holds as a heuristic.
+//!   the MSSM predicts ≈0.231 and holds as a heuristic. The companion
+//!   `gut.weinberg-angle-mz-interval` asks the empirical axis: the same 3%
+//!   band as an enclosure against the PDG hull. Overlap is not containment.
 //!
 //! It is also where the lab is honest about *failure*: minimal (non-SUSY)
 //! SU(5) does not unify the gauge couplings and predicts proton decay at a rate
@@ -25,11 +27,18 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
+use physis_data::{pdg_2024_sin2theta, EmpiricalReceipt};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
+use physis_numeric::{Interval, Ratio};
 
 use crate::framework::Theory;
 use crate::rge::GaugeRunning;
 use crate::standard_model::{gut_trace_charge, gut_weinberg_sin2};
+
+/// Relative mismatch the heuristic GQW cell treats as a hit. The empirical
+/// enclosure uses the same 3% as a theory band, not a two-loop remainder
+/// certificate.
+const GQW_HEURISTIC_BAND: f64 = 0.03;
 
 /// SM fermions fill complete SU(5) multiplets (`5̄ + 10` per generation).
 pub const GUT_SM_EMBEDDING: &str = "gut.sm-embedding";
@@ -39,6 +48,8 @@ pub const GUT_CHARGE_QUANTIZATION: &str = "gut.charge-quantization";
 pub const GUT_WEINBERG_ANGLE: &str = "gut.weinberg-angle";
 /// The GQW-evolved `sin²θ_W(M_Z)` matches the measured electroweak value.
 pub const GUT_WEINBERG_ANGLE_MZ: &str = "gut.weinberg-angle-mz";
+/// One-loop GQW `sin²θ_W(M_Z)` enclosed by the heuristic 3% band, vs PDG.
+pub const GUT_WEINBERG_ANGLE_MZ_INTERVAL: &str = "gut.weinberg-angle-mz-interval";
 /// The three SM gauge couplings meet at a single unification scale.
 pub const GUT_COUPLING_UNIFICATION: &str = "gut.coupling-unification";
 /// The predicted proton lifetime is consistent with experiment.
@@ -98,7 +109,8 @@ impl Theory for Su5Gut {
         "Georgi–Glashow SU(5): one gauge group containing SU(3)×SU(2)×U(1). It \
          derives charge quantization and sin²θ_W = 3/8 at unification. Running \
          that 3/8 down to M_Z with Georgi–Quinn–Weinberg, minimal SU(5) misses \
-         the measured 0.231; a supersymmetric knob revives the match."
+         the measured 0.231; a supersymmetric knob revives the heuristic match. \
+         The PDG interval comparison is a separate empirical cell."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -142,6 +154,13 @@ impl Theory for Su5Gut {
                 "Georgi–Quinn–Weinberg running of 3/8 down to M_Z matches the measured sin²θ_W.",
                 LayerId::Effective,
                 ClaimClass::Heuristic,
+            ),
+            Claim::new(
+                GUT_WEINBERG_ANGLE_MZ_INTERVAL,
+                "The one-loop GQW prediction of sin²θ_W(M_Z), enclosed by the heuristic 3% \
+                 truncation band, lies inside the PDG measurement.",
+                LayerId::Effective,
+                ClaimClass::EmpiricalPrediction,
             ),
             Claim::new(
                 GUT_COUPLING_UNIFICATION,
@@ -215,7 +234,7 @@ impl Theory for Su5Gut {
                     100.0 * mismatch,
                     run.gqw_unification_scale_gev()
                 )];
-                if mismatch < 0.03 {
+                if mismatch < GQW_HEURISTIC_BAND {
                     Verdict::holds(
                         claim,
                         "GQW running of unification lands on the measured sin²θ_W(M_Z)",
@@ -228,6 +247,49 @@ impl Theory for Su5Gut {
                     )
                     .with_evidence(evidence)
                 }
+            }
+            GUT_WEINBERG_ANGLE_MZ_INTERVAL => {
+                // Same one-loop centre as the heuristic cell, enclosed by that
+                // cell's 3% hit threshold. The band is not a remainder
+                // certificate. 3/8 at M_GUT is a different claim.
+                let run = if self.supersymmetric {
+                    GaugeRunning::mssm()
+                } else {
+                    GaugeRunning::standard_model()
+                };
+                let pred = run.predicted_sin2_mz();
+                let envelope =
+                    Interval::from_f64_approx(pred).relative_envelope(Ratio::new(3, 100));
+                let dataset = pdg_2024_sin2theta();
+                let rec = EmpiricalReceipt::compare(envelope, &dataset);
+                let evidence = [
+                    format!(
+                        "one-loop GQW centre {pred:.5} ± 3% heuristic band vs {} hull",
+                        dataset.id
+                    ),
+                    format!(
+                        "receipt excluded={} compatible={} inconclusive={} (interval-subset; 3% is not a remainder certificate)",
+                        rec.excluded, rec.compatible, rec.inconclusive
+                    ),
+                    "not the GUT-scale 3/8; that is gut.weinberg-angle".to_string(),
+                ];
+                let v = if rec.excluded {
+                    Verdict::fails(
+                        claim,
+                        "GQW truncation envelope is disjoint from the PDG hull",
+                    )
+                } else if rec.compatible {
+                    Verdict::holds(
+                        claim,
+                        "GQW truncation envelope is contained in the PDG hull",
+                    )
+                } else {
+                    Verdict::undecidable(
+                        claim,
+                        "GQW truncation envelope overlaps the PDG hull but is not contained in it",
+                    )
+                };
+                v.with_empirical(rec.status()).with_evidence(evidence)
             }
             GUT_COUPLING_UNIFICATION => {
                 // Computed at one loop: run α_1, α_2, α_3 from M_Z, fix the
@@ -363,6 +425,34 @@ mod tests {
             "MSSM hold must not quote 3/8 as the M_Z value: {:?}",
             u.evidence
         );
+    }
+
+    #[test]
+    fn gqw_interval_excludes_minimal_su5_and_is_too_coarse_for_mssm() {
+        use physis_core::EmpiricalStatus;
+        let mut g = Su5Gut::default();
+        let v = verdict(&g, GUT_WEINBERG_ANGLE_MZ_INTERVAL);
+        assert_eq!(v.kind, VerdictKind::Fails);
+        assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
+        assert_eq!(v.empirical, EmpiricalStatus::Excluded);
+        assert!(
+            v.evidence.iter().any(|e| e.contains("pdg-2024-sin2theta")),
+            "evidence: {:?}",
+            v.evidence
+        );
+        assert!(
+            !v.evidence
+                .iter()
+                .any(|e| e.contains("3/8") && e.contains("0.231")),
+            "do not mix GUT-scale 3/8 into the M_Z interval evidence: {:?}",
+            v.evidence
+        );
+        g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
+        let u = verdict(&g, GUT_WEINBERG_ANGLE_MZ_INTERVAL);
+        assert_eq!(u.kind, VerdictKind::Undecidable);
+        assert_eq!(u.empirical, EmpiricalStatus::Inconclusive);
+        // Heuristic folklore can still hold while the interval receipt cannot.
+        assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Holds);
     }
 
     #[test]

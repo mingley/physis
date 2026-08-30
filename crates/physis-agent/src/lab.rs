@@ -1596,14 +1596,26 @@ fn gap_for(
         return None;
     }
     use physis_core::ClaimClass::*;
+    use physis_core::EmpiricalStatus;
     // Open / conjectural / heuristic stay scientific gaps even when the
     // evaluator reports Undecidable (P vs NP). Information-layer
     // Undecidable is computability (halting, Rice). Other undecidable
     // evaluations are encoding gaps, not logical undecidability.
     // MissingTheorem is only for Holds: a Fails evaluation is already
     // decided by the encoding, not a missing lemma.
+    // Empirical Inconclusive is a precision gap, even when the evaluator
+    // reports Undecidable: overlap is not containment.
     match class {
         Conjecture | OpenProblem | Heuristic => Some(GapReason::ScientificOpenProblem),
+        EmpiricalPrediction | Measurement => match empirical {
+            EmpiricalStatus::Untested => Some(GapReason::MissingDataset),
+            EmpiricalStatus::Inconclusive => Some(GapReason::InsufficientPrecision),
+            EmpiricalStatus::Compatible
+            | EmpiricalStatus::Supported
+            | EmpiricalStatus::Excluded
+            | EmpiricalStatus::NotApplicable
+            | EmpiricalStatus::Tension => None,
+        },
         _ if kind == VerdictKind::Undecidable => {
             if layer == LayerId::Information {
                 Some(GapReason::LogicallyUndecidable)
@@ -1618,11 +1630,6 @@ fn gap_for(
                 && derivation != physis_core::DerivationAssurance::Asserted =>
         {
             Some(GapReason::MissingTheorem)
-        }
-        EmpiricalPrediction | Measurement
-            if empirical == physis_core::EmpiricalStatus::Untested =>
-        {
-            Some(GapReason::MissingDataset)
         }
         _ => None,
     }
@@ -1831,6 +1838,86 @@ mod tests {
                 && d.to == VerdictKind::Holds),
             "expected weinberg-angle-mz Fails→Holds, got {diffs:?}"
         );
+        assert!(
+            diffs
+                .iter()
+                .any(|d| d.claim == "gut.weinberg-angle-mz-interval"
+                    && d.from == VerdictKind::Fails
+                    && d.to == VerdictKind::Undecidable),
+            "expected weinberg-angle-mz-interval Fails→Undecidable, got {diffs:?}"
+        );
+    }
+
+    #[test]
+    fn susy_gqw_interval_is_insufficient_precision() {
+        let mut lab = Lab::standard();
+        let class = lab
+            .exec(Command::Inspect {
+                axis: Some("class".into()),
+                value: Some("empirical-prediction".into()),
+            })
+            .text()
+            .to_string();
+        assert!(class.contains("gut.weinberg-angle-mz-interval"), "{class}");
+
+        let before = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("insufficient-precision".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            before.contains("count 0"),
+            "minimal SU(5) is excluded by the PDG hull, not too coarse: {before}"
+        );
+
+        let why_min = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_min.contains("empirical:  excluded"), "{why_min}");
+        assert!(
+            why_min.contains("judgment:   empirical excluded"),
+            "{why_min}"
+        );
+
+        lab.set_knob("su5-gut", "supersymmetric", "true").unwrap();
+        let after = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("insufficient-precision".into()),
+            })
+            .text()
+            .to_string();
+        assert!(after.contains("gut.weinberg-angle-mz-interval"), "{after}");
+        assert!(after.contains("count 1"), "{after}");
+
+        let gaps = lab.exec(Command::Gaps).text().to_string();
+        assert!(
+            gaps.lines()
+                .any(|l| l.contains("gut.weinberg-angle-mz-interval")
+                    && l.contains("tighter-enclosure")),
+            "{gaps}"
+        );
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("empirical:  inconclusive"), "{why}");
+        assert!(why.contains("judgment:   empirical inconclusive"), "{why}");
+        let folklore = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle-mz".into(),
+            })
+            .text()
+            .to_string();
+        assert!(folklore.contains("class:      heuristic"), "{folklore}");
     }
 
     #[test]
@@ -2490,6 +2577,39 @@ mod tests {
             LayerId::Information,
         );
         assert_eq!(combinational_halts, Some(GapReason::MissingTheorem));
+
+        let untested = gap_for(
+            physis_core::ClaimClass::EmpiricalPrediction,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Holds,
+            physis_core::EmpiricalStatus::Untested,
+            false,
+            LayerId::Effective,
+        );
+        assert_eq!(untested, Some(GapReason::MissingDataset));
+
+        let excluded = gap_for(
+            physis_core::ClaimClass::EmpiricalPrediction,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Fails,
+            physis_core::EmpiricalStatus::Excluded,
+            false,
+            LayerId::Effective,
+        );
+        assert_eq!(
+            excluded, None,
+            "an exclusion receipt is a decision, not a gap"
+        );
+
+        let coarse = gap_for(
+            physis_core::ClaimClass::EmpiricalPrediction,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Undecidable,
+            physis_core::EmpiricalStatus::Inconclusive,
+            false,
+            LayerId::Effective,
+        );
+        assert_eq!(coarse, Some(GapReason::InsufficientPrecision));
     }
 
     #[test]

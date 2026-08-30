@@ -116,9 +116,41 @@ impl Interval {
         self.strictly_left_of(other) || other.strictly_left_of(self)
     }
 
+    /// True when every point of `other` lies in `self` (closed).
+    pub fn contains(self, other: Self) -> bool {
+        cmp_ratio(self.lo, other.lo) != std::cmp::Ordering::Greater
+            && cmp_ratio(other.hi, self.hi) != std::cmp::Ordering::Greater
+    }
+
+    /// Smallest closed interval containing both.
+    pub fn hull(self, other: Self) -> Self {
+        let lo = if cmp_ratio(self.lo, other.lo) == std::cmp::Ordering::Greater {
+            other.lo
+        } else {
+            self.lo
+        };
+        let hi = if cmp_ratio(self.hi, other.hi) == std::cmp::Ordering::Less {
+            other.hi
+        } else {
+            self.hi
+        };
+        Self { lo, hi }
+    }
+
+    /// Closed envelope `[(1 − rel) · self, (1 + rel) · self]` for a
+    /// non-negative interval. `rel` is a relative half-width (3/100 is ±3%).
+    pub fn relative_envelope(self, rel: Ratio) -> Self {
+        let one = Ratio::int(1);
+        self.scaled(sub_ratio(one, rel))
+            .hull(self.scaled(add_ratio(one, rel)))
+    }
+
+    fn scaled(self, factor: Ratio) -> Self {
+        Self::new(mul_ratio(self.lo, factor), mul_ratio(self.hi, factor))
+    }
+
     /// Conservative hull of a machine float. Prefer [`Ratio`] for threshold
     /// claims. One ulp of slack, stored as a dyadic rational interval.
-    #[allow(dead_code)]
     pub fn from_f64_approx(x: f64) -> Self {
         if !x.is_finite() {
             return Self::point(Ratio::int(0));
@@ -172,6 +204,10 @@ fn sub_ratio(a: Ratio, b: Ratio) -> Ratio {
     add_ratio(a, Ratio::new(-b.num, b.den))
 }
 
+fn mul_ratio(a: Ratio, b: Ratio) -> Ratio {
+    Ratio::new(a.num.saturating_mul(b.num), a.den.saturating_mul(b.den))
+}
+
 /// A computation that returns a checkable certificate.
 pub trait CertifiedComputation {
     /// Input.
@@ -211,5 +247,16 @@ mod tests {
         let a = Interval::new(Ratio::new(1, 5), Ratio::new(1, 4));
         let b = Interval::new(Ratio::new(22, 100), Ratio::new(24, 100));
         assert!(!a.disjoint(b));
+        assert!(a.contains(b));
+        assert!(!b.contains(a));
+    }
+
+    #[test]
+    fn a_wide_band_is_not_contained_in_a_tight_measurement() {
+        let mz = Interval::new(Ratio::new(23121, 100000), Ratio::new(23123, 100000));
+        let band = Interval::point(Ratio::new(23122, 100000)).relative_envelope(Ratio::new(3, 100));
+        assert!(band.contains(mz));
+        assert!(!mz.contains(band));
+        assert!(!band.disjoint(mz));
     }
 }

@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Overlap without containment is insufficient precision**
+  (`EmpiricalReceipt`, `gap_for`, `gut.weinberg-angle-mz-interval`).
+  Compatible now means the prediction interval is a subset of the data
+  hull, not merely overlapping. A wide theory envelope that overlaps
+  PDG `sin²θ_W(M_Z)` is `inconclusive`, not compatible. Minimal SU(5)
+  remains excluded. Turning on SUSY makes the 3% GQW band overlap
+  without fitting inside the PDG hull, so `inspect gap
+  insufficient-precision` lists the empirical cell; the heuristic GQW
+  cell can still hold. The 3% band is the existing heuristic threshold,
+  not a remainder certificate, and is not GUT-scale `3/8`. Not P4.
+  Verified: interval contains tests, three-way receipt tests, gap_for
+  unit test, GUT and lab tests, `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **Einstein composition is a catalog identity**
   (`sr.subluminal-composition`, Physlib `subluminal_composition`).
   The polynomial `(1+uv)² − (u+v)² − (1−u²)(1−v²) ≡ 0` is dual-expanded

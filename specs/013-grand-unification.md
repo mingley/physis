@@ -36,7 +36,8 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10` | `encoded-fact`, holds (verified chain) |
 | `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **computed theorem** |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **computed theorem** |
-| `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive |
+| `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive, `heuristic` |
+| `gut.weinberg-angle-mz-interval` | the same one-loop centre, ± the heuristic 3% band, vs the PDG hull | **empirical receipt** (interval-subset). Minimal SU(5) excluded; MSSM inconclusive (too coarse). Not GUT-scale `3/8`. |
 | `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
 | `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`) |
 
@@ -110,6 +111,15 @@ and predicts `α_3`.
   parts per thousand, at `M_U ≈ 2×10¹⁶ GeV`. The claim **holds** as a
   `heuristic`.
 
+`gut.weinberg-angle-mz-interval` is the empirical sibling: the same one-loop
+centre enclosed by that 3% heuristic band, compared to the registered PDG
+`sin²θ_W(M_Z)` hull under the interval-subset rule. Compatible means the
+prediction lies inside the data, not that the intervals merely overlap.
+Minimal SU(5) is **excluded**. The MSSM band overlaps the PDG hull but is
+far wider, so the cell is **undecidable** / `inconclusive` (`InsufficientPrecision`)
+while the heuristic cell still holds. The 3% is not a two-loop remainder
+certificate, and it is not the GUT-scale `3/8`.
+
 `set su5-gut supersymmetric true` flips this cell `fails → holds` with the
 other two unification claims.
 
@@ -135,9 +145,11 @@ physis set su5-gut supersymmetric true
 flips `gut.coupling-unification`, `gut.proton-decay-viable`, and
 `gut.weinberg-angle-mz` `fails → holds` (as `heuristic`s), because switching the
 beta coefficients from SM to MSSM brings the computed `α_3(M_Z)` and
-`sin²θ_W(M_Z)` into agreement and raises `M_GUT`. Minimal SU(5) is falsified;
+`sin²θ_W(M_Z)` into agreement and raises `M_GUT`. The interval cell
+`gut.weinberg-angle-mz-interval` flips `fails → undecidable`: the 3% band now
+overlaps the PDG hull but is not contained in it. Minimal SU(5) is falsified;
 SUSY SU(5) survives current bounds but requires superpartners that have not been
-seen.
+seen, and its GQW envelope is too coarse for an empirical support receipt.
 
 ## Relation to the string-critique
 

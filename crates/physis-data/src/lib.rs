@@ -4,8 +4,9 @@
 #![warn(missing_docs)]
 
 use physis_core::artifact::ArtifactId;
+use physis_core::EmpiricalStatus;
 use physis_numeric::{Interval, Ratio};
-use physis_provenance::SourceRecord;
+use physis_provenance::{Citation, SourceLocator, SourceRecord};
 use serde::{Deserialize, Serialize};
 
 /// A registered dataset.
@@ -46,7 +47,6 @@ impl Dataset {
         buf.push_str(&observable);
         buf.push('\n');
         buf.push_str(&unit);
-        buf.push('\n');
         buf.push_str(&format!("{:?}\n{:?}\n", statistical, systematic));
         buf.push_str(&source.source_hash.to_hex());
         Self {
@@ -79,8 +79,50 @@ impl Dataset {
     }
 }
 
+/// PDG 2024 MS-bar `sin²θ_W(M_Z)` as a versioned dataset artifact.
+///
+/// The hull is `0.23122 ± 0.00001` written as rationals. This is the
+/// *low-energy* mixing angle, not the GUT-scale `3/8`.
+pub fn pdg_2024_sin2theta() -> Dataset {
+    let source = SourceRecord::new(
+        Citation {
+            work: "PDG Review of Particle Physics".into(),
+            edition: "2024".into(),
+        },
+        "2024",
+        SourceLocator {
+            page: None,
+            section: Some("Electroweak".into()),
+            equation: None,
+            figure: None,
+            table: Some("sin2thetaW".into()),
+            dataset_range: None,
+            experiment: None,
+        },
+        ArtifactId::of(b"pdg-2024-sin2"),
+        None,
+    )
+    .expect("PDG locator names a section and table");
+    Dataset::new(
+        "pdg-2024-sin2theta",
+        "sin^2 theta_W(M_Z)",
+        "1",
+        Interval::new(Ratio::new(23121, 100000), Ratio::new(23123, 100000)),
+        None,
+        source,
+    )
+}
+
 /// Receipt of an empirical comparison. Exclusion is this object, not
 /// `prediction != known_number`.
+///
+/// Decision rule (`interval-subset`):
+/// - `excluded`: prediction disjoint from the data hull
+/// - `compatible`: prediction ⊆ data hull
+/// - `inconclusive`: they overlap, but the prediction is not contained
+///
+/// A wide theory envelope that merely overlaps a tight measurement is
+/// therefore not compatible. Overlap is not agreement.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EmpiricalReceipt {
     /// Prediction enclosure hash.
@@ -91,80 +133,77 @@ pub struct EmpiricalReceipt {
     pub analysis_hash: ArtifactId,
     /// Whether the prediction interval is disjoint from the data hull.
     pub excluded: bool,
-    /// Whether they overlap.
+    /// Whether every predicted value lies in the data hull.
     pub compatible: bool,
+    /// Overlap without containment: the prediction is too coarse to decide.
+    pub inconclusive: bool,
 }
 
 impl EmpiricalReceipt {
     /// Compare a theory prediction interval to a dataset under the
-    /// interval-disjoint decision rule.
+    /// interval-subset decision rule.
     pub fn compare(prediction: Interval, dataset: &Dataset) -> Self {
         let data = dataset.combined();
         let excluded = prediction.disjoint(data);
-        let compatible = !excluded;
+        let compatible = data.contains(prediction);
+        let inconclusive = !excluded && !compatible;
         let mut buf = String::new();
-        buf.push_str(&format!("{prediction:?}\n{data:?}\ninterval-disjoint"));
+        buf.push_str(&format!("{prediction:?}\n{data:?}\ninterval-subset"));
         Self {
             prediction_hash: ArtifactId::of(format!("{prediction:?}").as_bytes()),
             dataset_hash: dataset.artifact_hash,
             analysis_hash: ArtifactId::of(buf.as_bytes()),
             excluded,
             compatible,
+            inconclusive,
+        }
+    }
+
+    /// Project the receipt onto the empirical axis.
+    pub fn status(&self) -> EmpiricalStatus {
+        if self.excluded {
+            EmpiricalStatus::Excluded
+        } else if self.compatible {
+            EmpiricalStatus::Compatible
+        } else {
+            EmpiricalStatus::Inconclusive
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use physis_core::artifact::ArtifactId;
     use physis_numeric::{Interval, Ratio};
-    use physis_provenance::{Citation, SourceLocator, SourceRecord};
 
     use super::*;
-
-    fn pdg_sin2() -> Dataset {
-        let source = SourceRecord::new(
-            Citation {
-                work: "PDG Review of Particle Physics".into(),
-                edition: "2024".into(),
-            },
-            "2024",
-            SourceLocator {
-                page: None,
-                section: Some("Electroweak".into()),
-                equation: None,
-                figure: None,
-                table: Some("sin2thetaW".into()),
-                dataset_range: None,
-                experiment: None,
-            },
-            ArtifactId::of(b"pdg-2024-sin2"),
-            None,
-        )
-        .unwrap();
-        Dataset::new(
-            "pdg-2024-sin2theta",
-            "sin^2 theta_W(M_Z)",
-            "1",
-            Interval::new(Ratio::new(23121, 100000), Ratio::new(23123, 100000)),
-            None,
-            source,
-        )
-    }
 
     #[test]
     fn su5_three_eighths_is_excluded_by_the_mz_measurement() {
         let pred = Interval::point(Ratio::new(3, 8));
-        let rec = EmpiricalReceipt::compare(pred, &pdg_sin2());
+        let rec = EmpiricalReceipt::compare(pred, &pdg_2024_sin2theta());
         assert!(rec.excluded);
         assert!(!rec.compatible);
+        assert!(!rec.inconclusive);
+        assert_eq!(rec.status(), EmpiricalStatus::Excluded);
     }
 
     #[test]
     fn a_prediction_on_the_measurement_is_compatible() {
         let pred = Interval::point(Ratio::new(23122, 100000));
-        let rec = EmpiricalReceipt::compare(pred, &pdg_sin2());
+        let rec = EmpiricalReceipt::compare(pred, &pdg_2024_sin2theta());
         assert!(!rec.excluded);
         assert!(rec.compatible);
+        assert!(!rec.inconclusive);
+        assert_eq!(rec.status(), EmpiricalStatus::Compatible);
+    }
+
+    #[test]
+    fn a_wide_envelope_that_overlaps_is_inconclusive_not_compatible() {
+        let pred = Interval::point(Ratio::new(23122, 100000)).relative_envelope(Ratio::new(3, 100));
+        let rec = EmpiricalReceipt::compare(pred, &pdg_2024_sin2theta());
+        assert!(!rec.excluded);
+        assert!(!rec.compatible);
+        assert!(rec.inconclusive);
+        assert_eq!(rec.status(), EmpiricalStatus::Inconclusive);
     }
 }

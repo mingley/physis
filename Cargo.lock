@@ -278,7 +278,9 @@ name = "physis-theory"
 version = "0.1.0"
 dependencies = [
  "physis-core",
+ "physis-data",
  "physis-model",
+ "physis-numeric",
  "serde",
  "serde_json",
 ]
