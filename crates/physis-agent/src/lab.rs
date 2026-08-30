@@ -1901,6 +1901,11 @@ mod tests {
         assert!(sm_anom.contains("P3N"), "{sm_anom}");
         assert!(!sm_anom.contains("P3F"), "{sm_anom}");
         assert!(sm_anom.contains("kernel proof: none"), "{sm_anom}");
+        assert!(sm_anom.contains("one SM generation"), "{sm_anom}");
+        assert!(
+            !sm_anom.contains("not yet a machine-checked regime"),
+            "SM anomalies must not be encoding-wide: {sm_anom}"
+        );
         let gs = why_theory_block(&why, "type-iib");
         assert!(gs.contains("derivation: executed"), "{gs}");
         assert!(gs.contains("judgment:   logical undetermined"), "{gs}");
@@ -1919,6 +1924,11 @@ mod tests {
         assert!(sm_y.contains("P3N"), "{sm_y}");
         assert!(!sm_y.contains("P3F"), "{sm_y}");
         assert!(sm_y.contains("kernel proof: none"), "{sm_y}");
+        assert!(sm_y.contains("one SM generation"), "{sm_y}");
+        assert!(
+            !sm_y.contains("not yet a machine-checked regime"),
+            "hypercharge solve must not be encoding-wide: {sm_y}"
+        );
         let why_q = lab
             .exec(Command::Why {
                 claim: "empirical.charge-quantization".into(),
@@ -1933,6 +1943,11 @@ mod tests {
         assert!(sm_q.contains("P3N"), "{sm_q}");
         assert!(!sm_q.contains("P3F"), "{sm_q}");
         assert!(sm_q.contains("kernel proof: none"), "{sm_q}");
+        assert!(sm_q.contains("hydrogen atom"), "{sm_q}");
+        assert!(
+            !sm_q.contains("not yet a machine-checked regime"),
+            "hydrogen neutrality must not be encoding-wide: {sm_q}"
+        );
         let why_s2 = lab
             .exec(Command::Why {
                 claim: "gut.weinberg-angle".into(),
@@ -1947,6 +1962,11 @@ mod tests {
         assert!(gut_s2.contains("P3N"), "{gut_s2}");
         assert!(!gut_s2.contains("P3F"), "{gut_s2}");
         assert!(gut_s2.contains("kernel proof: none"), "{gut_s2}");
+        assert!(gut_s2.contains("unification-scale"), "{gut_s2}");
+        assert!(
+            !gut_s2.contains("not yet a machine-checked regime"),
+            "GUT-scale 3/8 must not be encoding-wide: {gut_s2}"
+        );
         let why_trq = lab
             .exec(Command::Why {
                 claim: "gut.charge-quantization".into(),
@@ -1963,6 +1983,10 @@ mod tests {
             "Tr Q is the grav anomaly, not a second P3N: {why_trq}"
         );
         assert!(!why_trq.contains("numeric certified"), "{why_trq}");
+        assert!(
+            why_trq.contains("not yet a machine-checked regime"),
+            "Tr Q stays encoding-wide: {why_trq}"
+        );
         let why_mz = lab
             .exec(Command::Why {
                 claim: "gut.weinberg-angle-mz".into(),
@@ -1973,6 +1997,11 @@ mod tests {
         assert!(
             !why_mz.contains("derivation: certified-numeric"),
             "{why_mz}"
+        );
+        assert!(why_mz.contains("M_Z"), "{why_mz}");
+        assert!(
+            !why_mz.contains("not yet a machine-checked regime"),
+            "GQW at M_Z must name the pole, not encoding-wide: {why_mz}"
         );
         let gut_run = lab
             .exec(Command::Run {
@@ -2188,6 +2217,11 @@ mod tests {
             "{gb}"
         );
         assert!(gb.contains("Tr(T3^2)/Tr(Q^2)"), "{gb}");
+        assert!(gb.contains("regimes:"), "{gb}");
+        assert!(
+            !gb.contains("not yet a machine-checked regime"),
+            "GUT-scale 3/8 must name unification-scale, not encoding-wide: {gb}"
+        );
         assert!(!gb.contains("pdg-2024-sin2theta"), "{gb}");
 
         let mz = lab
@@ -2202,6 +2236,23 @@ mod tests {
             "{mzb}"
         );
         assert!(mzb.contains("M_Z"), "{mzb}");
+        assert!(mzb.contains("regimes:"), "{mzb}");
+        assert!(
+            !mzb.contains("not yet a machine-checked regime"),
+            "PDG interval cell must name M_Z, not encoding-wide: {mzb}"
+        );
+
+        let sk = lab
+            .exec(Command::Why {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        let skb = why_theory_block(&sk, "su5-gut");
+        assert!(
+            skb.contains("not yet a machine-checked regime"),
+            "Super-K stays encoding-wide until it is a Dataset: {skb}"
+        );
 
         let q = lab
             .exec(Command::Why {
@@ -2213,6 +2264,11 @@ mod tests {
         assert!(
             qb.contains("  definitions:") && qb.contains("Q = T3 + Y"),
             "{qb}"
+        );
+        assert!(qb.contains("hydrogen atom"), "{qb}");
+        assert!(
+            !qb.contains("not yet a machine-checked regime"),
+            "hydrogen neutrality must not be encoding-wide: {qb}"
         );
 
         let interval = lab

@@ -82,7 +82,9 @@ rather than derive. `inspect trust P3N` lists exact-`Ratio` cancellations
 and the exact hypercharge solve (Standard Model chiral anomalies and
 `sm.hypercharge-derivation`) and hydrogen neutrality from `Q = T₃ + Y`
 (`empirical.charge-quantization`), plus GUT-scale `sin²θ_W = 3/8`
-(`gut.weinberg-angle`). It does not list GUT `Tr Q` (`ΣY` is already
+(`gut.weinberg-angle`). Those P3N cells and the GQW / PDG mixing-angle
+siblings name a `DomainOfValidity`; Super-K and GUT `Tr Q` stay
+encoding-wide. It does not list GUT `Tr Q` (`ΣY` is already
 the gravitational anomaly), Georgi–Quinn–Weinberg running at `M_Z`, the
 3% band, or a kernel proof. `inspect trust P2` lists Hodge Laplacian-versus-`b₁` agreement
 (`dec.hodge-harmonic`), not Euler–Poincaré rank-cancellation, not Poincaré,

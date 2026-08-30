@@ -1,6 +1,7 @@
 //! Standard Model as an effective quantum field theory: empirically sharp,
 //! UV-incomplete, many parameters.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -479,7 +480,13 @@ impl Theory for StandardModel {
                     "[U(1)]^3".into(),
                 ],
                 ..ClaimCommitments::unspecified()
-            }),
+            })
+            .with_domain(DomainOfValidity::new(
+                vec!["one SM generation".into()],
+                vec!["chiral fermions of SU(3)×SU(2)×U(1)".into()],
+                "Exact Ratio cancellation of the four chiral anomaly sums. \
+                 Not a kernel proof. A different generation content is a new claim.",
+            )),
             claims::c(
                 SM_HYPERCHARGE_DERIVED,
                 "Weak hypercharges are fixed by anomaly cancellation up to normalization.",
@@ -491,7 +498,13 @@ impl Theory for StandardModel {
                 conventions: vec!["Y_Q = 1/6".into()],
                 definitions: vec!["anomaly cancellation in Q".into()],
                 ..ClaimCommitments::unspecified()
-            }),
+            })
+            .with_domain(DomainOfValidity::new(
+                vec!["one SM generation".into()],
+                vec!["anomaly cancellation over Q with Y_Q = 1/6".into()],
+                "Exact Ratio solve of the hypercharge quadratic. Not a kernel \
+                 proof. Changing the Y_Q convention is a new identity.",
+            )),
             claims::c(
                 claims::THREE_GENERATIONS,
                 "Three generations of fermions.",
@@ -514,7 +527,13 @@ impl Theory for StandardModel {
                 units: vec!["1".into()],
                 definitions: vec!["Q = T3 + Y".into()],
                 ..ClaimCommitments::unspecified()
-            }),
+            })
+            .with_domain(DomainOfValidity::new(
+                vec!["hydrogen atom".into()],
+                vec!["Q = T3 + Y on SM representations".into()],
+                "Hydrogen neutrality is an exact Ratio identity of Q = T₃ + Y. \
+                 Not a kernel proof. A different atom or charge operator is a new claim.",
+            )),
             claims::c(
                 claims::GRAVITY,
                 "Gravity is part of the Standard Model.",
@@ -859,6 +878,57 @@ mod tests {
         assert_eq!(v.numeric_hi.as_deref(), Some("-1/2"));
         assert!(v.evidence.iter().any(|e| e.contains("Y_L = -1/2")));
         assert!(v.evidence.iter().any(|e| e.contains("-2/3")));
+    }
+
+    #[test]
+    fn p3n_cells_name_a_domain() {
+        let t = StandardModel::default();
+        let claim = |id: &str| t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let anom = claim(claims::ANOMALY_CANCELLATION);
+        assert!(
+            !anom.domain.is_encoding_wide(),
+            "anomaly cancellation must name one generation: {:?}",
+            anom.domain
+        );
+        assert!(
+            anom.domain
+                .regimes
+                .iter()
+                .any(|r| r.contains("one SM generation")),
+            "anomaly regime: {:?}",
+            anom.domain
+        );
+        let y = claim(SM_HYPERCHARGE_DERIVED);
+        assert!(
+            !y.domain.is_encoding_wide(),
+            "hypercharge solve must name one generation: {:?}",
+            y.domain
+        );
+        assert!(
+            y.domain
+                .regimes
+                .iter()
+                .any(|r| r.contains("one SM generation")),
+            "hypercharge regime: {:?}",
+            y.domain
+        );
+        let h = claim(claims::CHARGE_QUANTIZATION);
+        assert!(
+            !h.domain.is_encoding_wide(),
+            "hydrogen neutrality must name hydrogen: {:?}",
+            h.domain
+        );
+        assert!(
+            h.domain.regimes.iter().any(|r| r.contains("hydrogen atom")),
+            "hydrogen regime: {:?}",
+            h.domain
+        );
+        let gens = claim(claims::THREE_GENERATIONS);
+        assert!(
+            gens.domain.is_encoding_wide(),
+            "phenomenological generation count stays encoding-wide: {:?}",
+            gens.domain
+        );
     }
 
     #[test]

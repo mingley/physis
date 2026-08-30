@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **GUT mixing-angle and SM P3N cells name a DomainOfValidity**
+  Encoding-wide with a filled boundary or dataset is a hidden regime.
+  `gut.weinberg-angle` is unification-scale, not `sin²θ_W(M_Z)`. GQW
+  and the PDG interval name `M_Z`. SM anomalies, hypercharge, and
+  hydrogen name one generation / hydrogen. Super-K proton lifetime
+  stays encoding-wide until Super-K is a Dataset. Verified: those
+  cells are not encoding-wide; `why` names the regime; Poincaré, Tr Q,
+  and Super-K stay encoding-wide. Catalog d² hash unchanged. `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Catalog claims name their axioms as AssumptionSet**
   (`IdentitySpec::assumption_set`, `Claim::with_assumptions`). Hidden
   coboundary / Minkowski / Einstein-addition hypotheses are a new

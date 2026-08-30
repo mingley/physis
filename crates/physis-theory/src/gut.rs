@@ -25,6 +25,7 @@
 //! knob revives unification as a `heuristic`, at the price of unobserved
 //! superpartners.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -159,7 +160,13 @@ impl Theory for Su5Gut {
                 boundary: vec!["unification-scale".into()],
                 definitions: vec!["sin^2 theta_W = Tr(T3^2)/Tr(Q^2)".into()],
                 ..ClaimCommitments::unspecified()
-            }),
+            })
+            .with_domain(DomainOfValidity::new(
+                vec!["unification-scale".into()],
+                vec!["SU(5) embedding; exact Tr(T3^2)/Tr(Q^2)".into()],
+                "This is the GUT-scale exact 3/8, not sin²θ_W(M_Z). Using it \
+                 at the Z pole is a new claim, not a silent extrapolation.",
+            )),
             Claim::new(
                 GUT_WEINBERG_ANGLE_MZ,
                 "Georgi–Quinn–Weinberg running of 3/8 down to M_Z matches the measured sin²θ_W.",
@@ -169,7 +176,13 @@ impl Theory for Su5Gut {
             .with_commitments(ClaimCommitments {
                 boundary: vec!["M_Z".into()],
                 ..ClaimCommitments::unspecified()
-            }),
+            })
+            .with_domain(DomainOfValidity::new(
+                vec!["M_Z".into()],
+                vec!["one-loop Georgi–Quinn–Weinberg running".into()],
+                "Heuristic running of the unification-scale 3/8. Not P3N, not \
+                 the exact GUT-scale identity, not a kernel proof.",
+            )),
             Claim::new(
                 GUT_WEINBERG_ANGLE_MZ_INTERVAL,
                 "The one-loop GQW prediction of sin²θ_W(M_Z), enclosed by the heuristic 3% \
@@ -182,7 +195,15 @@ impl Theory for Su5Gut {
                 boundary: vec!["M_Z".into()],
                 datasets: vec!["pdg-2024-sin2theta".into()],
                 ..ClaimCommitments::unspecified()
-            }),
+            })
+            .with_domain(DomainOfValidity::new(
+                vec!["M_Z".into()],
+                vec!["one-loop GQW with a 3% truncation band".into()],
+                "Empirical comparison to pdg-2024-sin2theta. Compatible is \
+                 prediction ⊆ data. Overlap without containment is \
+                 insufficient-precision, not agreement. Using the GUT-scale \
+                 3/8 here is a new claim.",
+            )),
             Claim::new(
                 GUT_COUPLING_UNIFICATION,
                 "The three SM gauge couplings meet at a single scale.",
@@ -456,6 +477,59 @@ mod tests {
                 .any(|e| e.contains("0.231") && e.contains("3/8")),
             "do not mix the M_Z measurement into the 3/8 hold evidence: {:?}",
             v.evidence
+        );
+    }
+
+    #[test]
+    fn weinberg_cells_name_a_domain() {
+        let g = Su5Gut::default();
+        let claim = |id: &str| g.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        for id in [
+            GUT_WEINBERG_ANGLE,
+            GUT_WEINBERG_ANGLE_MZ,
+            GUT_WEINBERG_ANGLE_MZ_INTERVAL,
+        ] {
+            let c = claim(id);
+            assert!(
+                !c.domain.is_encoding_wide(),
+                "{id} must name a regime, not encoding-wide: {:?}",
+                c.domain
+            );
+        }
+        let scale = claim(GUT_WEINBERG_ANGLE);
+        assert!(
+            scale
+                .domain
+                .regimes
+                .iter()
+                .any(|r| r.contains("unification-scale")),
+            "GUT-scale 3/8 regime: {:?}",
+            scale.domain
+        );
+        let mz = claim(GUT_WEINBERG_ANGLE_MZ);
+        assert!(
+            mz.domain.regimes.iter().any(|r| r == "M_Z"),
+            "GQW regime: {:?}",
+            mz.domain
+        );
+        let interval = claim(GUT_WEINBERG_ANGLE_MZ_INTERVAL);
+        assert!(
+            interval.domain.regimes.iter().any(|r| r == "M_Z"),
+            "PDG interval regime: {:?}",
+            interval.domain
+        );
+        // Super-K is not a Dataset; inventing a lifetime number would be a lie.
+        let sk = claim(GUT_PROTON_LIFETIME_SK);
+        assert!(
+            sk.domain.is_encoding_wide(),
+            "Super-K prose is not a named regime: {:?}",
+            sk.domain
+        );
+        let trq = claim(GUT_CHARGE_QUANTIZATION);
+        assert!(
+            trq.domain.is_encoding_wide(),
+            "Tr Q is executed ΣY, not a named mixing-angle regime: {:?}",
+            trq.domain
         );
     }
 

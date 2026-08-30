@@ -34,9 +34,12 @@ Nothing gains authority merely because an agent wrote code that returns
   `AssumptionSet`; Lean kernel axioms stay on the receipt. Physlib forall
   with only `encoding-is-the-model` is not those identities.
   Poincaré is not catalogued. `field.second-order-accurate`
-  names `|k a| < 1` as its domain. GUT-scale `3/8` commits to the
-  unification-scale boundary; the PDG cell commits to
-  `pdg-2024-sin2theta`. Lean compiler versions live on the receipt, not
+  names `|k a| < 1` as its domain. GUT-scale `3/8`, GQW at `M_Z`, and
+  the PDG interval name unification-scale / `M_Z` as
+  `DomainOfValidity` (not the encoding-wide placeholder). SM anomalies,
+  hypercharge solve, and hydrogen neutrality name one generation /
+  hydrogen. Super-K proton lifetime stays encoding-wide until Super-K
+  is a Dataset. Lean compiler versions live on the receipt, not
   the sentence.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set
@@ -138,9 +141,11 @@ identity; a slug-only review line is not P3S.
   (`d²`, interval, Einstein composition, mass shell). The mass-shell
   polynomial is the interval identity on 4-momentum, not a fifth
   algebraic idea. That is not Mathlib.
-- Most non-catalog claims still use the encoding-wide domain placeholder
+- Most other claims still use the encoding-wide domain placeholder
   and only `encoding-is-the-model`. Catalog identities name regimes and
   catalog axioms. `field.second-order-accurate` names `|k a| < 1`.
+  GUT mixing-angle and SM P3N cells name unification-scale / `M_Z` /
+  one generation / hydrogen. Super-K and GUT `Tr Q` stay encoding-wide.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op.
@@ -154,7 +159,7 @@ identity; a slug-only review line is not P3S.
 | B2. Einstein composition | Same backends; `|w|<1` over ℝ remains the evaluator |
 | B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
-| C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; GUT-scale `3/8` is `Ratio` / P3N, not Lean. GUT `Tr Q` is `ΣY` already certified, not a second P3N. GQW at `M_Z` is not P3N |
+| C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; GUT-scale `3/8` is `Ratio` / P3N, not Lean. Those cells name a `DomainOfValidity`. GUT `Tr Q` is `ΣY` already certified, not a second P3N. GQW at `M_Z` is not P3N |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |
 
