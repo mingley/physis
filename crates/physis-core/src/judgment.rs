@@ -188,4 +188,286 @@ impl TrustTier {
             TrustTier::P4 => "P4",
         }
     }
+
+    /// Every named tier, low to high. A profile may hold several at once.
+    pub const ALL: [TrustTier; 7] = [
+        TrustTier::P0,
+        TrustTier::P1,
+        TrustTier::P2,
+        TrustTier::P3N,
+        TrustTier::P3F,
+        TrustTier::P3S,
+        TrustTier::P4,
+    ];
+}
+
+/// Inputs from which a [`TrustProfile`] is *derived*. Setting a tier enum
+/// is not an input; a dual-checked receipt is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TrustEvidence {
+    /// Evaluator / numeric assurance on the claim.
+    pub derivation: crate::assurance::DerivationAssurance,
+    /// Encoding-review tag (never Canonical from an agent).
+    pub semantic: crate::assurance::SemanticAssurance,
+    /// True only when `physis_verifier::verify` minted a receipt.
+    pub dual_checked_receipt: bool,
+    /// True when a numeric certificate (interval / ratio) backs a threshold.
+    pub numeric_certificate: bool,
+}
+
+/// Derived trust. Fields are private: P3F cannot be manufactured by a
+/// struct literal. There is no [`serde::Deserialize`] impl.
+///
+/// ```compile_fail
+/// use physis_core::judgment::TrustProfile;
+/// let _ = TrustProfile {
+///     p0: false,
+///     p1: false,
+///     p2: false,
+///     p3n: false,
+///     p3f: true,
+///     p3s: false,
+///     p4: false,
+/// };
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct TrustProfile {
+    p0: bool,
+    p1: bool,
+    p2: bool,
+    p3n: bool,
+    p3f: bool,
+    p3s: bool,
+    p4: bool,
+}
+
+impl TrustProfile {
+    /// Compute earned tiers from evidence. P4 is not assigned from a
+    /// single in-process remint (that is not independent reproduction).
+    pub fn derive(ev: TrustEvidence) -> Self {
+        use crate::assurance::{DerivationAssurance, SemanticAssurance};
+        let mut s = Self {
+            p0: false,
+            p1: false,
+            p2: false,
+            p3n: false,
+            p3f: false,
+            p3s: false,
+            p4: false,
+        };
+        match ev.derivation {
+            DerivationAssurance::Asserted => s.p0 = true,
+            DerivationAssurance::Executed => s.p1 = true,
+            DerivationAssurance::CrossChecked => {
+                s.p1 = true;
+                s.p2 = true;
+            }
+            DerivationAssurance::CertifiedNumeric => {
+                s.p1 = true;
+                s.p3n = true;
+            }
+        }
+        if ev.numeric_certificate {
+            s.p3n = true;
+        }
+        if ev.dual_checked_receipt {
+            s.p3f = true;
+            s.p1 = true;
+            s.p0 = false;
+        }
+        match ev.semantic {
+            SemanticAssurance::Unreviewed | SemanticAssurance::SourceAnchored => {}
+            SemanticAssurance::IndependentlyEncoded
+            | SemanticAssurance::AdversariallyReviewed
+            | SemanticAssurance::Canonical => {
+                s.p2 = true;
+                s.p3s = true;
+            }
+        }
+        s
+    }
+
+    /// Whether this profile earned `tier`.
+    pub const fn has(self, tier: TrustTier) -> bool {
+        match tier {
+            TrustTier::P0 => self.p0,
+            TrustTier::P1 => self.p1,
+            TrustTier::P2 => self.p2,
+            TrustTier::P3N => self.p3n,
+            TrustTier::P3F => self.p3f,
+            TrustTier::P3S => self.p3s,
+            TrustTier::P4 => self.p4,
+        }
+    }
+
+    /// Compact `P1+P3F` display. Empty is `none`.
+    pub fn display(self) -> String {
+        let parts: Vec<&str> = TrustTier::ALL
+            .iter()
+            .copied()
+            .filter(|t| self.has(*t))
+            .map(TrustTier::as_str)
+            .collect();
+        if parts.is_empty() {
+            "none".into()
+        } else {
+            parts.join("+")
+        }
+    }
+
+    /// Kernel proof of an unreviewed encoding is not physics.
+    pub const fn unreviewed_proof_is_dangerous(
+        self,
+        semantic: crate::assurance::SemanticAssurance,
+    ) -> bool {
+        self.p3f && matches!(semantic, crate::assurance::SemanticAssurance::Unreviewed)
+    }
+}
+
+impl Judgment {
+    /// Project a lab evaluation into a typed judgment. Evaluator `holds`
+    /// is not [`LogicalJudgment::Proved`].
+    pub fn from_lab(
+        class: crate::assurance::ClaimClass,
+        kind: crate::claim::VerdictKind,
+        empirical: crate::assurance::EmpiricalStatus,
+        dual_checked: bool,
+    ) -> Self {
+        use crate::assurance::{ClaimClass, EmpiricalStatus};
+        use crate::claim::VerdictKind;
+        match class {
+            ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological => {
+                let j = if dual_checked && kind == VerdictKind::Holds {
+                    LogicalJudgment::Proved
+                } else if kind == VerdictKind::Fails {
+                    LogicalJudgment::Disproved
+                } else {
+                    LogicalJudgment::Undetermined
+                };
+                Judgment::Logical(j)
+            }
+            ClaimClass::Heuristic => {
+                let j = if kind == VerdictKind::Fails {
+                    HeuristicJudgment::Failed
+                } else {
+                    HeuristicJudgment::Suggestive
+                };
+                Judgment::Heuristic(j)
+            }
+            ClaimClass::EmpiricalPrediction | ClaimClass::Measurement => {
+                let j = match empirical {
+                    EmpiricalStatus::Compatible | EmpiricalStatus::Supported => {
+                        EmpiricalJudgment::Compatible
+                    }
+                    EmpiricalStatus::Excluded => EmpiricalJudgment::Excluded,
+                    _ => EmpiricalJudgment::Inconclusive,
+                };
+                Judgment::Empirical(j)
+            }
+            ClaimClass::Conjecture | ClaimClass::OpenProblem => {
+                Judgment::Logical(LogicalJudgment::Undetermined)
+            }
+        }
+    }
+
+    /// Stable two-token label (`logical proved`).
+    pub fn label(&self) -> String {
+        match self {
+            Judgment::Logical(j) => format!(
+                "logical {}",
+                match j {
+                    LogicalJudgment::Proved => "proved",
+                    LogicalJudgment::Disproved => "disproved",
+                    LogicalJudgment::Undetermined => "undetermined",
+                }
+            ),
+            Judgment::Numeric(NumericJudgment::Certified { .. }) => "numeric certified".into(),
+            Judgment::Numeric(NumericJudgment::Counterexample { .. }) => {
+                "numeric counterexample".into()
+            }
+            Judgment::Numeric(NumericJudgment::Unresolved) => "numeric unresolved".into(),
+            Judgment::Empirical(j) => format!(
+                "empirical {}",
+                match j {
+                    EmpiricalJudgment::Compatible => "compatible",
+                    EmpiricalJudgment::Excluded => "excluded",
+                    EmpiricalJudgment::Inconclusive => "inconclusive",
+                }
+            ),
+            Judgment::Statistical(j) => format!(
+                "statistical {}",
+                match j {
+                    StatisticalJudgment::Unquantified => "unquantified",
+                    StatisticalJudgment::Computed => "computed",
+                }
+            ),
+            Judgment::Heuristic(j) => format!(
+                "heuristic {}",
+                match j {
+                    HeuristicJudgment::Suggestive => "suggestive",
+                    HeuristicJudgment::Failed => "failed",
+                }
+            ),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::assurance::{DerivationAssurance, SemanticAssurance};
+
+    #[test]
+    fn p3f_requires_a_receipt() {
+        let no = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::Executed,
+            semantic: SemanticAssurance::Unreviewed,
+            dual_checked_receipt: false,
+            numeric_certificate: false,
+        });
+        assert!(no.has(TrustTier::P1));
+        assert!(!no.has(TrustTier::P3F));
+        assert!(!no.has(TrustTier::P4));
+
+        let yes = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::Executed,
+            semantic: SemanticAssurance::Unreviewed,
+            dual_checked_receipt: true,
+            numeric_certificate: false,
+        });
+        assert!(yes.has(TrustTier::P3F));
+        assert!(yes.unreviewed_proof_is_dangerous(SemanticAssurance::Unreviewed));
+        assert!(!yes.has(TrustTier::P4));
+    }
+
+    #[test]
+    fn review_earns_p3s_not_p3f() {
+        let p = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::Executed,
+            semantic: SemanticAssurance::AdversariallyReviewed,
+            dual_checked_receipt: false,
+            numeric_certificate: false,
+        });
+        assert!(p.has(TrustTier::P3S));
+        assert!(!p.has(TrustTier::P3F));
+    }
+
+    #[test]
+    fn asserted_is_p0_not_proved() {
+        let p = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::Asserted,
+            semantic: SemanticAssurance::Unreviewed,
+            dual_checked_receipt: false,
+            numeric_certificate: false,
+        });
+        assert!(p.has(TrustTier::P0));
+        assert!(!p.has(TrustTier::P1));
+        let j = Judgment::from_lab(
+            crate::assurance::ClaimClass::Conjecture,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::Untested,
+            false,
+        );
+        assert_eq!(j.label(), "logical undetermined");
+    }
 }

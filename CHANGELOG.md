@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Derived trust profiles and axiom closure**
+  (`physis-core` TrustProfile / Judgment projection, `AxiomLedger`
+  defaults, `physis why` / `epistemics`). P3F is earned only by a
+  dual-checked verifier receipt, P3S by encoding review, P0 by asserted
+  conjectures. Evaluator `holds` is `logical undetermined`, not proved.
+  A kernel proof that is still Unreviewed prints a danger note. P4 is
+  not assigned from an in-process remint. `propose` cannot mark an axiom
+  Accepted. Verified: compile-fail against TrustProfile literals and
+  Deserialize, P3F-requires-receipt unit tests, why/epistemics CLI.
+
 - **Level-3 Lean kernel + nanoda dual replay**
   (`formal/physlib`, `physis-proof` Physlib type matching, `physis-verifier`
   lake sandbox). `verify` on clean Lean source whose theorem type matches

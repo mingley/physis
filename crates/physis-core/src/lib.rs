@@ -80,6 +80,15 @@
 //! use physis_core::claim::Epistemic;
 //! let _ = Epistemic::Theorem;
 //! ```
+//!
+//! P3F cannot be deserialized or written as a struct literal:
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::judgment::TrustProfile>();
+//! }
+//! ```
 
 #![forbid(unsafe_code)]
 
@@ -114,7 +123,7 @@ pub use formal::FormalClaim;
 pub use id::{ClaimId, KnobId, LayerId, TheoryId};
 pub use judgment::{
     EmpiricalJudgment, GapReason, HeuristicJudgment, Judgment, LogicalJudgment, NumericJudgment,
-    ParameterOrigin, StatisticalJudgment, TrustTier,
+    ParameterOrigin, StatisticalJudgment, TrustEvidence, TrustProfile, TrustTier,
 };
 pub use knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 pub use layer::Layer;

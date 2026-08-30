@@ -13,7 +13,7 @@ Layer: agent
 | `run <theory>` | evaluate all claims |
 | `set <theory> <knob> <value>` | turn a knob, print Δverdicts |
 | `epistemics` | tally every verdict by class, derivation, and semantic axes (no theorem row) |
-| `why <claim>` | print assumptions, statement hash, kernel receipt or none |
+| `why <claim>` | assumptions, typed judgment, derived trust, axiom closure, kernel receipt or none |
 | `prove <claim>` | dual-check a catalogued identity; only `physis-verifier` mints |
 | `falsify <claim>` | search knobs for a failing evaluation |
 | `sweep <theory> <knob> <v,v,…>` | evaluate many values; report changed claims |

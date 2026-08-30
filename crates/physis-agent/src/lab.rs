@@ -7,7 +7,9 @@ use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
 use physis_core::formal::FormalClaim;
 use physis_core::id::LayerId;
+use physis_core::judgment::{Judgment, TrustEvidence, TrustProfile, TrustTier};
 use physis_core::knob::{KnobDomain, KnobValue};
+use physis_core::AxiomLedger;
 use physis_proof::{Challenge, UntrustedProof, CATALOG};
 use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
@@ -47,6 +49,7 @@ pub struct Lab {
     reviews: SemanticStore,
     branches: BTreeMap<String, BranchState>,
     store: ArtifactStore,
+    axioms: AxiomLedger,
 }
 
 /// The experiments the lab can run, with one-line descriptions.
@@ -107,6 +110,7 @@ impl Lab {
             reviews: SemanticStore::empty(),
             branches: BTreeMap::new(),
             store: ArtifactStore::empty(),
+            axioms: AxiomLedger::physis_defaults(),
         }
     }
 
@@ -428,6 +432,7 @@ impl Lab {
                 let mut by_derivation: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
                 let mut by_class: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
                 let mut by_semantic: BTreeMap<&'static str, [usize; 4]> = BTreeMap::new();
+                let mut by_trust: BTreeMap<&'static str, usize> = BTreeMap::new();
                 let mut total = 0usize;
                 for t in self.theories.values() {
                     for (c, v) in t.evaluate_all() {
@@ -442,6 +447,12 @@ impl Lab {
                         by_derivation.entry(v.derivation.as_str()).or_default()[idx] += 1;
                         by_class.entry(v.class.as_str()).or_default()[idx] += 1;
                         by_semantic.entry(semantic.as_str()).or_default()[idx] += 1;
+                        let profile = self.profile_for(&c.id.0, v.derivation, semantic);
+                        for tier in TrustTier::ALL {
+                            if profile.has(tier) {
+                                *by_trust.entry(tier.as_str()).or_default() += 1;
+                            }
+                        }
                     }
                 }
                 let mut text = String::from(
@@ -475,6 +486,12 @@ impl Lab {
                     "  machine-proved          {}   (receipts minted by physis-verifier)\n",
                     self.receipts.len()
                 ));
+                text.push_str("\ntrust (derived; a claim may sit in several rows)\n");
+                for tier in TrustTier::ALL {
+                    let n = by_trust.get(tier.as_str()).copied().unwrap_or(0);
+                    text.push_str(&format!("  {:<22} {n:>3}\n", tier.as_str()));
+                }
+                text.push_str("  P4 is not assigned from an in-process remint\n");
                 dump(
                     &mut text,
                     "\nclass\n",
@@ -521,6 +538,17 @@ impl Lab {
                                 "  semantic:   {}\n",
                                 self.semantic_tag(&c.id.0, v.semantic).as_str()
                             ));
+                            let semantic = self.semantic_tag(&c.id.0, v.semantic);
+                            let dual = self.receipts.by_statement(c.statement_hash).is_some();
+                            let profile = self.profile_for(&c.id.0, v.derivation, semantic);
+                            let judgment = Judgment::from_lab(v.class, v.kind, v.empirical, dual);
+                            text.push_str(&format!("  judgment:   {}\n", judgment.label()));
+                            text.push_str(&format!("  trust:      {}\n", profile.display()));
+                            if profile.unreviewed_proof_is_dangerous(semantic) {
+                                text.push_str(
+                                    "  trust note: kernel proof with unreviewed encoding is dangerous\n",
+                                );
+                            }
                             text.push_str(&format!("  identity:   {}\n", c.statement_hash));
                             text.push_str(&format!("  domain:     {}\n", c.domain.notes));
                             text.push_str("  assumptions:\n");
@@ -546,9 +574,21 @@ impl Lab {
                                         r.secondary_checker.checker,
                                         r.formal_backend
                                     ));
-                                    text.push_str("  axioms:\n");
-                                    for a in &r.axioms_used {
-                                        text.push_str(&format!("    - {}\n", a.0));
+                                    text.push_str("  axiom closure:\n");
+                                    for (id, rec) in self.axioms.closure(&r.axioms_used) {
+                                        match rec {
+                                            Some(rec) => text.push_str(&format!(
+                                                "    - {} [{}] {}: {}\n",
+                                                rec.id.0,
+                                                rec.class.as_str(),
+                                                rec.review_status.as_str(),
+                                                rec.provenance
+                                            )),
+                                            None => text.push_str(&format!(
+                                                "    - {} [missing from ledger]\n",
+                                                id.0
+                                            )),
+                                        }
                                     }
                                 }
                                 None => {
@@ -675,6 +715,20 @@ impl Lab {
             .by_claim(claim_id)
             .map(|r| r.assurance())
             .unwrap_or(fallback)
+    }
+
+    fn profile_for(
+        &self,
+        claim_id: &str,
+        derivation: physis_core::DerivationAssurance,
+        semantic: SemanticAssurance,
+    ) -> TrustProfile {
+        TrustProfile::derive(TrustEvidence {
+            derivation,
+            semantic,
+            dual_checked_receipt: self.receipts.by_claim(claim_id).is_some(),
+            numeric_certificate: derivation == physis_core::DerivationAssurance::CertifiedNumeric,
+        })
     }
 
     fn accept_verified<T>(&mut self, v: &Verified<T>) -> physis_verifier::ProofReceipt {
@@ -1243,6 +1297,9 @@ mod tests {
         );
         assert!(text.contains("executed"));
         assert!(text.contains("machine-proved"));
+        assert!(text.contains("trust (derived"));
+        assert!(text.contains("P3F"));
+        assert!(text.contains("P4 is not assigned"));
         assert!(text.contains("total claim-evaluations:"));
         assert!(text.contains("open-problem") || text.contains("conjecture"));
     }
@@ -1259,6 +1316,9 @@ mod tests {
         assert!(text.contains("derivation: executed"));
         assert!(text.contains("encoding-is-the-model"));
         assert!(text.contains("kernel proof: none"));
+        assert!(text.contains("judgment:   logical undetermined"), "{text}");
+        assert!(text.contains("trust:      P1"), "{text}");
+        assert!(!text.contains("P3F"));
         assert!(!text.contains("theorem"));
     }
 
@@ -1526,6 +1586,12 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains("kernel proof: receipt"), "{why}");
+        assert!(why.contains("judgment:   logical proved"), "{why}");
+        assert!(why.contains("P3F"), "{why}");
+        assert!(why.contains("unreviewed encoding is dangerous"), "{why}");
+        assert!(why.contains("axiom closure:"), "{why}");
+        assert!(why.contains("discrete-coboundary"), "{why}");
+        assert!(why.contains("[model-assumption]"), "{why}");
         let epi = lab.exec(Command::Epistemics).text().to_string();
         assert!(epi.contains("machine-proved          1"), "{epi}");
     }
@@ -1642,6 +1708,8 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains("semantic:   adversarially-reviewed"), "{why}");
+        assert!(why.contains("P3S"), "{why}");
+        assert!(!why.contains("P3F"), "{why}");
         let epi = lab.exec(Command::Epistemics).text().to_string();
         assert!(epi.contains("adversarially-reviewed"), "{epi}");
         let unique = lab
@@ -1651,6 +1719,33 @@ mod tests {
             .text()
             .to_string();
         assert!(unique.contains("semantic:   unreviewed"), "{unique}");
+        assert!(unique.contains("trust:      P0"), "{unique}");
+        assert!(
+            unique.contains("judgment:   logical undetermined"),
+            "{unique}"
+        );
+    }
+
+    #[test]
+    fn prove_and_review_d2_is_p3f_and_p3s_not_p4() {
+        let mut lab = Lab::standard();
+        lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("P3F"), "{why}");
+        assert!(why.contains("P3S"), "{why}");
+        assert!(!why.contains("P4"), "{why}");
+        assert!(!why.contains("unreviewed encoding is dangerous"), "{why}");
+        assert!(why.contains("judgment:   logical proved"), "{why}");
     }
 
     #[test]

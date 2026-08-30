@@ -51,7 +51,18 @@ Every claim answers four questions. They are different Rust types.
 
 A theory can `Executed`-derive a prediction that nature `Excluded`. That is a feature.
 
-`physis why <claim>` prints assumptions, the statement hash, and `kernel proof: none` until `physis prove` (or `verify`) records a receipt. When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a catalog identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`). Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum an agent can set. `physis review` overlays a justified semantic tag from a trusted dossier; journal restore re-runs review rather than deserializing the tag.
+`physis why <claim>` prints assumptions, a typed `judgment` (evaluator
+`holds` is `logical undetermined` until a dual-checked receipt exists),
+a derived `trust` profile (P3F only from a verifier receipt; P3S from
+encoding review; P4 is not assigned from an in-process remint), the
+statement hash, and `kernel proof: none` until `physis prove` records a
+receipt. A P3F result that is still `Unreviewed` prints a danger note.
+When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a
+catalog identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).
+Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
+an agent can set. `physis review` overlays a justified semantic tag from a
+trusted dossier; journal restore re-runs review rather than deserializing
+the tag.
 
 ## First lab
 

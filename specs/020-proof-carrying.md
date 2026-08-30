@@ -19,6 +19,11 @@ Nothing gains authority merely because an agent wrote code that returns
   `Deserialize` impl** (JSON cannot mint a kernel proof).
 - Every claim has assumptions, a domain, and a SHA-256 statement identity.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
+- `TrustProfile` is derived from receipts and reviews. P3F cannot be set
+  as an enum; P4 is not assigned from an in-process remint. A P3F
+  `Unreviewed` result is labelled dangerous. `physis why` prints a typed
+  `Judgment` (evaluator `holds` is `logical undetermined`) and the
+  transitive axiom closure from `AxiomLedger`.
 
 ### Milestone 2 — dual-check receipts (exact + Lean)
 
@@ -75,8 +80,9 @@ dual expanders. `physis prove` uses the same preference.
 
 - `SemanticAssurance::Canonical` (reserved; not agent-mintable)
 - Agents other than the lab protocol (Explorer, Formalizer, … as processes)
-- Trust tiers P0–P4 driving promotion; query projection; research budgets
+- P4 independent reproduction; research budgets; query inversion
 - Mathlib-scale Physlib; only the two catalog identities are kernel-checked
+- Trust tiers do not yet *gate* which operations run; they label evidence
 
 ## Vertical slice
 

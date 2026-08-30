@@ -64,6 +64,17 @@ pub enum ReviewStatus {
     Rejected,
 }
 
+impl ReviewStatus {
+    /// Stable kebab-case name.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            ReviewStatus::Unreviewed => "unreviewed",
+            ReviewStatus::Accepted => "accepted",
+            ReviewStatus::Rejected => "rejected",
+        }
+    }
+}
+
 /// One ledger entry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AxiomRecord {
@@ -118,6 +129,65 @@ impl AxiomLedger {
     pub fn is_empty(&self) -> bool {
         self.records.is_empty()
     }
+
+    /// In-tree Lean kernel axioms and catalog postulates. Agents cannot
+    /// mark these Accepted through [`Self::propose`].
+    pub fn physis_defaults() -> Self {
+        let mut l = Self::empty();
+        let builtins: &[(&str, AxiomClass, &str)] = &[
+            (
+                "propext",
+                AxiomClass::Logical,
+                "Lean kernel: propositional extensionality",
+            ),
+            (
+                "Quot.sound",
+                AxiomClass::Logical,
+                "Lean kernel: quotient soundness",
+            ),
+            (
+                "Classical.choice",
+                AxiomClass::Logical,
+                "Lean kernel: choice",
+            ),
+            (
+                "integer-arithmetic",
+                AxiomClass::MathematicalFoundational,
+                "Integer ring axioms used by the exact and Lean backends",
+            ),
+            (
+                "discrete-coboundary",
+                AxiomClass::ModelAssumption,
+                "Oriented simplex coboundary in the discrete exterior calculus encoding",
+            ),
+            (
+                "minkowski-interval-signature",
+                AxiomClass::PhysicalPostulate,
+                "Minkowski signature (+,-,-,-) at c = 1, polynomial form",
+            ),
+        ];
+        for (id, class, provenance) in builtins {
+            l.records.insert(
+                AxiomId::new(*id),
+                AxiomRecord {
+                    id: AxiomId::new(*id),
+                    class: *class,
+                    formal_statement_hash: None,
+                    provenance: (*provenance).into(),
+                    review_status: ReviewStatus::Accepted,
+                },
+            );
+        }
+        l
+    }
+
+    /// Look up each id. Missing entries stay visible; they are not invented.
+    pub fn closure<'a>(
+        &'a self,
+        ids: &'a [AxiomId],
+    ) -> Vec<(&'a AxiomId, Option<&'a AxiomRecord>)> {
+        ids.iter().map(|id| (id, self.records.get(id))).collect()
+    }
 }
 
 #[cfg(test)]
@@ -136,5 +206,34 @@ mod tests {
         });
         let rec = ledger.get(&AxiomId::new("answer-is-true")).unwrap();
         assert_eq!(rec.review_status, ReviewStatus::Unreviewed);
+        ledger.propose(AxiomRecord {
+            id: AxiomId::new("propext"),
+            class: AxiomClass::Logical,
+            formal_statement_hash: None,
+            provenance: "agent overwrite".into(),
+            review_status: ReviewStatus::Accepted,
+        });
+        assert_eq!(
+            ledger.get(&AxiomId::new("propext")).unwrap().review_status,
+            ReviewStatus::Unreviewed
+        );
+    }
+
+    #[test]
+    fn defaults_name_lean_and_catalog_axioms() {
+        let l = AxiomLedger::physis_defaults();
+        assert_eq!(
+            l.get(&AxiomId::new("propext")).unwrap().class,
+            AxiomClass::Logical
+        );
+        assert_eq!(
+            l.get(&AxiomId::new("discrete-coboundary"))
+                .unwrap()
+                .review_status,
+            ReviewStatus::Accepted
+        );
+        let missing = AxiomId::new("not-a-real-axiom");
+        let c = l.closure(std::slice::from_ref(&missing));
+        assert!(c[0].1.is_none());
     }
 }
