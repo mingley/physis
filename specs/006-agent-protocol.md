@@ -16,6 +16,7 @@ Layer: agent
 | `why <claim>` | assumptions, typed judgment, derived trust, axiom closure, kernel receipt or none |
 | `prove <claim>` | dual-check a catalogued identity; only `physis-verifier` mints |
 | `falsify <claim>` | search knobs for a failing evaluation |
+| `hypothesize [theory]` | constrained structural mutation: probe chosen/fitted knobs for scientific-axis diffs; measured/derived knobs stay frozen; does not persist or mint |
 | `sweep <theory> <knob> <v,v,…>` | evaluate many values; report changed claims |
 | `branch` / `checkout` | snapshot / restore knob state |
 | `compare` / `design` | discriminating claims; rank theory pairs |
@@ -25,7 +26,7 @@ Layer: agent
 | `formalize <claim>` | emit the catalog encoding as untrusted bytes (not a receipt) |
 | `reproduce <claim>` | remint a stored receipt in-process; **not P4** |
 | `gaps` | rebuild the knowledge-gap graph from live verdicts and lemma edges (not deserialized). Failing evaluations are not listed as missing theorems. Overlap without containment is `insufficient-precision`. coNP-complete search is `computationally-intractable`, not Rice. Super-K prose is not a Dataset (`missing-dataset`) |
-| `loop` | one research cycle: observe → hypothesize → prove → falsify → replicate → design → audit → review |
+| `loop` | one research cycle: observe → hypothesize (constrained structural mutation of chosen/fitted knobs; measured frozen) → prove → falsify → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |
 | `experiment <id>` | canonical experiment (fresh defaults) |
@@ -36,7 +37,7 @@ Layer: agent
 CLI tokens map 1:1 onto `physis_agent::Command`.
 
 `--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor`
-gates which ops `exec` will dispatch. Named roles may observe; each may
+gates which ops `exec` will dispatch. Named roles may observe (including `hypothesize`); each may
 run one kind of untrusted work. None of them mint `Verified` — `prove`
 still goes through `physis_verifier::verify`. `loop` and `replay` stay
 lab-only. `--budget prove=N,review=N,set=N` is a research cap on the

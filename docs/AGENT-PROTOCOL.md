@@ -10,6 +10,7 @@ cargo run -p physis -- theories
 cargo run -p physis -- knobs type-iib
 cargo run -p physis -- run type-iib
 cargo run -p physis -- set type-iib total_dim 9
+cargo run -p physis -- hypothesize type-iib
 cargo run -p physis -- experiment string-critique
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis -- journal

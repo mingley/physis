@@ -714,6 +714,7 @@ impl Lab {
             },
             Command::Design { theories } => self.design(&theories),
             Command::Sensitivity { theory, knob } => self.sensitivity(&theory, &knob),
+            Command::Hypothesize { theory } => self.hypothesize(theory.as_deref()),
             Command::Review { claim } => self.review_claim(&claim),
             Command::Loop => self.research_loop(),
             Command::Inspect { axis, value } => self.inspect(axis.as_deref(), value.as_deref()),
@@ -1259,13 +1260,13 @@ impl Lab {
             self.receipts.len()
         ));
 
-        let mut hypo: Vec<&str> = Vec::new();
-        for spec in CATALOG {
-            if !self.has_live_receipt(spec.claim_id) {
-                hypo.push(spec.claim_id);
-            }
+        let hypo_resp = self.hypothesize(None);
+        text.push_str(
+            "hypothesize  constrained structural mutation (chosen/fitted; measured frozen)\n",
+        );
+        for line in hypo_resp.text().lines().skip(1).take(20) {
+            text.push_str(&format!("{line}\n"));
         }
-        text.push_str(&format!("hypothesize  unproved_catalog={hypo:?}\n"));
 
         let mut proved = Vec::new();
         for spec in CATALOG {
@@ -1645,6 +1646,130 @@ impl Lab {
         }
         text.push_str(&format!("max_flips={max_flips}\n"));
         Response::ok(text)
+    }
+
+    /// Constrained structural mutation: probe chosen and fitted knobs.
+    /// Measured / derived / fundamental-input / nuisance knobs stay frozen.
+    /// Restores state. Does not journal. Does not mint.
+    fn hypothesize(&mut self, theory: Option<&str>) -> Response {
+        const SHOW: usize = 12;
+        let ids: Vec<String> = match theory {
+            Some(id) => {
+                if !self.theories.contains_key(id) {
+                    return Response::err(format!("unknown theory '{id}'"));
+                }
+                vec![id.to_string()]
+            }
+            None => self.theories.keys().cloned().collect(),
+        };
+
+        let mut frozen = 0usize;
+        let mut hits: Vec<HypothesisHit> = Vec::new();
+        for id in &ids {
+            let knobs: Vec<(String, ParameterOrigin, KnobDomain, KnobValue)> = self.theories[id]
+                .snapshot()
+                .into_iter()
+                .map(|(s, v)| (s.name.to_string(), s.origin, s.domain.clone(), v))
+                .collect();
+            let baseline = self.theories[id].evaluate_all();
+            for (name, origin, domain, current) in knobs {
+                if !matches!(origin, ParameterOrigin::Chosen | ParameterOrigin::Fitted) {
+                    frozen += 1;
+                    continue;
+                }
+                for cand in domain_probes(&domain, &current) {
+                    if cand == current {
+                        continue;
+                    }
+                    {
+                        let t = self.theories.get_mut(id).unwrap();
+                        if t.set(&name, cand.clone()).is_err() {
+                            continue;
+                        }
+                    }
+                    let after = self.theories[id].evaluate_all();
+                    let diffs = diff_verdicts(&baseline, &after);
+                    {
+                        let t = self.theories.get_mut(id).unwrap();
+                        let _ = t.set(&name, current.clone());
+                    }
+                    if !diffs.is_empty() {
+                        hits.push(HypothesisHit {
+                            theory: id.clone(),
+                            knob: name.clone(),
+                            origin,
+                            from: current.display(),
+                            to: cand.display(),
+                            diffs,
+                        });
+                    }
+                }
+            }
+        }
+
+        hits.sort_by(|a, b| {
+            b.diffs
+                .len()
+                .cmp(&a.diffs.len())
+                .then_with(|| origin_rank(a.origin).cmp(&origin_rank(b.origin)))
+                .then_with(|| a.theory.cmp(&b.theory))
+                .then_with(|| a.knob.cmp(&b.knob))
+                .then_with(|| a.to.cmp(&b.to))
+        });
+
+        let mut text = String::from(
+            "hypothesize  constrained structural mutation\n  measured/derived/fundamental-input/nuisance knobs are frozen\n",
+        );
+        let shown = if theory.is_some() {
+            hits.len()
+        } else {
+            hits.len().min(SHOW)
+        };
+        for hit in hits.iter().take(shown) {
+            let tag = match hit.origin {
+                ParameterOrigin::Fitted => "fitted accommodate",
+                _ => "chosen structural",
+            };
+            text.push_str(&format!(
+                "  {}  {}: {} → {}  origin={}  flips={}\n",
+                hit.theory,
+                hit.knob,
+                hit.from,
+                hit.to,
+                tag,
+                hit.diffs.len()
+            ));
+            for d in &hit.diffs {
+                for line in d.render().lines() {
+                    text.push_str("  ");
+                    text.push_str(line);
+                    text.push('\n');
+                }
+            }
+        }
+        text.push_str(&format!(
+            "candidates={} shown={} frozen_knobs={frozen}\n",
+            hits.len(),
+            shown
+        ));
+        Response::ok(text)
+    }
+}
+
+struct HypothesisHit {
+    theory: String,
+    knob: String,
+    origin: ParameterOrigin,
+    from: String,
+    to: String,
+    diffs: Vec<VerdictDiff>,
+}
+
+fn origin_rank(origin: ParameterOrigin) -> u8 {
+    match origin {
+        ParameterOrigin::Chosen => 0,
+        ParameterOrigin::Fitted => 1,
+        _ => 2,
     }
 }
 
@@ -3191,6 +3316,88 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_mutates_chosen_not_measured() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let iib = lab
+            .exec(Command::Hypothesize {
+                theory: Some("type-iib".into()),
+            })
+            .text()
+            .to_string();
+        assert!(iib.contains("constrained structural mutation"), "{iib}");
+        assert!(
+            iib.contains("total_dim") && iib.contains("consistency.critical-dimension"),
+            "{iib}"
+        );
+        assert!(
+            iib.contains("logical undetermined → logical disproved"),
+            "scientific-axis judgment must be in the hypothesis: {iib}"
+        );
+        assert!(
+            !iib.contains("observed_dim"),
+            "measured observed_dim is not a structural hypothesis: {iib}"
+        );
+        assert_eq!(
+            lab.theory("type-iib")
+                .unwrap()
+                .get("total_dim")
+                .unwrap()
+                .display(),
+            "10",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            lab.journal().len(),
+            journal_len,
+            "hypothesize must not journal"
+        );
+
+        let sm = lab
+            .exec(Command::Hypothesize {
+                theory: Some("standard-model".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            !sm.contains("generations"),
+            "measured generations is nature, not a hypothesis: {sm}"
+        );
+        assert!(
+            sm.contains("chosen structural") || sm.contains("include_"),
+            "{sm}"
+        );
+
+        let kg = lab
+            .exec(Command::Hypothesize {
+                theory: Some("klein-gordon".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            kg.contains("field.second-order-accurate") && kg.contains("numeric unresolved"),
+            "coarse spacing is inconclusive, not a failed theorem: {kg}"
+        );
+        assert!(
+            !kg.contains("theorem"),
+            "hypothesize must not print a theorem tag: {kg}"
+        );
+        assert_eq!(
+            lab.theory("klein-gordon")
+                .unwrap()
+                .get("spacing")
+                .unwrap()
+                .display(),
+            "1"
+        );
+
+        let unknown = lab.exec(Command::Hypothesize {
+            theory: Some("no-such-theory".into()),
+        });
+        assert_eq!(unknown.exit_code(), 1);
+    }
+
+    #[test]
     fn sweep_and_compare_and_audit() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -3404,6 +3611,14 @@ mod tests {
             "{text}"
         );
         assert!(text.contains("restore  type-iib total_dim=10"), "{text}");
+        assert!(
+            text.contains("constrained structural mutation"),
+            "loop hypothesize must search encodings, not list catalog slugs: {text}"
+        );
+        assert!(
+            !text.contains("unproved_catalog"),
+            "catalog membership is not a structural hypothesis: {text}"
+        );
         assert_eq!(
             lab.theory("type-iib")
                 .unwrap()

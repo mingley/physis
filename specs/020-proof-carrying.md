@@ -154,7 +154,7 @@ those tools; a local checkout without them still mints
 | 7 | `physis-ir` | Line-oriented theory package (not a Lean replacement) |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
-| 10 | `physis loop` | Observe → hypothesize → prove → falsify → replicate → design → audit → review |
+| 10 | `physis loop` | Observe → hypothesize (constrained structural mutation of chosen/fitted knobs) → prove → falsify → replicate → design → audit → review |
 | origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap |
 | gaps | `physis gaps`, `NodeKind::KnowledgeGap` | Live gap graph, content-addressed; rebuilt, not deserialized. `MissingTheorem` only for evaluator-Holds claims without a receipt; Fails is decided, not a missing lemma. `InsufficientPrecision` is overlap without containment on an empirical receipt, **or** a lattice too coarse to certify a numerical order (`field.second-order-accurate`, `|k a| ≥ 1`). `ComputationallyIntractable` is coNP-complete / exponential search, not Rice. `MissingDataset` is an empirical prediction with no registered dataset (`gut.proton-lifetime-sk`); Super-K prose is not a Dataset |
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |

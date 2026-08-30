@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Hypothesis search is constrained structural mutation**
+  (`physis hypothesize [theory]` probes chosen and fitted knobs for
+  scientific-axis diffs and restores). Measured knobs (generations,
+  observed_dim) stay frozen: they are nature, not a hypothesis about
+  the encoding. Fitted probes are tagged accommodate. Explorer may
+  observe; the command does not journal, persist, or mint. The research
+  loop uses this search instead of listing unproved catalog slugs.
+  Catalog d² hash unchanged. Verified: type-iib finds critical-dimension;
+  standard-model does not propose generations; klein-gordon coarse
+  spacing is numeric unresolved; knobs restored; explorer permitted.
+
 - **Knob diffs are scientific-axis, not kind-only**
   (`VerdictDiff` records derivation, empirical, and projected judgment
   labels plus the statement hash; `diff_verdicts` emits a row when any

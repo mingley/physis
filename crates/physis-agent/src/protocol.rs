@@ -106,6 +106,13 @@ pub enum Command {
         /// Knob name.
         knob: String,
     },
+    /// Search chosen/fitted knob probes for scientific-axis diffs.
+    /// Measured, derived, and fundamental-input knobs are frozen: they are
+    /// not hypotheses about the encoding. Does not persist and does not mint.
+    Hypothesize {
+        /// Restrict to one theory. `None` searches the whole lab.
+        theory: Option<String>,
+    },
     /// Raise semantic assurance from a trusted dossier (not an agent-set tag).
     Review {
         /// Claim id.
@@ -161,6 +168,7 @@ impl Command {
             Command::Audit => "audit",
             Command::Design { .. } => "design",
             Command::Sensitivity { .. } => "sensitivity",
+            Command::Hypothesize { .. } => "hypothesize",
             Command::Review { .. } => "review",
             Command::Loop => "loop",
             Command::Inspect { .. } => "inspect",

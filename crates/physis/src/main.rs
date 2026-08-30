@@ -211,6 +211,9 @@ fn parse(args: &[String]) -> Result<Command, String> {
                 knob: args[2].clone(),
             })
         }
+        "hypothesize" => Ok(Command::Hypothesize {
+            theory: args.get(1).cloned(),
+        }),
         "review" => {
             let claim = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Review { claim })
@@ -257,6 +260,7 @@ USAGE:
     physis compare <theory-a> <theory-b>
     physis design <theory> <theory> [...]
     physis sensitivity <theory> <knob>
+    physis hypothesize [theory]
     physis review <claim-id>
     physis inspect [trust|class|origin|gap] <value>
     physis loop

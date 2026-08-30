@@ -156,6 +156,7 @@ cargo run -p physis -- reproduce dec.d-squared-zero   # not P4
 cargo run -p physis -- gaps
 cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension
+cargo run -p physis -- hypothesize type-iib
 cargo run -p physis -- sweep type-iib total_dim 8,9,10,11,12
 cargo run -p physis -- audit
 cargo run -p physis --example kinetic_energy

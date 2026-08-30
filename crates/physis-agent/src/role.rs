@@ -82,6 +82,7 @@ impl Role {
                 | Command::Score { .. }
                 | Command::Compare { .. }
                 | Command::Design { .. }
+                | Command::Hypothesize { .. }
         )
     }
 
@@ -233,6 +234,12 @@ mod tests {
             claim: "dec.d-squared-zero".into(),
         }));
         assert!(Role::Explorer.permits(&Command::Gaps));
+        assert!(Role::Explorer.permits(&Command::Hypothesize { theory: None }));
+        assert!(!Role::Explorer.permits(&Command::Set {
+            theory: "type-iib".into(),
+            knob: "total_dim".into(),
+            value: "9".into(),
+        }));
     }
 
     #[test]
