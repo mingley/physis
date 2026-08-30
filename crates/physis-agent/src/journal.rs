@@ -57,19 +57,26 @@ pub enum JournalEvent {
         /// Other counts.
         other: usize,
     },
-    /// A dual-checked receipt was minted. Restore re-verifies; it does not
-    /// deserialize a `Verified` value.
+    /// A dual-checked receipt was minted. Restore re-verifies the recorded
+    /// identity; it does not deserialize a `Verified` value. A matching
+    /// slug with a different `statement_hash` is not this prove.
     Prove {
         /// Unix millis.
         t: u64,
         /// Claim id.
         claim: String,
-        /// Challenge hash hex.
+        /// Challenge hash hex. Restore remints only when this matches
+        /// [`physis_proof::Challenge::generate`] on the live FormalClaim.
         challenge_hash: String,
+        /// FormalClaim identity hex. Empty on pre-identity journals;
+        /// restore then still requires a live challenge-hash match.
+        #[serde(default)]
+        statement_hash: String,
     },
     /// Semantic review ran against the live statement identity. Restore
-    /// re-runs the dossier review; it does not deserialize a
-    /// semantic-assurance tag as authority.
+    /// re-runs the dossier review of that hash; it does not deserialize a
+    /// semantic-assurance tag as authority. A matching slug with a
+    /// different `statement_hash` is not this review.
     Review {
         /// Unix millis.
         t: u64,
@@ -77,6 +84,10 @@ pub enum JournalEvent {
         claim: String,
         /// Evidence hash hex (informational; restore re-runs review).
         evidence_hash: String,
+        /// FormalClaim identity hex. Restore remints only when this
+        /// matches the live claim. Empty (legacy slug-only) is not P3S.
+        #[serde(default)]
+        statement_hash: String,
     },
     /// One research-cycle summary. Restore is a no-op; inner prove/review
     /// events re-run their checkers.
@@ -160,20 +171,30 @@ impl JournalEvent {
     }
 
     /// A successful prove, stamped with the current time.
-    pub fn prove(claim: impl Into<String>, challenge_hash: impl Into<String>) -> Self {
+    pub fn prove(
+        claim: impl Into<String>,
+        challenge_hash: impl Into<String>,
+        statement_hash: impl Into<String>,
+    ) -> Self {
         JournalEvent::Prove {
             t: now_ms(),
             claim: claim.into(),
             challenge_hash: challenge_hash.into(),
+            statement_hash: statement_hash.into(),
         }
     }
 
     /// A successful semantic review, stamped with the current time.
-    pub fn review(claim: impl Into<String>, evidence_hash: impl Into<String>) -> Self {
+    pub fn review(
+        claim: impl Into<String>,
+        evidence_hash: impl Into<String>,
+        statement_hash: impl Into<String>,
+    ) -> Self {
         JournalEvent::Review {
             t: now_ms(),
             claim: claim.into(),
             evidence_hash: evidence_hash.into(),
+            statement_hash: statement_hash.into(),
         }
     }
 
@@ -345,5 +366,48 @@ mod tests {
         j2.record(boot_at(1, vec!["a".into()]));
         j2.record(run_at(2, "a", 1, 0, 0));
         assert_eq!(j.tip(), j2.tip());
+    }
+
+    #[test]
+    fn prove_event_records_statement_hash() {
+        let ev = JournalEvent::prove("dec.d-squared-zero", "aa", "bb");
+        let s = serde_json::to_string(&ev).unwrap();
+        assert!(s.contains("\"event\":\"prove\""));
+        assert!(s.contains("\"statement_hash\":\"bb\""));
+        assert!(s.contains("\"challenge_hash\":\"aa\""));
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Prove {
+                statement_hash,
+                challenge_hash,
+                claim,
+                ..
+            } => {
+                assert_eq!(claim, "dec.d-squared-zero");
+                assert_eq!(challenge_hash, "aa");
+                assert_eq!(statement_hash, "bb");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn legacy_prove_without_statement_hash_deserializes_empty() {
+        let s = r#"{"event":"prove","t":1,"claim":"dec.d-squared-zero","challenge_hash":"aa"}"#;
+        let ev: JournalEvent = serde_json::from_str(s).unwrap();
+        match ev {
+            JournalEvent::Prove { statement_hash, .. } => assert!(statement_hash.is_empty()),
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn legacy_review_without_statement_hash_deserializes_empty() {
+        let s = r#"{"event":"review","t":1,"claim":"dec.d-squared-zero","evidence_hash":"aa"}"#;
+        let ev: JournalEvent = serde_json::from_str(s).unwrap();
+        match ev {
+            JournalEvent::Review { statement_hash, .. } => assert!(statement_hash.is_empty()),
+            other => panic!("{other:?}"),
+        }
     }
 }

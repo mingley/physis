@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Journal restore binds prove/review to FormalClaim identity**
+  (`statement_hash` on prove/review events). Restore remints a prove
+  only when the recorded challenge is `Challenge::generate` of the live
+  identity, and a review only when the recorded statement hash is that
+  identity. A matching slug with unspecified commitments, a wrong
+  challenge hash, or a slug-only legacy review line does not mint P3F
+  or P3S. Verified: stale-identity journal prove/review stay
+  unproved/unreviewed; live hashes still restore. Live d² prove/review
+  journal restores P3F+P3S; forged hashes do not. `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Challenge is generate-only**
   (`Challenge` private fields, no Deserialize). The solver cannot
   construct the obligation it is judged against. `generate` fills the

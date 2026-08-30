@@ -71,7 +71,9 @@ different commitments cannot borrow ExactIdentity or Physlib. `Challenge`
 is generate-only (private fields, no Deserialize). Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
 an agent can set. `physis review` overlays a justified semantic tag from a
 trusted dossier bound to the live FormalClaim; journal restore re-runs
-review of that identity rather than deserializing the tag. A review of an
+review of that identity rather than deserializing the tag, and only when
+the journaled `statement_hash` is the live FormalClaim. A slug-only
+review line is not P3S. A review of an
 older identity that kept the slug is not P3S. `physis inspect trust|class|origin|gap <value>` inverts those
 axes: knobs carry a `ParameterOrigin` so a fitted dilaton is not a derived
 prediction, and `inspect origin fitted` lists the knobs that accommodate

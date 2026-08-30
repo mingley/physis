@@ -63,8 +63,10 @@ rather than parsing prose. Example: `physis --json set type-iib total_dim 9`.
 - `set-knob` — from, to, diffs
 - `run` — holds/fails/other counts
 - `experiment` — experiment id
-- `prove` — claim id; restore re-runs dual checkers
-- `review` — claim id; restore re-runs dossier review of the live identity
+- `prove` — claim id, challenge hash, statement hash; restore remints
+  only when those hashes match the live FormalClaim
+- `review` — claim id, evidence hash, statement hash; restore remints
+  only when the statement hash is the live identity
 - `loop` — cycle summary (inner prove/review events are authoritative)
 
 Append-only. Optional file backend (`Journal::file`).

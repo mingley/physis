@@ -113,9 +113,14 @@ those tools; a local checkout without them still mints
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
 Journal events are hash-linked in memory (`Journal::tip`). Journal
-restore of a `prove` event remints through `verify` (never Deserialize):
+restore of a `prove` event remints through `verify` (never Deserialize)
+only when the recorded `challenge_hash` is `Challenge::generate` of the
+live FormalClaim (and, when present, the recorded `statement_hash`
+matches). A matching slug with a different identity is not that prove.
 Lean kernel + nanoda when the pipeline is wired, otherwise the exact
-dual expanders. `physis prove` uses the same preference.
+dual expanders. `physis prove` uses the same preference. Restore of
+`review` remints only when the recorded `statement_hash` is the live
+identity; a slug-only review line is not P3S.
 
 ## What is not yet true
 

@@ -280,15 +280,23 @@ impl Lab {
                         let _ = t.set(&knob, to);
                     }
                 }
-                JournalEvent::Prove { claim, .. } => {
-                    // Restore must remint; a Lean kernel miss still has the
-                    // exact expanders as an independently checkable receipt.
-                    if self.remint_preferred(&claim).is_err() {
-                        let _ = self.remint_exact(&claim);
-                    }
+                JournalEvent::Prove {
+                    claim,
+                    challenge_hash,
+                    statement_hash,
+                    ..
+                } => {
+                    // Restore must remint the recorded identity. A slug
+                    // whose live FormalClaim is not that identity, or whose
+                    // live challenge hash drifted, is not this prove.
+                    self.restore_prove(&claim, &challenge_hash, &statement_hash);
                 }
-                JournalEvent::Review { claim, .. } => {
-                    let _ = self.remint_review(&claim);
+                JournalEvent::Review {
+                    claim,
+                    statement_hash,
+                    ..
+                } => {
+                    self.restore_review(&claim, &statement_hash);
                 }
                 _ => {}
             }
@@ -1029,6 +1037,37 @@ impl Lab {
         Response::ok(text)
     }
 
+    /// Replay a prove event only when the recorded identity is the live
+    /// FormalClaim and the recorded challenge is that claim's generate-only
+    /// obligation. A stale slug is not P3F.
+    fn restore_prove(&mut self, claim_id: &str, challenge_hash: &str, statement_hash: &str) {
+        let Some(live) = self.find_claim(claim_id) else {
+            return;
+        };
+        if !statement_hash.is_empty() && live.statement_hash.to_hex() != statement_hash {
+            return;
+        }
+        let expected = Challenge::generate(&FormalClaim::from_claim(&live)).challenge_hash();
+        if expected.to_hex() != challenge_hash {
+            return;
+        }
+        if self.remint_preferred(claim_id).is_err() {
+            let _ = self.remint_exact(claim_id);
+        }
+    }
+
+    /// Replay a review event only when the recorded identity is the live
+    /// FormalClaim. A slug-only (empty) statement hash is not P3S.
+    fn restore_review(&mut self, claim_id: &str, statement_hash: &str) {
+        let Some(live) = self.find_claim(claim_id) else {
+            return;
+        };
+        if statement_hash.is_empty() || live.statement_hash.to_hex() != statement_hash {
+            return;
+        }
+        let _ = self.remint_review(claim_id);
+    }
+
     /// Re-run the dual checkers. Never deserializes a `Verified` value.
     fn remint_exact(&mut self, claim_id: &str) -> Result<physis_verifier::ProofReceipt, String> {
         let claim = self
@@ -1077,8 +1116,11 @@ impl Lab {
     fn review_claim(&mut self, claim_id: &str) -> Response {
         match self.remint_review(claim_id) {
             Ok(r) => {
-                self.journal
-                    .record(JournalEvent::review(claim_id, r.evidence_hash().to_hex()));
+                self.journal.record(JournalEvent::review(
+                    claim_id,
+                    r.evidence_hash().to_hex(),
+                    r.statement_hash().to_hex(),
+                ));
                 Response::ok(format!(
                     "review {claim_id}\n  semantic {}\n  identity {}\n  evidence {}\n  canonical reserved (not agent-mintable)\n",
                     r.assurance().as_str(),
@@ -1114,8 +1156,11 @@ impl Lab {
     fn prove_claim(&mut self, claim_id: &str) -> Response {
         match self.remint_preferred(claim_id) {
             Ok(r) => {
-                self.journal
-                    .record(JournalEvent::prove(claim_id, r.challenge_hash.to_hex()));
+                self.journal.record(JournalEvent::prove(
+                    claim_id,
+                    r.challenge_hash.to_hex(),
+                    r.statement_hash.to_hex(),
+                ));
                 Response::ok(format!(
                     "prove {claim_id}\n  challenge {} \n  backend {:?}\n  checkers {} + {}\n  axioms {}\n",
                     r.challenge_hash,
@@ -1240,6 +1285,7 @@ impl Lab {
                     self.journal.record(JournalEvent::prove(
                         spec.claim_id,
                         r.challenge_hash.to_hex(),
+                        r.statement_hash.to_hex(),
                     ));
                     proved.push(spec.claim_id.to_string());
                     text.push_str(&format!("prove  {}  {}\n", spec.claim_id, r.challenge_hash));
@@ -1324,6 +1370,7 @@ impl Lab {
                     self.journal.record(JournalEvent::review(
                         spec.claim_id,
                         r.evidence_hash().to_hex(),
+                        r.statement_hash().to_hex(),
                     ));
                     reviewed.push(spec.claim_id.to_string());
                     text.push_str(&format!(
@@ -2849,8 +2896,13 @@ mod tests {
         lab.exec(Command::Prove {
             claim: "dec.d-squared-zero".into(),
         });
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
         let jsonl = lab.journal().to_string();
         assert!(jsonl.contains("\"event\":\"prove\""));
+        assert!(
+            jsonl.contains(&format!("\"statement_hash\":\"{}\"", live.statement_hash)),
+            "{jsonl}"
+        );
         let mut lab2 = Lab::standard();
         *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
         lab2.restore_from_journal();
@@ -2861,6 +2913,61 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains("kernel proof: receipt"), "{why}");
+        assert!(why.contains("P3F"), "{why}");
+    }
+
+    #[test]
+    fn journal_prove_of_a_stale_identity_is_not_p3f() {
+        let mut lab = Lab::standard();
+        let stale = physis_core::claim::Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
+        );
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        assert_ne!(stale.statement_hash, live.statement_hash);
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
+        let jsonl = format!(
+            r#"{{"event":"prove","t":1,"claim":"dec.d-squared-zero","challenge_hash":"{}","statement_hash":"{}"}}"#,
+            challenge.challenge_hash(),
+            stale.statement_hash,
+        );
+        *lab.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab.restore_from_journal();
+        assert!(lab.receipts.by_statement(live.statement_hash).is_none());
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let block = why_theory_block(&why, "de-rham");
+        assert!(block.contains("kernel proof: none"), "{block}");
+        assert!(!block.contains("P3F"), "{block}");
+    }
+
+    #[test]
+    fn journal_prove_with_wrong_challenge_is_not_p3f() {
+        let mut lab = Lab::standard();
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        let jsonl = format!(
+            r#"{{"event":"prove","t":1,"claim":"dec.d-squared-zero","challenge_hash":"{}","statement_hash":"{}"}}"#,
+            "0".repeat(64),
+            live.statement_hash,
+        );
+        *lab.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab.restore_from_journal();
+        assert!(lab.receipts.by_statement(live.statement_hash).is_none());
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let block = why_theory_block(&why, "de-rham");
+        assert!(block.contains("kernel proof: none"), "{block}");
+        assert!(!block.contains("P3F"), "{block}");
     }
 
     #[test]
@@ -3001,8 +3108,13 @@ mod tests {
         lab.exec(Command::Review {
             claim: "dec.d-squared-zero".into(),
         });
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
         let jsonl = lab.journal().to_string();
         assert!(jsonl.contains("\"event\":\"review\""));
+        assert!(
+            jsonl.contains(&format!("\"statement_hash\":\"{}\"", live.statement_hash)),
+            "{jsonl}"
+        );
         let mut lab2 = Lab::standard();
         *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
         lab2.restore_from_journal();
@@ -3013,6 +3125,56 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains("adversarially-reviewed"), "{why}");
+        assert!(why.contains("P3S"), "{why}");
+    }
+
+    #[test]
+    fn journal_review_of_a_stale_identity_is_not_p3s() {
+        let mut lab = Lab::standard();
+        let stale = physis_core::claim::Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
+        );
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        assert_ne!(stale.statement_hash, live.statement_hash);
+        let jsonl = format!(
+            r#"{{"event":"review","t":1,"claim":"dec.d-squared-zero","evidence_hash":"{}","statement_hash":"{}"}}"#,
+            "0".repeat(64),
+            stale.statement_hash,
+        );
+        *lab.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab.restore_from_journal();
+        assert!(lab.reviews.by_statement(live.statement_hash).is_none());
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let block = why_theory_block(&why, "de-rham");
+        assert!(block.contains("semantic:   unreviewed"), "{block}");
+        assert!(!block.contains("P3S"), "{block}");
+    }
+
+    #[test]
+    fn slug_only_journal_review_is_not_p3s() {
+        let mut lab = Lab::standard();
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        let jsonl = r#"{"event":"review","t":1,"claim":"dec.d-squared-zero","evidence_hash":"00"}"#;
+        *lab.journal_mut() = Journal::from_jsonl(jsonl);
+        lab.restore_from_journal();
+        assert!(lab.reviews.by_statement(live.statement_hash).is_none());
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let block = why_theory_block(&why, "de-rham");
+        assert!(block.contains("semantic:   unreviewed"), "{block}");
+        assert!(!block.contains("P3S"), "{block}");
     }
 
     #[test]
