@@ -277,6 +277,14 @@ impl Claim {
         self.rehash();
         self
     }
+
+    /// Overlay the assumption set and recompute the statement hash.
+    /// Hidden hypotheses are a new identity, not a silent annotation.
+    pub fn with_assumptions(mut self, assumptions: AssumptionSet) -> Self {
+        self.assumptions = assumptions;
+        self.rehash();
+        self
+    }
 }
 
 #[cfg(test)]
@@ -362,6 +370,30 @@ mod tests {
         assert_eq!(a.id, b.id);
         assert_ne!(a.statement_hash, b.statement_hash);
         assert!(b.domain.regimes.iter().any(|r| r.contains("|k a| < 1")));
+    }
+
+    #[test]
+    fn assumption_overlay_changes_the_hash() {
+        let a = Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
+        );
+        let mut items = a.assumptions.items.clone();
+        items.push(crate::assumption::Assumption {
+            id: "discrete-coboundary".into(),
+            statement: "Oriented simplex coboundary".into(),
+            class: crate::AxiomClass::ModelAssumption,
+        });
+        let b = a.clone().with_assumptions(AssumptionSet::new(items));
+        assert_eq!(a.id, b.id);
+        assert_ne!(a.statement_hash, b.statement_hash);
+        assert!(b
+            .assumptions
+            .items
+            .iter()
+            .any(|x| x.id == "discrete-coboundary"));
     }
 
     #[test]

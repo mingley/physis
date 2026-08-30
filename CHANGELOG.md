@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Catalog claims name their axioms as AssumptionSet**
+  (`IdentitySpec::assumption_set`, `Claim::with_assumptions`). Hidden
+  coboundary / Minkowski / Einstein-addition hypotheses are a new
+  identity, not a silent `encoding-is-the-model`. Lean kernel axioms
+  stay on the receipt. Poincaré does not inherit the catalog coboundary
+  set. Verified: named domain without catalog axioms cannot mint;
+  `why` lists `discrete-coboundary` before prove. Live prove is still
+  Lean+nanoda. `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Catalog identities name a DomainOfValidity**
   (`IdentitySpec.domain`). Encoding-wide Physlib forall is not the
   catalog FormalClaim: filling in the regime is a new hash. `why`

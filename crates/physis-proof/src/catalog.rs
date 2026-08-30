@@ -4,11 +4,12 @@
 //! Mutating a sign produces a different challenge hash and, for these
 //! particular identities, a non-zero polynomial that both checkers reject.
 
-use physis_core::assumption::DomainOfValidity;
+use physis_core::assumption::{Assumption, AssumptionSet, DomainOfValidity};
 use physis_core::assurance::ClaimClass;
 use physis_core::claim::Claim;
 use physis_core::formal::{ClaimCommitments, FormalClaim};
 use physis_core::id::LayerId;
+use physis_core::{AxiomId, AxiomLedger};
 
 use crate::expr::{add, mul, pow, sub, Expr};
 
@@ -42,11 +43,19 @@ pub struct IdentitySpec {
 impl IdentitySpec {
     /// Lab claim for this catalog row. Theories that host the identity
     /// should use this so the live `statement_hash` is the catalog hash
-    /// (commitments and named domain, not the encoding-wide placeholder).
+    /// (commitments, named domain, and catalog axioms — not encoding-wide
+    /// Physlib forall with only `encoding-is-the-model`).
     pub fn lab_claim(&self) -> Claim {
         Claim::new(self.claim_id, self.statement, self.layer, self.class)
+            .with_assumptions(self.assumption_set())
             .with_commitments((self.commitments)())
             .with_domain((self.domain)())
+    }
+
+    /// Encoding-internal default plus this row's catalog axioms.
+    /// Lean kernel axioms live on the receipt, not here.
+    pub fn assumption_set(&self) -> AssumptionSet {
+        assumption_set_for(self.axioms)
     }
 
     /// Formal identity the exact / Lean backends may prove.
@@ -58,6 +67,22 @@ impl IdentitySpec {
     pub fn matches(&self, claim: &FormalClaim) -> bool {
         claim.statement_hash == self.formal_claim().statement_hash
     }
+}
+
+fn assumption_set_for(axioms: &[&str]) -> AssumptionSet {
+    let ledger = AxiomLedger::physis_defaults();
+    let mut items = AssumptionSet::encoding_internal().items;
+    for id in axioms {
+        let rec = ledger.get(&AxiomId::new(*id)).unwrap_or_else(|| {
+            panic!("catalog axiom {id} must be on AxiomLedger::physis_defaults")
+        });
+        items.push(Assumption {
+            id: rec.id.0.clone(),
+            statement: rec.provenance.clone(),
+            class: rec.class,
+        });
+    }
+    AssumptionSet::new(items)
 }
 
 fn physlib_d2_commitments() -> ClaimCommitments {
@@ -304,6 +329,36 @@ mod tests {
             assert!(
                 !spec.matches(&FormalClaim::from_claim(&wide)),
                 "physlib forall with the encoding-wide placeholder is not {}",
+                spec.claim_id
+            );
+        }
+    }
+
+    #[test]
+    fn catalog_assumptions_are_identity() {
+        for spec in CATALOG {
+            let live = spec.lab_claim();
+            assert!(
+                live.assumptions
+                    .items
+                    .iter()
+                    .any(|a| a.id == "encoding-is-the-model"),
+                "{}",
+                spec.claim_id
+            );
+            for ax in spec.axioms {
+                assert!(
+                    live.assumptions.items.iter().any(|a| a.id == *ax),
+                    "{} missing assumption {ax}",
+                    spec.claim_id
+                );
+            }
+            let without = Claim::new(spec.claim_id, spec.statement, spec.layer, spec.class)
+                .with_commitments((spec.commitments)())
+                .with_domain((spec.domain)());
+            assert!(
+                !spec.matches(&FormalClaim::from_claim(&without)),
+                "named domain without catalog axioms is not {}",
                 spec.claim_id
             );
         }

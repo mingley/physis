@@ -67,7 +67,8 @@ receipt. A P3F result that is still `Unreviewed` prints a danger note.
 When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a
 catalog FormalClaim identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).
 The catalog obligation is that identity, not the slug: a matching id with
-different commitments or the encoding-wide domain placeholder cannot borrow ExactIdentity or Physlib. `Challenge`
+different commitments, the encoding-wide domain placeholder, or only
+`encoding-is-the-model` cannot borrow ExactIdentity or Physlib. `Challenge`
 is generate-only (private fields, no Deserialize). Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
 an agent can set. `physis review` overlays a justified semantic tag from a
 trusted dossier bound to the live FormalClaim; journal restore re-runs

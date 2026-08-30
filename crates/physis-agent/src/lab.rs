@@ -2146,6 +2146,14 @@ mod tests {
             !d2b.contains("not yet a machine-checked regime"),
             "catalog d² must not be encoding-wide: {d2b}"
         );
+        assert!(
+            d2b.contains("discrete-coboundary"),
+            "catalog d² must name the coboundary hypothesis before prove: {d2b}"
+        );
+        assert!(
+            d2b.contains("integer-arithmetic"),
+            "catalog d² must name integer-arithmetic before prove: {d2b}"
+        );
 
         let poincare = lab
             .exec(Command::Why {
@@ -2162,6 +2170,10 @@ mod tests {
         assert!(
             pb.contains("not yet a machine-checked regime"),
             "Poincaré stays encoding-wide: {pb}"
+        );
+        assert!(
+            !pb.contains("discrete-coboundary"),
+            "Poincaré is not the catalog coboundary identity: {pb}"
         );
 
         let gut = lab
@@ -2215,6 +2227,7 @@ mod tests {
         assert!(ib.contains("minkowski-mostly-minus"), "{ib}");
         assert!(ib.contains("|β| < 1"), "{ib}");
         assert!(ib.contains("1+1 Minkowski"), "{ib}");
+        assert!(ib.contains("minkowski-interval-signature"), "{ib}");
     }
 
     #[test]

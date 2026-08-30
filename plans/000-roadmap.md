@@ -29,6 +29,7 @@ Level-3 trust
   L3 challenge seal        ✓ Challenge is generate-only; no Deserialize; solver cannot set the obligation
   L3 journal identity      ✓ prove/review restore remints only the recorded FormalClaim; slug is not enough
   L3 catalog domain        ✓ catalog identities name a DomainOfValidity; encoding-wide physlib is not the catalog claim
+  L3 catalog assumptions   ✓ catalog lab_claim includes IdentitySpec axioms; encoding-is-the-model alone is not the catalog identity
   L3 catalog identity      ✓ ExactIdentity and review bind to FormalClaim, not slug; live claims are IdentitySpec::lab_claim
   L3 P3S semantic          ✓ encoding review bound to statement_hash, not slug; never Canonical
   L3 P3N numeric           ✓ SM anomalies, hypercharge solve, hydrogen Q=T3+Y, GUT-scale 3/8; Tr Q is ΣY already certified, not a second P3N; not GQW at M_Z
