@@ -483,7 +483,7 @@ impl Lab {
                             VerdictKind::Undecidable => 2,
                             VerdictKind::Inapplicable => 3,
                         };
-                        let semantic = self.semantic_tag(&c.id.0, v.semantic);
+                        let semantic = self.semantic_tag(&c, v.semantic);
                         by_derivation.entry(v.derivation.as_str()).or_default()[idx] += 1;
                         by_class.entry(v.class.as_str()).or_default()[idx] += 1;
                         by_semantic.entry(semantic.as_str()).or_default()[idx] += 1;
@@ -574,11 +574,8 @@ impl Lab {
                             text.push_str(&format!("  class:      {}\n", v.class.as_str()));
                             text.push_str(&format!("  derivation: {}\n", v.derivation.as_str()));
                             text.push_str(&format!("  empirical:  {}\n", v.empirical.as_str()));
-                            text.push_str(&format!(
-                                "  semantic:   {}\n",
-                                self.semantic_tag(&c.id.0, v.semantic).as_str()
-                            ));
-                            let semantic = self.semantic_tag(&c.id.0, v.semantic);
+                            let semantic = self.semantic_tag(&c, v.semantic);
+                            text.push_str(&format!("  semantic:   {}\n", semantic.as_str()));
                             let dual = self.receipts.by_statement(c.statement_hash).is_some();
                             let profile = self.profile_for(&c, v.derivation, semantic);
                             let judgment = Judgment::from_lab(
@@ -798,9 +795,15 @@ impl Lab {
         None
     }
 
-    fn semantic_tag(&self, claim_id: &str, fallback: SemanticAssurance) -> SemanticAssurance {
+    /// Encoding-review overlay for this live identity. A review recorded
+    /// against a different `statement_hash` of the same slug is not P3S.
+    fn semantic_tag(
+        &self,
+        claim: &physis_core::claim::Claim,
+        fallback: SemanticAssurance,
+    ) -> SemanticAssurance {
         self.reviews
-            .by_claim(claim_id)
+            .by_statement(claim.statement_hash)
             .map(|r| r.assurance())
             .unwrap_or(fallback)
     }
@@ -857,7 +860,7 @@ impl Lab {
                 let mut n = 0usize;
                 for (id, t) in &self.theories {
                     for (c, verdict) in t.evaluate_all() {
-                        let semantic = self.semantic_tag(&c.id.0, verdict.semantic);
+                        let semantic = self.semantic_tag(&c, verdict.semantic);
                         let profile = self.profile_for(&c, verdict.derivation, semantic);
                         if profile.has(tier) {
                             n += 1;
@@ -1054,13 +1057,18 @@ impl Lab {
         Ok(self.accept_verified(&v))
     }
 
-    /// Re-run semantic review. Never deserializes a `SemanticAssurance` tag.
+    /// Re-run semantic review against the live FormalClaim. Never
+    /// deserializes a `SemanticAssurance` tag.
     fn remint_review(&mut self, claim_id: &str) -> Result<physis_semantic::SemanticRecord, String> {
-        let rec = physis_semantic::review(claim_id).map_err(|e| e.to_string())?;
+        let claim = self
+            .find_claim(claim_id)
+            .ok_or_else(|| format!("unknown claim {claim_id}"))?;
+        let rec =
+            physis_semantic::review(&FormalClaim::from_claim(&claim)).map_err(|e| e.to_string())?;
         self.reviews.record(&rec);
         self.store.insert(Node::new(
             NodeKind::SemanticReview,
-            vec![rec.source_hash()],
+            vec![rec.statement_hash(), rec.source_hash()],
             rec.evidence_hash().to_hex().as_bytes(),
         ));
         Ok(rec)
@@ -1072,8 +1080,9 @@ impl Lab {
                 self.journal
                     .record(JournalEvent::review(claim_id, r.evidence_hash().to_hex()));
                 Response::ok(format!(
-                    "review {claim_id}\n  semantic {}\n  evidence {}\n  canonical reserved (not agent-mintable)\n",
+                    "review {claim_id}\n  semantic {}\n  identity {}\n  evidence {}\n  canonical reserved (not agent-mintable)\n",
                     r.assurance().as_str(),
+                    r.statement_hash(),
                     r.evidence_hash()
                 ))
             }
@@ -2192,6 +2201,67 @@ mod tests {
         let d2b = why_theory_block(&why2, "de-rham");
         assert!(d2b.contains("judgment:   logical proved"), "{d2b}");
         assert!(d2b.contains("P3F"), "{d2b}");
+    }
+
+    #[test]
+    fn slug_review_is_not_p3s_for_a_changed_identity() {
+        let mut lab = Lab::standard();
+        let stale = physis_core::claim::Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            physis_core::ClaimClass::Mathematical,
+        );
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        assert_ne!(
+            stale.statement_hash, live.statement_hash,
+            "physlib forall must not be the unspecified default identity"
+        );
+        let rec = physis_semantic::review(&FormalClaim::from_claim(&stale)).unwrap();
+        lab.reviews.record(&rec);
+        assert!(lab.reviews.by_claim("dec.d-squared-zero").is_some());
+        assert!(lab.reviews.by_statement(stale.statement_hash).is_some());
+        assert!(lab.reviews.by_statement(live.statement_hash).is_none());
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2 = why_theory_block(&why, "de-rham");
+        assert!(d2.contains("semantic:   unreviewed"), "{d2}");
+        assert!(!d2.contains("P3S"), "{d2}");
+
+        let p3s = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3S".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            !p3s.contains("dec.d-squared-zero"),
+            "stale slug review must not inspect as P3S: {p3s}"
+        );
+
+        lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let why2 = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2b = why_theory_block(&why2, "de-rham");
+        assert!(d2b.contains("semantic:   adversarially-reviewed"), "{d2b}");
+        assert!(d2b.contains("P3S"), "{d2b}");
+        assert!(lab.reviews.by_statement(live.statement_hash).is_some());
+        assert!(
+            lab.reviews.by_statement(stale.statement_hash).is_some(),
+            "a review of the live identity must not erase the stale record"
+        );
     }
 
     #[test]

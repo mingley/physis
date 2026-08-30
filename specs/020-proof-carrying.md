@@ -106,7 +106,7 @@ those tools; a local checkout without them still mints
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
 | trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
 | roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove. Budget is a cap, not a proof |
-| semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus; never `Canonical` |
+| semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus, bound to `statement_hash`; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
 Journal events are hash-linked in memory (`Journal::tip`). Journal

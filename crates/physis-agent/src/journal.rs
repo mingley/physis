@@ -67,8 +67,9 @@ pub enum JournalEvent {
         /// Challenge hash hex.
         challenge_hash: String,
     },
-    /// Semantic review ran. Restore re-runs the dossier review; it does not
-    /// deserialize a semantic-assurance tag as authority.
+    /// Semantic review ran against the live statement identity. Restore
+    /// re-runs the dossier review; it does not deserialize a
+    /// semantic-assurance tag as authority.
     Review {
         /// Unix millis.
         t: u64,

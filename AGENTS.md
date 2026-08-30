@@ -56,19 +56,21 @@ A theory can `Executed`-derive a prediction that nature `Excluded`. That is a fe
 `CertifiedNumeric` Holds is `numeric certified` with a display enclosure,
 not a kernel proof; a coarse lattice is `numeric unresolved`),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
-encoding review; P4 is not assigned from an in-process remint), the
+encoding review of the live `statement_hash`, not the slug; P4 is not assigned from an in-process remint), the
 statement hash (which commits to quantifiers, units, constants, boundary
 conditions, conventions, theory version, definitions, datasets, and
 formal-library identity; the lab slug is stable; P3F is a receipt of
-that hash, not of the slug), non-default identity
+that hash, not of the slug; P3S is a review of that hash, not of the
+slug), non-default identity
 fields, and `kernel proof: none` until `physis prove` records a
 receipt. A P3F result that is still `Unreviewed` prints a danger note.
 When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a
 catalog identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).
 Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
 an agent can set. `physis review` overlays a justified semantic tag from a
-trusted dossier; journal restore re-runs review rather than deserializing
-the tag. `physis inspect trust|class|origin|gap <value>` inverts those
+trusted dossier bound to the live FormalClaim; journal restore re-runs
+review of that identity rather than deserializing the tag. A review of an
+older identity that kept the slug is not P3S. `physis inspect trust|class|origin|gap <value>` inverts those
 axes: knobs carry a `ParameterOrigin` so a fitted dilaton is not a derived
 prediction, and `inspect origin fitted` lists the knobs that accommodate
 rather than derive. `inspect trust P3N` lists exact-`Ratio` cancellations

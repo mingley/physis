@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **P3S keys to statement hash, not slug**
+  (`SemanticRecord.statement_hash`, `Lab::semantic_tag`). Encoding
+  review mints against the live `FormalClaim`. Changing commitments
+  keeps the lab slug and is a new identity: a stale `by_claim` lookup
+  is not P3S. `why`, epistemics, inspect, and journal restore match.
+  Verified: stale unspecified d² review does not inspect as P3S;
+  reviewing the live identity does. `fmt`, `clippy -D warnings`, full
+  suite, CLI (`review` identity hash matches `why`).
+
 - **P3F keys to statement hash, not slug**
   (`Lab::has_live_receipt`). A dual-checked receipt proves the live
   `statement_hash`. Changing commitments keeps the lab slug and is a
