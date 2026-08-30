@@ -12,6 +12,25 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Newtonian Yukawa potential is an IR mutation**
+  (`newtonian-gravity`, `add-yukawa`). Inverse-square Binet is the live
+  encoding (`binet inverse-square`); appending `potential yukawa` makes
+  the impulse-approximation Soldner factor μR K₁(μR) equal 0.601907 at
+  grazing μR = 1 and flips `gr.newton-half-deflection` holds to fails.
+  The residual 1 − μR K₁ is 0.398 and is evidence, not the encoding:
+  μ → 0 recovers Newton and the cell still fails. That is not a knob.
+  Eddington and Mercury still fail (Yukawa is not GR). Schwarzschild
+  3GM u² remains a separate Eddington/Mercury fork (`add-schwarzschild`).
+  `general-relativity` keeps `dim`. Half-angle names inverse-square
+  Binet rhs; GR solar cells stay encoding-wide. Mutants stay
+  `newtonian-gravity`; they are not a silent GR install. Mutants are
+  not installed, not journaled, and not Canonical or P4. Catalog d²
+  hash unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Live encode pin unchanged. Verified: IR round-trip; set yukawa is
+  unknown; hypothesize newtonian-gravity; live inverse-square restored;
+  encode pin
+  `e6e7c4222c571adcf6f526a27ab5e0572fb41d92361c7f3ce393e71e23184078`.
+
 - **Dirac next-nearest hopping is an IR mutation**
   (`dirac-fermion`, `add-next-nearest`). Nearest-neighbour naive hopping
   is the live encoding (`dirac naive`); appending `dirac nnn` includes

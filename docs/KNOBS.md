@@ -27,7 +27,7 @@ lists every fitted knob in the lab.
 - `cosmological_constant` (Planck units, order-of-magnitude)
 
 ### newtonian-gravity
-- (none — inverse-square is a single law; the Schwarzschild 3GM u² term is an IR mutation, not a knob. GR keeps `dim`.)
+- (none — inverse-square is a single law; the Schwarzschild 3GM u² term is an IR mutation, not a knob. A Yukawa e^{-μr}/r potential is a second IR mutation, not a knob. GR keeps `dim`.)
 
 ### bell-test
 - `visibility` — Werner-state visibility V. Ket topology is not this knob: `add-product` is an IR mutation. Tsirelson is not this knob: `add-pr-box` is an IR mutation

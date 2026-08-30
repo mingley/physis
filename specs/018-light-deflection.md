@@ -29,7 +29,10 @@ Schwarzschild term `3 (GM/c²) u²` advances perihelion by
 `newtonian-gravity` has none: topology is not a knob. The standing encoding
 is inverse-square Binet (`binet inverse-square`). `add-schwarzschild`
 appends `binet 3GM u^2` and is an IR mutation: the half-angle fails and
-Eddington / Mercury hold on that fork. That is still `newtonian-gravity`,
+Eddington / Mercury hold on that fork. `add-yukawa` appends
+`potential yukawa` and is a second IR mutation: `μR K_1(μR)` suppresses
+the inverse-square Soldner angle and the half-angle fails, while
+Eddington / Mercury still fail. That is still `newtonian-gravity`,
 not a silent GR install. `general-relativity` keeps `dim` and
 `cosmological_constant`. The solar tests are 4D; `set general-relativity
 dim 5` makes them **inapplicable**.
@@ -44,9 +47,10 @@ dim 5` makes them **inapplicable**.
 
 On `newtonian-gravity`, those three cells name DomainOfValidity inverse-square
 Binet. `add-schwarzschild` appends `binet 3GM u^2` and the half-angle fails
-while Eddington / Mercury hold. That is not a knob. GR's copies stay
-encoding-wide. `set general-relativity dim 5` is still the 4D inapplicable
-knob, not this fork.
+while Eddington / Mercury hold. `add-yukawa` appends `potential yukawa` and
+the half-angle fails while Eddington / Mercury still fail. That is not a
+knob. GR's copies stay encoding-wide. `set general-relativity dim 5` is
+still the 4D inapplicable knob, not this fork.
 
 ## What is computed
 
@@ -72,7 +76,7 @@ uncertainty on `G`.
 physis experiment gravity
 physis run newtonian-gravity
 physis run general-relativity
-physis hypothesize newtonian-gravity   # add-schwarzschild is IR, not set
+physis hypothesize newtonian-gravity   # add-schwarzschild and add-yukawa are IR, not set
 physis set general-relativity dim 5   # solar tests become inapplicable
 ```
 
@@ -86,7 +90,9 @@ physis set general-relativity dim 5   # solar tests become inapplicable
 - Einstein 1911 (equivalence only) agrees with Newton on light; 1915 spatial
   curvature doubles it. This lab's "Newton" column is that half-angle.
 - The Schwarzschild Binet fork is a Newton IR mutation, not an install of
-  `general-relativity`. GR remains the separate 1915 object.
+  `general-relativity`. The Yukawa potential fork is a second Newton IR
+  mutation: it is not GR (Eddington / Mercury still fail). GR remains the
+  separate 1915 object.
 
 ## Related
 

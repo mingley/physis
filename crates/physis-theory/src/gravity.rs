@@ -20,6 +20,9 @@
 //! `3 (GM/c²) u²` term is a package mutation (`add-schwarzschild`), not a
 //! knob: the Newtonian half-angle fails on the mutant, and Eddington /
 //! Mercury hold — still as `newtonian-gravity`, not a silent GR install.
+//! A Yukawa `e^{-μr}/r` potential is a second mutation (`add-yukawa`):
+//! the impulse-approximation Soldner angle is suppressed by `μR K_1(μR)`
+//! and the half-angle fails, while Eddington / Mercury still fail.
 //! [`crate::relativity::GeneralRelativity`] stays a separate object;
 //! `set general-relativity dim 5` still makes the 4D solar tests
 //! inapplicable.
@@ -63,14 +66,24 @@ const MERCURY_ARCSEC_PER_CENTURY: f64 = 42.98;
 const BINET_INVERSE_SQUARE: &str = "binet inverse-square";
 /// Schwarzschild Binet term `3 (GM/c²) u²`.
 const BINET_SCHWARZSCHILD: &str = "binet 3GM u^2";
+/// Yukawa `e^{-μr}/r` potential (impulse-approximation Soldner suppression).
+const POTENTIAL_YUKAWA: &str = "potential yukawa";
+/// Grazing `μR` for the Yukawa fork. `μR K_1(μR)` at this value is ~0.602,
+/// not a unit flag, and is evidence: the encoding fails even if a sampled
+/// residual vanished (μ → 0 recovers Newton).
+const YUKAWA_MU_R: f64 = 1.0;
+/// Euler–Mascheroni constant (A&S 9.6.11).
+const EULER_GAMMA: f64 = 0.577_215_664_901_532_9;
 
-fn parse_newton_binet(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_newton_binet(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut inverse_square = false;
     let mut schwarzschild = false;
+    let mut yukawa = false;
     for eq in &pkg.equations {
         match eq.trim() {
             BINET_INVERSE_SQUARE => inverse_square = true,
             BINET_SCHWARZSCHILD => schwarzschild = true,
+            POTENTIAL_YUKAWA => yukawa = true,
             _ => {}
         }
     }
@@ -80,7 +93,7 @@ fn parse_newton_binet(pkg: &TheoryPackage) -> Result<bool, String> {
             pkg.id
         ));
     }
-    Ok(schwarzschild)
+    Ok((schwarzschild, yukawa))
 }
 
 fn inverse_square_domain() -> DomainOfValidity {
@@ -88,8 +101,63 @@ fn inverse_square_domain() -> DomainOfValidity {
         vec!["inverse-square Binet rhs".into()],
         vec!["Soldner / 1911 corpuscular light; closed Kepler ellipses".into()],
         "Solar-system cells here are the inverse-square Binet encoding. \
-         A 3GM u² Schwarzschild term is a new encoding, not a silent GR install.",
+         A 3GM u² Schwarzschild term or a Yukawa e^{-μr}/r potential is a \
+         new encoding, not a silent GR install.",
     )
+}
+
+/// Modified Bessel `K_1(x)` from A&S 9.6.10–11.
+fn bessel_k1(x: f64) -> f64 {
+    let half = x / 2.0;
+    let z = half * half;
+    let mut i1_sum = 0.0;
+    let mut psi_weighted = 0.0;
+    let mut term = 1.0;
+    let mut harmonic = 0.0;
+    for k in 0..200 {
+        let kf = k as f64;
+        let h_kp1 = harmonic + 1.0 / (kf + 1.0);
+        psi_weighted += (-2.0 * EULER_GAMMA + harmonic + h_kp1) * term;
+        i1_sum += term;
+        harmonic = h_kp1;
+        let next_k = kf + 1.0;
+        let next = term * z / (next_k * (next_k + 1.0));
+        if k > 8 && next.abs() <= 1e-18 * i1_sum.abs() {
+            break;
+        }
+        term = next;
+    }
+    let i1 = half * i1_sum;
+    i1 * half.ln() + 1.0 / x - (x / 4.0) * psi_weighted
+}
+
+/// Impulse-approximation Soldner factor `μR K_1(μR)`. Newton is the μ → 0
+/// limit where this tends to 1.
+fn yukawa_soldner_factor(mu_r: f64) -> f64 {
+    mu_r * bessel_k1(mu_r)
+}
+
+/// Residual of the inverse-square half-angle: `1 − μR K_1(μR)` on the
+/// Yukawa encoding, 0 on inverse-square. Evidence, not the encoding.
+fn yukawa_soldner_residual(yukawa: bool) -> f64 {
+    if yukawa {
+        1.0 - yukawa_soldner_factor(YUKAWA_MU_R)
+    } else {
+        0.0
+    }
+}
+
+fn yukawa_newton_half(claim: &Claim) -> Verdict {
+    let x = YUKAWA_MU_R;
+    let residual = yukawa_soldner_residual(true);
+    let factor = 1.0 - residual;
+    Verdict::fails(
+        claim,
+        "Yukawa e^{-μr}/r suppresses the inverse-square Soldner angle",
+    )
+    .with_evidence([format!(
+        "μR K_1(μR) = {factor:.6} (μR = {x}); 1 − μR K_1 = {residual:.6}"
+    )])
 }
 
 /// One RK4 step of `u'' + u = rhs(u)` with `y = (u, u')`.
@@ -320,20 +388,26 @@ pub(crate) fn solar_claims() -> Vec<Claim> {
 ///
 /// The Binet rhs lives on the IR package. A Schwarzschild `3GM u²` term
 /// is a package mutation (`add-schwarzschild`), not a knob: the half-angle
-/// fails on the mutant and Eddington / Mercury hold. That fork is still
-/// this object, not a silent GR install. GR keeps `dim`.
+/// fails on the mutant and Eddington / Mercury hold. A Yukawa `e^{-μr}/r`
+/// potential is a second mutation (`add-yukawa`): `μR K_1(μR)` suppresses
+/// Soldner and the half-angle fails, while Eddington / Mercury still fail.
+/// Those forks are still this object, not a silent GR install. GR keeps `dim`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct NewtonianGravity {
     schwarzschild: bool,
+    yukawa: bool,
 }
 
 impl NewtonianGravity {
     /// IR package for this Binet rhs. Equations are `binet inverse-square`
-    /// and, when forked, `binet 3GM u^2`.
+    /// and, when forked, `binet 3GM u^2` and/or `potential yukawa`.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![BINET_INVERSE_SQUARE.to_string()];
         if self.schwarzschild {
             equations.push(BINET_SCHWARZSCHILD.to_string());
+        }
+        if self.yukawa {
+            equations.push(POTENTIAL_YUKAWA.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -361,13 +435,19 @@ impl NewtonianGravity {
                 pkg.id
             ));
         }
+        let (schwarzschild, yukawa) = parse_newton_binet(pkg)?;
         Ok(Self {
-            schwarzschild: parse_newton_binet(pkg)?,
+            schwarzschild,
+            yukawa,
         })
     }
 
     fn schwarzschild_equation() -> String {
         BINET_SCHWARZSCHILD.to_string()
+    }
+
+    fn yukawa_equation() -> String {
+        POTENTIAL_YUKAWA.to_string()
     }
 }
 
@@ -394,8 +474,9 @@ impl Theory for NewtonianGravity {
         "Inverse-square gravity and corpuscular light. Grazing solar deflection \
          is 2 GM/(c² R) ≈ 0.87″ (Soldner); bound orbits are closed ellipses. \
          Eddington's 1.75″ and Mercury's 43″ remainder both fail. A \
-         Schwarzschild 3GM u² term is an IR mutation, not a knob, and not a \
-         silent GR install."
+         Schwarzschild 3GM u² term is an IR mutation, not a knob. A Yukawa \
+         e^{-μr}/r potential is a second IR mutation: it suppresses Soldner \
+         and is not a silent GR install."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -406,7 +487,9 @@ impl Theory for NewtonianGravity {
             supersymmetric: false,
             free_parameter_count: 1, // G
             landscape_log10: 0.0,
-            note: if self.schwarzschild {
+            note: if self.yukawa {
+                "Newtonian encoding with Yukawa e^{-μr}/r potential".into()
+            } else if self.schwarzschild {
                 "Newtonian encoding with Schwarzschild 3GM u² Binet term".into()
             } else {
                 "Newtonian inverse-square gravity, corpuscular light".into()
@@ -420,7 +503,14 @@ impl Theory for NewtonianGravity {
             .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_solar(self.schwarzschild, 4, claim)
+        if self.yukawa {
+            match claim.id_str() {
+                NEWTON_HALF => yukawa_newton_half(claim),
+                _ => eval_solar(false, 4, claim),
+            }
+        } else {
+            eval_solar(self.schwarzschild, 4, claim)
+        }
     }
     fn ir_package(&self) -> Option<TheoryPackage> {
         Some(self.package())
@@ -429,28 +519,42 @@ impl Theory for NewtonianGravity {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.schwarzschild = parsed.schwarzschild;
+        fork.yukawa = parsed.yukawa;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.schwarzschild {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::schwarzschild_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.schwarzschild => {
-                let mut fork = self.clone();
-                fork.schwarzschild = true;
-                vec![("add-schwarzschild".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.schwarzschild {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::schwarzschild_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.schwarzschild {
+                    let mut fork = self.clone();
+                    fork.schwarzschild = true;
+                    out.push(("add-schwarzschild".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.yukawa {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::yukawa_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.yukawa {
+                    let mut fork = self.clone();
+                    fork.yukawa = true;
+                    out.push(("add-yukawa".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -470,7 +574,7 @@ pub fn gravity() -> ExperimentReport {
         vec![
             "`gr.newton-half-deflection` is the standing Soldner/1911 claim: it holds for Newton and fails for GR (spatial curvature doubles the angle).".into(),
             "`gr.eddington-deflection` and `gr.mercury-perihelion` are the observations Newtonian gravity fails.".into(),
-            "`hypothesize newtonian-gravity`: add-schwarzschild is IR, not set. GR stays a separate object.".into(),
+            "`hypothesize newtonian-gravity`: add-schwarzschild and add-yukawa are IR, not set. GR stays a separate object.".into(),
             "`set general-relativity dim 5` makes the 4D solar tests inapplicable.".into(),
             "GM_☉ is the IAU standard gravitational parameter, so GM/c² is a typed length.".into(),
         ],
@@ -625,15 +729,43 @@ mod tests {
         assert_eq!(verdict(&t, EDDINGTON), VerdictKind::Fails);
         assert_eq!(verdict(&t, MERCURY_PERIHELION), VerdictKind::Fails);
         let probes = NewtonianGravity::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-schwarzschild");
-        assert_eq!(probes[0].1.id(), "newtonian-gravity");
+        assert_eq!(probes.len(), 2);
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-schwarzschild"),
+            "live Newton must offer add-schwarzschild: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-yukawa"),
+            "live Newton must offer add-yukawa: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let schwarzschild_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-schwarzschild")
+            .expect("add-schwarzschild");
+        assert_eq!(schwarzschild_probe.1.id(), "newtonian-gravity");
         assert_eq!(
-            verdict(probes[0].1.as_ref(), NEWTON_HALF),
+            verdict(schwarzschild_probe.1.as_ref(), NEWTON_HALF),
             VerdictKind::Fails
         );
-        assert_eq!(verdict(probes[0].1.as_ref(), EDDINGTON), VerdictKind::Holds);
-        assert!(fork.structural_mutations().is_empty());
+        assert_eq!(
+            verdict(schwarzschild_probe.1.as_ref(), EDDINGTON),
+            VerdictKind::Holds
+        );
+        let schwarzschild_fork_probes = fork.structural_mutations();
+        assert!(
+            schwarzschild_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-schwarzschild"),
+            "schwarzschild fork must not re-offer add-schwarzschild"
+        );
+        assert!(
+            schwarzschild_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-yukawa"),
+            "schwarzschild fork must still offer add-yukawa"
+        );
         let live = NewtonianGravity::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -665,5 +797,170 @@ mod tests {
         high_d.set("dim", KnobValue::UInt(5)).unwrap();
         assert_eq!(verdict(&high_d, EDDINGTON), VerdictKind::Inapplicable);
         assert_eq!(verdict(&live, EDDINGTON), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn bessel_k1_matches_known_values() {
+        assert!(
+            (bessel_k1(1.0) - 0.601_907_230_197_234_6).abs() < 1e-12,
+            "K_1(1) = {}",
+            bessel_k1(1.0)
+        );
+        assert!(
+            (bessel_k1(2.0) - 0.139_865_881_816_522_4).abs() < 1e-12,
+            "K_1(2) = {}",
+            bessel_k1(2.0)
+        );
+        let tiny = 1e-9 * bessel_k1(1e-9);
+        assert!(
+            (tiny - 1.0).abs() < 1e-6,
+            "μR K_1(μR) → 1 as μ → 0, got {tiny}"
+        );
+    }
+
+    #[test]
+    fn yukawa_potential_is_ir_not_a_knob() {
+        let t = NewtonianGravity::default();
+        assert!(
+            NewtonianGravity::default()
+                .set("yukawa", KnobValue::Bool(true))
+                .is_err(),
+            "Yukawa potential is an IR mutation, not a knob"
+        );
+        assert!(
+            NewtonianGravity::default()
+                .set("mu", KnobValue::Float(1.0))
+                .is_err(),
+            "μ is not a knob"
+        );
+        assert!(
+            NewtonianGravity::default()
+                .set("dim", KnobValue::UInt(5))
+                .is_err(),
+            "Newton must not grow a dim knob; that stays on GR"
+        );
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay inverse-square Binet"
+        );
+        assert_eq!(pkg.equations[0], BINET_INVERSE_SQUARE);
+        assert_eq!(
+            NewtonianGravity::from_package(&pkg).unwrap(),
+            t,
+            "IR round-trip must preserve the inverse-square Binet rhs"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(NewtonianGravity::yukawa_equation()),
+        );
+        let parsed = NewtonianGravity::from_package(&mutated).unwrap();
+        assert!(parsed.yukawa);
+        assert!(!parsed.schwarzschild);
+        let mut fork = t.clone();
+        fork.yukawa = true;
+        assert_eq!(fork.id(), "newtonian-gravity");
+        assert_eq!(verdict(&fork, NEWTON_HALF), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, EDDINGTON), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, MERCURY_PERIHELION), VerdictKind::Fails);
+        assert_eq!(verdict(&t, NEWTON_HALF), VerdictKind::Holds);
+        assert_eq!(verdict(&t, EDDINGTON), VerdictKind::Fails);
+        assert_eq!(verdict(&t, MERCURY_PERIHELION), VerdictKind::Fails);
+        let r = yukawa_soldner_residual(true);
+        assert!(
+            (r - 0.398_092_769_802_765_4).abs() < 1e-9,
+            "Soldner residual must be 1 − μR K_1(μR) at μR=1, got {r}"
+        );
+        assert!(
+            (r - 1.0).abs() > 0.3,
+            "Soldner residual must be the K_1 scale, not a unit flag, got {r}"
+        );
+        assert_eq!(yukawa_soldner_residual(false), 0.0);
+        let half = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == NEWTON_HALF)
+            .unwrap();
+        let v = fork.evaluate(&half);
+        assert!(
+            !v.summary.contains("spatial curvature"),
+            "Yukawa is not GR spatial curvature: {}",
+            v.summary
+        );
+        assert!(
+            v.evidence.iter().any(|e| e.contains("K_1")),
+            "Yukawa evidence must report μR K_1: {:?}",
+            v.evidence
+        );
+        let probes = NewtonianGravity::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-yukawa"),
+            "live Newton must offer add-yukawa: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let yukawa_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-yukawa")
+            .expect("add-yukawa");
+        assert_eq!(
+            verdict(yukawa_probe.1.as_ref(), NEWTON_HALF),
+            VerdictKind::Fails
+        );
+        assert_eq!(
+            verdict(yukawa_probe.1.as_ref(), EDDINGTON),
+            VerdictKind::Fails
+        );
+        let yukawa_fork_probes = fork.structural_mutations();
+        assert!(
+            yukawa_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-yukawa"),
+            "yukawa fork must not re-offer add-yukawa"
+        );
+        assert!(
+            yukawa_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-schwarzschild"),
+            "yukawa fork must still offer add-schwarzschild"
+        );
+        let live = NewtonianGravity::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(verdict(rebuilt.as_ref(), NEWTON_HALF), VerdictKind::Holds);
+        let half = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == NEWTON_HALF)
+            .unwrap();
+        assert!(
+            !half.domain().is_encoding_wide(),
+            "Newton half-angle must name the inverse-square Binet rhs: {:?}",
+            half.domain()
+        );
+        let gr = GeneralRelativity::default();
+        assert!(
+            gr.structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-yukawa"),
+            "GR must not grow add-yukawa"
+        );
+        assert!(
+            gr.structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-schwarzschild"),
+            "GR must not grow add-schwarzschild"
+        );
+        let mut high_d = GeneralRelativity::default();
+        high_d.set("dim", KnobValue::UInt(5)).unwrap();
+        assert_eq!(verdict(&high_d, EDDINGTON), VerdictKind::Inapplicable);
+        assert_eq!(
+            high_d.get("dim").unwrap(),
+            KnobValue::UInt(5),
+            "dim stays on GR"
+        );
     }
 }

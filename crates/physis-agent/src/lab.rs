@@ -5230,13 +5230,27 @@ mod tests {
             text.contains("add-schwarzschild") && text.contains("ir structural"),
             "{text}"
         );
+        let marker = "add-schwarzschild: package → add-schwarzschild";
+        let start = text.find(marker).expect("add-schwarzschild hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  newtonian-gravity  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let schwarzschild_block = &rest[..end];
         assert!(
-            text.contains("gr.newton-half-deflection") && text.contains("holds → fails"),
-            "{text}"
+            schwarzschild_block.contains("gr.newton-half-deflection")
+                && schwarzschild_block.contains("holds → fails"),
+            "add-schwarzschild must flip newton-half holds to fails: {schwarzschild_block}"
         );
         assert!(
-            text.contains("gr.eddington-deflection") && text.contains("fails → holds"),
-            "{text}"
+            schwarzschild_block.contains("gr.eddington-deflection")
+                && schwarzschild_block.contains("fails → holds"),
+            "add-schwarzschild must flip Eddington fails to holds: {schwarzschild_block}"
+        );
+        assert!(
+            text.contains("add-yukawa"),
+            "yukawa must still be an IR fork: {text}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -5259,6 +5273,105 @@ mod tests {
                 c.id_str() == "gr.eddington-deflection" && v.kind == VerdictKind::Holds
             }),
             "GR must stay the live Schwarzschild object"
+        );
+    }
+
+    #[test]
+    fn hypothesize_newtonian_gravity_yukawa_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["yukawa", "mu"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "newtonian-gravity".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("newtonian-gravity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-yukawa") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-yukawa: package → add-yukawa";
+        let start = text.find(marker).expect("add-yukawa hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  newtonian-gravity  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let yukawa_block = &rest[..end];
+        assert!(
+            yukawa_block.contains("gr.newton-half-deflection")
+                && yukawa_block.contains("holds → fails"),
+            "add-yukawa must flip newton-half holds to fails: {yukawa_block}"
+        );
+        assert!(
+            !yukawa_block.contains("gr.eddington-deflection"),
+            "add-yukawa is not the Schwarzschild Eddington fork: {yukawa_block}"
+        );
+        assert!(
+            !yukawa_block.contains("gr.mercury-perihelion"),
+            "add-yukawa is not the Schwarzschild Mercury fork: {yukawa_block}"
+        );
+        assert!(
+            !yukawa_block.contains("em.constitutive-linear"),
+            "add-yukawa is not the Tellegen fork: {yukawa_block}"
+        );
+        assert!(
+            text.contains("add-schwarzschild"),
+            "schwarzschild must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("newtonian-gravity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "gr.newton-half-deflection" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(live.id(), "newtonian-gravity");
+        let gr = lab.theory("general-relativity").unwrap();
+        assert_eq!(
+            gr.get("dim").unwrap().display(),
+            "4",
+            "Newton IR must not convert GR dim"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "gr.newton-half-deflection".into(),
+            })
+            .text()
+            .to_string();
+        let newton = why_theory_block(&why, "newtonian-gravity");
+        assert!(
+            newton.contains("inverse-square Binet rhs"),
+            "Newton half-angle must name inverse-square Binet: {newton}"
+        );
+        assert!(
+            !newton.contains("not yet a machine-checked regime"),
+            "Newton half-angle must not be encoding-wide: {newton}"
+        );
+        let gr_why = why_theory_block(&why, "general-relativity");
+        assert!(
+            gr_why.contains("not yet a machine-checked regime"),
+            "GR solar cells stay encoding-wide: {gr_why}"
         );
     }
 
@@ -8051,6 +8164,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_newton.contains("add-schwarzschild"), "{hypo_newton}");
+        assert!(hypo_newton.contains("add-yukawa"), "{hypo_newton}");
         let newton_again = lab
             .exec(Command::Encode {
                 theory: "newtonian-gravity".into(),
