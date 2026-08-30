@@ -113,7 +113,8 @@ fn perihelion_advance_rad(m: f64, a: f64, e: f64, gr: bool) -> f64 {
     let p = a * (1.0 - e * e);
     let gm_h2 = 1.0 / p; // GM/h² = 1/(a(1−e²)), in 1/metres
     let mut phi = 0.0_f64;
-    let mut u = (1.0 + e) / a;
+    // Perihelion of the Kepler ellipse: r_min = a(1−e), so u = 1/(a(1−e)).
+    let mut u = 1.0 / (a * (1.0 - e));
     let mut v = 0.0_f64;
     let n = 120_000_usize;
     let h = (2.0 * PI) / (n as f64);

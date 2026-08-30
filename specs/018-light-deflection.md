@@ -45,7 +45,7 @@ Shared RK4 on `u'' + u = rhs(u)` (`u = 1/r`):
 | problem | Newtonian `rhs` | GR `rhs` |
 |---|---|---|
 | light, periapsis `u = 1/R` | `(GM/c²)/R²` | `3 (GM/c²) u²` |
-| Mercury, perihelion `u = (1+e)/a` | `1/(a(1−e²))` | Kepler + `3 (GM/c²) u²` |
+| Mercury, perihelion `u = 1/(a(1−e))` | `1/(a(1−e²))` | Kepler + `3 (GM/c²) u²` |
 
 Light: integrate from periapsis until `u = 0`; deflection is
 `2 (φ_∞ − π/2)`. Mercury: next perihelion minus `2π`, times orbits per

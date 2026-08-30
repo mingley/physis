@@ -47,7 +47,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   remainder. Schwarzschild geodesics reverse the matrix (`u'' + u = 3 (GM/c²)
   u²` for light; Kepler plus that term for Mercury). `GM/c²` is a typed
   length from the IAU solar `GM`. `set general-relativity dim 5` makes the
-  4D solar tests inapplicable.
+  4D solar tests inapplicable. Bugbot follow-up: Mercury's RK4 now starts at
+  the Kepler perihelion `u = 1/(a(1−e))`, not `(1+e)/a`.
 
 - **Two-loop RG running for gauge-coupling unification**
   (`crates/physis-theory/src/rge.rs`, `crates/physis-theory/src/gut.rs`,
