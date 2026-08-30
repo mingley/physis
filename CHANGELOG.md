@@ -19,10 +19,12 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   untrusted bytes and does not call `verify`. `--budget prove=N` is a
   research cap: a spent slot cannot mint. `loop` and `replay` stay
   lab-only. Journal restore reconstitutes as the lab, then the live
-  command is role-gated. P4 is still not assigned. Verified: role
-  permit tests, explorer-does-not-mint, formalizer-without-receipt,
-  spent-budget second prove, `fmt`, `clippy -D warnings`, full suite,
-  CLI.
+  command is role-gated. `loop` spends prove/review slots for each
+  inner remint; a zero prove budget cannot mint through the cycle.
+  P4 is still not assigned. Verified: role permit tests,
+  explorer-does-not-mint, formalizer-without-receipt, spent-budget
+  second prove, loop-respects-zero-prove-budget, `fmt`,
+  `clippy -D warnings`, full suite, CLI.
 
 - **Chosen knobs vs measured ones, and inverse inspect**
   (`ParameterOrigin` on every `KnobSpec`, `physis inspect`). String

@@ -1064,6 +1064,13 @@ impl Lab {
 
         let mut proved = Vec::new();
         for spec in CATALOG {
+            let spend = Command::Prove {
+                claim: spec.claim_id.to_string(),
+            };
+            if let Err(e) = self.budget.try_consume(&spend) {
+                text.push_str(&format!("prove  {}  {e}\n", spec.claim_id));
+                continue;
+            }
             match self.remint_preferred(spec.claim_id) {
                 Ok(r) => {
                     self.journal.record(JournalEvent::prove(
@@ -1085,6 +1092,14 @@ impl Lab {
 
         let mut replicate_ok = true;
         for spec in CATALOG {
+            let spend = Command::Prove {
+                claim: spec.claim_id.to_string(),
+            };
+            if let Err(e) = self.budget.try_consume(&spend) {
+                replicate_ok = false;
+                text.push_str(&format!("replicate  {}  {e}\n", spec.claim_id));
+                continue;
+            }
             let before = self
                 .receipts
                 .by_claim(spec.claim_id)
@@ -1125,6 +1140,13 @@ impl Lab {
 
         let mut reviewed = Vec::new();
         for spec in CATALOG {
+            let spend = Command::Review {
+                claim: spec.claim_id.to_string(),
+            };
+            if let Err(e) = self.budget.try_consume(&spend) {
+                text.push_str(&format!("review  {}  {e}\n", spec.claim_id));
+                continue;
+            }
             match self.remint_review(spec.claim_id) {
                 Ok(r) => {
                     self.journal.record(JournalEvent::review(
@@ -2393,6 +2415,36 @@ mod tests {
             resp.text().contains("reviewer cannot prove"),
             "{}",
             resp.text()
+        );
+    }
+
+    #[test]
+    fn loop_respects_a_zero_prove_budget() {
+        let mut lab = Lab::standard();
+        lab.set_budget(ResearchBudget::limited(0, 0, 0));
+        let text = lab.exec(Command::Loop).text().to_string();
+        assert!(
+            text.contains("prove  dec.d-squared-zero  research budget exhausted"),
+            "{text}"
+        );
+        assert!(
+            text.contains("replicate  dec.d-squared-zero  research budget exhausted"),
+            "{text}"
+        );
+        assert!(
+            text.contains("review  dec.d-squared-zero  research budget exhausted"),
+            "{text}"
+        );
+        let p3f = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p3f.contains("count 0"),
+            "loop must not mint when prove budget is zero: {p3f}"
         );
     }
 }
