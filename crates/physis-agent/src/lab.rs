@@ -5688,6 +5688,138 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_general_relativity_r_squared_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["r_squared", "starobinsky", "quadratic"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "general-relativity".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+        let newton_blocked = lab.exec(Command::Set {
+            theory: "general-relativity".into(),
+            knob: "schwarzschild".into(),
+            value: "true".into(),
+        });
+        assert_eq!(newton_blocked.exit_code(), 1, "{}", newton_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("general-relativity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-r-squared") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-r-squared: package → add-r-squared";
+        let start = text.find(marker).expect("add-r-squared hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  general-relativity  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let r2_block = &rest[..end];
+        assert!(
+            r2_block.contains("predictivity.unique-vacuum") && r2_block.contains("holds → fails"),
+            "add-r-squared must flip unique-vacuum holds to fails: {r2_block}"
+        );
+        assert!(
+            !r2_block.contains("empirical.observed-4d"),
+            "add-r-squared is not the dim knob: {r2_block}"
+        );
+        assert!(
+            !r2_block.contains("gr.eddington-deflection"),
+            "add-r-squared is not the Newton Schwarzschild solar fork: {r2_block}"
+        );
+        assert!(
+            !r2_block.contains("gr.newton-half-deflection"),
+            "add-r-squared is not the inverse-square Binet fork: {r2_block}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("general-relativity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "predictivity.unique-vacuum" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("dim").unwrap().display(),
+            "4",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("cosmological_constant").unwrap().display(),
+            "0",
+            "hypothesize must restore knobs"
+        );
+        let newton = lab.theory("newtonian-gravity").unwrap();
+        assert_eq!(
+            newton.id(),
+            "newtonian-gravity",
+            "GR IR must not convert Newton"
+        );
+        let sm = lab.theory("standard-model").unwrap();
+        assert_eq!(
+            sm.get("include_higgs").unwrap().display(),
+            "true",
+            "GR IR must not convert the Standard-Model include_higgs knob"
+        );
+        let dim = lab.exec(Command::Set {
+            theory: "general-relativity".into(),
+            knob: "dim".into(),
+            value: "5".into(),
+        });
+        assert_eq!(dim.exit_code(), 0, "{}", dim.text());
+        assert!(
+            dim.text().contains("empirical.observed-4d") && dim.text().contains("holds → fails"),
+            "{}",
+            dim.text()
+        );
+        let live = lab.theory("general-relativity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "predictivity.unique-vacuum" && v.kind == VerdictKind::Holds
+            }),
+            "dim still Holds uniqueness on the live Einstein-Hilbert encoding"
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "general-relativity".into(),
+            knob: "dim".into(),
+            value: "4".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            why.contains("classical Einstein-Hilbert plus Λ"),
+            "GR unique-vacuum must name Einstein-Hilbert: {why}"
+        );
+        assert!(
+            !why.contains("not yet a machine-checked regime"),
+            "unique-vacuum encodings name regimes: {why}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -7235,8 +7367,8 @@ mod tests {
             "loop must independently round-trip the naive Dirac operator: {text}"
         );
         assert!(
-            !text.contains("encode  general-relativity"),
-            "GR is not the Newton IR package: {text}"
+            text.contains("encode  general-relativity"),
+            "loop must independently round-trip the Einstein-Hilbert action: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -8572,13 +8704,25 @@ mod tests {
         assert_ne!(dirac_id, landauer_id);
         assert_ne!(dirac_id, nand_id);
 
-        for theory in [
-            "standard-model",
-            "type-iib",
-            "de-rham",
-            "turing-machine",
-            "general-relativity",
-        ] {
+        let gr = lab
+            .exec(Command::Encode {
+                theory: "general-relativity".into(),
+            })
+            .text()
+            .to_string();
+        assert!(gr.contains("equations  1"), "{gr}");
+        assert!(gr.contains("round-trip canonical"), "{gr}");
+        assert!(gr.contains("not P3S"), "{gr}");
+        assert!(!gr.contains("receipt"), "{gr}");
+        let gr_id = encoding_package_id(&gr);
+        assert_eq!(
+            gr_id.to_hex(),
+            "8e99553456fa93c2774e4021eb87bb4dd0547f457cf549ec4bf11859313f7be0"
+        );
+        assert_ne!(gr_id, dirac_id);
+        assert_ne!(gr_id, newton_id);
+
+        for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
             });
@@ -8848,6 +8992,25 @@ mod tests {
             encoding_package_id(&dirac_again),
             dirac_id,
             "hypothesize must not install the Wilson-term mutant"
+        );
+
+        let hypo_gr = lab
+            .exec(Command::Hypothesize {
+                theory: Some("general-relativity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_gr.contains("add-r-squared"), "{hypo_gr}");
+        let gr_again = lab
+            .exec(Command::Encode {
+                theory: "general-relativity".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&gr_again),
+            gr_id,
+            "hypothesize must not install the R-squared mutant"
         );
 
         let p3s = lab

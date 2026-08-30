@@ -575,6 +575,7 @@ pub fn gravity() -> ExperimentReport {
             "`gr.newton-half-deflection` is the standing Soldner/1911 claim: it holds for Newton and fails for GR (spatial curvature doubles the angle).".into(),
             "`gr.eddington-deflection` and `gr.mercury-perihelion` are the observations Newtonian gravity fails.".into(),
             "`hypothesize newtonian-gravity`: add-schwarzschild and add-yukawa are IR, not set. GR stays a separate object.".into(),
+            "`hypothesize general-relativity`: add-r-squared is IR, not set. dim stays on GR.".into(),
             "`set general-relativity dim 5` makes the 4D solar tests inapplicable.".into(),
             "GM_☉ is the IAU standard gravitational parameter, so GM/c² is a typed length.".into(),
         ],
@@ -953,6 +954,12 @@ mod tests {
                 .iter()
                 .all(|(label, _)| label != "add-schwarzschild"),
             "GR must not grow add-schwarzschild"
+        );
+        assert!(
+            gr.structural_mutations()
+                .iter()
+                .any(|(label, _)| label == "add-r-squared"),
+            "GR must offer add-r-squared on its own Einstein-Hilbert package"
         );
         let mut high_d = GeneralRelativity::default();
         high_d.set("dim", KnobValue::UInt(5)).unwrap();

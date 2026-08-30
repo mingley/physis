@@ -78,7 +78,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly**; `add-bose` / `add-fermi` are IR, not temperature knobs |
 | `blackbody` | cavity radiation — **Rayleigh–Jeans fails** finite energy, T⁴, and Wien's peak; Planck holds them; `set planck quantum false` restores the ultraviolet catastrophe |
 | `solid` | lattice oscillators — **Dulong–Petit fails** the third law; Einstein holds it but **fails T³** (exponential freeze-out); Debye holds both the third law and `C_V ∝ T³` |
-| `gravity` | solar-system gravity — **Newton fails** Eddington's 1.75″ and Mercury's 43″; GR holds them; Soldner's half-angle is the standing claim GR doubles |
+| `gravity` | solar-system gravity — **Newton fails** Eddington's 1.75″ and Mercury's 43″; GR holds them; Soldner's half-angle is the standing claim GR doubles; `add-r-squared` is IR, not a `dim` knob |
 | `olbers` | night sky — **static Euclidean fails** finite brightness and a dark sky (`F ∝ R`, `τ → ∞`); a finite-age horizon holds both; Hubble dimming is an independent flip |
 | `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2`; `add-product` / `add-pr-box` are IR, not visibility knobs |
 

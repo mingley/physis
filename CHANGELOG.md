@@ -12,6 +12,25 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **GR quadratic curvature is an IR mutation**
+  (`general-relativity`, `add-r-squared`). Einstein-Hilbert is the live
+  encoding (`action einstein-hilbert`); appending `action r-squared`
+  makes the classical action not unique Einstein gravity plus Λ and
+  flips `predictivity.unique-vacuum` holds to fails. The residual is
+  ξ = 1 and is evidence, not the encoding: ξ → 0 recovers
+  Einstein-Hilbert and the cell still fails, including in D=5 where
+  solar tests are inapplicable and at Λ = 0. That is not a knob.
+  Eddington and Mercury still hold (R² is not a 3GM Binet term).
+  `dim` / `cosmological_constant` stay knobs. Unique-vacuum still names
+  classical Einstein-Hilbert plus Λ. Mutants stay
+  `general-relativity`; they are not a silent Newton or Standard-Model
+  install. Mutants are not installed, not journaled, and not Canonical
+  or P4. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  P3N count stays 4. Verified: IR round-trip; set r_squared is unknown;
+  hypothesize general-relativity; live Einstein-Hilbert restored;
+  encode pin
+  `8e99553456fa93c2774e4021eb87bb4dd0547f457cf549ec4bf11859313f7be0`.
+
 - **Wilson fundamental Higgs is an IR mutation**
   (`wilson-u1`, `wilson-su2`, `wilson-su3`, `add-higgs`). Unimproved
   1×1 plaquettes are the live encoding (`wilson-plaquette 1x1`);

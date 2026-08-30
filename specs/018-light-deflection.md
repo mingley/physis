@@ -34,7 +34,11 @@ Eddington / Mercury hold on that fork. `add-yukawa` appends
 the inverse-square Soldner angle and the half-angle fails, while
 Eddington / Mercury still fail. That is still `newtonian-gravity`,
 not a silent GR install. `general-relativity` keeps `dim` and
-`cosmological_constant`. The solar tests are 4D; `set general-relativity
+`cosmological_constant`. The Einstein–Hilbert action is a live IR
+package (`action einstein-hilbert`). `add-r-squared` appends
+`action r-squared` and is an IR mutation: uniqueness of Einstein
+gravity plus Λ fails. That is still `general-relativity`, not a
+silent Newton install. The solar tests are 4D; `set general-relativity
 dim 5` makes them **inapplicable**.
 
 ## Claims
@@ -77,6 +81,7 @@ physis experiment gravity
 physis run newtonian-gravity
 physis run general-relativity
 physis hypothesize newtonian-gravity   # add-schwarzschild and add-yukawa are IR, not set
+physis hypothesize general-relativity  # add-r-squared is IR, not set
 physis set general-relativity dim 5   # solar tests become inapplicable
 ```
 
@@ -92,7 +97,8 @@ physis set general-relativity dim 5   # solar tests become inapplicable
 - The Schwarzschild Binet fork is a Newton IR mutation, not an install of
   `general-relativity`. The Yukawa potential fork is a second Newton IR
   mutation: it is not GR (Eddington / Mercury still fail). GR remains the
-  separate 1915 object.
+  separate 1915 object. Quadratic curvature on GR is an IR mutation of
+  the Einstein–Hilbert action, not a Newton Binet term and not `dim`.
 
 ## Related
 

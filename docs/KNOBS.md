@@ -23,7 +23,7 @@ lists every fitted knob in the lab.
 - `neutrino_masses` — chosen; minimal SM stores them as 0; oscillations show they are nonzero (`empirical.neutrino-masses`)
 
 ### general-relativity
-- `dim` — solar-system tests (Eddington, Mercury) are 4D; other values make them inapplicable
+- `dim` — solar-system tests (Eddington, Mercury) are 4D; other values make them inapplicable. The Einstein–Hilbert action is not this knob: `add-r-squared` is an IR mutation
 - `cosmological_constant` (Planck units, order-of-magnitude)
 
 ### newtonian-gravity
