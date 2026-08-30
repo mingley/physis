@@ -32,6 +32,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Debye 2D continuum is an IR mutation**
+  (`debye-solid`, `add-2d`). 3D `ω²` is the live encoding; appending
+  `g(w) = w` flips `thermo.debye-t3` holds to fails. Freeze-out still
+  holds (`C_V ∝ T² → 0`), so the third-law cell is not a unit flag and
+  not Einstein freeze-out. That is not a knob. `spectrum` and `quantum`
+  stay knobs. Mutants stay `debye-solid`. `einstein-solid` and
+  `dulong-petit` have no package. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: IR
+  round-trip; set two_d is unknown; hypothesize debye-solid; live 3D
+  ω² restored; encode pin
+  `dd817e70efdc2efede016101efe3e7b88558cd95f8260b30fc9a130301892b16`.
+
 - **SU(5) missing 10 is an IR mutation**
   (`su5-gut`, `add-missing-10`). Complete `5bar + 10` is the live
   encoding; appending `missing 10` flips `gut.sm-embedding` holds

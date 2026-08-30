@@ -28,7 +28,7 @@ This object exists so uniqueness can sit on the same matrix as the string landsc
 
 ## Solid heat capacity
 
-**Dulong–Petit** is classical equipartition applied to 3N lattice oscillators — an 1819 standing theory. It holds `C_V = 3 N k` at every T and fails the third law. **Einstein** (1907) uses the same Bose factor as Planck; `C_V → 0` exponentially as T → 0, and `C_V → 3 N k` only for `T ≫ Θ_E`. That exponential over-suppresses `C_V` relative to the observed `T³` phonon law. **Debye** (1912) puts an `ω²` density of states under the same Bose factor; `C_V(2T)/C_V(T) = 8` at `T = Θ_D/20` is a computed theorem. `set einstein-solid spectrum debye` is that 1912 correction as a knob turn. `set einstein-solid temperature 4000` is the high-T correspondence.
+**Dulong–Petit** is classical equipartition applied to 3N lattice oscillators — an 1819 standing theory. It holds `C_V = 3 N k` at every T and fails the third law. **Einstein** (1907) uses the same Bose factor as Planck; `C_V → 0` exponentially as T → 0, and `C_V → 3 N k` only for `T ≫ Θ_E`. That exponential over-suppresses `C_V` relative to the observed `T³` phonon law. **Debye** (1912) puts an `ω²` density of states under the same Bose factor; `C_V(2T)/C_V(T) = 8` at `T = Θ_D/20` is a computed theorem. `set einstein-solid spectrum debye` is that 1912 correction as a knob turn. `set einstein-solid temperature 4000` is the high-T correspondence. `hypothesize debye-solid` forks a 2D `ω` continuum as IR (`add-2d`); that is not the `spectrum` knob.
 
 ## Olbers' paradox
 

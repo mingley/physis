@@ -27,6 +27,12 @@
 //! `T³`. Raising `temperature` far above `Θ` makes Dulong–Petit hold again
 //! (correspondence), without resurrecting the third-law or `T³` failures —
 //! those are statements about T → 0, probed at `Θ/40` and `Θ/20`.
+//!
+//! The 3D `ω²` continuum lives on the IR package of `debye-solid`. A 2D
+//! `ω` continuum (`add-2d`) is a package mutation, not a `spectrum` knob:
+//! `C_V ∝ T²` so `thermo.debye-t3` fails, while `C_V → 0` as T → 0 still
+//! holds. That is not Einstein freeze-out. `einstein-solid` and
+//! `dulong-petit` have no package.
 
 use std::f64::consts::PI;
 
@@ -38,6 +44,7 @@ use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::kelvin;
 use physis_core::ParameterOrigin;
 use physis_core::{Energy, HeatCapacity, Qty};
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::k_boltzmann;
 use physis_model::World;
 
@@ -85,12 +92,17 @@ fn high_t_domain() -> DomainOfValidity {
 
 fn debye_t3_domain() -> DomainOfValidity {
     DomainOfValidity::new(
-        vec!["T = Θ/20 phonon probe".into()],
+        vec!["T = Θ/20 3D ω² phonon probe".into()],
         vec!["C_V(2T)/C_V(T) ≈ 8".into(), "match to (4π⁴/5)(T/Θ)³".into()],
-        "T³ is this low-T probe, independent of the current temperature knob. \
-         Einstein exponential freeze-out is a different spectrum, not a silent Debye law.",
+        "T³ is this 3D ω² low-T probe, independent of the current temperature knob. \
+         A 2D ω continuum is a new encoding, not a silent Einstein spectrum.",
     )
 }
+
+/// Live 3D Debye law on the `debye-solid` package.
+const DOS_EQ: &str = "g(w) = w^2";
+/// 2D encoding: linear DOS, covering of T³ fails.
+const FLAT_EQ: &str = "g(w) = w";
 
 const SPECTRUM_OPTIONS: &[&str] = &["einstein", "debye"];
 
@@ -105,7 +117,7 @@ const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "spectrum",
         layer: LayerId::Quantum,
-        doc: "Phonon spectrum when quantum is true: einstein (single ω, exponential freeze-out) or debye (ω² density of states, T³). Ignored classically.",
+        doc: "Phonon spectrum when quantum is true: einstein (single ω, exponential freeze-out) or debye (ω² density of states, T³). Ignored classically. A 2D ω continuum is not this knob: add-2d is an IR mutation on debye-solid.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Choice(SPECTRUM_OPTIONS),
     },
@@ -166,7 +178,11 @@ impl PhononSpectrum {
 }
 
 /// A lattice of 3N oscillators: Dulong–Petit, Einstein, or Debye.
-#[derive(Clone, Debug)]
+///
+/// The 3D `ω²` continuum lives on the IR package of `debye-solid`.
+/// A 2D `ω` continuum (`add-2d`) is a package mutation, not a knob.
+/// `spectrum` and `quantum` stay knobs.
+#[derive(Clone, Debug, PartialEq)]
 pub struct EinsteinSolid {
     id: &'static str,
     quantum: bool,
@@ -174,6 +190,8 @@ pub struct EinsteinSolid {
     temperature_k: f64,
     einstein_temp_k: f64,
     oscillators: f64,
+    /// Whether the encoding is a 2D `ω` continuum (`g(w) = w`).
+    two_d: bool,
 }
 
 impl Default for EinsteinSolid {
@@ -192,6 +210,7 @@ impl EinsteinSolid {
             temperature_k: DEFAULT_T_K,
             einstein_temp_k: DEFAULT_THETA_K,
             oscillators: DEFAULT_N,
+            two_d: false,
         }
     }
 
@@ -204,6 +223,7 @@ impl EinsteinSolid {
             temperature_k: DEFAULT_T_K,
             einstein_temp_k: DEFAULT_THETA_K,
             oscillators: DEFAULT_N,
+            two_d: false,
         }
     }
 
@@ -216,6 +236,7 @@ impl EinsteinSolid {
             temperature_k: DEFAULT_T_K,
             einstein_temp_k: DEFAULT_THETA_K,
             oscillators: DEFAULT_N,
+            two_d: false,
         }
     }
 
@@ -229,6 +250,10 @@ impl EinsteinSolid {
 
     fn is_debye(&self) -> bool {
         self.quantum && self.spectrum == PhononSpectrum::Debye
+    }
+
+    fn is_two_d(&self) -> bool {
+        self.is_debye() && self.two_d
     }
 
     /// Internal energy of 3N oscillators, typed.
@@ -249,13 +274,22 @@ impl EinsteinSolid {
                 }
             }
             PhononSpectrum::Debye => {
-                // U = 9 N k T (T/Θ_D)³ ∫_0^{x_D} x³/(e^x − 1) dx
+                // 3D: U = 9 N k T (T/Θ_D)³ ∫_0^{x_D} x³/(e^x − 1) dx
+                // 2D: U = 6 N k T (T/Θ_D)² ∫_0^{x_D} x²/(e^x − 1) dx
                 let x_d = self.x_at(t_k);
                 if x_d < 1.0e-8 {
                     return kt * n3;
                 }
                 let t_over_theta = t_k / self.einstein_temp_k;
-                kt * (9.0 * self.oscillators) * t_over_theta.powi(3) * debye_energy_integral(x_d)
+                if self.two_d {
+                    kt * (6.0 * self.oscillators)
+                        * t_over_theta.powi(2)
+                        * debye_2d_energy_integral(x_d)
+                } else {
+                    kt * (9.0 * self.oscillators)
+                        * t_over_theta.powi(3)
+                        * debye_energy_integral(x_d)
+                }
             }
         }
     }
@@ -280,13 +314,18 @@ impl EinsteinSolid {
                 }
             }
             PhononSpectrum::Debye => {
-                // C_V = 9 N k (T/Θ_D)³ ∫_0^{x_D} x^4 e^x / (e^x − 1)² dx
+                // 3D: C_V = 9 N k (T/Θ_D)³ ∫_0^{x_D} x^4 e^x / (e^x − 1)² dx
+                // 2D: C_V = 6 N k (T/Θ_D)² ∫_0^{x_D} x³ e^x / (e^x − 1)² dx
                 let x_d = self.x_at(t_k);
                 if x_d < 1.0e-8 {
                     return 1.0;
                 }
                 let t_over_theta = t_k / self.einstein_temp_k;
-                3.0 * t_over_theta.powi(3) * debye_cv_integral(x_d)
+                if self.two_d {
+                    2.0 * t_over_theta.powi(2) * debye_2d_cv_integral(x_d)
+                } else {
+                    3.0 * t_over_theta.powi(3) * debye_cv_integral(x_d)
+                }
             }
         }
     }
@@ -299,6 +338,50 @@ impl EinsteinSolid {
         } else {
             "Einstein"
         }
+    }
+
+    /// IR package for this continuum. Equations are `g(w) = w^2` and, when
+    /// forked, `g(w) = w`. `spectrum` and `quantum` stay on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![DOS_EQ.to_string()];
+        if self.two_d {
+            equations.push(FLAT_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["3d-omega-squared".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: DEBYE_T3.into(),
+                statement: "At T ≪ Θ the heat capacity scales as T³ (Debye phonon continuum)."
+                    .into(),
+                layer: "statistical".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a 3D Debye encoding from a package. Knobs default; overlay them
+    /// from a live debye-solid object when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "debye-solid" {
+            return Err(format!(
+                "debye-solid package id '{}' is not debye-solid",
+                pkg.id
+            ));
+        }
+        let two_d = parse_debye_dos(pkg)?;
+        Ok(Self {
+            two_d,
+            ..Self::debye()
+        })
+    }
+
+    fn flat_equation() -> String {
+        FLAT_EQ.to_string()
     }
 }
 
@@ -352,6 +435,55 @@ fn debye_energy_integral(x_d: f64) -> f64 {
 
 fn debye_cv_integral(x_d: f64) -> f64 {
     trapezoid(x_d, bose_cv_kernel)
+}
+
+/// `x² / (e^x − 1)`, with the x → 0 limit `x`.
+fn bose_poly2(x: f64) -> f64 {
+    if x < 1.0e-8 {
+        x
+    } else if x > BOSE_X_TAIL {
+        x * x * (-x).exp()
+    } else {
+        x * x / (x.exp() - 1.0)
+    }
+}
+
+/// `x³ e^x / (e^x − 1)²`, with the x → 0 limit `x`.
+fn bose_cv_kernel_2d(x: f64) -> f64 {
+    if x < 1.0e-8 {
+        x
+    } else {
+        let ex = x.exp();
+        if !ex.is_finite() {
+            0.0
+        } else {
+            x.powi(3) * ex / ((ex - 1.0) * (ex - 1.0))
+        }
+    }
+}
+
+fn debye_2d_energy_integral(x_d: f64) -> f64 {
+    trapezoid(x_d, bose_poly2)
+}
+
+fn debye_2d_cv_integral(x_d: f64) -> f64 {
+    trapezoid(x_d, bose_cv_kernel_2d)
+}
+
+fn parse_debye_dos(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut cubic = false;
+    let mut flat = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            DOS_EQ => cubic = true,
+            FLAT_EQ => flat = true,
+            _ => {}
+        }
+    }
+    if !cubic {
+        return Err(format!("{} package has no 3D ω² continuum", pkg.id));
+    }
+    Ok(flat)
 }
 
 impl Knobbed for EinsteinSolid {
@@ -510,7 +642,9 @@ impl Theory for EinsteinSolid {
                 let t_probe = self.einstein_temp_k * THIRD_LAW_T_OVER_THETA;
                 let cv = self.cv_over_3nk_at(t_probe);
                 if cv < 0.05 {
-                    let why = if self.is_debye() {
+                    let why = if self.is_two_d() {
+                        "C_V → 0 as T → 0 (2d T² freeze-out)"
+                    } else if self.is_debye() {
                         "C_V → 0 as T → 0 (Debye T³ freeze-out)"
                     } else {
                         "C_V → 0 as T → 0 (Einstein freeze-out)"
@@ -532,6 +666,39 @@ impl Theory for EinsteinSolid {
             _ => Verdict::inapplicable(claim, "claim not made by a solid-oscillator object"),
         }
     }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        if self.id != "debye-solid" {
+            return None;
+        }
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.two_d = parsed.two_d;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.id != "debye-solid" || self.two_d {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::flat_equation()),
+        );
+        if let Ok(parsed) = Self::from_package(&mutated) {
+            if parsed.two_d {
+                let mut fork = self.clone();
+                fork.two_d = true;
+                return vec![("add-2d".into(), Box::new(fork))];
+            }
+        }
+        Vec::new()
+    }
 }
 
 fn eval_debye_t3(solid: &EinsteinSolid, claim: &Claim) -> Verdict {
@@ -543,7 +710,7 @@ fn eval_debye_t3(solid: &EinsteinSolid, claim: &Claim) -> Verdict {
     let analytic = debye_t3_cv_over_3nk(T3_T_OVER_THETA);
     let doubling_ok = (T3_RATIO_LO..=T3_RATIO_HI).contains(&ratio);
     let magnitude_ok = analytic > 0.0 && (cv1 / analytic - 1.0).abs() < T3_ANALYTIC_TOL;
-    if solid.is_debye() && doubling_ok && magnitude_ok {
+    if solid.is_debye() && !solid.two_d && doubling_ok && magnitude_ok {
         Verdict::holds(claim, "C_V ∝ T³ at low T (Debye phonon continuum)").with_evidence([
             format!(
                 "C_V(2T)/C_V(T) = {ratio:.3} at T = Θ_D/20 (T³ requires 8); \
@@ -561,6 +728,11 @@ fn eval_debye_t3(solid: &EinsteinSolid, claim: &Claim) -> Verdict {
              C_V/(3Nk) = {cv1:.3e} vs Debye T³ {analytic:.3e}"
             ),
         ])
+    } else if solid.two_d {
+        Verdict::fails(claim, "2d phonon continuum is T², not T³").with_evidence([format!(
+            "C_V(2T)/C_V(T) = {ratio:.3} at T = Θ/20 (T³ requires 8; T² is 4); \
+             C_V/(3Nk) = {cv1:.4e} vs (4π⁴/5)(T/Θ)³ = {analytic:.4e}"
+        )])
     } else {
         Verdict::fails(
             claim,
@@ -592,6 +764,7 @@ pub fn solid() -> ExperimentReport {
             "`thermo.debye-t3` is the 1912 correction: it holds only for Debye. Einstein over-freezes (exponential, doubling ≫ 8); Dulong–Petit is T-independent (doubling = 1).".into(),
             "`thermo.high-t-classical` is the correspondence: raising T far above Θ on einstein-solid or debye-solid flips dulong-petit fails → holds.".into(),
             "`set einstein-solid spectrum debye` flips thermo.debye-t3 fails → holds. `set einstein-solid quantum false` restores Dulong–Petit.".into(),
+            "`add-2d` is an IR mutation on debye-solid: a 2D ω continuum fails T³ while freeze-out still holds. That is not the spectrum knob.".into(),
         ],
         &solid_rows(),
         vec![
@@ -715,6 +888,11 @@ mod tests {
             "T³ regime: {:?}",
             t3.domain()
         );
+        assert!(
+            t3.domain().regimes.iter().any(|r| r.contains("3D ω²")),
+            "T³ must name 3D ω²: {:?}",
+            t3.domain()
+        );
         let hi = d
             .claims()
             .into_iter()
@@ -809,5 +987,183 @@ mod tests {
         assert_eq!(cell(DEBYE_T3, "dulong-petit"), Some(VerdictKind::Fails));
         assert_eq!(cell(DEBYE_T3, "einstein-solid"), Some(VerdictKind::Fails));
         assert_eq!(cell(DEBYE_T3, "debye-solid"), Some(VerdictKind::Holds));
+    }
+
+    #[test]
+    fn debye_2d_integrals_match_zeta3() {
+        let energy = debye_2d_energy_integral(BOSE_X_TAIL);
+        let two_zeta3 = 2.0 * 1.202_056_903_159_594;
+        assert!(
+            (energy / two_zeta3 - 1.0).abs() < 1e-4,
+            "∫ x²/(e^x−1) dx = {energy}, 2ζ(3) = {two_zeta3}"
+        );
+        let cv = debye_2d_cv_integral(BOSE_X_TAIL);
+        let six_zeta3 = 6.0 * 1.202_056_903_159_594;
+        assert!(
+            (cv / six_zeta3 - 1.0).abs() < 1e-4,
+            "∫ x³ e^x/(e^x−1)² dx = {cv}, 6ζ(3) = {six_zeta3}"
+        );
+    }
+
+    #[test]
+    fn two_d_is_ir_not_a_knob() {
+        assert!(
+            EinsteinSolid::debye()
+                .set("two_d", KnobValue::Bool(true))
+                .is_err(),
+            "2d is an IR mutation, not a knob"
+        );
+        assert!(
+            EinsteinSolid::debye()
+                .set("2d", KnobValue::Bool(true))
+                .is_err(),
+            "2d is not a knob"
+        );
+        assert!(
+            EinsteinSolid::debye()
+                .set("add-2d", KnobValue::Bool(true))
+                .is_err(),
+            "add-2d is not a knob"
+        );
+        let d = EinsteinSolid::debye();
+        assert!(!d.two_d);
+        let src = render_package(&d.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay 3D ω²");
+        assert_eq!(pkg.equations[0], DOS_EQ);
+        assert_eq!(
+            EinsteinSolid::from_package(&pkg).unwrap(),
+            d,
+            "IR round-trip must preserve 3D ω²"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(EinsteinSolid::flat_equation()),
+        );
+        let parsed = EinsteinSolid::from_package(&mutated).unwrap();
+        assert!(parsed.two_d);
+        let mut fork = d.clone();
+        fork.two_d = true;
+        assert_eq!(fork.id(), "debye-solid");
+        assert_eq!(verdict(&fork, DEBYE_T3), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, THIRD_LAW), VerdictKind::Holds);
+        assert_eq!(verdict(&d, DEBYE_T3), VerdictKind::Holds);
+        let t1 = fork.einstein_temp_k * T3_T_OVER_THETA;
+        let t2 = 2.0 * t1;
+        let ratio = fork.cv_over_3nk_at(t2) / fork.cv_over_3nk_at(t1);
+        assert!(
+            (ratio - 4.0).abs() < 0.2,
+            "2d doubling must be T² (4), not a unit flag: {ratio}"
+        );
+        let analytic = fork.heat_capacity_at(fork.temperature_k).value();
+        let du = finite_diff_cv(&fork);
+        assert!(
+            (analytic - du).abs() / analytic < 1e-3,
+            "2d C_V {analytic} vs dU/dT {du}"
+        );
+        let mut hot = fork.clone();
+        hot.set("temperature", KnobValue::Float(4000.0)).unwrap();
+        assert_eq!(verdict(&hot, DULONG_PETIT), VerdictKind::Holds);
+        assert_eq!(verdict(&hot, DEBYE_T3), VerdictKind::Fails);
+        let cell = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == DEBYE_T3)
+            .unwrap();
+        let v = fork.evaluate(&cell);
+        assert!(
+            !v.summary.contains("spectrum")
+                && !v.summary.contains("Einstein")
+                && !v.summary.contains("quantum"),
+            "2d is not a knob: {}",
+            v.summary
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("T²") || e.contains("T^2") || e.contains("= 4")),
+            "got {:?}",
+            v.evidence
+        );
+
+        let mut einstein_overlay = fork.clone();
+        einstein_overlay
+            .set("spectrum", KnobValue::Choice("einstein".into()))
+            .unwrap();
+        assert_eq!(verdict(&einstein_overlay, DEBYE_T3), VerdictKind::Fails);
+        assert_eq!(verdict(&einstein_overlay, THIRD_LAW), VerdictKind::Holds);
+
+        let probes = EinsteinSolid::debye().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-2d"),
+            "live debye-solid must offer add-2d: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-2d")
+            .expect("add-2d");
+        assert_eq!(verdict(probe.1.as_ref(), DEBYE_T3), VerdictKind::Fails);
+        assert_eq!(verdict(probe.1.as_ref(), THIRD_LAW), VerdictKind::Holds);
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes.iter().all(|(label, _)| label != "add-2d"),
+            "2d fork must not re-offer add-2d"
+        );
+        let live = EinsteinSolid::debye();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut classical = EinsteinSolid::debye();
+        classical.set("quantum", KnobValue::Bool(false)).unwrap();
+        let rebuilt = classical.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("quantum").unwrap(),
+            KnobValue::Bool(false),
+            "reparse must overlay 2d IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), DEBYE_T3),
+            VerdictKind::Fails,
+            "classical live 3D ω² still Fails T³"
+        );
+        assert_eq!(verdict(rebuilt.as_ref(), THIRD_LAW), VerdictKind::Fails);
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(verdict(live_rebuilt.as_ref(), DEBYE_T3), VerdictKind::Holds);
+        assert!(
+            EinsteinSolid::einstein()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-2d"),
+            "einstein-solid must not grow add-2d"
+        );
+        assert!(
+            EinsteinSolid::dulong_petit()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-2d"),
+            "dulong-petit must not grow add-2d"
+        );
+        assert!(
+            crate::olbers::OlbersSky::static_euclidean()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-2d"),
+            "olbers-static must not grow add-2d"
+        );
+        assert!(
+            crate::gut::Su5Gut::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-2d"),
+            "su5-gut must not grow add-2d"
+        );
+        assert!(
+            EinsteinSolid::debye()
+                .set("spectrum", KnobValue::Choice("einstein".into()))
+                .is_ok(),
+            "debye-solid keeps the spectrum knob"
+        );
+        assert!(EinsteinSolid::einstein().ir_package().is_none());
+        assert!(EinsteinSolid::dulong_petit().ir_package().is_none());
     }
 }

@@ -6503,6 +6503,114 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_debye_two_d_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["two_d", "2d", "add-2d"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "debye-solid".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("debye-solid".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-2d") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-2d: package → add-2d";
+        let start = text.find(marker).expect("add-2d hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  debye-solid  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let two_d_block = &rest[..end];
+        assert!(
+            two_d_block.contains("thermo.debye-t3") && two_d_block.contains("holds → fails"),
+            "add-2d must flip T³ holds to fails: {two_d_block}"
+        );
+        assert!(
+            !two_d_block.contains("thermo.third-law"),
+            "2d freeze-out must still hold: {two_d_block}"
+        );
+        assert!(
+            !two_d_block.contains("thermo.dulong-petit"),
+            "2d is not the quantum knob: {two_d_block}"
+        );
+        assert!(
+            text.contains("spectrum"),
+            "spectrum must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("debye-solid").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| { c.id_str() == "thermo.debye-t3" && v.kind == VerdictKind::Holds }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("spectrum").unwrap().display(),
+            "debye",
+            "hypothesize must restore knobs"
+        );
+        let einstein = lab.exec(Command::Set {
+            theory: "debye-solid".into(),
+            knob: "spectrum".into(),
+            value: "einstein".into(),
+        });
+        assert_eq!(einstein.exit_code(), 0, "{}", einstein.text());
+        assert!(
+            einstein.text().contains("thermo.debye-t3")
+                && einstein.text().contains("holds → fails"),
+            "spectrum still flips T³: {}",
+            einstein.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "debye-solid".into(),
+            knob: "spectrum".into(),
+            value: "debye".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "thermo.debye-t3".into(),
+            })
+            .text()
+            .to_string();
+        let debye = why_theory_block(&why, "debye-solid");
+        assert!(
+            debye.contains("3D ω²") || debye.contains("Θ/20"),
+            "T³ must name 3D ω²: {debye}"
+        );
+        assert!(
+            !debye.contains("not yet a machine-checked regime"),
+            "T³ must not be encoding-wide: {debye}"
+        );
+        assert!(
+            debye.contains("encoding:    none"),
+            "hypothesize must not encode: {debye}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -8078,6 +8186,18 @@ mod tests {
             "loop must independently round-trip complete 5bar + 10: {text}"
         );
         assert!(
+            text.contains("encode  debye-solid"),
+            "loop must independently round-trip the 3D ω² continuum: {text}"
+        );
+        assert!(
+            !text.contains("encode  einstein-solid"),
+            "einstein-solid has no IR package: {text}"
+        );
+        assert!(
+            !text.contains("encode  dulong-petit"),
+            "dulong-petit has no IR package: {text}"
+        );
+        assert!(
             !text.contains("encode  olbers-horizon"),
             "olbers-horizon has no IR package: {text}"
         );
@@ -9545,11 +9665,31 @@ mod tests {
         assert_ne!(gut_id, olbers_id);
         assert_ne!(gut_id, nand_id);
 
+        let debye = lab
+            .exec(Command::Encode {
+                theory: "debye-solid".into(),
+            })
+            .text()
+            .to_string();
+        assert!(debye.contains("equations  1"), "{debye}");
+        assert!(debye.contains("round-trip canonical"), "{debye}");
+        assert!(debye.contains("not P3S"), "{debye}");
+        assert!(!debye.contains("receipt"), "{debye}");
+        let debye_id = encoding_package_id(&debye);
+        assert_eq!(
+            debye_id.to_hex(),
+            "dd817e70efdc2efede016101efe3e7b88558cd95f8260b30fc9a130301892b16"
+        );
+        assert_ne!(debye_id, gut_id);
+        assert_ne!(debye_id, nand_id);
+
         for theory in [
             "standard-model",
             "type-iib",
             "rayleigh-jeans",
             "olbers-horizon",
+            "einstein-solid",
+            "dulong-petit",
         ] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
@@ -9953,6 +10093,25 @@ mod tests {
             encoding_package_id(&gut_again),
             gut_id,
             "hypothesize must not install the missing-10 mutant"
+        );
+
+        let hypo_debye = lab
+            .exec(Command::Hypothesize {
+                theory: Some("debye-solid".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_debye.contains("add-2d"), "{hypo_debye}");
+        let debye_again = lab
+            .exec(Command::Encode {
+                theory: "debye-solid".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&debye_again),
+            debye_id,
+            "hypothesize must not install the 2d mutant"
         );
 
         let p3s = lab

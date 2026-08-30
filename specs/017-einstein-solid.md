@@ -38,12 +38,16 @@ correction, the phonon continuum, judged by a sampled doubling
 The lab id is fixed at construction. `set einstein-solid spectrum debye`
 changes the physics, not the id.
 
+The 3D `ω²` continuum lives on the IR package of `debye-solid`. A 2D
+`ω` continuum (`add-2d`) is not a `spectrum` knob. `einstein-solid` and
+`dulong-petit` have no package.
+
 ## Knobs
 
 | knob | layer | effect |
 |---|---|---|
 | `quantum` | quantum | true: Bose occupation; false: every oscillator has energy `kT` |
-| `spectrum` | quantum | `einstein` (single `ω`) or `debye` (`ω²` DOS). Ignored classically |
+| `spectrum` | quantum | `einstein` (single `ω`) or `debye` (`ω²` DOS). Ignored classically. A 2D `ω` continuum is not this knob: `add-2d` is an IR mutation on `debye-solid`. |
 | `temperature` | statistical | lattice temperature (K) |
 | `einstein_temp` | statistical | characteristic `Θ` (K): Einstein `Θ_E = ħω/k` or Debye `Θ_D = ħω_D/k`. Classical physics ignores it |
 | `oscillators` | statistical | number of atoms N (3N oscillators) |
@@ -59,7 +63,7 @@ relative to Debye.
 | `thermo.dulong-petit` | `C_V = 3 N k` at the current T (encoding-wide) | **holds** | **fails** (`C_V/(3Nk) ≈ 0.17`) | **fails** (frozen acoustic modes) |
 | `thermo.high-t-classical` | `T ≫ Θ` recovers `3 N k`. Domain: `T/Θ ≥ 8` | **holds** (always) | **fails** (not yet high-T) | **fails** (not yet high-T) |
 | `thermo.third-law` | `C_V → 0` as T → 0 (encoding-wide probe at `Θ/40`) | **fails** (`C_V` stays `3 N k` at `Θ/40`) | **holds** (exponential freeze-out) | **holds** (`T³ → 0`) |
-| `thermo.debye-t3` | low-T `C_V ∝ T³`. Domain: `T = Θ/20` phonon probe | **fails** (doubling = 1) | **fails** (exponential, doubling ≫ 8) | **holds** (doubling ≈ 8 at `Θ/20`) |
+| `thermo.debye-t3` | low-T `C_V ∝ T³`. Domain: `T = Θ/20` 3D `ω²` phonon probe | **fails** (doubling = 1) | **fails** (exponential, doubling ≫ 8) | **holds** (doubling ≈ 8 at `Θ/20`) |
 
 Raising `einstein-solid` or `debye-solid` `temperature` to 4000 K
 (`T/Θ ≈ 13`) flips `thermo.dulong-petit` **fails → holds** and
@@ -69,6 +73,11 @@ and `Θ/20`, not about the current T.
 
 `set einstein-solid spectrum debye` flips `thermo.debye-t3` **fails → holds**
 without restoring Dulong–Petit.
+
+`physis hypothesize debye-solid` forks the package with a 2D `ω`
+continuum (`equation g(w) = w`); that is not a knob (`set debye-solid two_d
+true` is unknown). `C_V(2T)/C_V(T) ≈ 4` at `Θ/20`, so T³ fails, while
+freeze-out still holds. Mutants stay `debye-solid` and are not installed.
 
 ## What is computed
 
@@ -91,6 +100,8 @@ physis experiment solid
 physis experiment thermo          # third-law row: gas and Dulong–Petit fail; Einstein and Debye hold
 physis set einstein-solid temperature 4000   # Dulong–Petit recovered as correspondence
 physis set einstein-solid spectrum debye     # T³ fails → holds
+physis hypothesize debye-solid               # add-2d is IR, not set
+physis encode debye-solid                    # 3D ω²; not P3S, not a kernel proof
 physis set einstein-solid quantum false      # 1819 theory restored
 ```
 
@@ -104,7 +115,9 @@ physis set einstein-solid quantum false      # 1819 theory restored
   a material fit.
 - Debye `T³` is the acoustic continuum with a sharp cutoff `ω_D`. Optical
   branches, real density-of-states structure, and anharmonicity are not
-  encoded. The sampled doubling is the theorem of *this* encoding.
+  encoded. The sampled doubling is the theorem of *this* encoding. A 2D
+  `ω` continuum is a different encoding (`add-2d`), not a silent Einstein
+  spectrum.
 - Sharing `thermo.third-law` with the ideal gas is deliberate: one row, four
   theories, two honest classical failures, two quantum holds that then split
   on `thermo.debye-t3`.
