@@ -106,6 +106,14 @@
 //! let _ = LogicalJudgment::Proved;
 //! ```
 //!
+//! ```compile_fail
+//! use physis_core::judgment::NumericJudgment;
+//! let _ = NumericJudgment::Certified {
+//!     lo: String::new(),
+//!     hi: String::new(),
+//! };
+//! ```
+//!
 //! JSON cannot mint a [`claim::Claim`] identity hash either (the hash is
 //! derived from the live sentence; there is no stored field to forge):
 //!

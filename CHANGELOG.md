@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **NumericJudgment cannot mint certified**
+  (`NumericJudgment` is a transparent wrapper with a private kind).
+  A certified enclosure is produced only by `from_lab` from a
+  `CertifiedNumeric` Holds. JSON still cannot mint it; a Rust
+  `Certified` variant cannot be constructed either. Catalog d² hash
+  unchanged. Verified: compile-fail against `NumericJudgment::Certified`
+  and a kind struct literal; from_lab CertifiedNumeric Holds is
+  `numeric certified` with the display enclosure. Live prove of catalog
+  d² is still Lean+nanoda; `why` of GUT-scale 3/8 is still `numeric
+  certified`. `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Claim statement hash is derived**
   (`Claim::statement_hash` is a getter; there is no stored field and
   no Deserialize). Mutating the English statement cannot keep a stale

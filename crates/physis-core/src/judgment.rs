@@ -20,6 +20,19 @@
 //! use physis_core::judgment::LogicalJudgment;
 //! let _ = LogicalJudgment { kind: todo!() };
 //! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::NumericJudgment;
+//! let _ = NumericJudgment::Certified {
+//!     lo: String::new(),
+//!     hi: String::new(),
+//! };
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::NumericJudgment;
+//! let _ = NumericJudgment { kind: todo!() };
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -98,23 +111,68 @@ impl LogicalJudgment {
 }
 
 /// Outcome of a numeric claim.
+///
+/// A certified enclosure is produced only by [`Judgment::from_lab`] when
+/// the evaluator overlays [`crate::assurance::DerivationAssurance::CertifiedNumeric`].
+/// There is no public `Certified` constructor.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(transparent)]
+pub struct NumericJudgment {
+    kind: NumericKind,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum NumericJudgment {
-    /// Rigorous enclosure.
+enum NumericKind {
     Certified {
-        /// Inclusive bounds as decimal strings (exact display, not authority).
         lo: String,
-        /// Inclusive upper bound.
         hi: String,
     },
-    /// A concrete witness that the claim fails.
+    /// Reserved: from_lab does not yet project a numeric witness.
+    #[allow(dead_code)]
     Counterexample {
-        /// Artifact id of the witness.
         witness: ArtifactId,
     },
-    /// No certificate and no witness.
     Unresolved,
+}
+
+impl NumericJudgment {
+    pub(crate) fn certified(lo: impl Into<String>, hi: impl Into<String>) -> Self {
+        Self {
+            kind: NumericKind::Certified {
+                lo: lo.into(),
+                hi: hi.into(),
+            },
+        }
+    }
+
+    pub(crate) fn unresolved() -> Self {
+        Self {
+            kind: NumericKind::Unresolved,
+        }
+    }
+
+    /// True when this is a certified enclosure, not evaluator Holds.
+    pub fn is_certified(&self) -> bool {
+        matches!(&self.kind, NumericKind::Certified { .. })
+    }
+
+    /// Display enclosure when certified (`lo`, `hi`). Not the certificate.
+    pub fn enclosure(&self) -> Option<(&str, &str)> {
+        match &self.kind {
+            NumericKind::Certified { lo, hi } => Some((lo.as_str(), hi.as_str())),
+            _ => None,
+        }
+    }
+
+    /// Stable kebab-case name (`certified`, `counterexample`, `unresolved`).
+    pub fn as_str(&self) -> &'static str {
+        match &self.kind {
+            NumericKind::Certified { .. } => "certified",
+            NumericKind::Counterexample { .. } => "counterexample",
+            NumericKind::Unresolved => "unresolved",
+        }
+    }
 }
 
 /// Outcome of an empirical claim.
@@ -413,9 +471,9 @@ impl Judgment {
     /// Project a lab evaluation into a typed judgment. Evaluator `holds`
     /// is not a proved judgment. A model-internal evaluation
     /// that overlays [`crate::assurance::EmpiricalStatus::Inconclusive`]
-    /// is [`NumericJudgment::Unresolved`] (too coarse to decide), not a
+    /// is a numeric unresolved judgment (too coarse to decide), not a
     /// failed theorem. [`crate::assurance::DerivationAssurance::CertifiedNumeric`]
-    /// Holds is [`NumericJudgment::Certified`], not logical undetermined.
+    /// Holds is a certified numeric judgment, not logical undetermined.
     pub fn from_lab(
         class: crate::assurance::ClaimClass,
         kind: crate::claim::VerdictKind,
@@ -433,13 +491,13 @@ impl Judgment {
                 ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological
             )
         {
-            return Judgment::Numeric(NumericJudgment::Unresolved);
+            return Judgment::Numeric(NumericJudgment::unresolved());
         }
         if derivation == DerivationAssurance::CertifiedNumeric && kind == VerdictKind::Holds {
-            return Judgment::Numeric(NumericJudgment::Certified {
-                lo: numeric_lo.unwrap_or("").to_string(),
-                hi: numeric_hi.unwrap_or("").to_string(),
-            });
+            return Judgment::Numeric(NumericJudgment::certified(
+                numeric_lo.unwrap_or(""),
+                numeric_hi.unwrap_or(""),
+            ));
         }
         match class {
             ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological => {
@@ -480,11 +538,7 @@ impl Judgment {
     pub fn label(&self) -> String {
         match self {
             Judgment::Logical(j) => format!("logical {}", j.as_str()),
-            Judgment::Numeric(NumericJudgment::Certified { .. }) => "numeric certified".into(),
-            Judgment::Numeric(NumericJudgment::Counterexample { .. }) => {
-                "numeric counterexample".into()
-            }
-            Judgment::Numeric(NumericJudgment::Unresolved) => "numeric unresolved".into(),
+            Judgment::Numeric(n) => format!("numeric {}", n.as_str()),
             Judgment::Empirical(j) => format!(
                 "empirical {}",
                 match j {
@@ -627,9 +681,9 @@ mod tests {
         );
         assert_eq!(j.label(), "numeric certified");
         match j {
-            Judgment::Numeric(NumericJudgment::Certified { lo, hi }) => {
-                assert_eq!(lo, "3/8");
-                assert_eq!(hi, "3/8");
+            Judgment::Numeric(n) => {
+                assert!(n.is_certified());
+                assert_eq!(n.enclosure(), Some(("3/8", "3/8")));
             }
             other => panic!("expected numeric certified, got {other:?}"),
         }

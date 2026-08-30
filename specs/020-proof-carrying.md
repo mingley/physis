@@ -58,7 +58,9 @@ Nothing gains authority merely because an agent wrote code that returns
   `Judgment` has no `Deserialize` impl: JSON cannot mint
   `logical proved`. `LogicalJudgment` has no public `Proved`
   constructor: only `from_lab` can produce proved, and only with a
-  dual-checked receipt. The lab projects `Judgment` from evaluator
+  dual-checked receipt. `NumericJudgment` has no public `Certified`
+  constructor: only `from_lab` can produce a certified enclosure, and
+  only from a `CertifiedNumeric` Holds. The lab projects `Judgment` from evaluator
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set
