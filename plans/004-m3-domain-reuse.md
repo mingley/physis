@@ -6,10 +6,10 @@ Goal: prove the workspace is not a string-theory toy by hosting a second scienti
 
 New theory `maxwell-vacuum` (and later `linear-medium`):
 
-- Knobs: none in vacuum except unit system; magnetic current is IR (`add-monopole` is not a knob). In a medium, `epsilon_r`, `mu_r` (constitutive form is IR: `add-tellegen` is not a knob)
+- Knobs: none in vacuum except unit system; magnetic current is IR (`add-monopole` is not a knob); Proca mass is IR (`add-proca` is not a knob). In a medium, `epsilon_r`, `mu_r` (constitutive form is IR: `add-tellegen` is not a knob)
 - Claims:
   - `1/√(ε₀μ₀) = c` as a **theorem** of the encoding
-  - Faraday is a computed theorem on Maxwell vacuum (named domain). `add-monopole` appends `dF = *j_m` and Faraday fails. Ampère stays a computed theorem.
+  - Faraday is a computed theorem on Maxwell vacuum (named domain). `add-monopole` appends `dF = *j_m` and Faraday fails. Gauss is a computed theorem (named domain: source-free massless Maxwell). `add-proca` appends `proca m2 A` and Gauss fails. Ampère stays a computed theorem.
 - Control: ✅ `ohm-circuit` — lumped circuit theory as the quasi-static effective limit of Maxwell. Charge conservation = Kirchhoff's current law on a lumped IR netlist (`add-tline` is an IR fork, not a knob); wave propagation dropped (`wave-speed-c` inapplicable), preferred frame (`lorentz-invariance` fails). The `frequency_hz` knob flips `em.quasi-static-valid` when the wavelength stops dwarfing the circuit.
 
 This domain is chosen because it *needs* `Qty` immediately (cannot add volts to amperes) and produces clean knob diffs (`epsilon_r` changes wave speed).

@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Maxwell vacuum Proca mass is an IR mutation**
+  (`maxwell-vacuum`, `add-proca`). Massless Coulomb Gauss is the live
+  encoding; appending `proca m2 A` makes the Coulomb residual of
+  ∇·E + m²φ the Proca mass term and flips `em.gauss` holds to fails.
+  That is not a knob. Faraday, Ampère, wave-speed, Lorentz, charge
+  conservation, and constitutive-linear still hold on the mutant.
+  Magnetic current remains a separate Faraday fork (`add-monopole`).
+  Mutants stay `maxwell-vacuum`; they are not a silent linear-medium
+  install. `epsilon_r` / `mu_r` stay on linear-medium. Maxwell Gauss
+  names source-free massless Maxwell; linear-medium Gauss and
+  ohm-circuit Gauss stay encoding-wide. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Live encode pin
+  unchanged. Verified: IR round-trip; set proca is unknown; hypothesize
+  maxwell-vacuum; live massless Gauss restored; encode pin
+  `f6f47f600c798018d8cea30121512950f0066f56406aa7be34575f4fae034cc3`.
+
 - **Ideal-gas degenerate Fermi statistics is an IR mutation**
   (`ideal-gas`, `add-fermi`). Maxwell–Boltzmann statistics are the live
   encoding (`gas maxwell-boltzmann`); appending `gas fermi` makes the

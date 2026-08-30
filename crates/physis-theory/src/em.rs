@@ -17,7 +17,9 @@
 //! Homogeneous Faraday (`dF = 0`) lives on the Maxwell vacuum package.
 //! A magnetic current is a package mutation (`add-monopole`), not a
 //! constitutive knob: the plane-wave residual of `∇×E + ∂B/∂t + J_m`
-//! is no longer source-free and `em.faraday` fails.
+//! is no longer source-free and `em.faraday` fails. A Proca mass term is a
+//! second package mutation (`add-proca`): the Coulomb residual of
+//! `∇·E + m² φ` is no longer zero and `em.gauss` fails.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -129,15 +131,17 @@ fn div_curl_residual() -> f64 {
     max
 }
 
-/// Max residual of Gauss's law `∇·E = 0` for a Coulomb field away from its
-/// source, by central finite differences. E = r̂/r² = r⃗/r³; its divergence
-/// vanishes for r > 0 (all the charge is the delta function at the origin).
-fn coulomb_gauss_residual() -> f64 {
+/// Max residual of Gauss's law `∇·E + m² φ = 0` for a Coulomb field away
+/// from its source, by central finite differences. E = r⃗/r³ and φ = 1/r.
+/// Massless Maxwell (`m² = 0`) has vanishing divergence for r > 0; Proca
+/// adds `m² φ`.
+fn coulomb_gauss_law_residual(m2: f64) -> f64 {
     let h = 1e-4;
     let e = |x: f64, y: f64, z: f64| -> [f64; 3] {
         let r3 = (x * x + y * y + z * z).powf(1.5);
         [x / r3, y / r3, z / r3]
     };
+    let phi = |x: f64, y: f64, z: f64| 1.0 / (x * x + y * y + z * z).sqrt();
     let mut max = 0.0_f64;
     for &(x, y, z) in &[
         (1.0, 2.0, 3.0),
@@ -148,9 +152,16 @@ fn coulomb_gauss_residual() -> f64 {
         let dex_dx = (e(x + h, y, z)[0] - e(x - h, y, z)[0]) / (2.0 * h);
         let dey_dy = (e(x, y + h, z)[1] - e(x, y - h, z)[1]) / (2.0 * h);
         let dez_dz = (e(x, y, z + h)[2] - e(x, y, z - h)[2]) / (2.0 * h);
-        max = max.max((dex_dx + dey_dy + dez_dz).abs());
+        max = max.max((dex_dx + dey_dy + dez_dz + m2 * phi(x, y, z)).abs());
     }
     max
+}
+
+/// Max residual of Gauss's law `∇·E = 0` for a Coulomb field away from its
+/// source, by central finite differences. E = r̂/r² = r⃗/r³; its divergence
+/// vanishes for r > 0 (all the charge is the delta function at the origin).
+fn coulomb_gauss_residual() -> f64 {
+    coulomb_gauss_law_residual(0.0)
 }
 
 /// Max residual of Ampère's law `∂E/∂t − (∇×B) = 0` (sourceless vacuum) over
@@ -179,6 +190,10 @@ const MAGNETIC_CURRENT: f64 = 1.0;
 const MAXWELL_DF_EQ: &str = "maxwell dF=0";
 /// Magnetic current (inhomogeneous Bianchi) on the monopole fork.
 const MONOPOLE_EQ: &str = "dF = *j_m";
+/// Proca mass term on the massive-vector fork.
+const PROCA_EQ: &str = "proca m2 A";
+/// Proca m² in natural units. Not a knob; the term is the IR fork.
+const PROCA_M2: f64 = 1.0;
 /// Tellegen magnetoelectric mixing, as a dimensionless index split.
 const TELLEGEN_XI: f64 = 0.1;
 /// Isotropic linear constitutive law on the live linear-medium package.
@@ -214,13 +229,15 @@ fn constitutive_domain() -> DomainOfValidity {
     )
 }
 
-fn parse_maxwell_bianchi(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_maxwell_bianchi(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut homogeneous = false;
     let mut monopole = false;
+    let mut proca = false;
     for eq in &pkg.equations {
         match eq.trim() {
             MAXWELL_DF_EQ => homogeneous = true,
             MONOPOLE_EQ => monopole = true,
+            PROCA_EQ => proca = true,
             _ => {}
         }
     }
@@ -230,7 +247,7 @@ fn parse_maxwell_bianchi(pkg: &TheoryPackage) -> Result<bool, String> {
             pkg.id
         ));
     }
-    Ok(monopole)
+    Ok((monopole, proca))
 }
 
 fn faraday_domain() -> DomainOfValidity {
@@ -240,6 +257,15 @@ fn faraday_domain() -> DomainOfValidity {
         "Maxwell Faraday is the source-free homogeneous encoding. \
          A magnetic current dF = *j_m is a new encoding, not a silent \
          constitutive knob.",
+    )
+}
+
+fn gauss_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["source-free massless Maxwell".into()],
+        vec!["Coulomb field nabla·E = 0 away from the origin".into()],
+        "Maxwell Gauss is the massless encoding. A Proca mass term is a new \
+         encoding, not a silent constitutive knob.",
     )
 }
 
@@ -307,7 +333,14 @@ fn em_claims() -> Vec<Claim> {
     ]
 }
 
-fn eval_em(epsilon_r: f64, mu_r: f64, tellegen: bool, monopole: bool, claim: &Claim) -> Verdict {
+fn eval_em(
+    epsilon_r: f64,
+    mu_r: f64,
+    tellegen: bool,
+    monopole: bool,
+    proca: bool,
+    claim: &Claim,
+) -> Verdict {
     let n = refractive_index(epsilon_r, mu_r);
     let vacuum = is_vacuum(epsilon_r, mu_r) && !tellegen;
     match claim.id_str() {
@@ -334,12 +367,27 @@ fn eval_em(epsilon_r: f64, mu_r: f64, tellegen: bool, monopole: bool, claim: &Cl
         }
         GAUSS => {
             if vacuum {
-                let r = coulomb_gauss_residual();
-                Verdict::holds(claim, "∇·E = 0 in vacuum away from charges")
+                let (m2, r) = if proca {
+                    (PROCA_M2, coulomb_gauss_law_residual(PROCA_M2))
+                } else {
+                    (0.0, coulomb_gauss_residual())
+                };
+                if r < 1e-4 {
+                    Verdict::holds(claim, "∇·E = 0 in vacuum away from charges")
+                        .with_class(ClaimClass::ModelInternal)
+                        .with_evidence([format!(
+                            "verified numerically on a Coulomb field: max |∇·E + m²φ| = {r:.1e}"
+                        )])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        "Proca mass term: Coulomb ∇·E + m²φ is not source-free",
+                    )
                     .with_class(ClaimClass::ModelInternal)
                     .with_evidence([format!(
-                        "verified numerically on a Coulomb field: max |∇·E| = {r:.1e}"
+                        "verified numerically on a Coulomb field: max |∇·E + m²φ| = {r:.3} (m² = {m2})"
                     )])
+                }
             } else {
                 Verdict::holds(claim, "∇·D = ρ_free (macroscopic form)")
             }
@@ -452,20 +500,27 @@ fn em_world(epsilon_r: f64, mu_r: f64, note: String) -> World {
 /// Homogeneous Faraday lives on the IR package. A magnetic current is a
 /// package mutation (`add-monopole`), not a knob: the plane-wave residual
 /// of `∇×E + ∂B/∂t + J_m` is no longer source-free and `em.faraday` fails.
-/// That fork is still this object, not a silent linear-medium install.
+/// A Proca mass term is a second mutation (`add-proca`): the Coulomb residual
+/// of `∇·E + m² φ` is no longer zero and `em.gauss` fails. Those forks are
+/// still this object, not a silent linear-medium install.
 /// `epsilon_r` / `mu_r` stay on linear-medium.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct MaxwellVacuum {
     monopole: bool,
+    /// Proca mass term. Not a knob.
+    proca: bool,
 }
 
 impl MaxwellVacuum {
     /// IR package for this Bianchi encoding. Equations are `maxwell dF=0`
-    /// and, when forked, `dF = *j_m`.
+    /// and, when forked, `dF = *j_m` and/or `proca m2 A`.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![MAXWELL_DF_EQ.to_string()];
         if self.monopole {
             equations.push(MONOPOLE_EQ.to_string());
+        }
+        if self.proca {
+            equations.push(PROCA_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -491,13 +546,16 @@ impl MaxwellVacuum {
                 pkg.id
             ));
         }
-        Ok(Self {
-            monopole: parse_maxwell_bianchi(pkg)?,
-        })
+        let (monopole, proca) = parse_maxwell_bianchi(pkg)?;
+        Ok(Self { monopole, proca })
     }
 
     fn monopole_equation() -> String {
         MONOPOLE_EQ.to_string()
+    }
+
+    fn proca_equation() -> String {
+        PROCA_EQ.to_string()
     }
 }
 
@@ -523,34 +581,36 @@ impl Theory for MaxwellVacuum {
     fn summary(&self) -> &'static str {
         "Classical electromagnetism in vacuum: a U(1) gauge field whose waves \
          travel at 1/√(ε₀μ₀) = c. Homogeneous Faraday is an IR encoding. A \
-         magnetic current is an IR mutation, not a constitutive knob, and not \
-         a silent linear-medium install."
+         magnetic current is an IR mutation, not a constitutive knob. A Proca \
+         mass term is a second IR mutation: Gauss fails on the massive vector. \
+         Neither fork is a silent linear-medium install."
     }
     fn world(&self) -> Option<World> {
         Some(em_world(
             1.0,
             1.0,
-            if self.monopole {
-                "Maxwell vacuum with magnetic current dF = *j_m".to_string()
-            } else {
-                "Maxwell vacuum".to_string()
+            match (self.monopole, self.proca) {
+                (true, true) => {
+                    "Maxwell vacuum with magnetic current dF = *j_m and Proca mass term".to_string()
+                }
+                (true, false) => "Maxwell vacuum with magnetic current dF = *j_m".to_string(),
+                (false, true) => "Maxwell vacuum with Proca mass term".to_string(),
+                (false, false) => "Maxwell vacuum".to_string(),
             },
         ))
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()
             .into_iter()
-            .map(|c| {
-                if c.id_str() == FARADAY {
-                    c.with_domain(faraday_domain())
-                } else {
-                    c
-                }
+            .map(|c| match c.id_str() {
+                FARADAY => c.with_domain(faraday_domain()),
+                GAUSS => c.with_domain(gauss_domain()),
+                _ => c,
             })
             .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(1.0, 1.0, false, self.monopole, claim)
+        eval_em(1.0, 1.0, false, self.monopole, self.proca, claim)
     }
     fn ir_package(&self) -> Option<TheoryPackage> {
         Some(self.package())
@@ -559,28 +619,42 @@ impl Theory for MaxwellVacuum {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.monopole = parsed.monopole;
+        fork.proca = parsed.proca;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.monopole {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::monopole_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.monopole => {
-                let mut fork = self.clone();
-                fork.monopole = true;
-                vec![("add-monopole".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.monopole {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::monopole_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.monopole {
+                    let mut fork = self.clone();
+                    fork.monopole = true;
+                    out.push(("add-monopole".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.proca {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::proca_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.proca {
+                    let mut fork = self.clone();
+                    fork.proca = true;
+                    out.push(("add-proca".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -740,7 +814,14 @@ impl Theory for LinearMedium {
             .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(self.epsilon_r, self.mu_r, self.tellegen, false, claim)
+        eval_em(
+            self.epsilon_r,
+            self.mu_r,
+            self.tellegen,
+            false,
+            false,
+            claim,
+        )
     }
     fn ir_package(&self) -> Option<TheoryPackage> {
         Some(self.package())
@@ -1087,13 +1168,13 @@ pub fn em_vacuum() -> ExperimentReport {
          Lumped KCL is the ohm-circuit IR netlist (`add-tline` is an IR fork, \
          not a knob). The linear-medium constitutive law is IR (`add-tellegen` \
          is an IR fork, not an ε_r knob). Homogeneous Faraday is the Maxwell \
-         vacuum IR (`add-monopole` is an IR fork, not a constitutive knob).",
+         vacuum IR (`add-monopole` and `add-proca` are IR forks, not constitutive knobs).",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "Vacuum wave speed is a theorem: ε₀·μ₀·c² = 1 (typed, checked).".into(),
             "A medium with n > 1 slows light and selects a rest frame, so wave-speed and Lorentz-invariance fail.".into(),
             "`hypothesize linear-medium`: add-tellegen is IR, not set.".into(),
-            "`hypothesize maxwell-vacuum`: add-monopole is IR, not set.".into(),
+            "`hypothesize maxwell-vacuum`: add-monopole and add-proca are IR, not set.".into(),
         ],
         &em_rows(),
         theories,
@@ -1165,6 +1246,11 @@ mod tests {
             .find(|c| c.id_str() == GAUSS)
             .unwrap();
         assert_eq!(v.evaluate(&gauss).class, ClaimClass::ModelInternal);
+        assert!(
+            !gauss.domain().is_encoding_wide(),
+            "Maxwell Gauss must name massless vacuum: {:?}",
+            gauss.domain()
+        );
         // In a medium, Gauss stays an encoded fact (macroscopic form).
         let glass = LinearMedium::default();
         let gauss_m = glass
@@ -1173,6 +1259,11 @@ mod tests {
             .find(|c| c.id_str() == GAUSS)
             .unwrap();
         assert_eq!(glass.evaluate(&gauss_m).class, ClaimClass::Phenomenological);
+        assert!(
+            gauss_m.domain().is_encoding_wide(),
+            "linear-medium Gauss stays encoding-wide: {:?}",
+            gauss_m.domain()
+        );
     }
 
     #[test]
@@ -1473,10 +1564,38 @@ mod tests {
             "inhomogeneous Faraday residual must be the magnetic current, got {jm}"
         );
         let probes = MaxwellVacuum::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-monopole");
-        assert_eq!(verdict(probes[0].1.as_ref(), FARADAY), VerdictKind::Fails);
-        assert!(fork.structural_mutations().is_empty());
+        assert_eq!(probes.len(), 2);
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-monopole"),
+            "live Maxwell must offer add-monopole: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-proca"),
+            "live Maxwell must offer add-proca: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let monopole_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-monopole")
+            .unwrap();
+        assert_eq!(
+            verdict(monopole_probe.1.as_ref(), FARADAY),
+            VerdictKind::Fails
+        );
+        let monopole_fork_probes = fork.structural_mutations();
+        assert!(
+            monopole_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-monopole"),
+            "monopole fork must not re-offer add-monopole"
+        );
+        assert!(
+            monopole_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-proca"),
+            "monopole fork must still offer add-proca"
+        );
         let live = MaxwellVacuum::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -1524,5 +1643,150 @@ mod tests {
             ofar.domain()
         );
         assert_eq!(verdict(&ohm, FARADAY), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn proca_mass_is_ir_not_a_knob() {
+        let v = MaxwellVacuum::default();
+        assert!(
+            MaxwellVacuum::default()
+                .set("proca", KnobValue::Bool(true))
+                .is_err(),
+            "Proca mass is an IR mutation, not a knob"
+        );
+        assert!(
+            MaxwellVacuum::default()
+                .set("mass", KnobValue::Float(1.0))
+                .is_err(),
+            "Proca m² is not a knob"
+        );
+        assert!(
+            MaxwellVacuum::default()
+                .set("epsilon_r", KnobValue::Float(1.0))
+                .is_err(),
+            "Maxwell must not grow an ε_r knob; that stays on linear-medium"
+        );
+        let src = render_package(&v.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay source-free Faraday"
+        );
+        assert_eq!(pkg.equations[0], MAXWELL_DF_EQ);
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(MaxwellVacuum::proca_equation()),
+        );
+        let parsed = MaxwellVacuum::from_package(&mutated).unwrap();
+        assert!(parsed.proca);
+        let mut fork = v.clone();
+        fork.proca = true;
+        assert_eq!(verdict(&fork, GAUSS), VerdictKind::Fails);
+        assert_eq!(verdict(&v, GAUSS), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, FARADAY), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, AMPERE), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, WAVE_SPEED_C), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, LORENTZ_INVARIANCE), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CHARGE_CONSERVATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
+        assert_eq!(
+            verdict(&fork, QUASI_STATIC_VALID),
+            VerdictKind::Inapplicable
+        );
+        let r = coulomb_gauss_law_residual(PROCA_M2);
+        let phi_scale = 1.0 / 6.0_f64.sqrt();
+        assert!(
+            (r - PROCA_M2 * phi_scale).abs() < 1e-3,
+            "Proca Gauss residual must be m²φ on the Coulomb samples, got {r} vs {}",
+            PROCA_M2 * phi_scale
+        );
+        assert!(
+            (r - 1.0).abs() > 0.3,
+            "Proca residual must be the Coulomb m²φ scale, not a unit flag, got {r}"
+        );
+        let probes = MaxwellVacuum::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-proca"),
+            "live Maxwell must offer add-proca: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let proca_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-proca")
+            .expect("add-proca");
+        assert_eq!(verdict(proca_probe.1.as_ref(), GAUSS), VerdictKind::Fails);
+        let proca_fork_probes = fork.structural_mutations();
+        assert!(
+            proca_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-proca"),
+            "proca fork must not re-offer add-proca"
+        );
+        assert!(
+            proca_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-monopole"),
+            "proca fork must still offer add-monopole"
+        );
+        let live = MaxwellVacuum::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(verdict(rebuilt.as_ref(), GAUSS), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == GAUSS)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "Maxwell Gauss must name massless vacuum: {:?}",
+            cell.domain()
+        );
+        let glass = LinearMedium::default();
+        let ggauss = glass
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == GAUSS)
+            .unwrap();
+        assert!(
+            ggauss.domain().is_encoding_wide(),
+            "linear-medium Gauss stays encoding-wide: {:?}",
+            ggauss.domain()
+        );
+        assert_eq!(verdict(&glass, GAUSS), VerdictKind::Holds);
+        assert!(
+            glass
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-proca"),
+            "linear-medium must not grow add-proca"
+        );
+        let ohm = OhmCircuit::default();
+        let ogauss = ohm
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == GAUSS)
+            .unwrap();
+        assert!(
+            ogauss.domain().is_encoding_wide(),
+            "ohm-circuit Gauss stays encoding-wide: {:?}",
+            ogauss.domain()
+        );
+        assert_eq!(verdict(&ohm, GAUSS), VerdictKind::Holds);
+        assert!(
+            ohm.structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-proca"),
+            "ohm-circuit must not grow add-proca"
+        );
+        assert!(
+            LinearMedium::default()
+                .set("epsilon_r", KnobValue::Float(1.0))
+                .is_ok(),
+            "linear-medium keeps the epsilon_r knob"
+        );
     }
 }

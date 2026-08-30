@@ -32,14 +32,14 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `linear-medium` | `mu_r` | relative permeability μ_r ≥ 1; raises n |
 | `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation |
 
-`maxwell-vacuum` has no knobs (vacuum is the unit medium). Homogeneous Faraday is not a knob: `add-monopole` is an IR mutation.
+`maxwell-vacuum` has no knobs (vacuum is the unit medium). Homogeneous Faraday is not a knob: `add-monopole` is an IR mutation. Massless Gauss is not a knob: `add-proca` is an IR mutation.
 
 ## Claims
 
 | id | meaning | epistemic |
 |---|---|---|
 | `em.wave-speed-c` | EM waves travel at c | theorem (vacuum); fails in a medium |
-| `em.gauss` | Gauss's law | theorem (vacuum: `∇·E = 0` verified on a Coulomb field); encoded-fact in a medium |
+| `em.gauss` | Gauss's law | theorem on `maxwell-vacuum` (named domain: source-free massless Maxwell). `add-proca` appends `proca m2 A` and the Coulomb residual of `∇·E + m² φ` is the Proca mass term, so this cell fails. That is not a knob. Linear-medium Gauss stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Gauss is lumped Q = CV (encoding-wide Holds) |
 | `em.faraday` | Faraday's law | theorem on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Faraday is KVL (encoding-wide Holds) |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
@@ -73,7 +73,9 @@ differences to satisfy `∂B/∂t + ∇×E = 0` and `∂E/∂t − ∇×B = 0` t
 ≲ 1e-6. Homogeneous Faraday lives on the Maxwell vacuum IR package
 (`maxwell dF=0`). A magnetic current is a package mutation (`add-monopole`):
 the residual of `∂B/∂t + ∇×E + J_m` is the uniform current and Faraday fails.
-In a medium Faraday/Ampère/Gauss revert to encoded facts (macroscopic form).
+A Proca mass term is a second package mutation (`add-proca`): the Coulomb
+residual of `∇·E + m² φ` is the mass term and Gauss fails. In a medium
+Faraday/Ampère/Gauss revert to encoded facts (macroscopic form).
 
 ## The theorem
 
@@ -97,7 +99,7 @@ rest frame:
 physis experiment em-vacuum
 physis set linear-medium epsilon_r 1   # n → 1, wave-speed-c and lorentz-invariance flip to holds
 physis hypothesize linear-medium       # add-tellegen is IR, not set
-physis hypothesize maxwell-vacuum      # add-monopole is IR, not set
+physis hypothesize maxwell-vacuum      # add-monopole and add-proca are IR, not set
 physis set ohm-circuit frequency_hz 1e10   # electrically short → lumped model fails
 physis hypothesize ohm-circuit             # add-tline is IR, not set
 ```
@@ -106,8 +108,9 @@ The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
 `em.lorentz-invariance` from `fails` to `holds`. That is orthogonal to
 Tellegen mixing: `em.constitutive-linear` still holds after the knob
 turn, and fails only on the `add-tellegen` IR fork. Homogeneous Faraday
-on Maxwell fails only on the `add-monopole` IR fork; that is not an
-`ε_r` knob and not a silent linear-medium install.
+on Maxwell fails only on the `add-monopole` IR fork. Massless Gauss
+fails only on the `add-proca` IR fork. Neither is an `ε_r` knob and
+neither is a silent linear-medium install.
 
 ## Non-goals (this milestone)
 

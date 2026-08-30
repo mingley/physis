@@ -5011,6 +5011,10 @@ mod tests {
             "{text}"
         );
         assert!(
+            text.contains("add-proca"),
+            "proca must still be an IR fork: {text}"
+        );
+        assert!(
             text.contains("em.faraday") && text.contains("holds → fails"),
             "{text}"
         );
@@ -5060,6 +5064,105 @@ mod tests {
         assert!(
             ohm.contains("not yet a machine-checked regime"),
             "ohm-circuit Faraday stays encoding-wide: {ohm}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_maxwell_vacuum_proca_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["proca", "mass", "epsilon_r"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "maxwell-vacuum".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("maxwell-vacuum".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-proca") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-proca: package → add-proca";
+        let start = text.find(marker).expect("add-proca hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  maxwell-vacuum  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let proca_block = &rest[..end];
+        assert!(
+            proca_block.contains("em.gauss") && proca_block.contains("holds → fails"),
+            "add-proca must flip em.gauss holds to fails: {proca_block}"
+        );
+        assert!(
+            !proca_block.contains("em.faraday"),
+            "add-proca is not the magnetic-current fork: {proca_block}"
+        );
+        assert!(
+            !proca_block.contains("em.constitutive-linear"),
+            "add-proca is not the Tellegen fork: {proca_block}"
+        );
+        assert!(
+            text.contains("add-monopole"),
+            "monopole must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("maxwell-vacuum").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "em.gauss" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(live.id(), "maxwell-vacuum");
+        let medium = lab.theory("linear-medium").unwrap();
+        assert_eq!(
+            medium.get("epsilon_r").unwrap().display(),
+            "2.25",
+            "Maxwell Proca IR must not convert linear-medium ε_r"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "em.gauss".into(),
+            })
+            .text()
+            .to_string();
+        let mx = why_theory_block(&why, "maxwell-vacuum");
+        assert!(
+            mx.contains("source-free massless Maxwell"),
+            "Maxwell Gauss must name massless vacuum: {mx}"
+        );
+        assert!(
+            !mx.contains("not yet a machine-checked regime"),
+            "Maxwell Gauss must not be encoding-wide: {mx}"
+        );
+        let lm = why_theory_block(&why, "linear-medium");
+        assert!(
+            lm.contains("not yet a machine-checked regime"),
+            "linear-medium Gauss stays encoding-wide: {lm}"
+        );
+        let ohm = why_theory_block(&why, "ohm-circuit");
+        assert!(
+            ohm.contains("not yet a machine-checked regime"),
+            "ohm-circuit Gauss stays encoding-wide: {ohm}"
         );
     }
 
@@ -7637,6 +7740,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_maxwell.contains("add-monopole"), "{hypo_maxwell}");
+        assert!(hypo_maxwell.contains("add-proca"), "{hypo_maxwell}");
         let maxwell_again = lab
             .exec(Command::Encode {
                 theory: "maxwell-vacuum".into(),
