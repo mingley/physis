@@ -190,6 +190,13 @@ impl GaugeGroup {
         }
     }
 
+    /// A single E₈. Not a 10D Green–Schwarz solution (dimension 248 ≠ 496).
+    pub fn e8() -> Self {
+        Self {
+            factors: vec![SimpleGroup::E8],
+        }
+    }
+
     /// Heterotic / Type I SO(32).
     pub fn so32() -> Self {
         Self {
@@ -400,12 +407,10 @@ mod tests {
             GaugeGroup::su5(),
             GaugeGroup::so10(),
             GaugeGroup::e6(),
+            GaugeGroup::e8(),
             GaugeGroup::trivial(),
             GaugeGroup {
                 factors: vec![SimpleGroup::Su(3)],
-            },
-            GaugeGroup {
-                factors: vec![SimpleGroup::E8],
             },
         ] {
             assert!(
@@ -414,5 +419,9 @@ mod tests {
                 g.name()
             );
         }
+        assert!(
+            GaugeGroup::e8().sm_embed().contains_sm(),
+            "a single E8 still contains SM; GS is the dimension-496 identity"
+        );
     }
 }

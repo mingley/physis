@@ -5,6 +5,12 @@
 //! Landscape counts are `Heuristic`. SM embeddings are `EncodedFact`.
 //!
 //! This is a laboratory object, not a compactification engine.
+//!
+//! Heterotic `E8 x E8` lives on the IR package of `heterotic-e8e8`. A
+//! missing E8 (`add-missing-e8`) is a package mutation, not the `kind`
+//! or `total_dim` knob: Green–Schwarz fails because dimension 248 is
+//! not a 10D solution, while SM still embeds in the remaining E8.
+//! Other string constructions have no package.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -13,11 +19,25 @@ use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
 use physis_core::Scale;
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::planck_length;
 use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
 
 use crate::claims;
 use crate::framework::Theory;
+
+/// Live heterotic gauge on the `heterotic-e8e8` package.
+const E8E8_EQ: &str = "E8 x E8";
+/// Incomplete encoding: one E8 is missing.
+const MISSING_E8_EQ: &str = "missing E8";
+
+fn e8e8_gs_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["E8 x E8".into()],
+        vec!["dimension 496 Green-Schwarz solution".into()],
+        "Complete E8 x E8 (dimension 496). A missing E8 factor is not a Green-Schwarz solution.",
+    )
+}
 
 /// Which string / M construction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -134,14 +154,14 @@ const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "kind",
         layer: LayerId::Field,
-        doc: "Which string/M construction (sets critical dimension and default gauge).",
+        doc: "Which string/M construction (sets critical dimension and default gauge). A missing E8 is not this knob: add-missing-e8 is an IR mutation on heterotic-e8e8.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Choice(&StringKind::ALL),
     },
     KnobSpec {
         name: "total_dim",
         layer: LayerId::Spacetime,
-        doc: "Total spacetime dimension D. Superstring theorem: D=10; bosonic D=26; M D=11.",
+        doc: "Total spacetime dimension D. Superstring theorem: D=10; bosonic D=26; M D=11. A missing E8 is not this knob: add-missing-e8 is an IR mutation on heterotic-e8e8.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 32 },
     },
@@ -213,7 +233,11 @@ const SPECS: &[KnobSpec] = &[
 ];
 
 /// A knobbed string / M-theory object.
-#[derive(Clone, Debug)]
+///
+/// Heterotic `E8 x E8` lives on the IR package of `heterotic-e8e8`.
+/// A missing E8 (`add-missing-e8`) is a package mutation, not a knob.
+/// `kind` and `total_dim` stay knobs.
+#[derive(Clone, Debug, PartialEq)]
 pub struct StringTheory {
     kind: StringKind,
     total_dim: u8,
@@ -225,6 +249,10 @@ pub struct StringTheory {
     h11: u32,
     h21: u32,
     euler_number: i64,
+    /// Live heterotic-e8e8 encodings carry complete `E8 x E8`. Hypothesis
+    /// search may append `missing E8`, which this flag records. Default
+    /// false. Not a scientific knob.
+    missing_e8: bool,
 }
 
 impl StringTheory {
@@ -245,6 +273,17 @@ impl StringTheory {
             h11: 3,
             h21: 3,
             euler_number: 0,
+            missing_e8: false,
+        }
+    }
+
+    /// Gauge algebra of this construction. Live heterotic-E8×E8 encodings
+    /// keep both E8 factors. Hypothesis search may drop one (`add-missing-e8`).
+    fn gauge(&self) -> GaugeGroup {
+        if self.missing_e8 && self.kind == StringKind::HeteroticE8xE8 {
+            GaugeGroup::e8()
+        } else {
+            self.kind.fundamental_gauge()
         }
     }
 
@@ -342,7 +381,7 @@ impl StringTheory {
     fn build_world(&self) -> World {
         World {
             spacetime: self.manifold(),
-            gauge: self.kind.fundamental_gauge(),
+            gauge: self.gauge(),
             spectrum: self.spectrum(),
             has_gravity: true,
             supersymmetric: self.supersymmetry,
@@ -412,6 +451,69 @@ impl StringTheory {
             Spectrum::standard_model_plus_graviton()
         }
     }
+
+    /// IR package for this construction. Heterotic equations are `E8 x E8`
+    /// and, when forked, `missing E8`. `kind` and `total_dim` stay on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![E8E8_EQ.to_string()];
+        if self.missing_e8 {
+            equations.push(MISSING_E8_EQ.to_string());
+        }
+        TheoryPackage {
+            id: "heterotic-e8e8".into(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["complete-e8-x-e8".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: claims::ANOMALY_CANCELLATION.into(),
+                statement: "Chiral gauge/gravitational anomalies cancel (Green–Schwarz in 10D)."
+                    .into(),
+                layer: "interaction".into(),
+                class: "phenomenological".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a heterotic E8×E8 encoding from a package. Knobs default;
+    /// overlay them from a live heterotic-e8e8 object when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "heterotic-e8e8" {
+            return Err(format!(
+                "heterotic-e8e8 package id '{}' is not heterotic-e8e8",
+                pkg.id
+            ));
+        }
+        let missing_e8 = parse_e8e8_gauge(pkg)?;
+        Ok(Self {
+            missing_e8,
+            ..Self::heterotic_e8()
+        })
+    }
+
+    fn missing_equation() -> String {
+        MISSING_E8_EQ.to_string()
+    }
+}
+
+fn parse_e8e8_gauge(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut complete = false;
+    let mut missing = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            E8E8_EQ => complete = true,
+            MISSING_E8_EQ => missing = true,
+            _ => {}
+        }
+    }
+    if !complete {
+        return Err(format!(
+            "{} package has no E8 x E8 gauge assignment",
+            pkg.id
+        ));
+    }
+    Ok(missing)
 }
 
 impl Knobbed for StringTheory {
@@ -495,6 +597,15 @@ impl Theory for StringTheory {
     }
 
     fn claims(&self) -> Vec<Claim> {
+        let mut anomaly = claims::c(
+            claims::ANOMALY_CANCELLATION,
+            "Chiral gauge/gravitational anomalies cancel (Green–Schwarz in 10D).",
+            LayerId::Interaction,
+            ClaimClass::Phenomenological,
+        );
+        if self.kind == StringKind::HeteroticE8xE8 {
+            anomaly = anomaly.with_domain(e8e8_gs_domain());
+        }
         vec![
             claims::c(
                 claims::SPACETIME_STRUCTURE,
@@ -520,12 +631,7 @@ impl Theory for StringTheory {
                 LayerId::Particle,
                 ClaimClass::Phenomenological,
             ),
-            claims::c(
-                claims::ANOMALY_CANCELLATION,
-                "Chiral gauge/gravitational anomalies cancel (Green–Schwarz in 10D).",
-                LayerId::Interaction,
-                ClaimClass::Phenomenological,
-            ),
+            anomaly,
             claims::c(
                 claims::OBSERVED_4D,
                 "Non-compact spacetime is 3+1.",
@@ -703,6 +809,15 @@ impl Theory for StringTheory {
                              re-derived from the anomaly polynomial"
                                 .to_string(),
                         ])
+                    } else if self.missing_e8 && self.kind == StringKind::HeteroticE8xE8 {
+                        Verdict::fails(
+                            claim,
+                            "missing E8: dimension 248 is not a Green-Schwarz solution",
+                        )
+                        .with_evidence([
+                            "live encoding is E8 x E8 (dimension 496); a single E8 is not a 10D GS identity"
+                                .to_string(),
+                        ])
                     } else {
                         Verdict::fails(
                             claim,
@@ -857,11 +972,45 @@ impl Theory for StringTheory {
             _ => Verdict::inapplicable(claim, "claim not made by this string object"),
         }
     }
+
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        (self.id() == "heterotic-e8e8").then(|| self.package())
+    }
+
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.missing_e8 = parsed.missing_e8;
+        Ok(Box::new(fork))
+    }
+
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.id() != "heterotic-e8e8" || self.missing_e8 {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::missing_equation()),
+        );
+        if let Ok(parsed) = Self::from_package(&mutated) {
+            if parsed.missing_e8 {
+                let mut fork = self.clone();
+                fork.missing_e8 = true;
+                return vec![("add-missing-e8".into(), Box::new(fork))];
+            }
+        }
+        Vec::new()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::framework::Theory;
     use physis_core::claim::VerdictKind;
 
     fn verdict(t: &StringTheory, id: &str) -> VerdictKind {
@@ -1146,5 +1295,231 @@ mod tests {
                 t.id()
             );
         }
+    }
+
+    fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
+        t.evaluate(&c).kind
+    }
+
+    #[test]
+    fn missing_e8_is_ir_not_a_knob() {
+        assert!(
+            StringTheory::heterotic_e8()
+                .set("missing_e8", KnobValue::Bool(true))
+                .is_err(),
+            "missing E8 is an IR mutation, not a knob"
+        );
+        assert!(
+            StringTheory::heterotic_e8()
+                .set("missing-e8", KnobValue::Bool(true))
+                .is_err(),
+            "missing-e8 is not a knob"
+        );
+        assert!(
+            StringTheory::heterotic_e8()
+                .set("add-missing-e8", KnobValue::Bool(true))
+                .is_err(),
+            "add-missing-e8 is not a knob"
+        );
+        let het = StringTheory::heterotic_e8();
+        assert!(!het.missing_e8);
+        let src = render_package(&het.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay complete");
+        assert_eq!(pkg.equations[0], E8E8_EQ);
+        assert_eq!(
+            StringTheory::from_package(&pkg).unwrap(),
+            het,
+            "IR round-trip must preserve E8 x E8"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(StringTheory::missing_equation()),
+        );
+        let parsed = StringTheory::from_package(&mutated).unwrap();
+        assert!(parsed.missing_e8);
+        let mut fork = het.clone();
+        fork.missing_e8 = true;
+        assert_eq!(fork.id(), "heterotic-e8e8");
+        let gs = fork.evaluate(
+            &fork
+                .claims()
+                .into_iter()
+                .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+                .unwrap(),
+        );
+        assert_eq!(gs.kind, VerdictKind::Fails);
+        assert!(
+            gs.summary.contains("missing E8") && gs.summary.contains("248"),
+            "missing E8 must name dimension 248: {}",
+            gs.summary
+        );
+        assert!(
+            !gs.summary.contains("kind")
+                && !gs.summary.contains("total_dim")
+                && !gs.summary.contains("supersymmetry")
+                && !gs.summary.contains("euler_number")
+                && !gs.summary.contains("flux")
+                && !gs.summary.contains("Higgs"),
+            "missing E8 is not a knob: {}",
+            gs.summary
+        );
+        assert_eq!(kind(&fork, claims::SM_GAUGE), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::CRITICAL_DIMENSION), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::NO_TACHYON), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::GRAVITY), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::UNIQUE_VACUUM), VerdictKind::Fails);
+        assert_eq!(kind(&het, claims::ANOMALY_CANCELLATION), VerdictKind::Holds);
+        assert_eq!(kind(&het, claims::SM_GAUGE), VerdictKind::Holds);
+
+        let probes = StringTheory::heterotic_e8().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-missing-e8"),
+            "live heterotic-e8e8 must offer add-missing-e8: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-missing-e8")
+            .expect("add-missing-e8");
+        assert_eq!(
+            kind(probe.1.as_ref(), claims::ANOMALY_CANCELLATION),
+            VerdictKind::Fails
+        );
+        assert_eq!(kind(probe.1.as_ref(), claims::SM_GAUGE), VerdictKind::Holds);
+        assert_eq!(
+            kind(probe.1.as_ref(), claims::UNIQUE_VACUUM),
+            VerdictKind::Fails
+        );
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-missing-e8"),
+            "missing-e8 fork must not re-offer add-missing-e8"
+        );
+        let live = StringTheory::heterotic_e8();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut nine = StringTheory::heterotic_e8();
+        nine.set("total_dim", KnobValue::UInt(9)).unwrap();
+        let rebuilt = nine.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("total_dim").unwrap(),
+            KnobValue::UInt(9),
+            "reparse must overlay missing-e8 IR onto live knobs"
+        );
+        assert_eq!(
+            kind(rebuilt.as_ref(), claims::ANOMALY_CANCELLATION),
+            VerdictKind::Undecidable,
+            "off-critical live E8 x E8 stays Undecidable for Green-Schwarz"
+        );
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            kind(live_rebuilt.as_ref(), claims::ANOMALY_CANCELLATION),
+            VerdictKind::Holds
+        );
+        assert!(
+            StringTheory::type_iib()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-e8"),
+            "type-iib must not grow add-missing-e8"
+        );
+        assert!(
+            crate::gut::Su5Gut::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-e8"),
+            "su5-gut must not grow add-missing-e8"
+        );
+        assert!(
+            crate::standard_model::StandardModel::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-e8"),
+            "standard-model must not grow add-missing-e8"
+        );
+        assert!(
+            crate::solid::EinsteinSolid::debye()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-e8"),
+            "debye-solid must not grow add-missing-e8"
+        );
+        assert!(
+            crate::solid::EinsteinSolid::dulong_petit()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-e8"),
+            "dulong-petit must not grow add-missing-e8"
+        );
+        assert!(
+            crate::geometry::ObserverGeometry::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-e8"),
+            "observer-geometry must not grow add-missing-e8"
+        );
+        assert!(
+            StringTheory::heterotic_e8()
+                .set("kind", KnobValue::Choice("bosonic".into()))
+                .is_ok(),
+            "heterotic-e8e8 keeps the kind knob"
+        );
+        assert!(
+            StringTheory::heterotic_e8()
+                .set("total_dim", KnobValue::UInt(9))
+                .is_ok(),
+            "heterotic-e8e8 keeps the total_dim knob"
+        );
+        assert!(StringTheory::type_iib().ir_package().is_none());
+        assert!(StringTheory::type_iia().ir_package().is_none());
+        assert!(StringTheory::type_i().ir_package().is_none());
+        assert!(StringTheory::heterotic_so32().ir_package().is_none());
+        assert!(StringTheory::bosonic().ir_package().is_none());
+        assert!(StringTheory::m_theory().ir_package().is_none());
+        assert!(StringTheory::heterotic_e8().ir_package().is_some());
+
+        let gs_claim = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+            .unwrap();
+        assert!(
+            !gs_claim.domain().is_encoding_wide(),
+            "heterotic GS must name E8 x E8: {:?}",
+            gs_claim.domain()
+        );
+        assert!(
+            gs_claim
+                .domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("E8 x E8")),
+            "heterotic GS regime: {:?}",
+            gs_claim.domain()
+        );
+        assert!(
+            !gs_claim.domain().notes.contains("theory "),
+            "heterotic GS notes must not split why_theory_block: {:?}",
+            gs_claim.domain()
+        );
+        let iib_gs = StringTheory::type_iib()
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+            .unwrap();
+        assert!(
+            iib_gs.domain().is_encoding_wide(),
+            "Type II Green-Schwarz stays encoding-wide: {:?}",
+            iib_gs.domain()
+        );
+        assert_ne!(
+            gs_claim.statement_hash(),
+            iib_gs.statement_hash(),
+            "heterotic GS is a distinct FormalClaim from Type II"
+        );
     }
 }

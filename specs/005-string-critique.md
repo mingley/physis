@@ -29,7 +29,7 @@ Eric Weinstein’s public critique (string theory as a wrong turn; uniqueness an
 | `type-iib` | Type IIB superstring (chiral N=2, no perturbative GUT group) |
 | `type-iia` | Type IIA superstring (non-chiral N=2, no perturbative GUT group) |
 | `type-i` | Type I superstring (open + closed, SO(32)) |
-| `heterotic-e8e8` | Heterotic E₈×E₈ (SM embedding is an encoded fact) |
+| `heterotic-e8e8` | Heterotic E₈×E₈ (SM embedding is an encoded fact; `add-missing-e8` is IR) |
 | `heterotic-so32` | Heterotic SO(32) (SM embedding is an encoded fact) |
 | `bosonic` | 26D bosonic string (tachyon, no fermions) |
 | `m-theory` | 11D M-theory (membrane; critical dimension 11) |
@@ -58,7 +58,11 @@ anomalies — `[SU(3)]²U(1)`, `[SU(2)]²U(1)`, `[grav]²U(1)` (`ΣY`), and
 content and vanish identically, and the SU(2) doublet count is even (Witten).
 That overlay is `CertifiedNumeric` (P3N), not a Lean kernel proof. Green–Schwarz
 on heterotic strings remains encoded (`GaugeGroup::gs_anomaly_free_10d`), not
-a Ratio certificate.
+a Ratio certificate. Complete `E8 x E8` lives on the IR package of
+`heterotic-e8e8`. A missing E8 (`add-missing-e8`) is a package mutation, not
+the `kind` or `total_dim` knob: Green–Schwarz fails because dimension 248 is
+not a 10D solution, while SM still embeds in the remaining E8. Type II, Type I,
+SO(32), bosonic, and M-theory have no package.
 
 The Standard Model also carries `sm.hypercharge-derivation`, which goes one step further than checking cancellation: it **solves** the anomaly conditions for the hypercharges themselves in exact `Ratio` arithmetic. Fixing only the normalization `Y_Q = 1/6`, the linear anomalies give `Y_L = −1/2` and `Y_e = 1`, and the `[U(1)]³` cubic then forces `{Y_u, Y_d} = {−2/3, 1/3}` as roots of a quadratic whose discriminant is the square `1` in Q (`Ratio::checked_sqrt`). The measured assignments come out as a *consequence* of consistency, not an input (`derive_hypercharges`). If the discriminant is not a square, the cell Fails and does not mint P3N. This is the mechanized form of "accommodate vs derive": here the SM genuinely *derives* its charges. That overlay is also `CertifiedNumeric` / P3N, not a Lean receipt.
 

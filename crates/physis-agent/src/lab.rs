@@ -2829,6 +2829,12 @@ mod tests {
                 .any(|l| l.contains("type-iib") && l.contains("consistency.anomaly-cancellation")),
             "Green-Schwarz stays encoded, not a Ratio certificate: {p3n}"
         );
+        assert!(
+            !p3n.lines()
+                .any(|l| l.contains("heterotic-e8e8")
+                    && l.contains("consistency.anomaly-cancellation")),
+            "heterotic Green-Schwarz stays encoded, not P3N: {p3n}"
+        );
         assert!(!p3n.contains("predictivity.unique-vacuum"), "{p3n}");
         assert!(
             !p3n.contains("gut.proton-lifetime-sk"),
@@ -2864,6 +2870,14 @@ mod tests {
         assert!(gs.contains("derivation: executed"), "{gs}");
         assert!(gs.contains("judgment:   logical undetermined"), "{gs}");
         assert!(!gs.contains("numeric certified"), "{gs}");
+        let het_gs = why_theory_block(&why, "heterotic-e8e8");
+        assert!(het_gs.contains("E8 x E8"), "{het_gs}");
+        assert!(
+            !het_gs.contains("not yet a machine-checked regime"),
+            "heterotic Green-Schwarz must not be encoding-wide: {het_gs}"
+        );
+        assert!(het_gs.contains("derivation: executed"), "{het_gs}");
+        assert!(!het_gs.contains("numeric certified"), "{het_gs}");
         let why_y = lab
             .exec(Command::Why {
                 claim: "sm.hypercharge-derivation".into(),
@@ -6955,6 +6969,142 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_heterotic_missing_e8_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["missing_e8", "missing-e8", "add-missing-e8"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "heterotic-e8e8".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("heterotic-e8e8".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-missing-e8") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-missing-e8: package → add-missing-e8";
+        let start = text.find(marker).expect("add-missing-e8 hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  heterotic-e8e8  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let missing_block = &rest[..end];
+        assert!(
+            missing_block.contains("consistency.anomaly-cancellation")
+                && missing_block.contains("holds → fails"),
+            "add-missing-e8 must flip anomaly-cancellation holds to fails: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("empirical.sm-gauge"),
+            "missing E8 still embeds SM: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("predictivity.unique-vacuum"),
+            "missing E8 is not the landscape: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("consistency.critical-dimension"),
+            "missing E8 is not the total_dim knob: {missing_block}"
+        );
+        assert!(
+            text.contains("kind") || text.contains("total_dim"),
+            "chosen knobs must still be probed: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert!(!text.contains("receipt"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("heterotic-e8e8").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "consistency.anomaly-cancellation" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("kind").unwrap().display(),
+            "heterotic-e8e8",
+            "hypothesize must restore knobs"
+        );
+        let bosonic = lab.exec(Command::Set {
+            theory: "heterotic-e8e8".into(),
+            knob: "kind".into(),
+            value: "bosonic".into(),
+        });
+        assert_eq!(bosonic.exit_code(), 0, "{}", bosonic.text());
+        assert!(
+            bosonic.text().contains("empirical.fermions")
+                && bosonic.text().contains("holds → fails"),
+            "kind still flips fermions: {}",
+            bosonic.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "heterotic-e8e8".into(),
+            knob: "kind".into(),
+            value: "heterotic-e8e8".into(),
+        });
+        let dim = lab.exec(Command::Set {
+            theory: "heterotic-e8e8".into(),
+            knob: "total_dim".into(),
+            value: "9".into(),
+        });
+        assert_eq!(dim.exit_code(), 0, "{}", dim.text());
+        assert!(
+            dim.text().contains("consistency.anomaly-cancellation")
+                && dim.text().contains("holds → undecidable"),
+            "total_dim still opens Green-Schwarz: {}",
+            dim.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "heterotic-e8e8".into(),
+            knob: "total_dim".into(),
+            value: "10".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "consistency.anomaly-cancellation".into(),
+            })
+            .text()
+            .to_string();
+        let het = why_theory_block(&why, "heterotic-e8e8");
+        assert!(
+            het.contains("E8 x E8"),
+            "anomaly must name complete E8 x E8: {het}"
+        );
+        assert!(
+            !het.contains("not yet a machine-checked regime"),
+            "heterotic Green-Schwarz must not be encoding-wide: {het}"
+        );
+        assert!(
+            het.contains("encoding:    none"),
+            "hypothesize must not encode: {het}"
+        );
+        let iib = why_theory_block(&why, "type-iib");
+        assert!(
+            iib.contains("not yet a machine-checked regime"),
+            "Type II Green-Schwarz stays encoding-wide: {iib}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -8550,6 +8700,10 @@ mod tests {
             "loop must independently round-trip harmonic U = 3 N k T: {text}"
         );
         assert!(
+            text.contains("encode  heterotic-e8e8"),
+            "loop must independently round-trip complete E8 x E8: {text}"
+        );
+        assert!(
             !text.contains("encode  olbers-horizon"),
             "olbers-horizon has no IR package: {text}"
         );
@@ -8559,7 +8713,7 @@ mod tests {
         );
         assert!(
             !text.contains("encode  type-iib"),
-            "string constructions have no IR package: {text}"
+            "type-iib has no IR package: {text}"
         );
         assert!(
             text.contains("judge  predictivity.unique-vacuum"),
@@ -10085,6 +10239,24 @@ mod tests {
         assert_ne!(dulong_id, og_id);
         assert_ne!(dulong_id, nand_id);
 
+        let heterotic = lab
+            .exec(Command::Encode {
+                theory: "heterotic-e8e8".into(),
+            })
+            .text()
+            .to_string();
+        assert!(heterotic.contains("equations  1"), "{heterotic}");
+        assert!(heterotic.contains("round-trip canonical"), "{heterotic}");
+        assert!(heterotic.contains("not P3S"), "{heterotic}");
+        assert!(!heterotic.contains("receipt"), "{heterotic}");
+        let heterotic_id = encoding_package_id(&heterotic);
+        assert_eq!(
+            heterotic_id.to_hex(),
+            "c6cab84980b2320e96b4393a373de44a6fbbcdb31d54d350003e7294b61a7329"
+        );
+        assert_ne!(heterotic_id, dulong_id);
+        assert_ne!(heterotic_id, nand_id);
+
         for theory in [
             "type-iib",
             "rayleigh-jeans",
@@ -10569,6 +10741,25 @@ mod tests {
             encoding_package_id(&dulong_again),
             dulong_id,
             "hypothesize must not install the quartic mutant"
+        );
+
+        let hypo_het = lab
+            .exec(Command::Hypothesize {
+                theory: Some("heterotic-e8e8".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_het.contains("add-missing-e8"), "{hypo_het}");
+        let het_again = lab
+            .exec(Command::Encode {
+                theory: "heterotic-e8e8".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&het_again),
+            heterotic_id,
+            "hypothesize must not install the missing-e8 mutant"
         );
 
         let p3s = lab

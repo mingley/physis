@@ -32,6 +32,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Heterotic missing E8 is an IR mutation**
+  (`heterotic-e8e8`, `add-missing-e8`). Complete `E8 x E8` is the live
+  encoding; appending `missing E8` flips
+  `consistency.anomaly-cancellation` holds to fails (dimension 248 is
+  not a Green-Schwarz solution). SM still embeds in the remaining E8,
+  so that cell is not a unit flag and not the `kind` or `total_dim`
+  knob. Unique-vacuum still fails. Mutants stay `heterotic-e8e8`.
+  Other string constructions have no package. Mutants are not
+  installed, not journaled, and not Canonical or P4. Catalog d² hash
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: IR round-trip; set missing_e8 is unknown; hypothesize
+  heterotic-e8e8; live E8 x E8 restored; encode pin
+  `c6cab84980b2320e96b4393a373de44a6fbbcdb31d54d350003e7294b61a7329`.
+
 - **Dulong–Petit quartic virial is an IR mutation**
   (`dulong-petit`, `add-quartic`). Harmonic `U = 3 N k T` is the live
   encoding; appending `U = 9/4 N k T` flips `thermo.dulong-petit` holds
