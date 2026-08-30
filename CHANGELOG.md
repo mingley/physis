@@ -29,6 +29,21 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   the infrared), and Wien's classical failure is a sampled absence of an
   interior peak.
 
+- **Einstein vs Debye: exponential freeze-out on trial against T³**
+  (`crates/physis-theory/src/solid.rs`, `specs/017-einstein-solid.md`, typed
+  `HeatCapacity` in `physis-core`). Einstein's 1907 Bose oscillators hold the
+  third law but **fail** the observed low-T phonon law: `C_V(2T)/C_V(T)` at
+  `Θ/20` is exponential (≫ 8), not 8. Debye's 1912 `ω²` density of states
+  (`debye-solid`) reverses that cell: the improper Bose integrals recover
+  `π⁴/15` and `4π⁴/15`, and `C_V = (12/5) π⁴ N k (T/Θ_D)³` is a sampled
+  theorem. `set einstein-solid spectrum debye` flips `thermo.debye-t3`
+  fails → holds without restoring Dulong–Petit. `C_V` is `Qty<HeatCapacity>`,
+  not energy. The `thermo` experiment now shares the third-law row across
+  ideal gas, Dulong–Petit, Einstein, and Debye. Verified: Debye integrals vs
+  `π⁴/15` and `4π⁴/15`, C_V vs dU/dT, Einstein over-freeze at T/Θ=0.2,
+  spectrum knob-diff, `fmt`, `clippy -D warnings`, full suite, and the CLI
+  experiment.
+
 - **Dulong–Petit vs Einstein: classical solid heat capacity on trial**
   (`crates/physis-theory/src/solid.rs`, `specs/017-einstein-solid.md`). The
   1819 standing theory `C_V = 3 N k` independent of T is a first-class object

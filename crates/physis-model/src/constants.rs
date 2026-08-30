@@ -5,8 +5,8 @@
 //! so that theories can be compared against the same measuring sticks.
 
 use physis_core::dim::{
-    Action, Dimensionless, Energy, EnergyDensity, Length, Mass, RadiationConstant, StefanBoltzmann,
-    Time, Velocity,
+    Action, Dimensionless, Energy, EnergyDensity, HeatCapacity, Length, Mass, RadiationConstant,
+    StefanBoltzmann, Time, Velocity,
 };
 use physis_core::qty::{kg, meters, seconds, Qty};
 
@@ -119,8 +119,7 @@ pub fn z_mass_gev() -> Qty<Dimensionless> {
 }
 
 /// Boltzmann constant k_B (exact, SI). Units: J/K = kg·m²·s⁻²·K⁻¹.
-pub fn k_boltzmann(
-) -> Qty<physis_core::SI<typenum::P1, typenum::P2, typenum::N2, typenum::Z0, typenum::N1>> {
+pub fn k_boltzmann() -> Qty<HeatCapacity> {
     Qty::new(1.380_649e-23)
 }
 

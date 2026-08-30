@@ -20,6 +20,7 @@ with a temperature.
 | `ideal-gas` | a monatomic classical ideal gas |
 | `dulong-petit` | classical lattice oscillators (see `specs/017`) |
 | `einstein-solid` | Einstein (1907) Bose oscillators (see `specs/017`) |
+| `debye-solid` | Debye (1912) phonon continuum (see `specs/017`) |
 
 ## Knobs
 
@@ -63,4 +64,4 @@ physis set ideal-gas volume_ratio 0.5   # a compression: second-law flips to fai
 - `specs/002-ontology-layers.md` (the `statistical` layer)
 - `specs/007-reuse-domains.md` (how domains are added)
 - `specs/016-blackbody.md` (Rayleigh–Jeans vs Planck on the same layer)
-- `specs/017-einstein-solid.md` (Dulong–Petit vs Einstein; shares `thermo.third-law`)
+- `specs/017-einstein-solid.md` (Dulong–Petit vs Einstein vs Debye; shares `thermo.third-law` and `thermo.debye-t3`)

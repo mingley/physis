@@ -173,6 +173,8 @@ pub type StefanBoltzmann = SI<P1, Z0, N3, Z0, N4>;
 pub type RadiationConstant = SI<P1, N1, N2, Z0, N4>;
 /// Wien displacement product `λ T`, `L Θ` (m·K).
 pub type LengthTemperature = SI<Z0, P1, Z0, Z0, P1>;
+/// Heat capacity (and entropy), `M L² T⁻² Θ⁻¹` (J/K).
+pub type HeatCapacity = SI<P1, P2, N2, Z0, N1>;
 
 #[cfg(test)]
 mod tests {
@@ -185,6 +187,16 @@ mod tests {
         assert_eq!(e.length, 2);
         assert_eq!(e.time, -2);
         assert_eq!(format!("{e}"), "kg·m^2·s^-2");
+    }
+
+    #[test]
+    fn heat_capacity_exponents() {
+        let c = <HeatCapacity as HasDim>::exponents();
+        assert_eq!(c.mass, 1);
+        assert_eq!(c.length, 2);
+        assert_eq!(c.time, -2);
+        assert_eq!(c.temperature, -1);
+        assert_eq!(format!("{c}"), "kg·m^2·s^-2·K^-1");
     }
 
     #[test]

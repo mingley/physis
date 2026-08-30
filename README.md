@@ -66,7 +66,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `gauge-lattice` | compact U(1) vs SU(2)/SU(3) — asymptotic freedom, a computed strong-coupling area law, and the 4D mass gap as a `conjecture` |
 | `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly** (needs quantum statistics) |
 | `blackbody` | cavity radiation — **Rayleigh–Jeans fails** finite energy, T⁴, and Wien's peak; Planck holds them; `set planck quantum false` restores the ultraviolet catastrophe |
-| `solid` | lattice oscillators — **Dulong–Petit fails** the third law; Einstein holds it and recovers `C_V = 3Nk` only as `T ≫ Θ_E` |
+| `solid` | lattice oscillators — **Dulong–Petit fails** the third law; Einstein holds it but **fails T³** (exponential freeze-out); Debye holds both the third law and `C_V ∝ T³` |
 | `gravity` | solar-system gravity — **Newton fails** Eddington's 1.75″ and Mercury's 43″; GR holds them; Soldner's half-angle is the standing claim GR doubles |
 | `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2` |
 
@@ -83,7 +83,7 @@ minimal (non-SUSY) SU(5) is honestly **falsified** — it `fails`
 Super-Kamiokande), which a `supersymmetric` knob revives as heuristics.
 
 `physis epistemics` tallies the whole lab's knowledge state by epistemic tag
-(currently ~60 theorems alongside encoded-facts, conjectures, heuristics, and
+(currently ~103 theorems alongside encoded-facts, conjectures, heuristics, and
 honestly-`open` problems). `physis --json <command>` emits the typed matrices and
 verdict diffs for agents.
 
@@ -111,6 +111,7 @@ cargo run -p physis -- experiment blackbody
 cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
 cargo run -p physis -- experiment solid
 cargo run -p physis -- set einstein-solid temperature 4000
+cargo run -p physis -- set einstein-solid spectrum debye   # T³ fails → holds
 cargo run -p physis -- experiment gravity
 cargo run -p physis -- set general-relativity dim 5
 cargo run -p physis -- experiment bell

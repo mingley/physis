@@ -34,6 +34,14 @@
 //! let _: Qty<Energy> = Qty::<EnergyDensity>::new(1.0);
 //! ```
 //!
+//! Heat capacity (J/K) is not energy (J):
+//!
+//! ```compile_fail
+//! use physis_core::dim::{Energy, HeatCapacity};
+//! use physis_core::qty::Qty;
+//! let _: Qty<Energy> = Qty::<HeatCapacity>::new(1.0);
+//! ```
+//!
 //! Energy from mass and velocity is a type success:
 //!
 //! ```
@@ -59,7 +67,7 @@ pub mod scale;
 pub use claim::{Claim, Epistemic, Verdict, VerdictKind};
 pub use dim::{
     Acceleration, Action, Amount, Charge, Current, Dimensionless, Energy, EnergyDensity, Force,
-    Frequency, Length, LengthTemperature, Luminous, Mass, Momentum, Power, Pressure,
+    Frequency, HeatCapacity, Length, LengthTemperature, Luminous, Mass, Momentum, Power, Pressure,
     RadiationConstant, SpectralEnergyDensity, StefanBoltzmann, Temperature, Time, Velocity, SI,
 };
 pub use error::CoreError;

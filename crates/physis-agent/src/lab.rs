@@ -58,7 +58,7 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
     ),
     (
         "solid",
-        "solid heat capacity: Dulong–Petit vs Einstein (third law)",
+        "solid heat capacity: Dulong–Petit vs Einstein vs Debye (T³)",
     ),
     (
         "gravity",
@@ -121,9 +121,10 @@ impl Lab {
         // Standing 19th-c theory on trial: Rayleigh–Jeans vs Planck.
         lab.insert(Box::new(Blackbody::rayleigh_jeans()));
         lab.insert(Box::new(Blackbody::planck()));
-        // Standing 1819 theory on trial: Dulong–Petit vs Einstein.
+        // Standing 1819 theory on trial: Dulong–Petit vs Einstein vs Debye.
         lab.insert(Box::new(EinsteinSolid::dulong_petit()));
         lab.insert(Box::new(EinsteinSolid::einstein()));
+        lab.insert(Box::new(EinsteinSolid::debye()));
         // Fifth domain: quantum foundations (a CHSH Bell test).
         lab.insert(Box::new(BellTest::default()));
         // Pure mathematics: discrete exterior calculus / de Rham cohomology.
@@ -544,6 +545,21 @@ mod tests {
                 && d.from == VerdictKind::Fails
                 && d.to == VerdictKind::Holds),
             "expected dulong-petit Fails→Holds, got {diffs:?}"
+        );
+    }
+
+    #[test]
+    fn turning_einstein_spectrum_to_debye_flips_t3() {
+        let mut lab = Lab::standard();
+        let diffs = lab
+            .set_knob("einstein-solid", "spectrum", "debye")
+            .unwrap()
+            .2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "thermo.debye-t3"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected debye-t3 Fails→Holds, got {diffs:?}"
         );
     }
 

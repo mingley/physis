@@ -57,10 +57,11 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 - `temperature` — cavity temperature (K)
 - `cutoff_hz` — ultraviolet frequency cutoff (Hz). Classical `u ∝ ν_max³`.
 
-### solid (`einstein-solid`, `dulong-petit`)
-- `quantum` — Einstein (true) vs Dulong–Petit (false)
-- `temperature` — lattice temperature (K). Raising it far above `Θ_E` recovers Dulong–Petit as correspondence.
-- `einstein_temp` — `Θ_E = ħω/k` (K)
+### solid (`einstein-solid`, `dulong-petit`, `debye-solid`)
+- `quantum` — Bose occupation (true) vs Dulong–Petit (false)
+- `spectrum` — `einstein` (single ω, exponential freeze-out) or `debye` (ω² DOS, T³). `set einstein-solid spectrum debye` flips `thermo.debye-t3` fails → holds.
+- `temperature` — lattice temperature (K). Raising it far above `Θ` recovers Dulong–Petit as correspondence.
+- `einstein_temp` — characteristic `Θ` (K): Einstein `Θ_E` or Debye `Θ_D`
 - `oscillators` — number of atoms N
 
 ## Dead knobs
