@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Coarse second-order is insufficient precision**
+  (`field.second-order-accurate`). The O(a²) identity is a long-wavelength
+  statement (`|k a| < 1` at the probe). Outside that domain, Richardson
+  `p` is not a stencil verdict: the cell is `undecidable` /
+  `inconclusive`, the gap is `InsufficientPrecision`, and `why`
+  projects `numeric unresolved`. Not a failed theorem, not P3N, not
+  Lean, not P3F, not P4. `set klein-gordon spacing 100` is the knob
+  diff. Verified: unit tests, inspect/why, `fmt`, `clippy -D warnings`,
+  full suite, CLI.
+
 - **GUT Tr Q does not earn P3N**
   (`gut.charge-quantization`). `Tr Q = ΣY` is the gravitational
   `[grav]²U(1)` sum already certified on

@@ -348,7 +348,10 @@ impl TrustProfile {
 
 impl Judgment {
     /// Project a lab evaluation into a typed judgment. Evaluator `holds`
-    /// is not [`LogicalJudgment::Proved`].
+    /// is not [`LogicalJudgment::Proved`]. A model-internal evaluation
+    /// that overlays [`crate::assurance::EmpiricalStatus::Inconclusive`]
+    /// is [`NumericJudgment::Unresolved`] (too coarse to decide), not a
+    /// failed theorem.
     pub fn from_lab(
         class: crate::assurance::ClaimClass,
         kind: crate::claim::VerdictKind,
@@ -359,6 +362,9 @@ impl Judgment {
         use crate::claim::VerdictKind;
         match class {
             ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological => {
+                if empirical == EmpiricalStatus::Inconclusive {
+                    return Judgment::Numeric(NumericJudgment::Unresolved);
+                }
                 let j = if dual_checked && kind == VerdictKind::Holds {
                     LogicalJudgment::Proved
                 } else if kind == VerdictKind::Fails {
@@ -491,6 +497,17 @@ mod tests {
             false,
         );
         assert_eq!(j.label(), "logical undetermined");
+    }
+
+    #[test]
+    fn inconclusive_model_internal_is_numeric_unresolved() {
+        let j = Judgment::from_lab(
+            crate::assurance::ClaimClass::ModelInternal,
+            crate::claim::VerdictKind::Undecidable,
+            crate::assurance::EmpiricalStatus::Inconclusive,
+            false,
+        );
+        assert_eq!(j.label(), "numeric unresolved");
     }
 
     #[test]

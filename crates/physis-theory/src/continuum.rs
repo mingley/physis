@@ -19,6 +19,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::EmpiricalStatus;
 use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 
@@ -37,6 +38,11 @@ pub const CAUSAL: &str = "field.causal";
 pub const LOCAL: &str = "field.local";
 /// The discretization is second-order accurate (error ∝ a²).
 pub const SECOND_ORDER: &str = "field.second-order-accurate";
+
+/// Long-wavelength domain for the O(a²) identity: `|k a| < 1` at the
+/// convergence probe. Outside it, Richardson's `p` is not a verdict on the
+/// stencil — the lattice does not resolve the probe.
+const ASYMPTOTIC_KA: f64 = 1.0;
 
 /// Matrix rows for the field lab.
 pub fn field_rows() -> [&'static str; 6] {
@@ -166,6 +172,17 @@ impl KleinGordonField {
             return 2.0;
         }
         (e1 / e2).log2()
+    }
+
+    /// Probe wavenumber times spacing. The O(a²) expansion of
+    /// `(4/a²) sin²(ka/2)` is a long-wavelength statement.
+    fn probe_ka(&self) -> f64 {
+        CONVERGENCE_PROBE_K * self.spacing
+    }
+
+    /// True when the convergence probe is outside the long-wavelength domain.
+    fn too_coarse_for_order(&self) -> bool {
+        self.probe_ka().abs() >= ASYMPTOTIC_KA
     }
 
     /// Relative error between the longest-wavelength mode and the continuum
@@ -342,7 +359,21 @@ impl Theory for KleinGordonField {
             LOCAL => Verdict::holds(claim, "nearest-neighbour Laplacian: the coupling is local"),
             SECOND_ORDER => {
                 let p = self.convergence_order();
-                if (1.8..=2.2).contains(&p) {
+                let ka = self.probe_ka();
+                if self.too_coarse_for_order() {
+                    Verdict::undecidable(
+                        claim,
+                        format!(
+                            "probe |k a| = {ka:.3} ≥ {ASYMPTOTIC_KA}: too coarse to certify O(a²)"
+                        ),
+                    )
+                    .with_empirical(EmpiricalStatus::Inconclusive)
+                    .with_evidence([
+                        format!("Richardson p = {p:.3} is not a stencil verdict outside |k a| < 1"),
+                        "the discrete Laplacian is still O(a²) at long wavelength; this spacing does not resolve the probe"
+                            .to_string(),
+                    ])
+                } else if (1.8..=2.2).contains(&p) {
                     Verdict::holds(
                         claim,
                         format!("measured convergence order p = {p:.3} ≈ 2 (error ∝ a²)"),
@@ -350,12 +381,12 @@ impl Theory for KleinGordonField {
                     .with_evidence([
                         "computed by halving the lattice spacing at a fixed physical wavenumber"
                             .to_string(),
+                        format!("probe |k a| = {ka:.3} is inside the long-wavelength domain"),
                     ])
                 } else {
-                    Verdict::fails(claim,
-                        format!(
-                            "measured order p = {p:.3}: too coarse to be in the second-order regime",
-                        ),
+                    Verdict::fails(
+                        claim,
+                        format!("measured order p = {p:.3} ≠ 2 inside the long-wavelength domain"),
                     )
                 }
             }
@@ -449,12 +480,33 @@ mod tests {
     fn discretization_is_second_order_accurate() {
         // The discrete Laplacian converges at O(a²): computed order ≈ 2.
         let f = KleinGordonField::default();
-        assert_eq!(verdict(&f, SECOND_ORDER), VerdictKind::Holds);
+        let v = {
+            let c = f
+                .claims()
+                .into_iter()
+                .find(|c| c.id.0 == SECOND_ORDER)
+                .unwrap();
+            f.evaluate(&c)
+        };
+        assert_eq!(v.kind, VerdictKind::Holds);
+        assert_eq!(v.empirical, EmpiricalStatus::NotApplicable);
         assert!((f.convergence_order() - 2.0).abs() < 0.1);
-        // An absurdly coarse lattice leaves the second-order regime.
+        // An absurdly coarse lattice is a resolution gap, not a failed stencil.
         let mut coarse = KleinGordonField::default();
         coarse.set("spacing", KnobValue::Float(100.0)).unwrap();
-        assert_eq!(verdict(&coarse, SECOND_ORDER), VerdictKind::Fails);
+        let c = coarse
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == SECOND_ORDER)
+            .unwrap();
+        let u = coarse.evaluate(&c);
+        assert_eq!(u.kind, VerdictKind::Undecidable);
+        assert_eq!(u.empirical, EmpiricalStatus::Inconclusive);
+        assert_ne!(u.kind, VerdictKind::Fails);
+        assert_ne!(
+            u.derivation,
+            physis_core::DerivationAssurance::CertifiedNumeric
+        );
     }
 
     #[test]

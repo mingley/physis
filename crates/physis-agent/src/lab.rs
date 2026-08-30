@@ -1621,6 +1621,10 @@ fn gap_for(
             | EmpiricalStatus::NotApplicable
             | EmpiricalStatus::Tension => None,
         },
+        // A resolution/enclosure gap is InsufficientPrecision even when the
+        // claim is model-internal: too coarse is not a missing encoding and
+        // not a failed stencil.
+        _ if empirical == EmpiricalStatus::Inconclusive => Some(GapReason::InsufficientPrecision),
         _ if kind == VerdictKind::Undecidable => {
             if intractable {
                 Some(GapReason::ComputationallyIntractable)
@@ -2251,6 +2255,75 @@ mod tests {
             after.contains("gut.proton-lifetime-sk"),
             "SUSY does not mint a Super-Kamiokande Dataset: {after}"
         );
+    }
+
+    #[test]
+    fn coarse_lattice_is_insufficient_precision_not_a_failed_theorem() {
+        let mut lab = Lab::standard();
+        let before = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("insufficient-precision".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            !before.contains("field.second-order-accurate"),
+            "default spacing resolves the probe: {before}"
+        );
+        let why_ok = lab
+            .exec(Command::Why {
+                claim: "field.second-order-accurate".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_ok.contains("verdict:    holds"), "{why_ok}");
+        assert!(why_ok.contains("derivation: executed"), "{why_ok}");
+        assert!(
+            !why_ok.contains("derivation: certified-numeric"),
+            "the 1.8–2.2 f64 window is not P3N: {why_ok}"
+        );
+
+        let diffs = lab.set_knob("klein-gordon", "spacing", "100").unwrap().2;
+        assert!(
+            diffs
+                .iter()
+                .any(|d| d.claim == "field.second-order-accurate"
+                    && d.from == VerdictKind::Holds
+                    && d.to == VerdictKind::Undecidable),
+            "expected second-order Holds→Undecidable, got {diffs:?}"
+        );
+        assert!(
+            !diffs
+                .iter()
+                .any(|d| d.claim == "field.second-order-accurate" && d.to == VerdictKind::Fails),
+            "too coarse is not a failed stencil: {diffs:?}"
+        );
+
+        let gap = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("insufficient-precision".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            gap.lines()
+                .any(|l| l.contains("klein-gordon") && l.contains("field.second-order-accurate")),
+            "{gap}"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "field.second-order-accurate".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("verdict:    undecidable"), "{why}");
+        assert!(why.contains("empirical:  inconclusive"), "{why}");
+        assert!(why.contains("judgment:   numeric unresolved"), "{why}");
+        assert!(why.contains("derivation: executed"), "{why}");
+        assert!(!why.contains("P3N"), "{why}");
+        assert!(why.contains("kernel proof: none"), "{why}");
     }
 
     #[test]
@@ -3028,6 +3101,21 @@ mod tests {
             false,
         );
         assert_eq!(coarse, Some(GapReason::InsufficientPrecision));
+
+        let lattice = gap_for(
+            physis_core::ClaimClass::ModelInternal,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Undecidable,
+            physis_core::EmpiricalStatus::Inconclusive,
+            false,
+            LayerId::Field,
+            false,
+        );
+        assert_eq!(
+            lattice,
+            Some(GapReason::InsufficientPrecision),
+            "a coarse lattice is a resolution gap, not an encoding gap"
+        );
 
         let expensive = gap_for(
             physis_core::ClaimClass::Phenomenological,
