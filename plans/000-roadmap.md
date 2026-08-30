@@ -43,6 +43,7 @@ Level-3 trust
   L3 causal diffs          ✓ set/sweep/compare/replay carry derivation, empirical, and judgment axes; legacy kind-only journals still replay
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
   L3 hypothesize           ✓ constrained structural mutation of chosen/fitted knobs; measured knobs frozen; explorer can observe; does not mint
+  L3 evidence graph        ✓ physis evidence groups by statement hash; competing encodings vs evaluations; derived TrustProfile, not a numeric score
 ```
 
 Each milestone must:

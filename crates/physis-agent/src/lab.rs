@@ -675,6 +675,7 @@ impl Lab {
                     Response::ok(text)
                 }
             }
+            Command::Evidence { claim } => self.evidence_claim(&claim),
             Command::Experiments => {
                 let mut text = String::from("experiments\n");
                 for (id, desc) in EXPERIMENTS {
@@ -825,6 +826,164 @@ impl Lab {
             dual_checked_receipt: self.receipts.by_statement(claim.statement_hash()).is_some(),
             numeric_certificate: derivation == physis_core::DerivationAssurance::CertifiedNumeric,
         })
+    }
+
+    /// Competing encodings and evaluations of a lab slug. Groups by
+    /// statement hash: a shared id is not one FormalClaim. Confidence is
+    /// the derived TrustProfile, not a numeric score. Does not mint.
+    fn evidence_claim(&self, claim_id: &str) -> Response {
+        let mut rows: Vec<EvidenceRow> = Vec::new();
+        for t in self.theories.values() {
+            for (c, v) in t.evaluate_all() {
+                if c.id_str() != claim_id {
+                    continue;
+                }
+                let semantic = self.semantic_tag(&c);
+                let dual = self.receipts.by_statement(c.statement_hash()).is_some();
+                let profile = self.profile_for(&c, v.derivation(), semantic);
+                let judgment = Judgment::from_lab(
+                    v.class,
+                    v.kind,
+                    v.empirical(),
+                    v.derivation(),
+                    dual,
+                    v.numeric_lo(),
+                    v.numeric_hi(),
+                );
+                let domain = if c.domain().is_encoding_wide() {
+                    "encoding-wide".to_string()
+                } else if !c.domain().regimes.is_empty() {
+                    c.domain().regimes.join(", ")
+                } else {
+                    "named".to_string()
+                };
+                rows.push(EvidenceRow {
+                    theory: t.id().to_string(),
+                    hash: c.statement_hash().to_hex(),
+                    kind: v.kind.as_str(),
+                    class: v.class.as_str(),
+                    derivation: v.derivation().as_str(),
+                    empirical: v.empirical().as_str(),
+                    judgment: judgment.label(),
+                    trust: profile.display(),
+                    encoding_wide: c.domain().is_encoding_wide(),
+                    domain,
+                    receipt: dual,
+                });
+            }
+        }
+        if rows.is_empty() {
+            return Response::err(format!("unknown claim '{claim_id}'"));
+        }
+
+        let mut by_hash: BTreeMap<String, Vec<EvidenceRow>> = BTreeMap::new();
+        for row in rows {
+            by_hash.entry(row.hash.clone()).or_default().push(row);
+        }
+        let mut identities: Vec<(String, Vec<EvidenceRow>)> = by_hash.into_iter().collect();
+        identities.sort_by(|a, b| b.1.len().cmp(&a.1.len()).then_with(|| a.0.cmp(&b.0)));
+
+        let mut text = format!("evidence  {claim_id}\n");
+        text.push_str(&format!(
+            "  encodings  {}  {}\n",
+            identities.len(),
+            if identities.len() == 1 {
+                "this slug is one FormalClaim"
+            } else {
+                "distinct FormalClaims share this slug"
+            }
+        ));
+
+        for (hash, nodes) in &identities {
+            text.push_str(&format!("  identity  {hash}\n"));
+            let domain = &nodes[0].domain;
+            let wide = nodes[0].encoding_wide;
+            text.push_str(&format!(
+                "    domain    {}{}\n",
+                domain,
+                if wide { " (not a named regime)" } else { "" }
+            ));
+            text.push_str(&format!(
+                "    receipt   {}\n",
+                if nodes[0].receipt {
+                    "dual-checked (P3F of this identity)"
+                } else {
+                    "none"
+                }
+            ));
+            for n in nodes {
+                text.push_str(&format!(
+                    "    {:<20} {:<12} {:<28} trust {:<12} {} / {} / {}\n",
+                    n.theory, n.kind, n.judgment, n.trust, n.class, n.derivation, n.empirical
+                ));
+            }
+        }
+
+        if identities.len() > 1 {
+            text.push_str("  competing encodings: yes  the lab slug is not one FormalClaim\n");
+        } else {
+            text.push_str("  competing encodings: no\n");
+        }
+
+        text.push_str("  competing evaluations:\n");
+        let mut any_eval = false;
+        for (hash, nodes) in &identities {
+            let mut by_kind: BTreeMap<(&str, &str), Vec<&str>> = BTreeMap::new();
+            for n in nodes {
+                by_kind
+                    .entry((n.kind, n.judgment.as_str()))
+                    .or_default()
+                    .push(n.theory.as_str());
+            }
+            if by_kind.len() <= 1 && identities.len() == 1 {
+                let ((kind, judgment), theories) = by_kind.iter().next().unwrap();
+                text.push_str(&format!(
+                    "    consensus  {kind} / {judgment}  theories={}\n",
+                    theories.join(",")
+                ));
+            } else if by_kind.len() > 1 {
+                any_eval = true;
+                text.push_str(&format!("    identity {}:\n", &hash[..8]));
+                for ((kind, judgment), theories) in &by_kind {
+                    text.push_str(&format!(
+                        "      {kind} / {judgment}  ×{}  ({})\n",
+                        theories.len(),
+                        theories.join(", ")
+                    ));
+                }
+            }
+        }
+        if identities.len() > 1 {
+            // Interpretations of the slug across encodings.
+            let mut slug_kinds: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+            for nodes in identities.iter().map(|(_, n)| n) {
+                for n in nodes {
+                    slug_kinds
+                        .entry(n.kind)
+                        .or_default()
+                        .push(n.theory.as_str());
+                }
+            }
+            if slug_kinds.len() > 1 {
+                any_eval = true;
+                text.push_str("    across encodings of this slug:\n");
+                for (kind, theories) in &slug_kinds {
+                    text.push_str(&format!(
+                        "      {kind}  ×{}  ({})\n",
+                        theories.len(),
+                        theories.join(", ")
+                    ));
+                }
+            }
+        }
+        if !any_eval && identities.len() > 1 {
+            text.push_str("    (each encoding is internally unanimous)\n");
+        }
+
+        text.push_str(
+            "  confidence  derived from TrustProfile; no numeric score; not Canonical; not P4\n",
+        );
+        Response::ok(text)
     }
 
     /// A dual-checked receipt for this slug counts only when it matches the
@@ -1763,6 +1922,20 @@ struct HypothesisHit {
     from: String,
     to: String,
     diffs: Vec<VerdictDiff>,
+}
+
+struct EvidenceRow {
+    theory: String,
+    hash: String,
+    kind: &'static str,
+    class: &'static str,
+    derivation: &'static str,
+    empirical: &'static str,
+    judgment: String,
+    trust: String,
+    encoding_wide: bool,
+    domain: String,
+    receipt: bool,
 }
 
 fn origin_rank(origin: ParameterOrigin) -> u8 {
@@ -3393,6 +3566,69 @@ mod tests {
 
         let unknown = lab.exec(Command::Hypothesize {
             theory: Some("no-such-theory".into()),
+        });
+        assert_eq!(unknown.exit_code(), 1);
+    }
+
+    #[test]
+    fn evidence_graph_separates_encodings_from_evaluations() {
+        let mut lab = Lab::standard();
+        let uniq = lab
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            uniq.contains("evidence  predictivity.unique-vacuum"),
+            "{uniq}"
+        );
+        assert!(
+            uniq.contains("distinct FormalClaims share this slug"),
+            "unique-vacuum is not one identity: {uniq}"
+        );
+        assert!(uniq.contains("competing encodings: yes"), "{uniq}");
+        assert!(
+            uniq.contains("type-iib") && uniq.contains("fails"),
+            "{uniq}"
+        );
+        assert!(
+            uniq.contains("observer-geometry") && uniq.contains("holds"),
+            "{uniq}"
+        );
+        assert!(
+            uniq.contains("derived from TrustProfile") && uniq.contains("no numeric score"),
+            "{uniq}"
+        );
+        assert!(
+            uniq.contains("not Canonical") && uniq.contains("not P4"),
+            "{uniq}"
+        );
+        assert!(
+            !uniq.contains("0.95") && !uniq.contains("%"),
+            "confidence is not a invented number: {uniq}"
+        );
+        assert!(!uniq.contains("theorem"), "{uniq}");
+
+        let qs = lab
+            .exec(Command::Evidence {
+                claim: "em.quasi-static-valid".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            qs.contains("distinct FormalClaims share this slug"),
+            "ohm-circuit and Maxwell are different identities: {qs}"
+        );
+        assert!(qs.contains("ohm-circuit"), "{qs}");
+        assert!(qs.contains("maxwell-vacuum"), "{qs}");
+        assert!(
+            qs.contains("encoding-wide") && qs.contains("λ > 100"),
+            "Maxwell stays encoding-wide; ohm names λ: {qs}"
+        );
+
+        let unknown = lab.exec(Command::Evidence {
+            claim: "no.such.claim".into(),
         });
         assert_eq!(unknown.exit_code(), 1);
     }

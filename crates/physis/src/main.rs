@@ -137,6 +137,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             let claim = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Why { claim })
         }
+        "evidence" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Evidence { claim })
+        }
         "experiment" => {
             let id = args
                 .get(1)
@@ -249,6 +253,7 @@ USAGE:
     physis score <theory>
     physis epistemics
     physis why <claim-id>
+    physis evidence <claim-id>
     physis prove <claim-id>
     physis formalize <claim-id>
     physis reproduce <claim-id>

@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Evidence graphs group by FormalClaim, not slug**
+  (`physis evidence <claim>`). Distinct statement hashes that share a
+  lab id are competing encodings, not one theorem. Competing
+  evaluations are listed per identity. Confidence is the derived
+  TrustProfile; there is no numeric score, no Canonical, and no P4.
+  `predictivity.unique-vacuum` and `em.quasi-static-valid` are the
+  load-bearing examples. Catalog d² hash unchanged. Verified: unique
+  vacuum has multiple encodings; ohm-circuit names λ, Maxwell stays
+  encoding-wide; explorer may observe.
+
 - **Hypothesis search is constrained structural mutation**
   (`physis hypothesize [theory]` probes chosen and fitted knobs for
   scientific-axis diffs and restores). Measured knobs (generations,

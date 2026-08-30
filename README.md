@@ -102,7 +102,9 @@ assurance (currently hundreds of `executed` model-internal evaluations).
 `physis prove dec.d-squared-zero` mints a dual-checked receipt (Lean kernel
 + nanoda when those tools are installed, otherwise the exact expanders).
 `physis why <claim>` prints assumptions, the statement hash, and the
-receipt or `kernel proof: none`. `physis --json <command>` emits the typed
+receipt or `kernel proof: none`. `physis evidence <claim>` groups those
+evaluations by statement hash: a shared slug is not one FormalClaim, and
+confidence is a derived TrustProfile (not a numeric score). `physis --json <command>` emits the typed
 matrices and verdict diffs for agents.
 
 ## Smallest level of modern physics
@@ -157,6 +159,7 @@ cargo run -p physis -- gaps
 cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension
 cargo run -p physis -- hypothesize type-iib
+cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- sweep type-iib total_dim 8,9,10,11,12
 cargo run -p physis -- audit
 cargo run -p physis --example kinetic_energy

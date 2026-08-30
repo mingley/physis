@@ -74,6 +74,7 @@ impl Role {
                 | Command::Run { .. }
                 | Command::Epistemics
                 | Command::Why { .. }
+                | Command::Evidence { .. }
                 | Command::Inspect { .. }
                 | Command::Gaps
                 | Command::Experiments
@@ -235,6 +236,9 @@ mod tests {
         }));
         assert!(Role::Explorer.permits(&Command::Gaps));
         assert!(Role::Explorer.permits(&Command::Hypothesize { theory: None }));
+        assert!(Role::Explorer.permits(&Command::Evidence {
+            claim: "predictivity.unique-vacuum".into(),
+        }));
         assert!(!Role::Explorer.permits(&Command::Set {
             theory: "type-iib".into(),
             knob: "total_dim".into(),

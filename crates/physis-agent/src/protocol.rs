@@ -37,6 +37,13 @@ pub enum Command {
         /// Claim id (`astro.sky-finite`, `consistency.critical-dimension`, …).
         claim: String,
     },
+    /// Evidence graph: competing encodings and evaluations of a lab slug.
+    /// Groups by statement hash. Confidence is a derived TrustProfile, not
+    /// a numeric score. Does not mint.
+    Evidence {
+        /// Claim id (lab slug).
+        claim: String,
+    },
     /// List the available experiments.
     Experiments,
     /// Run a named experiment.
@@ -154,6 +161,7 @@ impl Command {
             Command::Set { .. } => "set",
             Command::Epistemics => "epistemics",
             Command::Why { .. } => "why",
+            Command::Evidence { .. } => "evidence",
             Command::Experiments => "experiments",
             Command::Experiment { .. } => "experiment",
             Command::Journal => "journal",
