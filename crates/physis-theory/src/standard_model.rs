@@ -26,9 +26,9 @@ struct WeylField {
     /// Species label.
     name: &'static str,
     /// SU(3) representation dimension (3 = (anti)triplet, 1 = singlet).
-    color: f64,
+    color: i128,
     /// SU(2) representation dimension (2 = doublet, 1 = singlet).
-    weak: f64,
+    weak: i128,
     /// Weak hypercharge Y (exact rational; convention `Q = T₃ + Y`).
     y: Ratio,
 }
@@ -37,32 +37,32 @@ struct WeylField {
 const SM_WEYL_FIELDS: &[WeylField] = &[
     WeylField {
         name: "Q_L",
-        color: 3.0,
-        weak: 2.0,
+        color: 3,
+        weak: 2,
         y: Ratio::new(1, 6),
     }, // quark doublet
     WeylField {
         name: "u_R^c",
-        color: 3.0,
-        weak: 1.0,
+        color: 3,
+        weak: 1,
         y: Ratio::new(-2, 3),
     }, // anti-up
     WeylField {
         name: "d_R^c",
-        color: 3.0,
-        weak: 1.0,
+        color: 3,
+        weak: 1,
         y: Ratio::new(1, 3),
     }, // anti-down
     WeylField {
         name: "L_L",
-        color: 1.0,
-        weak: 2.0,
+        color: 1,
+        weak: 2,
         y: Ratio::new(-1, 2),
     }, // lepton doublet
     WeylField {
         name: "e_R^c",
-        color: 1.0,
-        weak: 1.0,
+        color: 1,
+        weak: 1,
         y: Ratio::int(1),
     }, // anti-electron
 ];
@@ -183,41 +183,38 @@ fn hydrogen_charge_exact(q: DerivedCharges) -> Ratio {
 }
 
 /// Σ T₃² over an SU(2) irrep of dimension `d`: `j(j+1)(2j+1)/3` with
-/// `j = (d−1)/2`. A doublet gives `1/2`, a singlet `0`, a triplet `2`.
-fn weak_t3_sq(weak_dim: f64) -> f64 {
-    let j = (weak_dim - 1.0) / 2.0;
-    j * (j + 1.0) * (2.0 * j + 1.0) / 3.0
+/// `j = (d−1)/2`. A doublet gives `1/2`, a singlet `0`.
+fn weak_t3_sq_exact(weak_dim: i128) -> Ratio {
+    let j = Ratio::new(weak_dim - 1, 2);
+    j * (j + Ratio::int(1)) * (Ratio::int(2) * j + Ratio::int(1)) / Ratio::int(3)
 }
 
-/// The GUT-scale weak mixing angle from embedding one SM generation in a
-/// complete SU(5) multiplet: `sin²θ_W = ΣT₃² / ΣQ²`.
+/// Exact traces `(Σ T₃², Σ Q²)` over one SM generation, with `Q = T₃ + Y`.
 ///
 /// Because the SU(5) generators are equally normalized at unification, the
 /// tree-level relation is `sin²θ_W = Tr(T₃²)/Tr(Q²)` over any complete
-/// multiplet. Using `Q = T₃ + Y` and `Σ T₃ = 0` per weak multiplet, the sums
-/// are computed from the same `SM_WEYL_FIELDS` the anomalies use, giving `3/8`.
-pub(crate) fn gut_weinberg_sin2() -> f64 {
-    let sum_t3_sq: f64 = SM_WEYL_FIELDS
-        .iter()
-        .map(|f| f.color * weak_t3_sq(f.weak))
-        .sum();
-    let sum_q_sq: f64 = SM_WEYL_FIELDS
-        .iter()
-        .map(|f| f.color * (weak_t3_sq(f.weak) + f.weak * f.y.to_f64() * f.y.to_f64()))
-        .sum();
-    sum_t3_sq / sum_q_sq
+/// multiplet. Using `Σ T₃ = 0` per weak multiplet, `Tr(Q²) = Tr(T₃²) + Tr(Y²)`.
+/// The sums are computed from the same `SM_WEYL_FIELDS` the anomalies use.
+pub(crate) fn gut_weinberg_traces_exact() -> Option<(Ratio, Ratio)> {
+    let mut sum_t3_sq = Ratio::int(0);
+    let mut sum_q_sq = Ratio::int(0);
+    for f in SM_WEYL_FIELDS {
+        let color = Ratio::int(f.color);
+        let t3 = weak_t3_sq_exact(f.weak);
+        sum_t3_sq = sum_t3_sq + color * t3;
+        sum_q_sq = sum_q_sq + color * (t3 + Ratio::int(f.weak) * f.y * f.y);
+    }
+    if sum_q_sq.is_zero() {
+        return None;
+    }
+    Some((sum_t3_sq, sum_q_sq))
 }
 
 /// Trace of electric charge over one SM generation (`Σ colour·weak·Y = ΣY`).
 /// A vanishing `Tr Q` is charge quantization in a GUT: `Q` is a traceless
 /// SU(5) generator, so charges are forced onto a discrete lattice.
-pub(crate) fn gut_trace_charge() -> f64 {
-    hypercharge_sum()
-}
-
-/// Integer colour and weak dimensions of a Weyl species.
-fn dim_ratio(x: f64) -> Ratio {
-    Ratio::int(x.round() as i128)
+pub(crate) fn gut_trace_charge_exact() -> Ratio {
+    hypercharge_sum_exact()
 }
 
 /// The [SU(3)]²U(1) mixed anomaly over one generation (colour triplets only).
@@ -225,8 +222,10 @@ fn anomaly_su3_u1_exact() -> Ratio {
     let half = Ratio::new(1, 2);
     SM_WEYL_FIELDS
         .iter()
-        .filter(|f| f.color > 1.5)
-        .fold(Ratio::int(0), |acc, f| acc + half * dim_ratio(f.weak) * f.y)
+        .filter(|f| f.color > 1)
+        .fold(Ratio::int(0), |acc, f| {
+            acc + half * Ratio::int(f.weak) * f.y
+        })
 }
 
 /// The [SU(2)]²U(1) mixed anomaly over one generation (weak doublets only).
@@ -234,23 +233,23 @@ fn anomaly_su2_u1_exact() -> Ratio {
     let half = Ratio::new(1, 2);
     SM_WEYL_FIELDS
         .iter()
-        .filter(|f| f.weak > 1.5)
+        .filter(|f| f.weak > 1)
         .fold(Ratio::int(0), |acc, f| {
-            acc + half * dim_ratio(f.color) * f.y
+            acc + half * Ratio::int(f.color) * f.y
         })
 }
 
 /// The gravitational [grav]²U(1) anomaly: Σ (colour·weak) · Y over a generation.
 fn hypercharge_sum_exact() -> Ratio {
     SM_WEYL_FIELDS.iter().fold(Ratio::int(0), |acc, f| {
-        acc + dim_ratio(f.color) * dim_ratio(f.weak) * f.y
+        acc + Ratio::int(f.color) * Ratio::int(f.weak) * f.y
     })
 }
 
 /// The [U(1)]³ anomaly: Σ (colour·weak) · Y³ over a generation.
 fn hypercharge_cube_sum_exact() -> Ratio {
     SM_WEYL_FIELDS.iter().fold(Ratio::int(0), |acc, f| {
-        acc + dim_ratio(f.color) * dim_ratio(f.weak) * f.y.pow(3)
+        acc + Ratio::int(f.color) * Ratio::int(f.weak) * f.y.pow(3)
     })
 }
 
@@ -270,11 +269,6 @@ fn hydrogen_charge_thirds() -> i32 {
     use physis_model::Flavor;
     let proton = 2 * charge_thirds(Flavor::Up) + charge_thirds(Flavor::Down);
     proton + charge_thirds(Flavor::Electron)
-}
-
-/// The gravitational [grav]²U(1) anomaly: Σ (colour·weak) · Y over a generation.
-fn hypercharge_sum() -> f64 {
-    hypercharge_sum_exact().to_f64()
 }
 
 const SPECS: &[KnobSpec] = &[
@@ -787,6 +781,17 @@ mod tests {
         assert_eq!(SM_WEAK_DOUBLETS % 2, 0);
         // A sign flip of the cubic is not a cancellation.
         assert!(!(hypercharge_cube_sum_exact() + Ratio::int(1)).is_zero());
+    }
+
+    #[test]
+    fn gut_scale_weinberg_angle_is_three_eighths_in_q() {
+        assert_eq!(weak_t3_sq_exact(1), Ratio::int(0));
+        assert_eq!(weak_t3_sq_exact(2), Ratio::new(1, 2));
+        let (t3, q2) = gut_weinberg_traces_exact().expect("Tr(Q²) is nonzero");
+        assert_eq!(t3, Ratio::int(2));
+        assert_eq!(q2, Ratio::new(16, 3));
+        assert_eq!(t3 / q2, Ratio::new(3, 8));
+        assert!(gut_trace_charge_exact().is_zero());
     }
 
     #[test]

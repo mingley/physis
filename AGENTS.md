@@ -68,8 +68,10 @@ prediction, and `inspect origin fitted` lists the knobs that accommodate
 rather than derive. `inspect trust P3N` lists exact-`Ratio` cancellations
 and the exact hypercharge solve (Standard Model chiral anomalies and
 `sm.hypercharge-derivation`) and hydrogen neutrality from `Q = T₃ + Y`
-(`empirical.charge-quantization`), not the heuristic 3% GQW band, not GUT
-`Tr Q`, and not a kernel proof. `inspect trust P2` lists Hodge Laplacian-versus-`b₁` agreement
+(`empirical.charge-quantization`), plus GUT-scale `sin²θ_W = 3/8` and
+`Tr Q = 0` (`gut.weinberg-angle`, `gut.charge-quantization`). It does not
+list Georgi–Quinn–Weinberg running at `M_Z`, the 3% band, or a kernel
+proof. `inspect trust P2` lists Hodge Laplacian-versus-`b₁` agreement
 (`dec.hodge-harmonic`), not Euler–Poincaré rank-cancellation, not Poincaré,
 and not a kernel proof. `exec` checks role, then trust, then budget:
 `reproduce` and the loop's review step require P3F. Standalone encoding

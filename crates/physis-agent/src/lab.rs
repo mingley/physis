@@ -1752,21 +1752,28 @@ mod tests {
             "hydrogen neutrality from T3+Y must mint P3N: {p3n}"
         );
         assert!(
-            p3n.lines().any(|l| l.trim() == "count 3"),
-            "P3N is the three SM exact-Ratio cells, not more: {p3n}"
+            p3n.lines().any(|l| l.trim() == "count 5"),
+            "P3N is three SM cells plus GUT Tr Q and GUT-scale 3/8: {p3n}"
         );
         assert!(
-            !p3n.contains("gut.charge-quantization"),
-            "GUT Tr Q stays f64, not P3N: {p3n}"
+            p3n.lines()
+                .any(|l| l.contains("su5-gut") && l.contains("gut.charge-quantization")),
+            "{p3n}"
+        );
+        assert!(
+            p3n.lines().any(|l| l.contains("su5-gut")
+                && l.contains("gut.weinberg-angle")
+                && !l.contains("mz")),
+            "GUT-scale 3/8 is P3N; GQW at M_Z is not: {p3n}"
+        );
+        assert!(
+            !p3n.contains("gut.weinberg-angle-mz"),
+            "GQW running and the 3% band are not P3N: {p3n}"
         );
         assert!(
             !p3n.lines()
                 .any(|l| l.contains("type-iib") && l.contains("consistency.anomaly-cancellation")),
             "Green-Schwarz stays encoded, not a Ratio certificate: {p3n}"
-        );
-        assert!(
-            !p3n.contains("gut.weinberg"),
-            "the 3% GQW band is not P3N: {p3n}"
         );
         assert!(!p3n.contains("predictivity.unique-vacuum"), "{p3n}");
 
@@ -1800,6 +1807,51 @@ mod tests {
         assert!(why_q.contains("P3N"), "{why_q}");
         assert!(!why_q.contains("P3F"), "{why_q}");
         assert!(why_q.contains("kernel proof: none"), "{why_q}");
+        let why_s2 = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_s2.contains("derivation: certified-numeric"), "{why_s2}");
+        assert!(why_s2.contains("P3N"), "{why_s2}");
+        assert!(!why_s2.contains("P3F"), "{why_s2}");
+        assert!(why_s2.contains("kernel proof: none"), "{why_s2}");
+        let why_mz = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle-mz".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_mz.contains("derivation: asserted"), "{why_mz}");
+        assert!(
+            !why_mz.contains("derivation: certified-numeric"),
+            "{why_mz}"
+        );
+        let gut_run = lab
+            .exec(Command::Run {
+                theory: "su5-gut".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            gut_run.lines().any(|l| l.contains("gut.weinberg-angle")
+                && !l.contains("mz")
+                && l.contains("certified-numeric")),
+            "GUT-scale 3/8 must not stay executed: {gut_run}"
+        );
+        assert!(
+            gut_run
+                .lines()
+                .any(|l| l.contains("gut.charge-quantization") && l.contains("certified-numeric")),
+            "GUT Tr Q must not stay executed: {gut_run}"
+        );
+        assert!(
+            gut_run.lines().any(|l| l.contains("gut.weinberg-angle-mz")
+                && l.contains("asserted")
+                && !l.contains("certified-numeric")),
+            "GQW at M_Z stays asserted: {gut_run}"
+        );
         let run = lab
             .exec(Command::Run {
                 theory: "standard-model".into(),
@@ -2040,6 +2092,39 @@ mod tests {
                     && d.from == VerdictKind::Fails
                     && d.to == VerdictKind::Undecidable),
             "expected weinberg-angle-mz-interval Fails→Undecidable, got {diffs:?}"
+        );
+        assert!(
+            !diffs
+                .iter()
+                .any(|d| d.claim == "gut.weinberg-angle" || d.claim == "gut.charge-quantization"),
+            "GUT-scale 3/8 and Tr Q must not move with the SUSY knob: {diffs:?}"
+        );
+        let why_mz = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle-mz".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_mz.contains("verdict:    holds"), "{why_mz}");
+        assert!(why_mz.contains("derivation: asserted"), "{why_mz}");
+        assert!(
+            !why_mz.contains("derivation: certified-numeric"),
+            "a 3% GQW hit is not P3N: {why_mz}"
+        );
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            !p3n.contains("gut.weinberg-angle-mz"),
+            "SUSY GQW Holds must not mint P3N: {p3n}"
+        );
+        assert!(
+            p3n.lines().any(|l| l.trim() == "count 5"),
+            "P3N stays the five exact-Ratio cells: {p3n}"
         );
     }
 

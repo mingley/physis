@@ -35,7 +35,7 @@ use physis_numeric::{Interval, Ratio};
 
 use crate::framework::Theory;
 use crate::rge::GaugeRunning;
-use crate::standard_model::{gut_trace_charge, gut_weinberg_sin2};
+use crate::standard_model::{gut_trace_charge_exact, gut_weinberg_traces_exact};
 
 /// Relative mismatch the heuristic GQW cell treats as a hit. The empirical
 /// enclosure uses the same 3% as a theory band, not a two-loop remainder
@@ -196,36 +196,43 @@ impl Theory for Su5Gut {
                 None => Verdict::fails(claim, "no verified SM embedding"),
             },
             GUT_CHARGE_QUANTIZATION => {
-                let tr_q = gut_trace_charge();
-                if tr_q.abs() < 1e-12 {
-                    Verdict::holds(claim,
-                        "Tr Q = 0 over a complete SU(5) multiplet forces quantized charges",
+                let tr_q = gut_trace_charge_exact();
+                if tr_q.is_zero() {
+                    Verdict::holds(
+                        claim,
+                        "Tr Q = 0 over a complete SU(5) multiplet as an exact Ratio (ΣY)",
                     )
                     .with_evidence([format!(
-                        "computed Tr Q over one generation = {tr_q:.3} (= ΣY, the traceless condition)"
+                        "computed Tr Q over one generation = {tr_q} (= ΣY, the traceless condition)"
                     )])
+                    .with_certified_numeric()
                 } else {
                     Verdict::fails(
                         claim,
-                        format!("Tr Q = {tr_q:.3} ≠ 0: charge not quantized by SU(5)"),
+                        format!("Tr Q = {tr_q} ≠ 0: charge not quantized by SU(5)"),
                     )
                 }
             }
-            GUT_WEINBERG_ANGLE => {
-                let s2 = gut_weinberg_sin2();
-                if (s2 - 3.0 / 8.0).abs() < 1e-12 {
-                    Verdict::holds(claim,
-                        "sin²θ_W = 3/8 at the unification scale (computed from the multiplet)",
-                    )
-                    .with_evidence([
-                        format!("sin²θ_W = Tr(T₃²)/Tr(Q²) = {s2:.4} = 3/8 at M_GUT"),
-                        "the low-energy value is gut.weinberg-angle-mz (GQW running), not this cell"
-                            .to_string(),
-                    ])
-                } else {
-                    Verdict::fails(claim, format!("computed sin²θ_W = {s2:.4} ≠ 3/8"))
+            GUT_WEINBERG_ANGLE => match gut_weinberg_traces_exact() {
+                Some((t3, q2)) => {
+                    let s2 = t3 / q2;
+                    if s2 == Ratio::new(3, 8) {
+                        Verdict::holds(
+                            claim,
+                            "sin²θ_W = 3/8 at the unification scale (exact Tr(T₃²)/Tr(Q²))",
+                        )
+                        .with_evidence([
+                            format!("Σ T₃² = {t3}, Σ Q² = {q2}, sin²θ_W = {s2} at M_GUT"),
+                            "the low-energy value is gut.weinberg-angle-mz (GQW running), not this cell"
+                                .to_string(),
+                        ])
+                        .with_certified_numeric()
+                    } else {
+                        Verdict::fails(claim, format!("computed sin²θ_W = {s2} ≠ 3/8"))
+                    }
                 }
-            }
+                None => Verdict::fails(claim, "Tr(Q²) vanished; sin²θ_W is undefined"),
+            },
             GUT_WEINBERG_ANGLE_MZ => {
                 // Georgi–Quinn–Weinberg: α_em and α_s predict sin²θ_W(M_Z)
                 // assuming one-loop unification. This does not use the
@@ -398,6 +405,7 @@ impl Theory for Su5Gut {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
+    use physis_core::DerivationAssurance;
 
     fn verdict(t: &dyn Theory, id: &str) -> Verdict {
         let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
@@ -406,12 +414,21 @@ mod tests {
 
     #[test]
     fn weinberg_angle_is_exactly_three_eighths() {
-        // The headline computed theorem: sin²θ_W(GUT) = 3/8.
-        assert!((gut_weinberg_sin2() - 0.375).abs() < 1e-12);
+        let (t3, q2) = gut_weinberg_traces_exact().expect("Tr(Q²) is nonzero");
+        assert_eq!((t3, q2), (Ratio::int(2), Ratio::new(16, 3)));
+        assert_eq!(t3 / q2, Ratio::new(3, 8));
         let g = Su5Gut::default();
         let v = verdict(&g, GUT_WEINBERG_ANGLE);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
+        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("Σ T₃² = 2") && e.contains("Σ Q² = 16/3")),
+            "evidence must quote the exact traces, not a float: {:?}",
+            v.evidence
+        );
         // The GUT-scale cell must not pretend 3/8 is the M_Z value.
         assert!(
             !v.evidence
@@ -508,6 +525,8 @@ mod tests {
         let v = verdict(&g, GUT_CHARGE_QUANTIZATION);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
+        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert!(gut_trace_charge_exact().is_zero());
     }
 
     #[test]

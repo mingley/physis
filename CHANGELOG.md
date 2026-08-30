@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **GUT-scale 3/8 and Tr Q earn P3N**
+  (`gut.weinberg-angle`, `gut.charge-quantization`). Weyl colour and weak
+  dimensions are integers. `Tr(T₃²)/Tr(Q²) = 2 / (16/3) = 3/8` in Q, and
+  `ΣY = 0`. Those overlays are `CertifiedNumeric` / P3N, not Lean, not
+  P3F, not P4, and not Georgi–Quinn–Weinberg running at `M_Z` or the 3%
+  band. `inspect trust P3N` lists five cells. Verified: exact Ratio
+  tests, inspect/why P3N, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Hydrogen neutrality from T3+Y earns P3N**
   (`empirical.charge-quantization`, `Q = T₃ + Y`). Derived hypercharges
   give `Q_u = 2/3`, `Q_d = −1/3`, `Q_e = −1`; left-handed `T₃+Y` matches
