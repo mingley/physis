@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **StatisticalJudgment cannot mint computed**
+  (`StatisticalJudgment` is a transparent wrapper with a private kind).
+  There is no public `Computed` constructor. `from_lab` does not project
+  a statistical object for any claim class. A reserved crate-private
+  computed value is `statistical computed`, not `logical proved`. Catalog
+  d² hash unchanged. Verified: compile-fail against
+  `StatisticalJudgment::Computed` and a kind struct literal; from_lab
+  never returns Statistical. Live prove of catalog d² is still
+  Lean+nanoda. `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **HeuristicJudgment cannot mint suggestive**
   (`HeuristicJudgment` is a transparent wrapper with a private kind).
   Suggestive / failed are produced only by `from_lab`. A heuristic Holds

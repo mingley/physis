@@ -53,6 +53,16 @@
 //! use physis_core::judgment::HeuristicJudgment;
 //! let _ = HeuristicJudgment { kind: todo!() };
 //! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::StatisticalJudgment;
+//! let _ = StatisticalJudgment::Computed;
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::StatisticalJudgment;
+//! let _ = StatisticalJudgment { kind: todo!() };
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -249,13 +259,53 @@ impl EmpiricalJudgment {
 }
 
 /// Outcome of a statistical procedure (never an LLM-invented confidence).
+///
+/// Computed / unquantified values are reserved for a defined statistical
+/// object. [`Judgment::from_lab`] does not yet project this variant: there
+/// is no public `Computed` constructor, so a crate outside physis-core
+/// cannot mint `statistical computed`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[serde(transparent)]
+pub struct StatisticalJudgment {
+    kind: StatisticalKind,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum StatisticalJudgment {
-    /// No formal statistical object exists.
+enum StatisticalKind {
     Unquantified,
-    /// A defined procedure produced a result (see evidence / receipt).
     Computed,
+}
+
+impl StatisticalJudgment {
+    /// Reserved: from_lab does not yet project a statistical object.
+    #[allow(dead_code)]
+    pub(crate) const fn unquantified() -> Self {
+        Self {
+            kind: StatisticalKind::Unquantified,
+        }
+    }
+
+    /// Reserved: from_lab does not yet project a statistical object.
+    #[allow(dead_code)]
+    pub(crate) const fn computed() -> Self {
+        Self {
+            kind: StatisticalKind::Computed,
+        }
+    }
+
+    /// True when a defined procedure produced a result.
+    pub const fn is_computed(self) -> bool {
+        matches!(self.kind, StatisticalKind::Computed)
+    }
+
+    /// Stable kebab-case name (`unquantified`, `computed`).
+    pub const fn as_str(self) -> &'static str {
+        match self.kind {
+            StatisticalKind::Unquantified => "unquantified",
+            StatisticalKind::Computed => "computed",
+        }
+    }
 }
 
 /// Heuristic judgment — explicitly not a proof.
@@ -635,13 +685,7 @@ impl Judgment {
             Judgment::Logical(j) => format!("logical {}", j.as_str()),
             Judgment::Numeric(n) => format!("numeric {}", n.as_str()),
             Judgment::Empirical(j) => format!("empirical {}", j.as_str()),
-            Judgment::Statistical(j) => format!(
-                "statistical {}",
-                match j {
-                    StatisticalJudgment::Unquantified => "unquantified",
-                    StatisticalJudgment::Computed => "computed",
-                }
-            ),
+            Judgment::Statistical(j) => format!("statistical {}", j.as_str()),
             Judgment::Heuristic(j) => format!("heuristic {}", j.as_str()),
         }
     }
@@ -889,5 +933,66 @@ mod tests {
         );
         assert_eq!(failed.label(), "heuristic failed");
         assert!(!matches!(&failed, Judgment::Heuristic(h) if h.is_suggestive()));
+    }
+
+    #[test]
+    fn from_lab_never_mints_statistical_computed() {
+        use crate::assurance::{ClaimClass, DerivationAssurance, EmpiricalStatus};
+        use crate::claim::VerdictKind;
+        for class in ClaimClass::ALL {
+            for kind in [
+                VerdictKind::Holds,
+                VerdictKind::Fails,
+                VerdictKind::Undecidable,
+                VerdictKind::Inapplicable,
+            ] {
+                for empirical in [
+                    EmpiricalStatus::NotApplicable,
+                    EmpiricalStatus::Untested,
+                    EmpiricalStatus::Compatible,
+                    EmpiricalStatus::Supported,
+                    EmpiricalStatus::Tension,
+                    EmpiricalStatus::Excluded,
+                    EmpiricalStatus::Inconclusive,
+                ] {
+                    for derivation in [
+                        DerivationAssurance::Asserted,
+                        DerivationAssurance::Executed,
+                        DerivationAssurance::CrossChecked,
+                        DerivationAssurance::CertifiedNumeric,
+                    ] {
+                        let j = Judgment::from_lab(
+                            class, kind, empirical, derivation, false, None, None,
+                        );
+                        assert!(
+                            !matches!(j, Judgment::Statistical(_)),
+                            "from_lab minted statistical for {class:?} {kind:?} {empirical:?} {derivation:?}: {}",
+                            j.label()
+                        );
+                        let proved = Judgment::from_lab(
+                            class,
+                            kind,
+                            empirical,
+                            derivation,
+                            true,
+                            Some("1"),
+                            Some("1"),
+                        );
+                        assert!(
+                            !matches!(proved, Judgment::Statistical(_)),
+                            "from_lab minted statistical under a receipt for {class:?}: {}",
+                            proved.label()
+                        );
+                    }
+                }
+            }
+        }
+        let reserved = Judgment::Statistical(StatisticalJudgment::computed());
+        assert_eq!(reserved.label(), "statistical computed");
+        assert!(matches!(&reserved, Judgment::Statistical(s) if s.is_computed()));
+        assert_ne!(reserved.label(), "logical proved");
+        let none = Judgment::Statistical(StatisticalJudgment::unquantified());
+        assert_eq!(none.label(), "statistical unquantified");
+        assert!(!none.label().contains("proved"));
     }
 }

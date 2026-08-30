@@ -64,6 +64,9 @@ Nothing gains authority merely because an agent wrote code that returns
   `Compatible` constructor: only `from_lab` can produce compatible, and
   only from a registered empirical overlay. `HeuristicJudgment` has no
   public `Suggestive` constructor: only `from_lab` can produce it.
+  `StatisticalJudgment` has no public `Computed` constructor: `from_lab`
+  does not yet project a statistical object, and a crate outside
+  physis-core cannot mint one.
   The lab projects `Judgment` from evaluator
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.
