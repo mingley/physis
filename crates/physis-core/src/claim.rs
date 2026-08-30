@@ -69,6 +69,10 @@ pub struct Verdict {
     pub summary: String,
     /// Structured notes (numbers, mismatched knobs, citations).
     pub evidence: Vec<String>,
+    /// True when a [`VerdictKind::Undecidable`] evaluation is a resource
+    /// bound, not a missing algorithm. Default false; never a kernel proof.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub intractable: bool,
 }
 
 impl Verdict {
@@ -87,6 +91,7 @@ impl Verdict {
             semantic: claim.semantic,
             summary: summary.into(),
             evidence,
+            intractable: false,
         }
     }
 
@@ -128,6 +133,13 @@ impl Verdict {
     /// kernel proof.
     pub fn with_empirical(mut self, empirical: EmpiricalStatus) -> Self {
         self.empirical = empirical;
+        self
+    }
+
+    /// Mark an undecidable evaluation as a resource bound, not a missing
+    /// algorithm. Does not mint a kernel proof.
+    pub fn with_intractable(mut self) -> Self {
+        self.intractable = true;
         self
     }
 }
@@ -282,5 +294,19 @@ mod tests {
         assert_eq!(v.derivation, DerivationAssurance::Executed);
         assert_eq!(v.empirical, EmpiricalStatus::Inconclusive);
         assert_eq!(v.kind, VerdictKind::Undecidable);
+    }
+
+    #[test]
+    fn intractable_flag_does_not_mint_a_kernel_proof() {
+        let c = Claim::new(
+            "comp.feasible-decision",
+            "A feasible procedure decides the instance.",
+            LayerId::Information,
+            ClaimClass::Phenomenological,
+        );
+        let v = Verdict::undecidable(&c, "coNP-complete; no brute-force search").with_intractable();
+        assert!(v.intractable);
+        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.derivation, DerivationAssurance::Executed);
     }
 }

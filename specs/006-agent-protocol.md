@@ -24,7 +24,7 @@ Layer: agent
 | `inspect <axis> <value>` | inverse query over `trust`, `class`, knob `origin`, or knowledge `gap` |
 | `formalize <claim>` | emit the catalog encoding as untrusted bytes (not a receipt) |
 | `reproduce <claim>` | remint a stored receipt in-process; **not P4** |
-| `gaps` | rebuild the knowledge-gap graph from live verdicts and lemma edges (not deserialized). Failing evaluations are not listed as missing theorems. Overlap without containment is `insufficient-precision` |
+| `gaps` | rebuild the knowledge-gap graph from live verdicts and lemma edges (not deserialized). Failing evaluations are not listed as missing theorems. Overlap without containment is `insufficient-precision`. coNP-complete search is `computationally-intractable`, not Rice |
 | `loop` | one research cycle: observe → hypothesize → prove → falsify → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |

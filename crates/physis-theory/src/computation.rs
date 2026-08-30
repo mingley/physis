@@ -5,7 +5,10 @@
 //! not physics. Its payoff is the **halting problem**: an unbounded-tape Turing
 //! machine's `comp.halts` claim is genuinely `Undecidable` — a verdict kind the
 //! lab already had. Bounding the tape turns the machine into a finite automaton
-//! and halting becomes decidable, a clean knob → verdict diff.
+//! and halting becomes decidable, a clean knob → verdict diff. Decidable is
+//! not feasible: `comp.feasible-decision` is a resource gap (coNP-complete
+//! circuit equivalence; exponential configuration graphs), not the
+//! halting problem.
 //!
 //! Computation has no spacetime, gauge, or spectrum, so these theories return
 //! `None` from `Theory::world()` and describe themselves via `Theory::note()`
@@ -34,17 +37,20 @@ pub const DETERMINISTIC: &str = "comp.deterministic";
 pub const DECIDABLE_EQUIVALENCE: &str = "comp.decidable-equivalence";
 /// The computation runs within an a priori resource bound.
 pub const RESOURCE_BOUNDED: &str = "comp.resource-bounded";
+/// A resource-feasible procedure in this lab decides the instance.
+pub const FEASIBLE_DECISION: &str = "comp.feasible-decision";
 /// Whether P = NP in this model.
 pub const P_EQUALS_NP: &str = "comp.p-equals-np";
 
 /// Matrix rows for the computation lab.
-pub fn computation_rows() -> [&'static str; 6] {
+pub fn computation_rows() -> [&'static str; 7] {
     [
         HALTS,
         TURING_COMPLETE,
         DETERMINISTIC,
         DECIDABLE_EQUIVALENCE,
         RESOURCE_BOUNDED,
+        FEASIBLE_DECISION,
         P_EQUALS_NP,
     ]
 }
@@ -80,6 +86,12 @@ fn comp_claims() -> Vec<Claim> {
             "The computation runs within an a priori resource bound.",
             LayerId::Information,
             ClaimClass::ModelInternal,
+        ),
+        Claim::new(
+            FEASIBLE_DECISION,
+            "A resource-feasible procedure in this lab decides the instance.",
+            LayerId::Information,
+            ClaimClass::Phenomenological,
         ),
         Claim::new(
             P_EQUALS_NP,
@@ -139,6 +151,15 @@ impl Theory for CombinationalCircuit {
                 "circuit equivalence is decidable (coNP-complete, but decidable)",
             ),
             RESOURCE_BOUNDED => Verdict::holds(claim, "bounded by gate count and depth"),
+            FEASIBLE_DECISION => Verdict::undecidable(
+                claim,
+                "circuit equivalence is coNP-complete; this lab does not brute-force SAT",
+            )
+            .with_intractable()
+            .with_evidence([
+                "decidable (see comp.decidable-equivalence) is not feasible; no circuit simulator is run"
+                    .to_string(),
+            ]),
             P_EQUALS_NP => Verdict::inapplicable(
                 claim,
                 "P vs NP concerns uniform machine models, not a single fixed circuit",
@@ -301,6 +322,27 @@ impl Theory for TuringMachine {
                     )
                 } else {
                     Verdict::holds(claim, format!("bounded by {} tape cells", self.tape_bound))
+                }
+            }
+            FEASIBLE_DECISION => {
+                if self.unbounded() {
+                    Verdict::inapplicable(
+                        claim,
+                        "no finite configuration graph; the obstruction is computability (comp.halts), not cost",
+                    )
+                } else {
+                    Verdict::undecidable(
+                        claim,
+                        format!(
+                            "a {}-cell tape is finite so the problem is decidable, but this lab does not enumerate the configuration graph",
+                            self.tape_bound
+                        ),
+                    )
+                    .with_intractable()
+                    .with_evidence([
+                        "decidable (see comp.halts / comp.decidable-equivalence) is not feasible; no tape simulator is run"
+                            .to_string(),
+                    ])
                 }
             }
             _ => Verdict::inapplicable(claim, "claim not made by a computational object"),
@@ -539,6 +581,7 @@ pub fn computation() -> ExperimentReport {
             "`holds` / `fails` are internal to the encoding.".into(),
             "The unbounded Turing machine's `comp.halts` is genuinely `undecidable` — that is the point.".into(),
             "Bounding the tape turns the machine into a finite automaton: halting and equivalence become decidable, but it is no longer Turing complete.".into(),
+            "`comp.feasible-decision` is coNP-complete (circuits) / exponential (bounded tape): decidable is not feasible. No simulator is run.".into(),
         ],
         &computation_rows(),
         theories,
@@ -573,6 +616,14 @@ mod tests {
         // ...but a bounded machine is no longer Turing complete.
         assert_eq!(verdict(&tm, TURING_COMPLETE), VerdictKind::Fails);
         assert_eq!(verdict(&tm, DECIDABLE_EQUIVALENCE), VerdictKind::Holds);
+        // Decidable is not feasible: this lab does not enumerate the graph.
+        assert_eq!(verdict(&tm, FEASIBLE_DECISION), VerdictKind::Undecidable);
+        let claim = tm
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == FEASIBLE_DECISION)
+            .unwrap();
+        assert!(tm.evaluate(&claim).intractable);
     }
 
     #[test]
@@ -581,6 +632,25 @@ mod tests {
         assert_eq!(verdict(&c, HALTS), VerdictKind::Holds);
         assert_eq!(verdict(&c, TURING_COMPLETE), VerdictKind::Fails);
         assert_eq!(verdict(&c, DECIDABLE_EQUIVALENCE), VerdictKind::Holds);
+        assert_eq!(verdict(&c, FEASIBLE_DECISION), VerdictKind::Undecidable);
+        let claim = c
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id.0 == FEASIBLE_DECISION)
+            .unwrap();
+        assert!(c.evaluate(&claim).intractable);
+    }
+
+    #[test]
+    fn unbounded_machine_feasible_decision_is_inapplicable() {
+        let tm = TuringMachine::default();
+        assert_eq!(verdict(&tm, FEASIBLE_DECISION), VerdictKind::Inapplicable);
+        let claim = tm
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == FEASIBLE_DECISION)
+            .unwrap();
+        assert!(!tm.evaluate(&claim).intractable);
     }
 
     #[test]

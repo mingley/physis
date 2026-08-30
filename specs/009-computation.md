@@ -45,6 +45,7 @@ mechanically restores decidability — a clean knob → verdict diff.
 | `comp.deterministic` | the transition function is single-valued |
 | `comp.decidable-equivalence` | equivalence of two instances is decidable |
 | `comp.resource-bounded` | the computation runs within an a priori resource bound |
+| `comp.feasible-decision` | a resource-feasible procedure in this lab decides the instance |
 | `comp.p-equals-np` | P = NP — encoded as `undecidable`/`open`, an honest unknown |
 | `info.landauer-cost` | erasing a bit dissipates at least `k_B·T·ln2` (theorem) |
 | `info.thermodynamically-free` | the process erases nothing and can dissipate no heat |
@@ -98,9 +99,14 @@ Setting `tape_bound: 0 → 1000` flips:
   automaton),
 - `comp.decidable-equivalence` `undecidable → holds`,
 - `comp.resource-bounded` `fails → holds`.
+- `comp.feasible-decision` `inapplicable → undecidable` (the configuration
+  graph is now finite, so the problem is in range, but this lab does not
+  enumerate it; `GapReason::ComputationallyIntractable`).
 
 The combinational circuit always halts and has decidable equivalence, but is
-not Turing complete (no memory or feedback).
+not Turing complete (no memory or feedback). Its `comp.feasible-decision` is
+`undecidable` at default: circuit equivalence is coNP-complete, and no SAT
+solver is run. Decidable is not feasible.
 
 ## No borrowed spacetime
 
@@ -114,7 +120,9 @@ that rough edge has been removed.
 ## Non-goals (this milestone)
 
 - An actual interpreter / simulator of circuits or tape machines.
-- Complexity-class claims (P, NP, …) as verdicts — a later milestone.
+- Complexity-class claims (P, NP, …) as `holds` / `fails` verdicts. `comp.p-equals-np`
+  stays `open`. `comp.feasible-decision` is the first complexity *gap*:
+  coNP-complete / exponential search is `ComputationallyIntractable`, not Rice.
 
 ## Related
 

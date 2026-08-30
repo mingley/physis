@@ -923,6 +923,7 @@ impl Lab {
                             verdict.empirical,
                             dual,
                             c.layer,
+                            verdict.intractable,
                         ) {
                             if g == gap {
                                 n += 1;
@@ -964,6 +965,7 @@ impl Lab {
                     verdict.empirical,
                     dual,
                     c.layer,
+                    verdict.intractable,
                 ) {
                     n += 1;
                     let mut row = format!("  {id:<20} {:<36} needs {}\n", c.id.0, need_for(g));
@@ -1591,6 +1593,7 @@ fn gap_for(
     empirical: physis_core::EmpiricalStatus,
     dual_checked: bool,
     layer: LayerId,
+    intractable: bool,
 ) -> Option<GapReason> {
     if dual_checked {
         return None;
@@ -1599,8 +1602,10 @@ fn gap_for(
     use physis_core::EmpiricalStatus;
     // Open / conjectural / heuristic stay scientific gaps even when the
     // evaluator reports Undecidable (P vs NP). Information-layer
-    // Undecidable is computability (halting, Rice). Other undecidable
-    // evaluations are encoding gaps, not logical undecidability.
+    // Undecidable is computability (halting, Rice) unless the evaluator
+    // marked a resource bound (coNP-complete search, exponential
+    // configuration graphs). Other undecidable evaluations are encoding
+    // gaps, not logical undecidability.
     // MissingTheorem is only for Holds: a Fails evaluation is already
     // decided by the encoding, not a missing lemma.
     // Empirical Inconclusive is a precision gap, even when the evaluator
@@ -1617,7 +1622,9 @@ fn gap_for(
             | EmpiricalStatus::Tension => None,
         },
         _ if kind == VerdictKind::Undecidable => {
-            if layer == LayerId::Information {
+            if intractable {
+                Some(GapReason::ComputationallyIntractable)
+            } else if layer == LayerId::Information {
                 Some(GapReason::LogicallyUndecidable)
             } else {
                 Some(GapReason::UnsupportedFormalPrimitive)
@@ -1918,6 +1925,48 @@ mod tests {
             .text()
             .to_string();
         assert!(folklore.contains("class:      heuristic"), "{folklore}");
+    }
+
+    #[test]
+    fn bounding_the_tape_does_not_make_search_feasible() {
+        let mut lab = Lab::standard();
+        let diffs = lab
+            .set_knob("turing-machine", "tape_bound", "1000")
+            .unwrap()
+            .2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "comp.halts"
+                && d.from == VerdictKind::Undecidable
+                && d.to == VerdictKind::Holds),
+            "expected halts Undecidable→Holds, got {diffs:?}"
+        );
+        assert!(
+            diffs.iter().any(|d| d.claim == "comp.feasible-decision"
+                && d.from == VerdictKind::Inapplicable
+                && d.to == VerdictKind::Undecidable),
+            "expected feasible-decision Inapplicable→Undecidable, got {diffs:?}"
+        );
+        let expensive = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("computationally-intractable".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            expensive
+                .lines()
+                .any(|l| l.contains("turing-machine") && l.contains("comp.feasible-decision")),
+            "{expensive}"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "comp.feasible-decision".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("turing-machine"), "{why}");
+        assert!(why.contains("undecidable"), "{why}");
     }
 
     #[test]
@@ -2404,6 +2453,34 @@ mod tests {
             !undec.lines().any(|l| l.contains("empirical.sm-gauge")),
             "Type II SM gauge is an encoding gap, not Rice/halting: {undec}"
         );
+        assert!(
+            !undec.lines().any(|l| l.contains("comp.feasible-decision")),
+            "coNP-complete search is not Rice/halting: {undec}"
+        );
+
+        let expensive = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("computationally-intractable".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            expensive.lines().any(
+                |l| l.contains("combinational-circuit") && l.contains("comp.feasible-decision")
+            ),
+            "{expensive}"
+        );
+        assert!(
+            !expensive
+                .lines()
+                .any(|l| l.contains("turing-machine") && l.contains("comp.feasible-decision")),
+            "unbounded TM has no finite search; cost is inapplicable: {expensive}"
+        );
+        assert!(
+            !expensive.lines().any(|l| l.contains("comp.halts")),
+            "halting is computability, not cost: {expensive}"
+        );
 
         let encoding = lab
             .exec(Command::Inspect {
@@ -2502,6 +2579,7 @@ mod tests {
             physis_core::EmpiricalStatus::NotApplicable,
             false,
             LayerId::Information,
+            false,
         );
         assert_eq!(halt, Some(GapReason::LogicallyUndecidable));
 
@@ -2512,6 +2590,7 @@ mod tests {
             physis_core::EmpiricalStatus::NotApplicable,
             false,
             LayerId::Information,
+            false,
         );
         assert_eq!(rice, Some(GapReason::LogicallyUndecidable));
 
@@ -2522,6 +2601,7 @@ mod tests {
             physis_core::EmpiricalStatus::NotApplicable,
             false,
             LayerId::Interaction,
+            false,
         );
         assert_eq!(sm_gauge, Some(GapReason::UnsupportedFormalPrimitive));
 
@@ -2532,6 +2612,7 @@ mod tests {
             physis_core::EmpiricalStatus::Untested,
             false,
             LayerId::Mathematical,
+            false,
         );
         assert_eq!(p_vs_np, Some(GapReason::ScientificOpenProblem));
 
@@ -2542,6 +2623,7 @@ mod tests {
             physis_core::EmpiricalStatus::NotApplicable,
             false,
             LayerId::Mathematical,
+            false,
         );
         assert_eq!(d2, Some(GapReason::MissingTheorem));
 
@@ -2552,6 +2634,7 @@ mod tests {
             physis_core::EmpiricalStatus::NotApplicable,
             true,
             LayerId::Mathematical,
+            false,
         );
         assert_eq!(proved, None);
 
@@ -2562,6 +2645,7 @@ mod tests {
             physis_core::EmpiricalStatus::NotApplicable,
             false,
             LayerId::Information,
+            false,
         );
         assert_eq!(
             failing_tc, None,
@@ -2575,6 +2659,7 @@ mod tests {
             physis_core::EmpiricalStatus::NotApplicable,
             false,
             LayerId::Information,
+            false,
         );
         assert_eq!(combinational_halts, Some(GapReason::MissingTheorem));
 
@@ -2585,6 +2670,7 @@ mod tests {
             physis_core::EmpiricalStatus::Untested,
             false,
             LayerId::Effective,
+            false,
         );
         assert_eq!(untested, Some(GapReason::MissingDataset));
 
@@ -2595,6 +2681,7 @@ mod tests {
             physis_core::EmpiricalStatus::Excluded,
             false,
             LayerId::Effective,
+            false,
         );
         assert_eq!(
             excluded, None,
@@ -2608,8 +2695,20 @@ mod tests {
             physis_core::EmpiricalStatus::Inconclusive,
             false,
             LayerId::Effective,
+            false,
         );
         assert_eq!(coarse, Some(GapReason::InsufficientPrecision));
+
+        let expensive = gap_for(
+            physis_core::ClaimClass::Phenomenological,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Undecidable,
+            physis_core::EmpiricalStatus::NotApplicable,
+            false,
+            LayerId::Information,
+            true,
+        );
+        assert_eq!(expensive, Some(GapReason::ComputationallyIntractable));
     }
 
     #[test]
@@ -2903,6 +3002,18 @@ mod tests {
                 && l.contains("comp.halts")
                 && l.contains("needs receipt")),
             "{before}"
+        );
+        assert!(
+            before.lines().any(|l| l.contains("combinational-circuit")
+                && l.contains("comp.feasible-decision")
+                && l.contains("needs resources")),
+            "{before}"
+        );
+        assert!(
+            !before
+                .lines()
+                .any(|l| l.contains("turing-machine") && l.contains("comp.feasible-decision")),
+            "unbounded TM feasible-decision is inapplicable, not a cost gap: {before}"
         );
         assert!(before.contains("dec.closed-equals-exact"), "{before}");
         assert!(

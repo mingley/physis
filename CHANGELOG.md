@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Decidable is not feasible**
+  (`comp.feasible-decision`, `gap_for`). Circuit equivalence is
+  coNP-complete; a bounded tape has a finite configuration graph this
+  lab does not enumerate. Those evaluations are `ComputationallyIntractable`,
+  not Rice / the halting problem. Unbounded TM feasible-decision is
+  inapplicable (the obstruction is computability). Combinational
+  `comp.decidable-equivalence` still Holds. No simulator. Not P vs NP
+  as holds/fails. Not P4. Verified: computation and gap_for unit tests,
+  inspect/gaps lab tests, tape_bound knob diff, `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Overlap without containment is insufficient precision**
   (`EmpiricalReceipt`, `gap_for`, `gut.weinberg-angle-mz-interval`).
   Compatible now means the prediction interval is a subset of the data
