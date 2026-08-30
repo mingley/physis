@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Ideal-gas Bose statistics is an IR mutation**
+  (`ideal-gas`, `add-bose`). Maxwell–Boltzmann statistics are the live
+  encoding (`gas maxwell-boltzmann`); appending `gas bose` makes the
+  low-T Bose entropy S/Nk ∝ (T/T_c)^{3/2} vanish and flips
+  `thermo.third-law` fails to holds. That is not a knob.
+  Equipartition at 300 K and the second law still hold on the mutant.
+  Mutants stay `ideal-gas`; they are not a silent Einstein-solid
+  install. `temperature` / `volume_ratio` / `particles` stay knobs.
+  Ideal-gas third law names classical Sackur–Tetrode; Einstein-solid
+  third law stays encoding-wide. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: IR
+  round-trip; set bose is unknown; hypothesize ideal-gas; live
+  Maxwell–Boltzmann restored; encode pin
+  `fb1dbc123bf6f00bc62cb49b4ba5df49a6b22aba81c6d9434e817c714ea18e06`.
+
 - **Maxwell vacuum magnetic current is an IR mutation**
   (`maxwell-vacuum`, `add-monopole`). Homogeneous Faraday is the live
   Bianchi encoding (`maxwell dF=0`); appending `dF = *j_m` makes the

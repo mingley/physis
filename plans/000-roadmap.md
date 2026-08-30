@@ -16,7 +16,7 @@ Level-3 trust
   L3-M4 numerics           ✓ Ratio / Interval; empirical receipts
   L3-M5 artifact DAG       ✓ content-addressed store + descendant invalidation
   L3-M6 protocol v2        ✓ prove, falsify, sweep, branch, compare, sensitivity
-  L3-M7 physis-ir          ✓ line-oriented theory packages plus constrained mutations; combinational NAND, Klein-Gordon stencil, Wilson U(1)/SU(2)/SU(3) plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, and maxwell-vacuum source-free homogeneous Faraday are live packages
+  L3-M7 physis-ir          ✓ line-oriented theory packages plus constrained mutations; combinational NAND, Klein-Gordon stencil, Wilson U(1)/SU(2)/SU(3) plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, and ideal-gas Maxwell-Boltzmann statistics are live packages
   L3-M8 red-team corpus    ✓ physis audit
   L3-M9 experiment rank    ✓ physis design
   L3-M10 research loop     ✓ physis loop (orchestrator)
@@ -43,7 +43,7 @@ Level-3 trust
   L3 claim-hash derived    ✓ Claim::statement_hash is a getter; no stored field; id/statement/class/layer/assumptions/domain/commitments are private; mutating the sentence cannot keep a stale receipt; derivation/empirical/semantic fields are private
   L3 causal diffs          ✓ set/sweep/compare/replay carry derivation, empirical, and judgment axes; legacy kind-only journals still replay
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
-  L3 hypothesize           ✓ chosen/fitted knob probes and IR package forks; measured knobs frozen; mutants not installed; explorer can observe; does not mint; combinational add-feedback, klein-gordon add-next-nearest, wilson add-rectangle (U(1)/SU(2)/SU(3)), ohm-circuit add-tline, bell-test add-product, newtonian-gravity add-schwarzschild, linear-medium add-tellegen, and maxwell-vacuum add-monopole are package mutations, not knobs
+  L3 hypothesize           ✓ chosen/fitted knob probes and IR package forks; measured knobs frozen; mutants not installed; explorer can observe; does not mint; combinational add-feedback, klein-gordon add-next-nearest, wilson add-rectangle (U(1)/SU(2)/SU(3)), ohm-circuit add-tline, bell-test add-product, newtonian-gravity add-schwarzschild, linear-medium add-tellegen, maxwell-vacuum add-monopole, and ideal-gas add-bose are package mutations, not knobs
   L3 evidence graph        ✓ physis evidence groups by statement hash and inserts a content-addressed Evidence DAG (Statement + Evaluation parents); competing encodings vs evaluations; derived TrustProfile, not a numeric score; not Canonical; not P4
   L3 journal evidence      ✓ Evidence events restore by rebuild from live evaluations; graph_hash is not deserialized; restore does not journal again; not Canonical; not P4
   L3 Super-K dataset       ✓ gut.proton-lifetime-sk compares dim-6 M_GUT^4 scaling to Takenaka et al. PRD 102 112011; not P3N; not dim-5; Tr Q stays encoding-wide
@@ -53,7 +53,7 @@ Level-3 trust
   L3 inspect judgment      ✓ physis inspect judgment inverts projected labels; statistical-computed is the PDG GQW cell; empirical-excluded is Super-K; logical-proved requires a receipt
   L3 numerical enclose     ✓ physis enclose independently parses CertifiedNumeric Ratio strings into a NumericCertificate DAG; numerical-verifier unique op; restore rebuilds; not P3F, not Canonical, not P4; P3N count stays 4
   L3 provenance cite       ✓ physis cite independently rebuilds SourceRecord for PDG/Super-K datasets and catalog dossiers; provenance-auditor unique op; restore rebuilds; not P3S, not Canonical, not P4
-  L3 encoding round-trip   ✓ physis encode independently parses, round-trips, and reconstructs live IR packages (combinational NAND, Klein-Gordon stencil, Wilson U(1)/SU(2)/SU(3) plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday); encoding-auditor unique op; restore rebuilds; not P3S, not Canonical, not P4
+  L3 encoding round-trip   ✓ physis encode independently parses, round-trips, and reconstructs live IR packages (combinational NAND, Klein-Gordon stencil, Wilson U(1)/SU(2)/SU(3) plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, ideal-gas Maxwell-Boltzmann statistics); encoding-auditor unique op; restore rebuilds; not P3S, not Canonical, not P4
   L3 judgment projection   ✓ physis judge independently rebuilds Judgment::from_lab into a JudgmentProjection DAG; judge unique op; unique-vacuum stays heuristic failed; JSON cannot mint logical proved; restore rebuilds; not Canonical, not P4
 ```
 

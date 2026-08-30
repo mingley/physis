@@ -4859,6 +4859,100 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_ideal_gas_bose_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "ideal-gas".into(),
+            knob: "bose".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("bose"),
+            "{}",
+            blocked.text()
+        );
+        let q_blocked = lab.exec(Command::Set {
+            theory: "ideal-gas".into(),
+            knob: "quantum".into(),
+            value: "true".into(),
+        });
+        assert_eq!(q_blocked.exit_code(), 1, "{}", q_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("ideal-gas".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-bose") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("thermo.third-law") && text.contains("fails → holds"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("ideal-gas").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "thermo.third-law" && v.kind == VerdictKind::Fails),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("temperature").unwrap().display(),
+            "300",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("volume_ratio").unwrap().display(),
+            "2",
+            "hypothesize must restore knobs"
+        );
+        let einstein = lab.theory("einstein-solid").unwrap();
+        assert_eq!(
+            einstein.get("quantum").unwrap().display(),
+            "true",
+            "ideal-gas IR must not convert the Einstein-solid quantum knob"
+        );
+        assert!(
+            einstein
+                .evaluate_all()
+                .iter()
+                .any(|(c, v)| { c.id_str() == "thermo.third-law" && v.kind == VerdictKind::Holds }),
+            "Einstein-solid must stay the live Bose-oscillator object"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "thermo.third-law".into(),
+            })
+            .text()
+            .to_string();
+        let gas = why_theory_block(&why, "ideal-gas");
+        assert!(
+            gas.contains("classical Maxwell-Boltzmann Sackur-Tetrode"),
+            "ideal-gas third law must name Sackur-Tetrode: {gas}"
+        );
+        assert!(
+            !gas.contains("not yet a machine-checked regime"),
+            "ideal-gas third law must not be encoding-wide: {gas}"
+        );
+        let es = why_theory_block(&why, "einstein-solid");
+        assert!(
+            es.contains("not yet a machine-checked regime"),
+            "Einstein-solid third law stays encoding-wide: {es}"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5573,6 +5667,10 @@ mod tests {
         assert!(
             text.contains("encode  maxwell-vacuum"),
             "loop must independently round-trip the homogeneous Faraday encoding: {text}"
+        );
+        assert!(
+            text.contains("encode  ideal-gas"),
+            "loop must independently round-trip Maxwell-Boltzmann statistics: {text}"
         );
         assert!(
             !text.contains("encode  general-relativity"),
@@ -6858,6 +6956,24 @@ mod tests {
         assert_ne!(maxwell_id, medium_id);
         assert_ne!(maxwell_id, nand_id);
 
+        let gas = lab
+            .exec(Command::Encode {
+                theory: "ideal-gas".into(),
+            })
+            .text()
+            .to_string();
+        assert!(gas.contains("equations  1"), "{gas}");
+        assert!(gas.contains("round-trip canonical"), "{gas}");
+        assert!(gas.contains("not P3S"), "{gas}");
+        assert!(!gas.contains("receipt"), "{gas}");
+        let gas_id = encoding_package_id(&gas);
+        assert_eq!(
+            gas_id.to_hex(),
+            "fb1dbc123bf6f00bc62cb49b4ba5df49a6b22aba81c6d9434e817c714ea18e06"
+        );
+        assert_ne!(gas_id, maxwell_id);
+        assert_ne!(gas_id, nand_id);
+
         for theory in [
             "standard-model",
             "type-iib",
@@ -7045,6 +7161,25 @@ mod tests {
             encoding_package_id(&maxwell_again),
             maxwell_id,
             "hypothesize must not install the magnetic-current mutant"
+        );
+
+        let hypo_gas = lab
+            .exec(Command::Hypothesize {
+                theory: Some("ideal-gas".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_gas.contains("add-bose"), "{hypo_gas}");
+        let gas_again = lab
+            .exec(Command::Encode {
+                theory: "ideal-gas".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&gas_again),
+            gas_id,
+            "hypothesize must not install the Bose-statistics mutant"
         );
 
         let p3s = lab
