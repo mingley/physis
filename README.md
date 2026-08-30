@@ -145,6 +145,7 @@ cargo run -p physis -- set einstein-solid temperature 4000
 cargo run -p physis -- set einstein-solid spectrum debye   # T³ fails → holds
 cargo run -p physis -- hypothesize debye-solid            # add-2d is IR, not set
 cargo run -p physis -- hypothesize standard-model         # add-missing-eR is IR, not set
+cargo run -p physis -- hypothesize observer-geometry      # add-missing-spin10 is IR, not set
 cargo run -p physis -- experiment gravity
 cargo run -p physis -- set general-relativity dim 5
 cargo run -p physis -- experiment olbers
@@ -194,6 +195,7 @@ cargo run -p physis -- hypothesize olbers-static   # add-tired-light is IR, not 
 cargo run -p physis -- hypothesize su5-gut         # add-missing-10 is IR, not set
 cargo run -p physis -- hypothesize debye-solid     # add-2d is IR, not set
 cargo run -p physis -- hypothesize standard-model  # add-missing-eR is IR, not set
+cargo run -p physis -- hypothesize observer-geometry  # add-missing-spin10 is IR, not set
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- enclose gut.weinberg-angle
 cargo run -p physis -- cite gut.proton-lifetime-sk

@@ -6721,6 +6721,126 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_og_missing_spin10_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["missing_spin10", "missing-spin10", "add-missing-spin10"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "observer-geometry".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("observer-geometry".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-missing-spin10") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-missing-spin10: package → add-missing-spin10";
+        let start = text.find(marker).expect("add-missing-spin10 hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  observer-geometry  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let missing_block = &rest[..end];
+        assert!(
+            missing_block.contains("empirical.sm-gauge") && missing_block.contains("holds → fails"),
+            "add-missing-spin10 must flip sm-gauge holds to fails: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("predictivity.unique-vacuum"),
+            "missing Spin(10) is not the unique_vacuum knob: {missing_block}"
+        );
+        assert!(
+            text.contains("unique_vacuum") || text.contains("derive_gauge"),
+            "chosen knobs must still be probed: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("observer-geometry").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "empirical.sm-gauge" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("unique_vacuum").unwrap().display(),
+            "true",
+            "hypothesize must restore knobs"
+        );
+        let uniq = lab.exec(Command::Set {
+            theory: "observer-geometry".into(),
+            knob: "unique_vacuum".into(),
+            value: "false".into(),
+        });
+        assert_eq!(uniq.exit_code(), 0, "{}", uniq.text());
+        assert!(
+            uniq.text().contains("predictivity.unique-vacuum")
+                && uniq.text().contains("holds → fails"),
+            "unique_vacuum still flips unique-vacuum: {}",
+            uniq.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "observer-geometry".into(),
+            knob: "unique_vacuum".into(),
+            value: "true".into(),
+        });
+        let fibre = lab.exec(Command::Set {
+            theory: "observer-geometry".into(),
+            knob: "fibre_dim".into(),
+            value: "9".into(),
+        });
+        assert_eq!(fibre.exit_code(), 0, "{}", fibre.text());
+        assert!(
+            fibre.text().contains("empirical.sm-gauge") && fibre.text().contains("holds → fails"),
+            "fibre_dim still starves Spin(10): {}",
+            fibre.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "observer-geometry".into(),
+            knob: "fibre_dim".into(),
+            value: "10".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "empirical.sm-gauge".into(),
+            })
+            .text()
+            .to_string();
+        let og = why_theory_block(&why, "observer-geometry");
+        assert!(
+            og.contains("Spin(10)") || og.contains("10-fibre"),
+            "sm-gauge must name Spin(10) on 10-fibre: {og}"
+        );
+        assert!(
+            !og.contains("not yet a machine-checked regime"),
+            "sm-gauge must not be encoding-wide: {og}"
+        );
+        assert!(
+            og.contains("encoding:    none"),
+            "hypothesize must not encode: {og}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -8312,6 +8432,10 @@ mod tests {
             "loop must independently round-trip complete Weyl content: {text}"
         );
         assert!(
+            text.contains("encode  observer-geometry"),
+            "loop must independently round-trip Spin(10) on 10-fibre: {text}"
+        );
+        assert!(
             !text.contains("encode  olbers-horizon"),
             "olbers-horizon has no IR package: {text}"
         );
@@ -9811,6 +9935,24 @@ mod tests {
         assert_ne!(sm_id, debye_id);
         assert_ne!(sm_id, nand_id);
 
+        let og = lab
+            .exec(Command::Encode {
+                theory: "observer-geometry".into(),
+            })
+            .text()
+            .to_string();
+        assert!(og.contains("equations  1"), "{og}");
+        assert!(og.contains("round-trip canonical"), "{og}");
+        assert!(og.contains("not P3S"), "{og}");
+        assert!(!og.contains("receipt"), "{og}");
+        let og_id = encoding_package_id(&og);
+        assert_eq!(
+            og_id.to_hex(),
+            "fefb1522c8782cc9e2ceee5af785cca9a3c296ee4dfc174ed65e0fd0c51fcd30"
+        );
+        assert_ne!(og_id, sm_id);
+        assert_ne!(og_id, nand_id);
+
         for theory in [
             "type-iib",
             "rayleigh-jeans",
@@ -10258,6 +10400,25 @@ mod tests {
             encoding_package_id(&sm_again),
             sm_id,
             "hypothesize must not install the missing-eR mutant"
+        );
+
+        let hypo_og = lab
+            .exec(Command::Hypothesize {
+                theory: Some("observer-geometry".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_og.contains("add-missing-spin10"), "{hypo_og}");
+        let og_again = lab
+            .exec(Command::Encode {
+                theory: "observer-geometry".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&og_again),
+            og_id,
+            "hypothesize must not install the missing-spin10 mutant"
         );
 
         let p3s = lab

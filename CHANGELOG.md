@@ -32,6 +32,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Observer-geometry missing Spin(10) is an IR mutation**
+  (`observer-geometry`, `add-missing-spin10`). `Spin(10) on 10-fibre` is
+  the live encoding; appending `missing Spin(10)` flips
+  `empirical.sm-gauge` holds to fails. Uniqueness still holds as the
+  program axiom, so that cell is not a unit flag and not the
+  `unique_vacuum` or `derive_gauge` knob. Mutants stay
+  `observer-geometry`. Mutants are not installed, not journaled, and not
+  Canonical or P4. Catalog d² hash unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: IR round-trip; set
+  missing_spin10 is unknown; hypothesize observer-geometry; live Spin(10)
+  restored; encode pin
+  `fefb1522c8782cc9e2ceee5af785cca9a3c296ee4dfc174ed65e0fd0c51fcd30`.
+
 - **SM missing e_R is an IR mutation**
   (`standard-model`, `add-missing-eR`). Complete `Q_L + uRc + dRc + L_L
   + eRc` is the live encoding; appending `missing e_R` flips

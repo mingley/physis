@@ -63,10 +63,10 @@ effective radius `compact_radius_planck · √g_s`, so both the Kähler volume a
 the dilaton can expose extra dimensions.
 
 ### observer-geometry
-- `fibre_dim` — chosen (default 10 — minimal fibre that can host Spin(10); total = observed + fibre)
+- `fibre_dim` — chosen (default 10 — minimal fibre that can host Spin(10); total = observed + fibre). A missing Spin(10) is not this knob: `add-missing-spin10` is an IR mutation on `observer-geometry`.
 - `observed_dim` — **measured**
-- `derive_gauge` — chosen
-- `unique_vacuum` — chosen (program axiom, not a theorem)
+- `derive_gauge` — chosen. A missing Spin(10) is not this knob: `add-missing-spin10` is an IR mutation.
+- `unique_vacuum` — chosen (program axiom, not a theorem). A missing Spin(10) is not this knob: `add-missing-spin10` is an IR mutation.
 
 The total geometric dimension is `observed_dim + fibre_dim` (default `4 + 10 = 14`),
 not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes

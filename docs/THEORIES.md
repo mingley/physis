@@ -18,7 +18,7 @@ The bosonic string is included because it is the cleanest *theorem-level* failur
 
 ## Observer geometry
 
-A scaffold for programs that say: start from geometry, demand uniqueness, try to derive the gauge group. Default `total_dim=14` echoes public discussion of 4D plus a 10D fibre. It is **not** a derivation and **not** Geometric Unity.
+A scaffold for programs that say: start from geometry, demand uniqueness, try to derive the gauge group. Default `total_dim=14` echoes public discussion of 4D plus a 10D fibre. It is **not** a derivation and **not** Geometric Unity. `hypothesize observer-geometry` forks a missing Spin(10) as IR, not the `unique_vacuum` knob.
 
 This object exists so uniqueness can sit on the same matrix as the string landscape without anyone pretending a podcast is a proof.
 

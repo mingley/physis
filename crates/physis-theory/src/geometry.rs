@@ -12,6 +12,12 @@
 //! the default total `14 = 4 + 10` is a toy constraint — the minimal geometric
 //! room for the assignment — rather than an unexplained choice. It is still a
 //! scaffold, not a derivation of Geometric Unity.
+//!
+//! Spin(10) on a 10-fibre lives on the IR package of `observer-geometry`.
+//! A missing Spin(10) (`add-missing-spin10`) is a package mutation, not the
+//! `unique_vacuum` or `derive_gauge` knob: `empirical.sm-gauge` fails because
+//! the fibre has no assigned group that contains SM, while uniqueness stays
+//! the program axiom. That is not Geometric Unity.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -19,6 +25,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
 
 use crate::claims;
@@ -27,11 +34,16 @@ use crate::framework::Theory;
 /// Minimal fibre dimension that can host the conjectured Spin(10) gauge group.
 const SPIN10_MIN_FIBRE: u8 = 10;
 
+/// Live assignment on the `observer-geometry` package.
+const SPIN10_EQ: &str = "Spin(10) on 10-fibre";
+/// Incomplete encoding: the fibre has no Spin(10).
+const MISSING_EQ: &str = "missing Spin(10)";
+
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "fibre_dim",
         layer: LayerId::Spacetime,
-        doc: "Dimension of the internal fibre over observed spacetime. Total dimension is observed_dim + fibre_dim. Default 10 is the minimal fibre that can carry Spin(10).",
+        doc: "Dimension of the internal fibre over observed spacetime. Total dimension is observed_dim + fibre_dim. Default 10 is the minimal fibre that can carry Spin(10). A missing Spin(10) is not this knob: add-missing-spin10 is an IR mutation.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 0, max: 22 },
     },
@@ -45,26 +57,32 @@ const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "derive_gauge",
         layer: LayerId::Interaction,
-        doc: "If true, pretends the gauge group is an output (assigned Spin(10) as a conjecture, not a proof).",
+        doc: "If true, pretends the gauge group is an output (assigned Spin(10) as a conjecture, not a proof). A missing Spin(10) is not this knob: add-missing-spin10 is an IR mutation.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "unique_vacuum",
         layer: LayerId::Mathematical,
-        doc: "Program-level demand: the geometry selects one vacuum. This is an axiom of the program, not a theorem.",
+        doc: "Program-level demand: the geometry selects one vacuum. This is an axiom of the program, not a theorem. A missing Spin(10) is not this knob: add-missing-spin10 is an IR mutation.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
 ];
 
 /// Unique-geometry unification scaffold.
-#[derive(Clone, Debug)]
+///
+/// Spin(10) on a 10-fibre lives on the IR package. A missing Spin(10)
+/// (`add-missing-spin10`) is a package mutation, not a knob.
+/// `unique_vacuum` and `derive_gauge` stay chosen knobs.
+#[derive(Clone, Debug, PartialEq)]
 pub struct ObserverGeometry {
     fibre_dim: u8,
     observed_dim: u8,
     derive_gauge: bool,
     unique_vacuum: bool,
+    /// Whether the encoding is missing the Spin(10) assignment.
+    missing_spin10: bool,
 }
 
 impl Default for ObserverGeometry {
@@ -74,6 +92,7 @@ impl Default for ObserverGeometry {
             observed_dim: 4,
             derive_gauge: true,
             unique_vacuum: true,
+            missing_spin10: false,
         }
     }
 }
@@ -117,12 +136,76 @@ impl ObserverGeometry {
     }
 
     fn gauge(&self) -> GaugeGroup {
-        if self.derive_gauge {
+        if self.missing_spin10 {
+            GaugeGroup::trivial()
+        } else if self.derive_gauge {
             GaugeGroup::spin10()
         } else {
             GaugeGroup::standard_model()
         }
     }
+
+    /// IR package for this assignment. Equations are `Spin(10) on 10-fibre`
+    /// and, when forked, `missing Spin(10)`. `unique_vacuum` stays on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![SPIN10_EQ.to_string()];
+        if self.missing_spin10 {
+            equations.push(MISSING_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["spin10-on-10-fibre".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: claims::SM_GAUGE.into(),
+                statement: "The Standard Model gauge group is derived, not postulated.".into(),
+                layer: "interaction".into(),
+                class: "conjecture".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a Spin(10) assignment from a package. Knobs default; overlay them
+    /// from a live observer-geometry object when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "observer-geometry" {
+            return Err(format!(
+                "observer-geometry package id '{}' is not observer-geometry",
+                pkg.id
+            ));
+        }
+        let missing_spin10 = parse_spin10_assignment(pkg)?;
+        Ok(Self {
+            missing_spin10,
+            ..Self::default()
+        })
+    }
+
+    fn missing_equation() -> String {
+        MISSING_EQ.to_string()
+    }
+}
+
+fn parse_spin10_assignment(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut complete = false;
+    let mut missing = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            SPIN10_EQ => complete = true,
+            MISSING_EQ => missing = true,
+            _ => {}
+        }
+    }
+    if !complete {
+        return Err(format!(
+            "{} package has no Spin(10) on 10-fibre assignment",
+            pkg.id
+        ));
+    }
+    Ok(missing)
 }
 
 impl Knobbed for ObserverGeometry {
@@ -210,7 +293,12 @@ impl Theory for ObserverGeometry {
                 "The Standard Model gauge group is derived, not postulated.",
                 LayerId::Interaction,
                 ClaimClass::Conjecture,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["Spin(10) on 10-fibre".into()],
+                vec!["conjectural assignment, not a geometric derivation".into()],
+                "The assigned group is Spin(10) on a 10-fibre. A missing Spin(10) is a new encoding, not a silent unique_vacuum or derive_gauge knob. Not a kernel proof.",
+            )),
             claims::c(
                 claims::THREE_GENERATIONS,
                 "Three generations are selected by the geometry.",
@@ -282,6 +370,15 @@ impl Theory for ObserverGeometry {
                     Verdict::fails(claim,
                         "derive_gauge is off: SM is postulated, which is the thing this program wanted to avoid",
                     )
+                } else if self.missing_spin10 {
+                    Verdict::fails(
+                        claim,
+                        "missing Spin(10): fibre has no assigned group that contains SM",
+                    )
+                    .with_evidence([
+                        "Spin(10) on 10-fibre is the live encoding; missing Spin(10) is not a unique_vacuum knob"
+                            .to_string(),
+                    ])
                 } else if !self.fibre_can_host_spin10() {
                     // Toy geometric constraint: Spin(10) acts on R^10, so a
                     // fibre smaller than 10 has no room for the assignment.
@@ -342,6 +439,36 @@ impl Theory for ObserverGeometry {
             }
             _ => Verdict::inapplicable(claim, "claim not made by observer-geometry"),
         }
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.missing_spin10 = parsed.missing_spin10;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.missing_spin10 {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::missing_equation()),
+        );
+        if let Ok(parsed) = Self::from_package(&mutated) {
+            if parsed.missing_spin10 {
+                let mut fork = self.clone();
+                fork.missing_spin10 = true;
+                return vec![("add-missing-spin10".into(), Box::new(fork))];
+            }
+        }
+        Vec::new()
     }
 }
 
@@ -425,5 +552,173 @@ mod tests {
         // Restoring the minimal fibre restores the (conjectural) assignment.
         t.set("fibre_dim", KnobValue::UInt(10)).unwrap();
         assert_eq!(verdict(&t, claims::SM_GAUGE), VerdictKind::Holds);
+    }
+
+    fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
+        t.evaluate(&c).kind
+    }
+
+    #[test]
+    fn missing_spin10_is_ir_not_a_knob() {
+        assert!(
+            ObserverGeometry::default()
+                .set("missing_spin10", KnobValue::Bool(true))
+                .is_err(),
+            "missing Spin(10) is an IR mutation, not a knob"
+        );
+        assert!(
+            ObserverGeometry::default()
+                .set("missing-spin10", KnobValue::Bool(true))
+                .is_err(),
+            "missing-spin10 is not a knob"
+        );
+        assert!(
+            ObserverGeometry::default()
+                .set("add-missing-spin10", KnobValue::Bool(true))
+                .is_err(),
+            "add-missing-spin10 is not a knob"
+        );
+        let og = ObserverGeometry::default();
+        assert!(!og.missing_spin10);
+        let src = render_package(&og.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay complete");
+        assert_eq!(pkg.equations[0], SPIN10_EQ);
+        assert_eq!(
+            ObserverGeometry::from_package(&pkg).unwrap(),
+            og,
+            "IR round-trip must preserve Spin(10) on 10-fibre"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(ObserverGeometry::missing_equation()),
+        );
+        let parsed = ObserverGeometry::from_package(&mutated).unwrap();
+        assert!(parsed.missing_spin10);
+        let mut fork = og.clone();
+        fork.missing_spin10 = true;
+        assert_eq!(fork.id(), "observer-geometry");
+        let gauge = fork.evaluate(
+            &fork
+                .claims()
+                .into_iter()
+                .find(|c| c.id_str() == claims::SM_GAUGE)
+                .unwrap(),
+        );
+        assert_eq!(gauge.kind, VerdictKind::Fails);
+        assert!(
+            !gauge.summary.contains("unique_vacuum")
+                && !gauge.summary.contains("derive_gauge")
+                && !gauge.summary.contains("fibre_dim"),
+            "missing Spin(10) is not a knob: {}",
+            gauge.summary
+        );
+        assert_eq!(kind(&fork, claims::UNIQUE_VACUUM), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::GRAVITY), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::OBSERVED_4D), VerdictKind::Holds);
+        assert_eq!(kind(&og, claims::SM_GAUGE), VerdictKind::Holds);
+
+        let probes = ObserverGeometry::default().structural_mutations();
+        assert!(
+            probes
+                .iter()
+                .any(|(label, _)| label == "add-missing-spin10"),
+            "live observer-geometry must offer add-missing-spin10: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-missing-spin10")
+            .expect("add-missing-spin10");
+        assert_eq!(kind(probe.1.as_ref(), claims::SM_GAUGE), VerdictKind::Fails);
+        assert_eq!(
+            kind(probe.1.as_ref(), claims::UNIQUE_VACUUM),
+            VerdictKind::Holds
+        );
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-missing-spin10"),
+            "missing-spin10 fork must not re-offer add-missing-spin10"
+        );
+        let live = ObserverGeometry::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut no_unique = ObserverGeometry::default();
+        no_unique
+            .set("unique_vacuum", KnobValue::Bool(false))
+            .unwrap();
+        let rebuilt = no_unique.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("unique_vacuum").unwrap(),
+            KnobValue::Bool(false),
+            "reparse must overlay missing-spin10 IR onto live knobs"
+        );
+        assert_eq!(
+            kind(rebuilt.as_ref(), claims::SM_GAUGE),
+            VerdictKind::Holds,
+            "live Spin(10) assignment still Holds sm-gauge"
+        );
+        assert_eq!(
+            kind(rebuilt.as_ref(), claims::UNIQUE_VACUUM),
+            VerdictKind::Fails
+        );
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            kind(live_rebuilt.as_ref(), claims::SM_GAUGE),
+            VerdictKind::Holds
+        );
+        assert!(
+            crate::gut::Su5Gut::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-spin10"),
+            "su5-gut must not grow add-missing-spin10"
+        );
+        assert!(
+            crate::standard_model::StandardModel::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-spin10"),
+            "standard-model must not grow add-missing-spin10"
+        );
+        assert!(
+            crate::solid::EinsteinSolid::debye()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-spin10"),
+            "debye-solid must not grow add-missing-spin10"
+        );
+        assert!(
+            ObserverGeometry::default()
+                .set("unique_vacuum", KnobValue::Bool(false))
+                .is_ok(),
+            "observer-geometry keeps the unique_vacuum knob"
+        );
+        let sm = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == claims::SM_GAUGE)
+            .unwrap();
+        assert!(
+            !sm.domain().is_encoding_wide(),
+            "sm-gauge must name Spin(10) on 10-fibre: {:?}",
+            sm.domain()
+        );
+        assert!(
+            sm.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("Spin(10)") && r.contains("10-fibre")),
+            "sm-gauge regime: {:?}",
+            sm.domain()
+        );
+        assert!(
+            !sm.domain().notes.contains("theory "),
+            "sm-gauge notes must not split why_theory_block: {:?}",
+            sm.domain()
+        );
     }
 }
