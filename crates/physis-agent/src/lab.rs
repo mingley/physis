@@ -2822,7 +2822,7 @@ mod tests {
         );
         assert!(
             !p3n.contains("gut.weinberg-angle-mz"),
-            "GQW running and the 3% band are not P3N: {p3n}"
+            "GQW running, the input-interval enclosure, and the 3% hit are not P3N: {p3n}"
         );
         assert!(
             !p3n.lines()
@@ -3197,6 +3197,10 @@ mod tests {
         assert!(
             mzb.contains("  datasets:") && mzb.contains("pdg-2024-sin2theta"),
             "{mzb}"
+        );
+        assert!(
+            mzb.contains("pdg-2022-alpha-s-mz") && mzb.contains("pdg-2022-inv-alpha-em-mz"),
+            "input listings must be on the identity: {mzb}"
         );
         assert!(mzb.contains("M_Z"), "{mzb}");
         assert!(mzb.contains("regimes:"), "{mzb}");
@@ -3670,6 +3674,7 @@ mod tests {
             .text()
             .to_string();
         assert!(folklore.contains("class:      heuristic"), "{folklore}");
+        assert!(folklore.contains("verdict:    holds"), "{folklore}");
     }
 
     #[test]

@@ -109,7 +109,7 @@ and the exact hypercharge solve (Standard Model chiral anomalies and
 siblings name a `DomainOfValidity`. Super-K `p→e+π0` names the dim-6 /
 90% CL regime; GUT `Tr Q` stays encoding-wide. Super-K is not P3N. `thermo.high-t-classical` names `T/Θ ≥ 8`; `thermo.debye-t3` names the `Θ/20` probe; `thermo.rj-ir-limit` names `hν = 0.01 kT`; `gauge.exact-area-law-2d` names 2D. Dulong–Petit at the current T stays encoding-wide. It does not list GUT `Tr Q` (`ΣY` is already
 the gravitational anomaly), Georgi–Quinn–Weinberg running at `M_Z`, the
-3% band, or a kernel proof. `inspect trust P2` lists Hodge Laplacian-versus-`b₁` agreement
+the sourced PDG input-interval GQW enclosure, the 3% heuristic hit, or a kernel proof. `inspect trust P2` lists Hodge Laplacian-versus-`b₁` agreement
 (`dec.hodge-harmonic`), not Euler–Poincaré rank-cancellation, not Poincaré,
 and not a kernel proof. That P2 cell names discrete combinatorial Hodge
 on finite simplicial 1-cochains; Euler–Poincaré and Poincaré stay

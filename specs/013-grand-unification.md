@@ -37,7 +37,7 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **executed** (`ΣY`, already the grav anomaly; not a second P3N) |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **exact Ratio** / P3N, not GQW at `M_Z`. Domain: unification-scale |
 | `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive, `heuristic`. Domain: `M_Z` |
-| `gut.weinberg-angle-mz-interval` | the same one-loop *algebraic* centre, ± the heuristic 3% band, vs the PDG hull **and** the exact Gaussian NLL of that centre rounded to PDG `10^{-5}` vs PDG σ | **empirical receipt** (interval-subset) plus **statistical computed** (not P3N). Minimal SU(5) excluded with large NLL; MSSM inconclusive (too coarse) with smaller NLL. Super-K is not this Gaussian. Not GUT-scale `3/8`. Domain: `M_Z` |
+| `gut.weinberg-angle-mz-interval` | the same one-loop *algebraic* centre, enclosed by sourced PDG 2022 `α_s` / `α_em⁻¹` one-sigma hulls, vs the PDG mixing-angle hull **and** the exact Gaussian NLL of that centre rounded to PDG `10^{-5}` vs PDG σ | **empirical receipt** (interval-subset) plus **statistical computed** (not P3N). Minimal SU(5) **excluded**; one-loop MSSM **inconclusive** (input-σ hull overlaps `10^{-5}` but is not contained). MSSM has the smaller NLL. The heuristic 3% cell can still hold. Super-K is not this Gaussian. Not GUT-scale `3/8`. Domain: `M_Z` |
 | `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
 | `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`), `heuristic` |
 | `gut.proton-lifetime-sk` | dim-6 `τ/B(p→e+π0)` from `M_GUT^4` vs Super-Kamiokande **dataset** | **empirical receipt**. Takenaka et al. Phys. Rev. D 102, 112011 (2020), 90% CL `> 2.4×10³⁴ yr`. Minimal SU(5) **excluded**; MSSM dim-6 **compatible**. Decade envelope for missing matrix elements. Not P3N, not dim-5, not `p→μ+π0`. Domain: `p→e+π0` / dim-6 / Super-K 90% CL. |
@@ -119,15 +119,17 @@ and predicts `α_3`.
 
 `gut.weinberg-angle-mz-interval` is the empirical sibling: the same one-loop
 algebraic centre (a π-free `Ratio` of recorded PDG `α_em⁻¹` and `α_s`)
-enclosed by that 3% heuristic band, compared to the registered PDG
-`sin²θ_W(M_Z)` hull under the interval-subset rule, **and** the exact
-Gaussian NLL of that centre rounded to five decimal places versus the PDG σ.
-Compatible means the prediction lies inside the data, not that the intervals
-merely overlap. The NLL is a `statistical computed` judgment, not P3N.
-Minimal SU(5) is **excluded**. The MSSM band overlaps the PDG hull but is
-far wider, so the cell is **undecidable** / `inconclusive` (`InsufficientPrecision`)
-while the heuristic cell still holds. The 3% is not a two-loop remainder
-certificate, and it is not the GUT-scale `3/8`.
+enclosed by the sourced PDG 2022 one-sigma hulls of those inputs
+(`α_s(M_Z) = 0.1179(9)`, `α_em⁻¹(M_Z) = 127.951 ± 0.009`), compared to the
+registered PDG `sin²θ_W(M_Z)` hull under the interval-subset rule, **and**
+the exact Gaussian NLL of that centre rounded to five decimal places versus
+the PDG σ. Compatible means the prediction lies inside the data, not that
+the intervals merely overlap. The NLL is a `statistical computed` judgment,
+not P3N. Minimal SU(5) is **excluded**. The one-loop MSSM enclosure
+overlaps the PDG hull but is not contained in it, so the cell is
+**undecidable** / `inconclusive` (`InsufficientPrecision`) while the
+heuristic 3% cell can still **hold**. The input enclosure is not a
+two-loop remainder certificate, and it is not the GUT-scale `3/8`.
 
 `set su5-gut supersymmetric true` flips the heuristic mixing-angle cell
 `fails → holds` and the interval cell `fails → undecidable`.
@@ -155,15 +157,16 @@ flips `gut.coupling-unification`, `gut.proton-decay-viable`, and
 `gut.weinberg-angle-mz` `fails → holds` (as `heuristic`s), because switching the
 beta coefficients from SM to MSSM brings the computed `α_3(M_Z)` and
 `sin²θ_W(M_Z)` into agreement and raises `M_GUT`. The interval cell
-`gut.weinberg-angle-mz-interval` flips `fails → undecidable`: the 3% band now
-overlaps the PDG hull but is not contained in it. The Super-K cell
+`gut.weinberg-angle-mz-interval` flips `fails → undecidable`: the sourced
+PDG input-σ hull now overlaps the mixing-angle measurement but is not
+contained in it. The Super-K cell
 `gut.proton-lifetime-sk` flips `fails → holds` on the empirical axis
 (`excluded → compatible`): the dim-6 `M_GUT^4` envelope sits below the
 Takenaka et al. 90% CL hull for minimal SU(5) and inside it for MSSM dim-6.
 That is not P3N and not a dimension-5 operator. Minimal SU(5) is falsified;
 SUSY SU(5) survives current dim-6 Super-K bounds but requires superpartners
-that have not been seen, and its GQW envelope is too coarse for an empirical
-support receipt.
+that have not been seen, and its one-loop GQW input-interval enclosure is
+too coarse for an empirical support receipt.
 
 ## Relation to the string-critique
 

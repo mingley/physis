@@ -107,20 +107,20 @@ impl Dataset {
     }
 
     /// Combined uncertainty hull (stat ± syst, treated as independent
-    /// interval sum — not a covariance). Honest and conservative.
+    /// interval sum — not a covariance). `systematic` is a shift
+    /// enclosure, typically centred at 0. Honest and conservative.
     pub fn combined(&self) -> Interval {
         match self.systematic {
             None => self.statistical,
-            Some(sys) => Interval::new(
-                Ratio::new(
-                    self.statistical.lo.num - (sys.hi.num - sys.lo.num).abs(),
-                    self.statistical.lo.den,
-                ),
-                Ratio::new(
-                    self.statistical.hi.num + (sys.hi.num - sys.lo.num).abs(),
-                    self.statistical.hi.den,
-                ),
-            ),
+            Some(sys) => self.statistical + sys,
+        }
+    }
+
+    /// Gaussian centre when this listing is a two-sided measurement.
+    pub fn gaussian_mu(&self) -> Option<Ratio> {
+        match self.likelihood {
+            LikelihoodModel::Gaussian { mu, .. } => Some(mu),
+            LikelihoodModel::IntervalSubset => None,
         }
     }
 }
@@ -159,6 +159,83 @@ pub fn pdg_2024_sin2theta() -> Dataset {
         source,
     )
     .with_gaussian(Ratio::new(23122, 100000), Ratio::new(1, 100000))
+}
+
+/// Dataset id for PDG 2022 `α_s(M_Z)`.
+pub const PDG_2022_ALPHA_S_MZ: &str = "pdg-2022-alpha-s-mz";
+
+/// PDG 2022 Physical Constants `α_s(m_Z) = 0.1179(9)`.
+///
+/// This is the recorded centre already stored as `0.1179` in physis-model,
+/// with the published one-sigma width `0.0009`, not a last-digit guess.
+pub fn pdg_2022_alpha_s_mz() -> Dataset {
+    let source = SourceRecord::new(
+        Citation {
+            work: "PDG Review of Particle Physics".into(),
+            edition: "2022".into(),
+        },
+        "2022",
+        SourceLocator {
+            page: None,
+            section: Some("Physical Constants".into()),
+            equation: None,
+            figure: None,
+            table: Some("alpha_s(mZ)".into()),
+            dataset_range: Some("0.1179(9)".into()),
+            experiment: None,
+        },
+        ArtifactId::of(b"pdg-2022-phys-constants-alpha-s-mz"),
+        None,
+    )
+    .expect("PDG 2022 α_s locator names a section, table, and range");
+    Dataset::new(
+        PDG_2022_ALPHA_S_MZ,
+        "alpha_s(M_Z)",
+        "1",
+        Interval::new(Ratio::new(1170, 10000), Ratio::new(1188, 10000)),
+        None,
+        source,
+    )
+    .with_gaussian(Ratio::new(1179, 10000), Ratio::new(9, 10000))
+}
+
+/// Dataset id for PDG 2022 `α_em⁻¹(M_Z)`.
+pub const PDG_2022_INV_ALPHA_EM_MZ: &str = "pdg-2022-inv-alpha-em-mz";
+
+/// PDG 2022 Electroweak `α^{(5)}(M_Z)^{-1} = 127.951 ± 0.009`.
+///
+/// This is the recorded centre already stored as `127.951` in physis-model,
+/// with the published one-sigma width `0.009` from the MS-bar five-flavour
+/// running coupling, not a last-digit guess.
+pub fn pdg_2022_inv_alpha_em_mz() -> Dataset {
+    let source = SourceRecord::new(
+        Citation {
+            work: "PDG Review of Particle Physics".into(),
+            edition: "2022".into(),
+        },
+        "2022",
+        SourceLocator {
+            page: None,
+            section: Some("Electroweak Model and Constraints on New Physics".into()),
+            equation: None,
+            figure: None,
+            table: None,
+            dataset_range: Some("alpha^(5)(MZ)^{-1} = 127.951 ± 0.009".into()),
+            experiment: None,
+        },
+        ArtifactId::of(b"pdg-2022-electroweak-inv-alpha-em-mz"),
+        None,
+    )
+    .expect("PDG 2022 α_em locator names a section and range");
+    Dataset::new(
+        PDG_2022_INV_ALPHA_EM_MZ,
+        "alpha_em^{-1}(M_Z)",
+        "1",
+        Interval::new(Ratio::new(127942, 1000), Ratio::new(127960, 1000)),
+        None,
+        source,
+    )
+    .with_gaussian(Ratio::new(127951, 1000), Ratio::new(9, 1000))
 }
 
 /// Dataset id for Super-Kamiokande `p → e⁺π⁰` (Takenaka et al. 2020).
@@ -207,8 +284,9 @@ pub fn super_kamiokande_proton_lifetime() -> Dataset {
 }
 
 /// Live dataset whose [`SourceRecord`] is the empirical provenance of
-/// `claim_id`. The GUT-scale `3/8` cell is not this registry; neither
-/// is heuristic GQW running at `M_Z` without the interval receipt.
+/// `claim_id`. The GUT-scale `3/8` cell is not this registry. GQW at `M_Z`
+/// compares to the PDG mixing-angle listing; the PDG 2022 `α_s` /
+/// `α_em⁻¹` listings are *inputs* to that prediction, not this map.
 pub fn dataset_for_claim(claim_id: &str) -> Option<Dataset> {
     match claim_id {
         "gut.weinberg-angle-mz-interval" => Some(pdg_2024_sin2theta()),
@@ -424,5 +502,55 @@ mod tests {
         assert!(dataset_for_claim("predictivity.unique-vacuum").is_none());
         assert!(dataset_for_claim("gut.weinberg-angle").is_none());
         assert!(dataset_for_claim("dec.d-squared-zero").is_none());
+    }
+
+    #[test]
+    fn pdg_2022_couplings_are_the_recorded_centres_with_published_sigma() {
+        let als = pdg_2022_alpha_s_mz();
+        assert_eq!(als.id, PDG_2022_ALPHA_S_MZ);
+        assert_eq!(als.gaussian_mu(), Some(Ratio::new(1179, 10000)));
+        assert!(als
+            .statistical
+            .contains(Interval::point(Ratio::new(1179, 10000))));
+        assert_eq!(
+            als.statistical,
+            Interval::new(Ratio::new(1170, 10000), Ratio::new(1188, 10000))
+        );
+        assert!(als.source.recheck().is_ok());
+        assert!(als.source.locator.table.as_deref() == Some("alpha_s(mZ)"));
+
+        let inv = pdg_2022_inv_alpha_em_mz();
+        assert_eq!(inv.id, PDG_2022_INV_ALPHA_EM_MZ);
+        assert_eq!(inv.gaussian_mu(), Some(Ratio::new(127951, 1000)));
+        assert!(inv
+            .statistical
+            .contains(Interval::point(Ratio::new(127951, 1000))));
+        assert_eq!(
+            inv.statistical,
+            Interval::new(Ratio::new(127942, 1000), Ratio::new(127960, 1000))
+        );
+        assert!(inv.source.recheck().is_ok());
+        assert!(
+            dataset_for_claim("gut.weinberg-angle-mz-interval")
+                .unwrap()
+                .id
+                != PDG_2022_ALPHA_S_MZ
+        );
+    }
+
+    #[test]
+    fn combined_uses_interval_sum_not_a_shared_denominator() {
+        let d = Dataset::new(
+            "toy",
+            "x",
+            "1",
+            Interval::new(Ratio::new(1, 2), Ratio::new(3, 2)),
+            Some(Interval::new(Ratio::new(-1, 3), Ratio::new(1, 3))),
+            pdg_2024_sin2theta().source,
+        );
+        assert_eq!(
+            d.combined(),
+            Interval::new(Ratio::new(1, 6), Ratio::new(11, 6))
+        );
     }
 }

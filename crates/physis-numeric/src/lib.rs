@@ -344,6 +344,23 @@ impl Interval {
         Self::new(mul_ratio(self.lo, factor), mul_ratio(self.hi, factor))
     }
 
+    /// True when `0` lies in the closed interval.
+    pub fn contains_zero(self) -> bool {
+        self.lo <= Ratio::int(0) && self.hi >= Ratio::int(0)
+    }
+
+    /// Multiplicative inverse. Panics if the interval contains `0`.
+    pub fn recip(self) -> Self {
+        assert!(
+            !self.contains_zero(),
+            "interval reciprocal of an interval containing 0"
+        );
+        Self {
+            lo: Ratio::int(1) / self.hi,
+            hi: Ratio::int(1) / self.lo,
+        }
+    }
+
     /// Conservative hull of a machine float. Prefer [`Ratio`] for threshold
     /// claims. One ulp of slack, stored as a dyadic rational interval.
     pub fn from_f64_approx(x: f64) -> Self {
@@ -376,6 +393,68 @@ impl Interval {
             Ratio::new(1, 1i128 << ((-e) as u32).min(120))
         };
         Self::new(sub_ratio(p, ulp), add_ratio(p, ulp))
+    }
+}
+
+impl std::ops::Add for Interval {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self {
+            lo: self.lo + rhs.lo,
+            hi: self.hi + rhs.hi,
+        }
+    }
+}
+
+impl std::ops::Sub for Interval {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self {
+            lo: self.lo - rhs.hi,
+            hi: self.hi - rhs.lo,
+        }
+    }
+}
+
+impl std::ops::Neg for Interval {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self {
+            lo: -self.hi,
+            hi: -self.lo,
+        }
+    }
+}
+
+impl std::ops::Mul for Interval {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        let corners = [
+            self.lo * rhs.lo,
+            self.lo * rhs.hi,
+            self.hi * rhs.lo,
+            self.hi * rhs.hi,
+        ];
+        let lo = corners.iter().copied().min().expect("four corners");
+        let hi = corners.iter().copied().max().expect("four corners");
+        Self { lo, hi }
+    }
+}
+
+impl std::ops::Div for Interval {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        assert!(
+            !rhs.contains_zero(),
+            "interval division by an interval containing 0"
+        );
+        self * rhs.recip()
+    }
+}
+
+impl std::fmt::Display for Interval {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}, {}]", self.lo, self.hi)
     }
 }
 
@@ -453,6 +532,27 @@ mod tests {
         assert!(band.contains(mz));
         assert!(!mz.contains(band));
         assert!(!band.disjoint(mz));
+    }
+
+    #[test]
+    fn interval_arithmetic_is_the_minkowski_sum_and_four_corner_product() {
+        let a = Interval::new(Ratio::int(1), Ratio::int(2));
+        let b = Interval::new(Ratio::new(1, 2), Ratio::new(3, 2));
+        assert_eq!(a + b, Interval::new(Ratio::new(3, 2), Ratio::new(7, 2)));
+        assert_eq!(a - b, Interval::new(Ratio::new(-1, 2), Ratio::new(3, 2)));
+        assert_eq!(-a, Interval::new(Ratio::int(-2), Ratio::int(-1)));
+        assert_eq!(a * b, Interval::new(Ratio::new(1, 2), Ratio::int(3)));
+        assert_eq!(
+            a / b,
+            Interval::new(Ratio::new(2, 3), Ratio::int(4)),
+            "1/[1/2, 3/2] = [2/3, 2]; times [1, 2] is [2/3, 4]"
+        );
+        let mixed = Interval::new(Ratio::int(-2), Ratio::int(3));
+        let pos = Interval::new(Ratio::int(1), Ratio::int(2));
+        assert_eq!(mixed * pos, Interval::new(Ratio::int(-4), Ratio::int(6)));
+        assert!(Interval::new(Ratio::int(-1), Ratio::int(1)).contains_zero());
+        assert!(!a.contains_zero());
+        assert_eq!(a.to_string(), "[1, 2]");
     }
 
     #[test]

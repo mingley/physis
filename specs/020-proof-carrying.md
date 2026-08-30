@@ -99,7 +99,8 @@ Nothing gains authority merely because an agent wrote code that returns
   square in Q, hydrogen neutrality from `Q = T₃ + Y`, and GUT-scale
   `sin²θ_W = Tr(T₃²)/Tr(Q²) = 3/8`). GUT `Tr Q = ΣY` is the gravitational
   anomaly already certified, not a second P3N. Georgi–Quinn–Weinberg
-  running at `M_Z` and the 3% band are not P3N. `CrossChecked` / P2 is earned when two independent
+  running at `M_Z` and the sourced PDG input-interval enclosure (and the
+  3% heuristic hit) are not P3N. `CrossChecked` / P2 is earned when two independent
   executable paths agree (`dec.hodge-harmonic`: Laplacian nullity vs
   coboundary `b₁` on this complex; the cell names that discrete regime).
   Euler–Poincaré stays `executed`: with these Betti

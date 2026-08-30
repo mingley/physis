@@ -15,11 +15,12 @@
 //!   claim (`gut.weinberg-angle-mz`): minimal SU(5) predicts ≈0.21 and **fails**;
 //!   the MSSM predicts ≈0.231 and holds as a heuristic. The companion
 //!   `gut.weinberg-angle-mz-interval` asks two questions of that centre:
-//!   interval-subset of the 3% band against the PDG hull, and the exact
+//!   interval-subset of the sourced PDG 2022 `α_s` / `α_em⁻¹` one-sigma
+//!   hulls against the PDG mixing-angle hull, and the exact
 //!   Gaussian NLL of the algebraic centre rounded to the PDG `10^{-5}`
 //!   scale versus the PDG σ. Super-K
 //!   is a one-sided limit and is not that Gaussian. Overlap is not
-//!   containment.
+//!   containment. The 3% heuristic hit stays on `gut.weinberg-angle-mz`.
 //!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: the
 //!   dimension-6 `M_GUT^4` scaling compared to Super-Kamiokande
 //!   `p → e⁺π⁰` (Takenaka et al., Phys. Rev. D 102, 112011). Minimal
@@ -38,7 +39,8 @@ use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::{ClaimCommitments, ParameterOrigin};
 use physis_data::{
-    pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt, SK_2020_P_E_PI0,
+    pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt, PDG_2022_ALPHA_S_MZ,
+    PDG_2022_INV_ALPHA_EM_MZ, SK_2020_P_E_PI0,
 };
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_numeric::{Interval, Ratio};
@@ -48,8 +50,7 @@ use crate::rge::GaugeRunning;
 use crate::standard_model::{gut_trace_charge_exact, gut_weinberg_traces_exact};
 
 /// Relative mismatch the heuristic GQW cell treats as a hit. The empirical
-/// enclosure uses the same 3% as a theory band, not a two-loop remainder
-/// certificate.
+/// enclosure is sourced PDG input σ, not this 3% folklore band.
 const GQW_HEURISTIC_BAND: f64 = 0.03;
 
 /// SM fermions fill complete SU(5) multiplets (`5̄ + 10` per generation).
@@ -60,7 +61,7 @@ pub const GUT_CHARGE_QUANTIZATION: &str = "gut.charge-quantization";
 pub const GUT_WEINBERG_ANGLE: &str = "gut.weinberg-angle";
 /// The GQW-evolved `sin²θ_W(M_Z)` matches the measured electroweak value.
 pub const GUT_WEINBERG_ANGLE_MZ: &str = "gut.weinberg-angle-mz";
-/// One-loop GQW `sin²θ_W(M_Z)` enclosed by the heuristic 3% band, vs PDG.
+/// One-loop GQW `sin²θ_W(M_Z)` enclosed by sourced PDG input σ, vs PDG.
 pub const GUT_WEINBERG_ANGLE_MZ_INTERVAL: &str = "gut.weinberg-angle-mz-interval";
 /// The three SM gauge couplings meet at a single unification scale.
 pub const GUT_COUPLING_UNIFICATION: &str = "gut.coupling-unification";
@@ -198,21 +199,26 @@ impl Theory for Su5Gut {
             )),
             Claim::new(
                 GUT_WEINBERG_ANGLE_MZ_INTERVAL,
-                "The one-loop GQW prediction of sin²θ_W(M_Z), enclosed by the heuristic 3% \
-                 truncation band, lies inside the PDG measurement.",
+                "The one-loop GQW prediction of sin²θ_W(M_Z), enclosed by the PDG 2022 \
+                 one-sigma hulls of α_s(M_Z) and α_em^{-1}(M_Z), lies inside the PDG measurement.",
                 LayerId::Effective,
                 ClaimClass::EmpiricalPrediction,
             )
             .with_commitments(ClaimCommitments {
                 units: vec!["1".into()],
                 boundary: vec!["M_Z".into()],
-                datasets: vec!["pdg-2024-sin2theta".into()],
+                datasets: vec![
+                    "pdg-2024-sin2theta".into(),
+                    PDG_2022_ALPHA_S_MZ.into(),
+                    PDG_2022_INV_ALPHA_EM_MZ.into(),
+                ],
                 ..ClaimCommitments::unspecified()
             })
             .with_domain(DomainOfValidity::new(
                 vec!["M_Z".into()],
-                vec!["one-loop GQW with a 3% truncation band".into()],
-                "Empirical comparison to pdg-2024-sin2theta. Compatible is \
+                vec!["one-loop GQW with sourced PDG input intervals".into()],
+                "Input enclosure is the PDG 2022 one-sigma hulls of α_s(M_Z) \
+                 and α_em^{-1}(M_Z), not a two-loop remainder. Compatible is \
                  prediction ⊆ data. Overlap without containment is \
                  insufficient-precision, not agreement. Using the GUT-scale \
                  3/8 here is a new claim.",
@@ -343,28 +349,30 @@ impl Theory for Su5Gut {
             }
             GUT_WEINBERG_ANGLE_MZ_INTERVAL => {
                 // Same one-loop algebraic centre as the heuristic cell,
-                // enclosed by that cell's 3% hit threshold. The band is
-                // not a remainder certificate. 3/8 at M_GUT is a
-                // different claim. The Gaussian NLL snaps the exact
-                // Ratio to the PDG's 10^{-5} scale, not the heuristic
-                // band and not a profile likelihood.
+                // enclosed by sourced PDG 2022 one-sigma hulls of α_s
+                // and α_em^{-1}. That is input uncertainty, not a
+                // remainder certificate and not the 3% folklore hit.
+                // 3/8 at M_GUT is a different claim. The Gaussian NLL
+                // snaps the exact Ratio to the PDG's 10^{-5} scale.
                 let run = if self.supersymmetric {
                     GaugeRunning::mssm()
                 } else {
                     GaugeRunning::standard_model()
                 };
                 let centre = run.predicted_sin2_mz_exact();
-                let envelope = centre.enclosure().relative_envelope(Ratio::new(3, 100));
+                let envelope = run.predicted_sin2_mz_interval();
                 let nll_x = centre.round_to(100_000);
                 let dataset = pdg_2024_sin2theta();
                 let rec = EmpiricalReceipt::compare_gaussian(envelope, &dataset, Some(nll_x));
                 let mut evidence = vec![
                     format!(
-                        "one-loop GQW algebraic centre {centre} ± 3% heuristic band vs {} hull",
+                        "one-loop GQW algebraic centre {centre} enclosed by PDG 2022 α_s and α_em^{{-1}} one-sigma hulls {envelope} vs {} hull",
                         dataset.id
                     ),
                     format!(
-                        "receipt excluded={} compatible={} inconclusive={} (interval-subset; 3% is not a remainder certificate)",
+                        "inputs {} and {}; interval-subset excluded={} compatible={} inconclusive={} (input σ is not a remainder certificate)",
+                        PDG_2022_ALPHA_S_MZ,
+                        PDG_2022_INV_ALPHA_EM_MZ,
                         rec.excluded, rec.compatible, rec.inconclusive
                     ),
                     "not the GUT-scale 3/8; that is gut.weinberg-angle".to_string(),
@@ -377,18 +385,22 @@ impl Theory for Su5Gut {
                 let v = if rec.excluded {
                     Verdict::fails(
                         claim,
-                        format!("GQW algebraic centre {centre} ± 3% is disjoint from the PDG hull"),
+                        format!(
+                            "GQW input-interval enclosure {envelope} is disjoint from the PDG hull"
+                        ),
                     )
                 } else if rec.compatible {
                     Verdict::holds(
                         claim,
-                        format!("GQW algebraic centre {centre} ± 3% is contained in the PDG hull"),
+                        format!(
+                            "GQW input-interval enclosure {envelope} is contained in the PDG hull"
+                        ),
                     )
                 } else {
                     Verdict::undecidable(
                         claim,
                         format!(
-                            "GQW algebraic centre {centre} ± 3% overlaps the PDG hull but is not contained in it"
+                            "GQW input-interval enclosure {envelope} overlaps the PDG hull but is not contained in it"
                         ),
                     )
                 };
@@ -680,6 +692,13 @@ mod tests {
             v.evidence
         );
         assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains(PDG_2022_ALPHA_S_MZ) && e.contains(PDG_2022_INV_ALPHA_EM_MZ)),
+            "evidence must name sourced input listings: {:?}",
+            v.evidence
+        );
+        assert!(
             v.evidence.iter().any(|e| e.contains("gaussian NLL")),
             "evidence: {:?}",
             v.evidence
@@ -715,7 +734,7 @@ mod tests {
             "MSSM centre should be closer to PDG than minimal SU(5): {susy_nll} vs {min_nll}"
         );
         assert_ne!(u.derivation(), DerivationAssurance::CertifiedNumeric);
-        // Heuristic folklore can still hold while the interval receipt cannot.
+        // Heuristic folklore can still hold while the input-interval receipt is too coarse.
         assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Holds);
     }
 

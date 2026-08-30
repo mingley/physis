@@ -12,17 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Validated numerics
 
-- **GQW mixing-angle centre is an exact π-free Ratio.**
+- **GQW mixing-angle enclosure is sourced PDG input σ.**
   One-loop `sin²θ_W(M_Z)` is a rational function of recorded PDG
   `α_em⁻¹ = 127.951` and `α_s = 0.1179` and the SM/MSSM betas;
-  `2π` cancels. The interval cell encloses that algebraic centre by
-  the heuristic 3% band (not a remainder certificate, not P3N).
-  Gaussian NLL still snaps to the PDG `10^{-5}` scale so the
-  likelihood lives at the dataset σ. `enclose` still refuses the
-  GQW cell. Unique-vacuum graph id unchanged. P3N count stays 4.
-  Verified: exact SM centre `12588941801/60643400058`; MSSM
-  `522562687/2262813435`; interval still excludes minimal SU(5)
-  and is too coarse for the MSSM.
+  `2π` cancels. The interval cell encloses that algebraic function by
+  the sourced PDG 2022 one-sigma hulls `α_s(M_Z) = 0.1179(9)` and
+  `α_em⁻¹(M_Z) = 127.951 ± 0.009` (Physical Constants / Electroweak
+  reviews), not a 3% remainder certificate and not P3N. Interval
+  add/mul/div is the Minkowski sum and four-corner product. Gaussian
+  NLL still snaps to the PDG `10^{-5}` scale so the likelihood lives
+  at the dataset σ. Minimal SU(5) is disjoint from the PDG mixing-angle
+  hull (excluded). One-loop MSSM overlaps that hull but is not contained
+  in it (insufficient-precision). The heuristic
+  3% cell can still hold under MSSM. `enclose` still refuses the GQW
+  cell. Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  exact SM centre `12588941801/60643400058`; MSSM
+  `522562687/2262813435`; input-interval exclusion for SU(5); NLL still
+  smaller for MSSM.
 
 ### Computed theorems
 

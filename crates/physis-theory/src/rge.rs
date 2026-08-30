@@ -19,7 +19,10 @@
 //! minimal SU(5) lands near 0.21 and misses; the MSSM lands on 0.231.
 //! The GQW *centre* is an exact `Ratio`: `2π` cancels, so the prediction
 //! is a rational function of recorded PDG decimals and the one-loop
-//! betas. `M_U` still uses `ln`/`exp` and is approximate evidence.
+//! betas. The empirical sibling encloses that function by the sourced
+//! PDG 2022 one-sigma hulls of `α_em⁻¹(M_Z)` and `α_s(M_Z)` — not a 3%
+//! remainder certificate. `M_U` still uses `ln`/`exp` and is approximate
+//! evidence.
 //!
 //! One loop is an approximation: two-loop terms and SUSY thresholds shift the
 //! numbers at the percent level. The verdicts that consume this are therefore
@@ -27,25 +30,31 @@
 
 use std::f64::consts::PI;
 
+use physis_data::{pdg_2022_alpha_s_mz, pdg_2022_inv_alpha_em_mz};
 use physis_model::constants::{
     inverse_alpha_em_mz, strong_coupling_mz, weak_mixing_angle_sin2_mz, z_mass_gev,
 };
-use physis_numeric::Ratio;
+use physis_numeric::{Interval, Ratio};
 
 /// SM one-loop betas `(41/10, −19/6, −7)`, GUT-normalized U(1).
 const SM_ONE_LOOP_B: [Ratio; 3] = [Ratio::new(41, 10), Ratio::new(-19, 6), Ratio::int(-7)];
 /// MSSM one-loop betas `(33/5, 1, −3)`, GUT-normalized U(1).
 const MSSM_ONE_LOOP_B: [Ratio; 3] = [Ratio::new(33, 5), Ratio::int(1), Ratio::int(-3)];
 
-/// Recorded PDG `α_em⁻¹(M_Z) = 127.951` as a Ratio. This is the decimal
-/// written in physis-model, not a certificate of the `f64` bits.
+/// Recorded PDG `α_em⁻¹(M_Z) = 127.951` as a Ratio. This is the Gaussian
+/// centre of the sourced PDG 2022 listing, not a certificate of the `f64`
+/// bits.
 fn inverse_alpha_em_mz_ratio() -> Ratio {
-    Ratio::new(127951, 1000)
+    pdg_2022_inv_alpha_em_mz()
+        .gaussian_mu()
+        .expect("PDG 2022 α_em^{-1} is a Gaussian")
 }
 
 /// Recorded PDG `α_s(M_Z) = 0.1179` as a Ratio.
 fn strong_coupling_mz_ratio() -> Ratio {
-    Ratio::new(1179, 10000)
+    pdg_2022_alpha_s_mz()
+        .gaussian_mu()
+        .expect("PDG 2022 α_s is a Gaussian")
 }
 
 /// A running of the three SM gauge couplings from `M_Z` (one- and two-loop).
@@ -206,6 +215,25 @@ impl GaugeRunning {
         let eight_thirds = Ratio::new(8, 3);
         let denom = five_thirds * (b1 - b3) + (b2 - b3);
         let num = denom * inv_s + (b2 - b3) * (inv_em - eight_thirds * inv_s);
+        num / (denom * inv_em)
+    }
+
+    /// One-loop GQW `sin²θ_W(M_Z)` as an interval, propagating the sourced
+    /// PDG 2022 one-sigma hulls of `α_em⁻¹` and `α_s` through the exact
+    /// rational function. This is input uncertainty, not a two-loop
+    /// remainder certificate, and not P3N.
+    pub fn predicted_sin2_mz_interval(&self) -> Interval {
+        let [b1, b2, b3] = self.one_loop_betas_ratio();
+        let inv_em = pdg_2022_inv_alpha_em_mz().statistical;
+        let alpha_s = pdg_2022_alpha_s_mz().statistical;
+        let inv_s = Interval::point(Ratio::int(1)) / alpha_s;
+        let five_thirds = Interval::point(Ratio::new(5, 3));
+        let eight_thirds = Interval::point(Ratio::new(8, 3));
+        let b1i = Interval::point(b1);
+        let b2i = Interval::point(b2);
+        let b3i = Interval::point(b3);
+        let denom = five_thirds * (b1i - b3i) + (b2i - b3i);
+        let num = denom * inv_s + (b2i - b3i) * (inv_em - eight_thirds * inv_s);
         num / (denom * inv_em)
     }
 
@@ -434,5 +462,32 @@ mod tests {
             (denom * inv_s + (b2 - b3) * (inv_em - Ratio::new(8, 3) * inv_s)) / (denom * inv_em);
         assert_eq!(rebuilt, sm_exact);
         assert!((sm_exact.to_f64() - sm.predicted_sin2_mz()).abs() < 1e-15);
+    }
+
+    #[test]
+    fn gqw_input_interval_contains_the_centre_and_misses_the_pdg_hull() {
+        let sm = GaugeRunning::standard_model();
+        let mssm = GaugeRunning::mssm();
+        let sm_i = sm.predicted_sin2_mz_interval();
+        let mssm_i = mssm.predicted_sin2_mz_interval();
+        assert!(sm_i.contains(sm.predicted_sin2_mz_exact().enclosure()));
+        assert!(mssm_i.contains(mssm.predicted_sin2_mz_exact().enclosure()));
+        let pdg = Interval::new(Ratio::new(23121, 100000), Ratio::new(23123, 100000));
+        assert!(
+            sm_i.disjoint(pdg),
+            "SU(5) input interval {sm_i} vs PDG {pdg}"
+        );
+        assert!(
+            !mssm_i.disjoint(pdg) && !pdg.contains(mssm_i),
+            "one-loop MSSM with sourced PDG input σ overlaps 10^-5 but is not contained: {mssm_i} vs {pdg}"
+        );
+        assert!(!sm_i.contains(pdg) && !pdg.contains(sm_i));
+        // The 3% folklore band is not this enclosure.
+        let folklore = sm
+            .predicted_sin2_mz_exact()
+            .enclosure()
+            .relative_envelope(Ratio::new(3, 100));
+        assert!(folklore.contains(sm_i));
+        assert!(!sm_i.contains(folklore));
     }
 }
