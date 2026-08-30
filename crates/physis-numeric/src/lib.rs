@@ -81,6 +81,27 @@ impl Ratio {
         (self.num as f64) / (self.den as f64)
     }
 
+    /// Round `x` to the nearest multiple of `1/den`. Not a certificate of
+    /// the float; use when a computed centre must share the dataset's
+    /// rational scale before an exact NLL.
+    pub fn nearest(x: f64, den: i128) -> Self {
+        assert!(den > 0, "nearest-denominator must be positive");
+        if !x.is_finite() {
+            return Self::int(0);
+        }
+        let n = (x * (den as f64)).round() as i128;
+        Self::new(n, den)
+    }
+
+    /// Gaussian negative log-likelihood `(x − μ)² / (2σ²)` as an exact
+    /// Ratio. `sigma` must be positive. This is a defined statistical
+    /// object, not an LLM-invented confidence.
+    pub fn gaussian_nll(self, mu: Self, sigma: Self) -> Self {
+        assert!(sigma > Ratio::int(0), "gaussian sigma must be positive");
+        let d = self - mu;
+        (d * d) / (Ratio::int(2) * sigma * sigma)
+    }
+
     /// Exact square root when both numerator and denominator are perfect
     /// squares. `None` if the radicand is negative or not a square in Q.
     pub fn checked_sqrt(self) -> Option<Self> {
@@ -418,5 +439,16 @@ mod tests {
         let disc = s * s - Ratio::int(4) * p;
         assert_eq!(disc, Ratio::int(1));
         assert_eq!(disc.checked_sqrt(), Some(Ratio::int(1)));
+    }
+
+    #[test]
+    fn gaussian_nll_of_the_mean_is_zero_and_one_sigma_is_half() {
+        let mu = Ratio::new(23122, 100000);
+        let sigma = Ratio::new(1, 100000);
+        assert_eq!(mu.gaussian_nll(mu, sigma), Ratio::int(0));
+        assert_eq!((mu + sigma).gaussian_nll(mu, sigma), Ratio::new(1, 2));
+        assert_eq!((mu + sigma + sigma).gaussian_nll(mu, sigma), Ratio::int(2));
+        assert_eq!(Ratio::nearest(0.23122, 100_000), mu);
+        assert_eq!(Ratio::nearest(0.207, 100_000), Ratio::new(20700, 100000));
     }
 }

@@ -209,6 +209,7 @@ fn evaluator_judgment(v: &Verdict) -> String {
         false,
         v.numeric_lo(),
         v.numeric_hi(),
+        v.statistical_nll(),
     )
     .label()
 }
@@ -217,6 +218,7 @@ fn scientific_axes_changed(before: &Verdict, after: &Verdict) -> bool {
     before.kind != after.kind
         || before.derivation() != after.derivation()
         || before.empirical() != after.empirical()
+        || before.statistical_nll() != after.statistical_nll()
         || evaluator_judgment(before) != evaluator_judgment(after)
 }
 
@@ -555,8 +557,8 @@ mod tests {
         assert_eq!(d.to, VerdictKind::Undecidable);
         assert_eq!(d.from_empirical.as_deref(), Some("excluded"));
         assert_eq!(d.to_empirical.as_deref(), Some("inconclusive"));
-        assert_eq!(d.from_judgment.as_deref(), Some("empirical excluded"));
-        assert_eq!(d.to_judgment.as_deref(), Some("empirical inconclusive"));
+        assert_eq!(d.from_judgment.as_deref(), Some("statistical computed"));
+        assert_eq!(d.to_judgment.as_deref(), Some("statistical computed"));
     }
 
     #[test]

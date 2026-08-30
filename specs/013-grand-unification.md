@@ -37,7 +37,7 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **executed** (`ΣY`, already the grav anomaly; not a second P3N) |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **exact Ratio** / P3N, not GQW at `M_Z`. Domain: unification-scale |
 | `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive, `heuristic`. Domain: `M_Z` |
-| `gut.weinberg-angle-mz-interval` | the same one-loop centre, ± the heuristic 3% band, vs the PDG hull | **empirical receipt** (interval-subset). Minimal SU(5) excluded; MSSM inconclusive (too coarse). Not GUT-scale `3/8`. Domain: `M_Z` |
+| `gut.weinberg-angle-mz-interval` | the same one-loop centre, ± the heuristic 3% band, vs the PDG hull **and** the exact Gaussian NLL of the five-decimal centre vs PDG σ | **empirical receipt** (interval-subset) plus **statistical computed** (not P3N). Minimal SU(5) excluded with large NLL; MSSM inconclusive (too coarse) with smaller NLL. Super-K is not this Gaussian. Not GUT-scale `3/8`. Domain: `M_Z` |
 | `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
 | `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`), `heuristic` |
 | `gut.proton-lifetime-sk` | dim-6 `τ/B(p→e+π0)` from `M_GUT^4` vs Super-Kamiokande **dataset** | **empirical receipt**. Takenaka et al. Phys. Rev. D 102, 112011 (2020), 90% CL `> 2.4×10³⁴ yr`. Minimal SU(5) **excluded**; MSSM dim-6 **compatible**. Decade envelope for missing matrix elements. Not P3N, not dim-5, not `p→μ+π0`. Domain: `p→e+π0` / dim-6 / Super-K 90% CL. |
@@ -119,15 +119,17 @@ and predicts `α_3`.
 
 `gut.weinberg-angle-mz-interval` is the empirical sibling: the same one-loop
 centre enclosed by that 3% heuristic band, compared to the registered PDG
-`sin²θ_W(M_Z)` hull under the interval-subset rule. Compatible means the
-prediction lies inside the data, not that the intervals merely overlap.
+`sin²θ_W(M_Z)` hull under the interval-subset rule, **and** the exact
+Gaussian NLL of that centre at five decimal places versus the PDG σ.
+Compatible means the prediction lies inside the data, not that the intervals
+merely overlap. The NLL is a `statistical computed` judgment, not P3N.
 Minimal SU(5) is **excluded**. The MSSM band overlaps the PDG hull but is
 far wider, so the cell is **undecidable** / `inconclusive` (`InsufficientPrecision`)
 while the heuristic cell still holds. The 3% is not a two-loop remainder
 certificate, and it is not the GUT-scale `3/8`.
 
-`set su5-gut supersymmetric true` flips this cell `fails → holds` with the
-other two unification claims.
+`set su5-gut supersymmetric true` flips the heuristic mixing-angle cell
+`fails → holds` and the interval cell `fails → undecidable`.
 
 ### Two-loop running
 

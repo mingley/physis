@@ -260,25 +260,24 @@ impl EmpiricalJudgment {
 
 /// Outcome of a statistical procedure (never an LLM-invented confidence).
 ///
-/// Computed / unquantified values are reserved for a defined statistical
-/// object. [`Judgment::from_lab`] does not yet project this variant: there
-/// is no public `Computed` constructor, so a crate outside physis-core
-/// cannot mint `statistical computed`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+/// A computed NLL is produced only by [`Judgment::from_lab`] when a
+/// verdict carries an exact Gaussian overlay and the claim is empirical
+/// or a measurement. There is no public `Computed` constructor, so a
+/// crate outside physis-core cannot mint `statistical computed`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(transparent)]
 pub struct StatisticalJudgment {
     kind: StatisticalKind,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 enum StatisticalKind {
     Unquantified,
-    Computed,
+    Computed { nll: String },
 }
 
 impl StatisticalJudgment {
-    /// Reserved: from_lab does not yet project a statistical object.
     #[allow(dead_code)]
     pub(crate) const fn unquantified() -> Self {
         Self {
@@ -286,24 +285,30 @@ impl StatisticalJudgment {
         }
     }
 
-    /// Reserved: from_lab does not yet project a statistical object.
-    #[allow(dead_code)]
-    pub(crate) const fn computed() -> Self {
+    pub(crate) fn computed(nll: impl Into<String>) -> Self {
         Self {
-            kind: StatisticalKind::Computed,
+            kind: StatisticalKind::Computed { nll: nll.into() },
         }
     }
 
     /// True when a defined procedure produced a result.
-    pub const fn is_computed(self) -> bool {
-        matches!(self.kind, StatisticalKind::Computed)
+    pub const fn is_computed(&self) -> bool {
+        matches!(&self.kind, StatisticalKind::Computed { .. })
+    }
+
+    /// Exact NLL display when computed.
+    pub fn nll(&self) -> Option<&str> {
+        match &self.kind {
+            StatisticalKind::Computed { nll } => Some(nll.as_str()),
+            StatisticalKind::Unquantified => None,
+        }
     }
 
     /// Stable kebab-case name (`unquantified`, `computed`).
-    pub const fn as_str(self) -> &'static str {
-        match self.kind {
+    pub fn as_str(&self) -> &'static str {
+        match &self.kind {
             StatisticalKind::Unquantified => "unquantified",
-            StatisticalKind::Computed => "computed",
+            StatisticalKind::Computed { .. } => "computed",
         }
     }
 }
@@ -617,6 +622,10 @@ impl Judgment {
     /// is a numeric unresolved judgment (too coarse to decide), not a
     /// failed theorem. [`crate::assurance::DerivationAssurance::CertifiedNumeric`]
     /// Holds is a certified numeric judgment, not logical undetermined.
+    /// An empirical or measurement claim with an exact Gaussian NLL overlay
+    /// is a statistical computed judgment; Super-K interval-subset stays
+    /// empirical. A statistical overlay on a mathematical class is ignored.
+    #[allow(clippy::too_many_arguments)]
     pub fn from_lab(
         class: crate::assurance::ClaimClass,
         kind: crate::claim::VerdictKind,
@@ -625,6 +634,7 @@ impl Judgment {
         dual_checked: bool,
         numeric_lo: Option<&str>,
         numeric_hi: Option<&str>,
+        statistical_nll: Option<&str>,
     ) -> Self {
         use crate::assurance::{ClaimClass, DerivationAssurance, EmpiricalStatus};
         use crate::claim::VerdictKind;
@@ -641,6 +651,14 @@ impl Judgment {
                 numeric_lo.unwrap_or(""),
                 numeric_hi.unwrap_or(""),
             ));
+        }
+        if let Some(nll) = statistical_nll {
+            if matches!(
+                class,
+                ClaimClass::EmpiricalPrediction | ClaimClass::Measurement
+            ) {
+                return Judgment::Statistical(StatisticalJudgment::computed(nll));
+            }
         }
         match class {
             ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological => {
@@ -747,6 +765,7 @@ mod tests {
             false,
             None,
             None,
+            None,
         );
         assert_eq!(j.label(), "logical undetermined");
     }
@@ -761,6 +780,7 @@ mod tests {
             false,
             None,
             None,
+            None,
         );
         assert_eq!(open.label(), "logical undetermined");
         assert!(!matches!(&open, Judgment::Logical(j) if j.is_proved()));
@@ -770,6 +790,7 @@ mod tests {
             crate::assurance::EmpiricalStatus::NotApplicable,
             crate::assurance::DerivationAssurance::Executed,
             true,
+            None,
             None,
             None,
         );
@@ -788,6 +809,7 @@ mod tests {
             false,
             None,
             None,
+            None,
         );
         assert_eq!(j.label(), "numeric unresolved");
     }
@@ -802,6 +824,7 @@ mod tests {
             false,
             Some("3/8"),
             Some("3/8"),
+            None,
         );
         assert_eq!(j.label(), "numeric certified");
         match j {
@@ -823,6 +846,7 @@ mod tests {
             false,
             Some("3/8"),
             Some("3/8"),
+            None,
         );
         assert_eq!(j.label(), "numeric unresolved");
     }
@@ -880,6 +904,7 @@ mod tests {
             false,
             None,
             None,
+            None,
         );
         assert_eq!(j.label(), "empirical inconclusive");
         assert!(!matches!(&j, Judgment::Empirical(e) if e.is_compatible()));
@@ -891,6 +916,7 @@ mod tests {
             false,
             None,
             None,
+            None,
         );
         assert_eq!(excluded.label(), "empirical excluded");
         let compatible = Judgment::from_lab(
@@ -899,6 +925,7 @@ mod tests {
             crate::assurance::EmpiricalStatus::Compatible,
             crate::assurance::DerivationAssurance::Executed,
             false,
+            None,
             None,
             None,
         );
@@ -916,6 +943,7 @@ mod tests {
             false,
             None,
             None,
+            None,
         );
         assert_eq!(j.label(), "heuristic suggestive");
         assert!(matches!(&j, Judgment::Heuristic(h) if h.is_suggestive()));
@@ -926,6 +954,7 @@ mod tests {
             crate::assurance::EmpiricalStatus::NotApplicable,
             crate::assurance::DerivationAssurance::Asserted,
             false,
+            None,
             None,
             None,
         );
@@ -960,7 +989,7 @@ mod tests {
                         DerivationAssurance::CertifiedNumeric,
                     ] {
                         let j = Judgment::from_lab(
-                            class, kind, empirical, derivation, false, None, None,
+                            class, kind, empirical, derivation, false, None, None, None,
                         );
                         assert!(
                             !matches!(j, Judgment::Statistical(_)),
@@ -975,6 +1004,7 @@ mod tests {
                             true,
                             Some("1"),
                             Some("1"),
+                            None,
                         );
                         assert!(
                             !matches!(proved, Judgment::Statistical(_)),
@@ -985,12 +1015,57 @@ mod tests {
                 }
             }
         }
-        let reserved = Judgment::Statistical(StatisticalJudgment::computed());
+        let reserved = Judgment::Statistical(StatisticalJudgment::computed("1/2"));
         assert_eq!(reserved.label(), "statistical computed");
         assert!(matches!(&reserved, Judgment::Statistical(s) if s.is_computed()));
+        assert!(matches!(&reserved, Judgment::Statistical(s) if s.nll() == Some("1/2")));
         assert_ne!(reserved.label(), "logical proved");
         let none = Judgment::Statistical(StatisticalJudgment::unquantified());
         assert_eq!(none.label(), "statistical unquantified");
         assert!(!none.label().contains("proved"));
+    }
+
+    #[test]
+    fn gaussian_nll_projects_statistical_computed_not_empirical() {
+        let j = Judgment::from_lab(
+            crate::assurance::ClaimClass::EmpiricalPrediction,
+            crate::claim::VerdictKind::Fails,
+            crate::assurance::EmpiricalStatus::Excluded,
+            crate::assurance::DerivationAssurance::Executed,
+            false,
+            None,
+            None,
+            Some("2933042"),
+        );
+        assert_eq!(j.label(), "statistical computed");
+        match j {
+            Judgment::Statistical(s) => {
+                assert!(s.is_computed());
+                assert_eq!(s.nll(), Some("2933042"));
+            }
+            other => panic!("expected statistical computed, got {other:?}"),
+        }
+        let ignored = Judgment::from_lab(
+            crate::assurance::ClaimClass::Mathematical,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::NotApplicable,
+            crate::assurance::DerivationAssurance::Executed,
+            false,
+            None,
+            None,
+            Some("2933042"),
+        );
+        assert_eq!(ignored.label(), "logical undetermined");
+        let super_k = Judgment::from_lab(
+            crate::assurance::ClaimClass::EmpiricalPrediction,
+            crate::claim::VerdictKind::Fails,
+            crate::assurance::EmpiricalStatus::Excluded,
+            crate::assurance::DerivationAssurance::Executed,
+            false,
+            None,
+            None,
+            None,
+        );
+        assert_eq!(super_k.label(), "empirical excluded");
     }
 }

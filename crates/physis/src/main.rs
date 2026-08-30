@@ -86,7 +86,7 @@ fn extract_opts(args: &[String]) -> Result<CliOpts, String> {
                 let name = &args[i + 1];
                 role = Role::parse(name).ok_or_else(|| {
                     format!(
-                        "unknown role '{name}' (lab|explorer|formalizer|proof-searcher|falsifier|reviewer|auditor)"
+                        "unknown role '{name}' (lab|explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst)"
                     )
                 })?;
                 i += 2;

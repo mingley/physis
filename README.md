@@ -98,7 +98,10 @@ MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
 `supersymmetric` knob revives as heuristics. The empirical sibling
 `gut.proton-lifetime-sk` compares the dim-6 `M_GUT^4` scaling to the
 registered Super-K `p→e+π0` Dataset (Takenaka et al. 2020): minimal SU(5)
-is **excluded**; MSSM dim-6 is **compatible**. That is not P3N.
+is **excluded**; MSSM dim-6 is **compatible**. That is not P3N. The PDG
+mixing-angle cell `gut.weinberg-angle-mz-interval` is a Gaussian NLL
+(`statistical computed`) of the GQW centre versus `σ = 10^{-5}`, still
+not P3N; Super-K is not that Gaussian.
 
 `physis epistemics` tallies the whole lab by class, derivation, and semantic
 assurance (currently hundreds of `executed` model-internal evaluations).
@@ -156,10 +159,15 @@ cargo run -p physis -- review dec.d-squared-zero
 cargo run -p physis -- inspect origin fitted
 cargo run -p physis -- inspect class conjecture
 cargo run -p physis -- inspect gap missing-theorem
+cargo run -p physis -- why gut.weinberg-angle-mz-interval
+cargo run -p physis -- why gut.proton-lifetime-sk
 cargo run -p physis -- --role explorer prove dec.d-squared-zero   # refused
+cargo run -p physis -- --role explorer score standard-model       # refused
+cargo run -p physis -- --role empirical-analyst score standard-model
 cargo run -p physis -- --role formalizer formalize dec.d-squared-zero
 cargo run -p physis -- prove dec.d-squared-zero
-cargo run -p physis -- reproduce dec.d-squared-zero   # not P4
+cargo run -p physis -- --role proof-searcher reproduce dec.d-squared-zero  # refused
+cargo run -p physis -- --role replication-agent reproduce dec.d-squared-zero  # not P4
 cargo run -p physis -- gaps
 cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension

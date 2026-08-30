@@ -72,14 +72,16 @@ Nothing gains authority merely because an agent wrote code that returns
   only from a registered empirical overlay. `HeuristicJudgment` has no
   public `Suggestive` constructor: only `from_lab` can produce it.
   `StatisticalJudgment` has no public `Computed` constructor: `from_lab`
-  does not yet project a statistical object, and a crate outside
-  physis-core cannot mint one. `Verdict` has no `Deserialize` impl: JSON
+  projects `statistical computed` only from an exact Gaussian NLL overlay
+  on an empirical or measurement claim; a crate outside physis-core
+  cannot mint one. Super-K interval-subset stays empirical. `Verdict` has no `Deserialize` impl: JSON
   cannot mint a `certified-numeric` overlay or an encoding-review tag.
   `Claim` derivation, empirical, and semantic fields are private: a
   theory cannot assign `CertifiedNumeric` on the claim. Overlays live on
-  `Verdict`, whose derivation / empirical / semantic / enclosure fields
-  are also private: a public assignment cannot mint `CertifiedNumeric`.
-  The overlay path is `Verdict::with_certified_numeric`.
+  `Verdict`, whose derivation / empirical / semantic / enclosure / NLL
+  fields are also private: a public assignment cannot mint `CertifiedNumeric`.
+  The overlay paths are `Verdict::with_certified_numeric` and
+  `Verdict::with_statistical_nll`.
   The lab projects `Judgment` from evaluator
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.
@@ -103,7 +105,8 @@ Nothing gains authority merely because an agent wrote code that returns
   `Judgment` (evaluator `holds` is `logical undetermined`; a
   `CertifiedNumeric` Holds is `numeric certified` with a display
   enclosure, not a kernel proof; a coarse numeric order is `numeric
-  unresolved`, not a failed theorem) and the
+  unresolved`, not a failed theorem; a PDG Gaussian NLL is
+  `statistical computed`, not `empirical compatible`) and the
   transitive axiom closure from `AxiomLedger`.
 
 ### Milestone 2 — dual-check receipts (exact + Lean)
@@ -165,7 +168,7 @@ those tools; a local checkout without them still mints
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
 | evidence | `physis evidence`, `NodeKind::Evidence` | Competing encodings (distinct FormalClaims of one slug) and competing evaluations; Statement + Evaluation parents; content-addressed, not deserialized; confidence is derived TrustProfile, not a numeric score; never Canonical or P4 |
 | trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
-| roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove. Budget is a cap, not a proof |
+| roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove or score. Proof-searcher cannot remint. Replication-agent remints (not P4). Empirical-analyst scores. Budget is a cap, not a proof |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus, bound to the catalog FormalClaim; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
@@ -203,7 +206,10 @@ identity; a slug-only review line is not P3S.
   `λ > 100 ×` circuit size. Maxwell's copy of that slug stays encoding-wide.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
-  Named *roles* still gate who may issue an op.
+  Named *roles* still gate who may issue an op. A proof-searcher cannot
+  remint; that is `replication-agent`. An explorer cannot score; that
+  is `empirical-analyst`. NumericalVerifier / ProvenanceAuditor /
+  EncodingAuditor / Judge are not empty aliases for existing ops.
 
 ## Vertical slice
 
@@ -215,7 +221,7 @@ identity; a slug-only review line is not P3S.
 | B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
 | C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; GUT-scale `3/8` is `Ratio` / P3N, not Lean. Those cells name a `DomainOfValidity`. GUT `Tr Q` is `ΣY` already certified, not a second P3N. GQW at `M_Z` is not P3N |
-| D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset **and** Super-K `p→e+π0`. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible. Super-K is a lower-limit hull, not P3N |
+| D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset **and** Super-K `p→e+π0`. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible. PDG `sin²θ_W(M_Z)` is a Gaussian (`μ`, `σ` as Ratio); Super-K is a lower-limit hull, not a Gaussian, not P3N |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; the four encodings name distinct regimes; `prove` and `review` refuse it |
 
 ## Pure-Rust rule (revised)

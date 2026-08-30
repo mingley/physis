@@ -12,6 +12,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **PDG mixing angle carries a Gaussian likelihood**
+  (`LikelihoodModel::Gaussian`, `Verdict::with_statistical_nll`).
+  `gut.weinberg-angle-mz-interval` keeps interval-subset on the empirical
+  axis and projects `statistical computed` from the exact NLL of the
+  five-decimal GQW centre versus PDG σ = 10^{-5}. Super-K `p→e+π0` stays
+  a one-sided hull: `from_lab` without an NLL overlay is still
+  `empirical excluded` / `empirical compatible`. Not P3N, not a kernel
+  proof, not an LLM score. Catalog d² hash unchanged. Verified: NLL of
+  μ is 0 and of μ+σ is 1/2; Super-K compare_gaussian ignores a point;
+  why prints `nll`; MSSM NLL is smaller than minimal SU(5); P3N count
+  stays 4.
+
+- **Proposers cannot remint their own receipts**
+  (`Role::ReplicationAgent`, `Role::EmpiricalAnalyst`).
+  `proof-searcher` may `prove` and cannot `reproduce`. `explorer` may
+  observe and cannot `score`. `replication-agent` remints in-process
+  (still not P4). `empirical-analyst` scores the empirical-target
+  fixture. Lab still runs the full protocol. Catalog d² hash unchanged.
+  Verified: role unit tests; lab prove-then-reproduce refusal;
+  explorer cannot score.
+
 - **Hypothesis search mutates IR packages, not only knobs**
   (`physis hypothesize`, `physis-ir::apply_mutation`).
   `combinational-circuit` is a NAND netlist in a theory package.

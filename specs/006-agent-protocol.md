@@ -37,9 +37,12 @@ Layer: agent
 
 CLI tokens map 1:1 onto `physis_agent::Command`.
 
-`--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor`
+`--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst`
 gates which ops `exec` will dispatch. Named roles may observe (including `hypothesize`); each may
-run one kind of untrusted work. None of them mint `Verified` — `prove`
+run one kind of untrusted work. A proof-searcher cannot remint a receipt
+it requested; that is `replication-agent` (still not P4). An explorer
+cannot score the empirical target; that is `empirical-analyst`. None of
+them mint `Verified` — `prove`
 still goes through `physis_verifier::verify`. `loop` and `replay` stay
 lab-only. `--budget prove=N,review=N,set=N` is a research cap on the
 lab, not a proof. Journal restore reconstitutes as the lab, then the

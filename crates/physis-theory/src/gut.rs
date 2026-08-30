@@ -14,8 +14,11 @@
 //!   Weinberg running of that boundary condition down to `M_Z` is a separate
 //!   claim (`gut.weinberg-angle-mz`): minimal SU(5) predicts ≈0.21 and **fails**;
 //!   the MSSM predicts ≈0.231 and holds as a heuristic. The companion
-//!   `gut.weinberg-angle-mz-interval` asks the empirical axis: the same 3%
-//!   band as an enclosure against the PDG hull. Overlap is not containment.
+//!   `gut.weinberg-angle-mz-interval` asks two questions of that centre:
+//!   interval-subset of the 3% band against the PDG hull, and the exact
+//!   Gaussian NLL of the five-decimal centre versus the PDG σ. Super-K
+//!   is a one-sided limit and is not that Gaussian. Overlap is not
+//!   containment.
 //!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: the
 //!   dimension-6 `M_GUT^4` scaling compared to Super-Kamiokande
 //!   `p → e⁺π⁰` (Takenaka et al., Phys. Rev. D 102, 112011). Minimal
@@ -340,20 +343,23 @@ impl Theory for Su5Gut {
             GUT_WEINBERG_ANGLE_MZ_INTERVAL => {
                 // Same one-loop centre as the heuristic cell, enclosed by that
                 // cell's 3% hit threshold. The band is not a remainder
-                // certificate. 3/8 at M_GUT is a different claim.
+                // certificate. 3/8 at M_GUT is a different claim. The
+                // Gaussian NLL uses the centre at the PDG's 10^{-5} scale,
+                // not the heuristic band and not a profile likelihood.
                 let run = if self.supersymmetric {
                     GaugeRunning::mssm()
                 } else {
                     GaugeRunning::standard_model()
                 };
                 let pred = run.predicted_sin2_mz();
+                let centre = Ratio::nearest(pred, 100_000);
                 let envelope =
                     Interval::from_f64_approx(pred).relative_envelope(Ratio::new(3, 100));
                 let dataset = pdg_2024_sin2theta();
-                let rec = EmpiricalReceipt::compare(envelope, &dataset);
-                let evidence = [
+                let rec = EmpiricalReceipt::compare_gaussian(envelope, &dataset, Some(centre));
+                let mut evidence = vec![
                     format!(
-                        "one-loop GQW centre {pred:.5} ± 3% heuristic band vs {} hull",
+                        "one-loop GQW centre {pred:.5} → {centre} ± 3% heuristic band vs {} hull",
                         dataset.id
                     ),
                     format!(
@@ -362,6 +368,11 @@ impl Theory for Su5Gut {
                     ),
                     "not the GUT-scale 3/8; that is gut.weinberg-angle".to_string(),
                 ];
+                if let Some(nll) = rec.nll {
+                    evidence.push(format!(
+                        "gaussian NLL of the five-decimal centre vs PDG σ = {nll} (not P3N)"
+                    ));
+                }
                 let v = if rec.excluded {
                     Verdict::fails(
                         claim,
@@ -378,7 +389,11 @@ impl Theory for Su5Gut {
                         "GQW truncation envelope overlaps the PDG hull but is not contained in it",
                     )
                 };
-                v.with_empirical(rec.status()).with_evidence(evidence)
+                let v = v.with_empirical(rec.status()).with_evidence(evidence);
+                match rec.nll {
+                    Some(nll) => v.with_statistical_nll(nll),
+                    None => v,
+                }
             }
             GUT_COUPLING_UNIFICATION => {
                 // Computed at one loop: run α_1, α_2, α_3 from M_Z, fix the
@@ -646,8 +661,15 @@ mod tests {
         assert_eq!(v.kind, VerdictKind::Fails);
         assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
         assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        let min_nll = v.statistical_nll().expect("PDG Gaussian NLL");
         assert!(
             v.evidence.iter().any(|e| e.contains("pdg-2024-sin2theta")),
+            "evidence: {:?}",
+            v.evidence
+        );
+        assert!(
+            v.evidence.iter().any(|e| e.contains("gaussian NLL")),
             "evidence: {:?}",
             v.evidence
         );
@@ -662,6 +684,19 @@ mod tests {
         let u = verdict(&g, GUT_WEINBERG_ANGLE_MZ_INTERVAL);
         assert_eq!(u.kind, VerdictKind::Undecidable);
         assert_eq!(u.empirical(), EmpiricalStatus::Inconclusive);
+        let susy_nll = u.statistical_nll().expect("PDG Gaussian NLL under MSSM");
+        fn parse_ratio(s: &str) -> physis_numeric::Ratio {
+            if let Some((n, d)) = s.split_once('/') {
+                physis_numeric::Ratio::new(n.parse().unwrap(), d.parse().unwrap())
+            } else {
+                physis_numeric::Ratio::int(s.parse().unwrap())
+            }
+        }
+        assert!(
+            parse_ratio(susy_nll) < parse_ratio(min_nll),
+            "MSSM centre should be closer to PDG than minimal SU(5): {susy_nll} vs {min_nll}"
+        );
+        assert_ne!(u.derivation(), DerivationAssurance::CertifiedNumeric);
         // Heuristic folklore can still hold while the interval receipt cannot.
         assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Holds);
     }
@@ -676,6 +711,11 @@ mod tests {
         assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
         assert_eq!(v.derivation(), DerivationAssurance::Executed);
         assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert!(
+            v.statistical_nll().is_none(),
+            "Super-K is a one-sided limit, not a Gaussian: {:?}",
+            v.statistical_nll()
+        );
         assert!(
             v.evidence.iter().any(|e| e.contains(SK_2020_P_E_PI0)),
             "evidence: {:?}",
@@ -694,6 +734,7 @@ mod tests {
         assert_eq!(u.empirical(), EmpiricalStatus::Compatible);
         assert_eq!(u.derivation(), DerivationAssurance::Executed);
         assert_ne!(u.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert!(u.statistical_nll().is_none());
         assert_eq!(
             verdict(&g, GUT_PROTON_DECAY_VIABLE).kind,
             VerdictKind::Holds

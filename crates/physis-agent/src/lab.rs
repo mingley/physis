@@ -589,10 +589,14 @@ impl Lab {
                                 dual,
                                 v.numeric_lo(),
                                 v.numeric_hi(),
+                                v.statistical_nll(),
                             );
                             text.push_str(&format!("  judgment:   {}\n", judgment.label()));
                             if let (Some(lo), Some(hi)) = (v.numeric_lo(), v.numeric_hi()) {
                                 text.push_str(&format!("  enclosure:  [{lo}, {hi}]\n"));
+                            }
+                            if let Some(nll) = v.statistical_nll() {
+                                text.push_str(&format!("  nll:        {nll}\n"));
                             }
                             text.push_str(&format!("  trust:      {}\n", profile.display()));
                             if profile.unreviewed_proof_is_dangerous(semantic) {
@@ -851,6 +855,7 @@ impl Lab {
                     dual,
                     v.numeric_lo(),
                     v.numeric_hi(),
+                    v.statistical_nll(),
                 );
                 let domain = if c.domain().is_encoding_wide() {
                     "encoding-wide".to_string()
@@ -2645,6 +2650,7 @@ mod tests {
         );
         assert!(skb.contains("empirical:  excluded"), "{skb}");
         assert!(skb.contains("judgment:   empirical excluded"), "{skb}");
+        assert!(!skb.contains("nll:"), "{skb}");
         assert!(skb.contains("trust:      P1"), "{skb}");
         assert!(
             !skb.contains("certified-numeric"),
@@ -3046,8 +3052,13 @@ mod tests {
             .to_string();
         assert!(why_min.contains("empirical:  excluded"), "{why_min}");
         assert!(
-            why_min.contains("judgment:   empirical excluded"),
+            why_min.contains("judgment:   statistical computed"),
             "{why_min}"
+        );
+        assert!(why_min.contains("nll:"), "{why_min}");
+        assert!(
+            !why_min.contains("certified-numeric"),
+            "GQW NLL is not P3N: {why_min}"
         );
 
         lab.set_knob("su5-gut", "supersymmetric", "true").unwrap();
@@ -3076,7 +3087,8 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains("empirical:  inconclusive"), "{why}");
-        assert!(why.contains("judgment:   empirical inconclusive"), "{why}");
+        assert!(why.contains("judgment:   statistical computed"), "{why}");
+        assert!(why.contains("nll:"), "{why}");
         let folklore = lab
             .exec(Command::Why {
                 claim: "gut.weinberg-angle-mz".into(),
@@ -4754,6 +4766,82 @@ mod tests {
             .to_string();
         assert!(p3f.contains("dec.d-squared-zero"), "{p3f}");
         assert!(!p3f.contains("sr.invariant-interval"), "{p3f}");
+    }
+
+    #[test]
+    fn proof_searcher_cannot_remint_a_receipt_it_requested() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::ProofSearcher);
+        let proved = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            proved.contains("lean-kernel") || proved.contains("expand-recursive"),
+            "{proved}"
+        );
+        let remint = lab.exec(Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert_eq!(remint.exit_code(), 1, "{}", remint.text());
+        assert!(
+            remint.text().contains("proof-searcher cannot reproduce"),
+            "{}",
+            remint.text()
+        );
+
+        lab.set_role(Role::ReplicationAgent);
+        let ok = lab
+            .exec(Command::Reproduce {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(ok.contains("in-process remint matched"), "{ok}");
+        assert!(ok.contains("not P4"), "{ok}");
+        let prove = lab.exec(Command::Prove {
+            claim: "sr.invariant-interval".into(),
+        });
+        assert!(
+            prove.text().contains("replication-agent cannot prove"),
+            "{}",
+            prove.text()
+        );
+    }
+
+    #[test]
+    fn empirical_analyst_scores_and_explorer_cannot() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Score {
+            theory: "standard-model".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("explorer cannot score"),
+            "{}",
+            blocked.text()
+        );
+
+        lab.set_role(Role::EmpiricalAnalyst);
+        let card = lab
+            .exec(Command::Score {
+                theory: "standard-model".into(),
+            })
+            .text()
+            .to_string();
+        assert!(card.contains("score standard-model"), "{card}");
+        assert!(card.contains("has_gravity"), "{card}");
+        let prove = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            prove.text().contains("empirical-analyst cannot prove"),
+            "{}",
+            prove.text()
+        );
     }
 
     #[test]

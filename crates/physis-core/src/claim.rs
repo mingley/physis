@@ -98,8 +98,9 @@ impl VerdictKind {
 /// `certified-numeric` overlay or an `adversarially-reviewed` tag.
 /// Theories construct verdicts with [`Verdict::from_claim`] and the
 /// overlay builders (`with_certified_numeric`, `with_cross_checked`,
-/// `with_empirical`). Derivation, empirical, semantic, and enclosure
-/// fields are private: a public assignment cannot mint those overlays.
+/// `with_empirical`, `with_statistical_nll`). Derivation, empirical, semantic,
+/// enclosure, and NLL fields are private: a public assignment cannot mint
+/// those overlays.
 ///
 /// ```compile_fail
 /// let c = physis_core::claim::Claim::new(
@@ -110,6 +111,17 @@ impl VerdictKind {
 /// );
 /// let mut v = physis_core::claim::Verdict::holds(&c, "ran");
 /// v.derivation = physis_core::DerivationAssurance::CertifiedNumeric;
+/// ```
+///
+/// ```compile_fail
+/// let c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// let mut v = physis_core::claim::Verdict::holds(&c, "ran");
+/// v.statistical_nll = Some("1".into());
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Verdict {
@@ -130,6 +142,8 @@ pub struct Verdict {
     numeric_lo: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     numeric_hi: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    statistical_nll: Option<String>,
 }
 
 impl Verdict {
@@ -151,6 +165,7 @@ impl Verdict {
             intractable: false,
             numeric_lo: None,
             numeric_hi: None,
+            statistical_nll: None,
         }
     }
 
@@ -205,6 +220,11 @@ impl Verdict {
         self.numeric_hi.as_deref()
     }
 
+    /// Exact Gaussian NLL overlay, when present. Not a kernel proof.
+    pub fn statistical_nll(&self) -> Option<&str> {
+        self.statistical_nll.as_deref()
+    }
+
     /// Attach evidence lines.
     pub fn with_evidence(mut self, lines: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.evidence.extend(lines.into_iter().map(Into::into));
@@ -248,6 +268,15 @@ impl Verdict {
     pub fn with_cross_checked(mut self) -> Self {
         debug_assert_eq!(self.kind, VerdictKind::Holds);
         self.derivation = DerivationAssurance::CrossChecked;
+        self
+    }
+
+    /// Overlay an exact Gaussian NLL. Does not mint a kernel proof, is not
+    /// P3N, and is not P4. Only [`crate::judgment::Judgment::from_lab`]
+    /// projects `statistical computed`, and only for empirical/measurement
+    /// classes.
+    pub fn with_statistical_nll(mut self, nll: impl std::fmt::Display) -> Self {
+        self.statistical_nll = Some(nll.to_string());
         self
     }
 }
@@ -657,6 +686,20 @@ mod tests {
         assert_eq!(v.numeric_lo(), Some("0"));
         assert_eq!(v.numeric_hi(), Some("0"));
         assert_ne!(v.derivation(), DerivationAssurance::Asserted);
+    }
+
+    #[test]
+    fn statistical_nll_is_not_a_kernel_proof() {
+        let c = Claim::new(
+            "gut.weinberg-angle-mz-interval",
+            "GQW centre vs PDG Gaussian.",
+            LayerId::Effective,
+            ClaimClass::EmpiricalPrediction,
+        );
+        let v = Verdict::fails(&c, "disjoint").with_statistical_nll("2933042");
+        assert_eq!(v.statistical_nll(), Some("2933042"));
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
     }
 
     #[test]

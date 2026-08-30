@@ -12,18 +12,22 @@ use crate::protocol::Command;
 ///
 /// `Lab` is the full protocol (CLI default). Named roles are the processes
 /// in the Level-3 picture: they may observe, and each may run one kind of
-/// untrusted work. None of them can deserialize a kernel proof.
+/// untrusted work. None of them can deserialize a kernel proof. A
+/// proof-searcher cannot remint a receipt it just requested: that is
+/// [`Role::ReplicationAgent`]. An explorer cannot score the empirical
+/// target: that is [`Role::EmpiricalAnalyst`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Role {
     /// Full lab protocol (human operator / CLI default).
     #[default]
     Lab,
-    /// Observe, inspect, compare. Cannot set, prove, review, or audit.
+    /// Observe, inspect, compare. Cannot set, prove, review, score, or audit.
     Explorer,
     /// Emit an untrusted encoding of a catalog identity. Cannot prove.
     Formalizer,
     /// Request a dual-check mint. The verifier still runs the checkers.
+    /// Cannot remint a stored receipt.
     ProofSearcher,
     /// Search for failing evaluations. Cannot prove or review.
     Falsifier,
@@ -31,11 +35,15 @@ pub enum Role {
     Reviewer,
     /// Run the red-team corpus. Cannot prove or review.
     Auditor,
+    /// Remint a stored receipt in-process. Cannot prove. Not P4.
+    ReplicationAgent,
+    /// Score a theory against the empirical-target fixture. Cannot prove.
+    EmpiricalAnalyst,
 }
 
 impl Role {
     /// Every named role, including the lab.
-    pub const ALL: [Role; 7] = [
+    pub const ALL: [Role; 9] = [
         Role::Lab,
         Role::Explorer,
         Role::Formalizer,
@@ -43,6 +51,8 @@ impl Role {
         Role::Falsifier,
         Role::Reviewer,
         Role::Auditor,
+        Role::ReplicationAgent,
+        Role::EmpiricalAnalyst,
     ];
 
     /// Stable kebab-case name.
@@ -55,6 +65,8 @@ impl Role {
             Role::Falsifier => "falsifier",
             Role::Reviewer => "reviewer",
             Role::Auditor => "auditor",
+            Role::ReplicationAgent => "replication-agent",
+            Role::EmpiricalAnalyst => "empirical-analyst",
         }
     }
 
@@ -64,7 +76,8 @@ impl Role {
         Self::ALL.iter().copied().find(|r| r.as_str() == want)
     }
 
-    /// Observe-only ops: no knob writes, no mint, no review, no audit.
+    /// Observe-only ops: no knob writes, no mint, no review, no audit,
+    /// no empirical score, no remint.
     fn observe(cmd: &Command) -> bool {
         matches!(
             cmd,
@@ -80,7 +93,6 @@ impl Role {
                 | Command::Experiments
                 | Command::Experiment { .. }
                 | Command::Journal
-                | Command::Score { .. }
                 | Command::Compare { .. }
                 | Command::Design { .. }
                 | Command::Hypothesize { .. }
@@ -100,7 +112,7 @@ impl Role {
         }
         match self {
             Role::Formalizer => matches!(cmd, Command::Formalize { .. }),
-            Role::ProofSearcher => matches!(cmd, Command::Prove { .. } | Command::Reproduce { .. }),
+            Role::ProofSearcher => matches!(cmd, Command::Prove { .. }),
             Role::Falsifier => matches!(
                 cmd,
                 Command::Set { .. }
@@ -112,6 +124,8 @@ impl Role {
             ),
             Role::Reviewer => matches!(cmd, Command::Review { .. }),
             Role::Auditor => matches!(cmd, Command::Audit),
+            Role::ReplicationAgent => matches!(cmd, Command::Reproduce { .. }),
+            Role::EmpiricalAnalyst => matches!(cmd, Command::Score { .. }),
             Role::Explorer | Role::Lab => false,
         }
     }
@@ -239,6 +253,9 @@ mod tests {
         assert!(Role::Explorer.permits(&Command::Evidence {
             claim: "predictivity.unique-vacuum".into(),
         }));
+        assert!(!Role::Explorer.permits(&Command::Score {
+            theory: "standard-model".into(),
+        }));
         assert!(!Role::Explorer.permits(&Command::Set {
             theory: "type-iib".into(),
             knob: "total_dim".into(),
@@ -259,11 +276,34 @@ mod tests {
     #[test]
     fn proof_searcher_can_prove_not_review() {
         assert!(Role::ProofSearcher.permits(&prove()));
-        assert!(Role::ProofSearcher.permits(&Command::Reproduce {
+        assert!(!Role::ProofSearcher.permits(&Command::Reproduce {
             claim: "dec.d-squared-zero".into(),
         }));
         assert!(!Role::ProofSearcher.permits(&review()));
         assert!(!Role::ProofSearcher.permits(&Command::Loop));
+    }
+
+    #[test]
+    fn replication_agent_can_reproduce_not_prove() {
+        assert!(Role::ReplicationAgent.permits(&Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        }));
+        assert!(!Role::ReplicationAgent.permits(&prove()));
+        assert!(!Role::ReplicationAgent.permits(&review()));
+        assert!(Role::Lab.permits(&Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        }));
+    }
+
+    #[test]
+    fn empirical_analyst_can_score_not_prove() {
+        let score = Command::Score {
+            theory: "standard-model".into(),
+        };
+        assert!(Role::EmpiricalAnalyst.permits(&score));
+        assert!(!Role::EmpiricalAnalyst.permits(&prove()));
+        assert!(!Role::Explorer.permits(&score));
+        assert!(Role::Lab.permits(&score));
     }
 
     #[test]
