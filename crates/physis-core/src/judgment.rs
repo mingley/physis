@@ -130,7 +130,8 @@ impl ParameterOrigin {
 }
 
 /// Why a claim is not yet established. The knowledge-gap graph is these
-/// reasons plus the claim's dependency list.
+/// reasons plus live [`crate::claim::Claim::depends_on`] edges, rebuilt
+/// from the encoding rather than deserialized.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GapReason {

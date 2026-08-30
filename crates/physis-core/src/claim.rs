@@ -148,6 +148,10 @@ pub struct Claim {
     pub domain: DomainOfValidity,
     /// Content address of the formal identity.
     pub statement_hash: ArtifactId,
+    /// Lemma ids this claim uses. Not part of [`statement_hash`]: a lab
+    /// encoding of "this uses that" is not a change to the sentence.
+    #[serde(default)]
+    pub depends_on: Vec<ClaimId>,
 }
 
 impl Claim {
@@ -183,7 +187,14 @@ impl Claim {
             assumptions,
             domain,
             statement_hash,
+            depends_on: Vec::new(),
         }
+    }
+
+    /// Record lemma ids this claim uses. Does not change [`Self::statement_hash`].
+    pub fn with_dependencies(mut self, lemmas: &[&str]) -> Self {
+        self.depends_on = lemmas.iter().copied().map(ClaimId::new).collect();
+        self
     }
 }
 
@@ -222,6 +233,20 @@ mod tests {
             ClaimClass::ModelInternal,
         );
         assert_ne!(a.statement_hash, b.statement_hash);
+    }
+
+    #[test]
+    fn lemma_dependencies_are_not_statement_identity() {
+        let a = Claim::new(
+            "dec.closed-equals-exact",
+            "Every closed 1-form is exact (the Poincaré lemma).",
+            LayerId::Mathematical,
+            ClaimClass::ModelInternal,
+        );
+        let b = a.clone().with_dependencies(&["dec.d-squared-zero"]);
+        assert_eq!(a.statement_hash, b.statement_hash);
+        assert!(a.depends_on.is_empty());
+        assert_eq!(b.depends_on[0].0, "dec.d-squared-zero");
     }
 
     #[test]

@@ -613,7 +613,8 @@ impl Theory for DeRham {
                 "Every closed 1-form is exact (the Poincaré lemma).",
                 LayerId::Mathematical,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_dependencies(&[D_SQUARED_ZERO]),
             Claim::new(
                 EULER_POINCARE,
                 "The Euler characteristic V−E+F equals b₀−b₁+b₂.",

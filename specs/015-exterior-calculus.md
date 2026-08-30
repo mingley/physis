@@ -41,6 +41,10 @@ computes topology: the first Betti number counts holes, and whether every closed
 | `dec.hodge-harmonic` | `dim(harmonic 1-forms) = b₁` (Hodge) | nullity of the Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁`, checked against `b₁` |
 | `dec.fundamental-class` | `b₂ = 1` over ℝ | computed `b₂`; holds for the torus and the 2-sphere, fails for the disk, circle, and Klein bottle |
 
+`dec.closed-equals-exact` declares a live lemma edge to `dec.d-squared-zero`
+(`Claim::depends_on`). The edge is rebuilt by `physis gaps` / `physis why` and
+is not part of the statement hash.
+
 ## Type-level grade
 
 A `Cochain<G>` carries its grade `G ∈ {G0, G1, G2}` as a type parameter. `d₀`

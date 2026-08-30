@@ -586,6 +586,17 @@ impl Lab {
                             }
                             text.push_str(&format!("  identity:   {}\n", c.statement_hash));
                             text.push_str(&format!("  domain:     {}\n", c.domain.notes));
+                            if !c.depends_on.is_empty() {
+                                text.push_str("  lemmas:\n");
+                                for dep in &c.depends_on {
+                                    let status = if self.receipts.by_claim(&dep.0).is_some() {
+                                        "have receipt"
+                                    } else {
+                                        "needs receipt"
+                                    };
+                                    text.push_str(&format!("    - {}  {}\n", dep.0, status));
+                                }
+                            }
                             text.push_str("  assumptions:\n");
                             for a in &c.assumptions.items {
                                 text.push_str(&format!(
@@ -914,8 +925,9 @@ impl Lab {
         }
     }
 
-    /// Rebuild the knowledge-gap graph from live verdicts. The snapshot is
-    /// content-addressed; it is not deserialized as scientific authority.
+    /// Rebuild the knowledge-gap graph from live verdicts and declared
+    /// lemma edges. The snapshot is content-addressed; it is not
+    /// deserialized as scientific authority.
     fn gaps(&mut self) -> Response {
         let mut buckets: BTreeMap<&'static str, Vec<String>> = BTreeMap::new();
         let mut n = 0usize;
@@ -931,11 +943,16 @@ impl Lab {
                     c.layer,
                 ) {
                     n += 1;
-                    buckets.entry(g.as_str()).or_default().push(format!(
-                        "  {id:<20} {:<36} needs {}\n",
-                        c.id.0,
-                        need_for(g)
-                    ));
+                    let mut row = format!("  {id:<20} {:<36} needs {}\n", c.id.0, need_for(g));
+                    for dep in &c.depends_on {
+                        let status = if self.receipts.by_claim(&dep.0).is_some() {
+                            "have receipt"
+                        } else {
+                            "needs receipt"
+                        };
+                        row.push_str(&format!("    lemma {:<36} {status}\n", dep.0));
+                    }
+                    buckets.entry(g.as_str()).or_default().push(row);
                 }
             }
         }
@@ -2666,6 +2683,25 @@ mod tests {
                 && l.contains("needs receipt")),
             "{before}"
         );
+        assert!(before.contains("dec.closed-equals-exact"), "{before}");
+        assert!(
+            before
+                .lines()
+                .any(|l| l.contains("lemma dec.d-squared-zero") && l.contains("needs receipt")),
+            "Poincaré must record an unmet d² lemma: {before}"
+        );
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.closed-equals-exact".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("lemmas:"), "{why}");
+        assert!(
+            why.contains("dec.d-squared-zero") && why.contains("needs receipt"),
+            "{why}"
+        );
 
         let proved = lab
             .exec(Command::Prove {
@@ -2680,14 +2716,37 @@ mod tests {
 
         let after = lab.exec(Command::Gaps).text().to_string();
         assert!(
-            !after
-                .lines()
-                .any(|l| l.contains("dec.d-squared-zero") && l.contains("needs receipt")),
+            !after.lines().any(|l| l.contains("dec.d-squared-zero")
+                && l.contains("needs receipt")
+                && !l.contains("lemma")),
             "proved catalog identity must leave the gap graph: {after}"
+        );
+        assert!(
+            after
+                .lines()
+                .any(|l| l.contains("lemma dec.d-squared-zero") && l.contains("have receipt")),
+            "Poincaré still depends on d² after the receipt exists: {after}"
+        );
+        assert!(
+            after
+                .lines()
+                .any(|l| l.contains("dec.closed-equals-exact") && l.contains("needs receipt")),
+            "Poincaré itself is not a catalog identity: {after}"
         );
         let h1 = before.lines().next().unwrap();
         let h2 = after.lines().next().unwrap();
         assert_ne!(h1, h2, "gap graph hash must move after prove");
+
+        let why_after = lab
+            .exec(Command::Why {
+                claim: "dec.closed-equals-exact".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            why_after.contains("dec.d-squared-zero") && why_after.contains("have receipt"),
+            "{why_after}"
+        );
 
         lab.set_role(Role::Explorer);
         assert_eq!(lab.exec(Command::Gaps).exit_code(), 0);

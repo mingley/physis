@@ -70,6 +70,7 @@ those tools; a local checkout without them still mints
 | 10 | `physis loop` | Observe → hypothesize → prove → falsify → replicate → design → audit → review |
 | origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap |
 | gaps | `physis gaps`, `NodeKind::KnowledgeGap` | Live gap graph, content-addressed; rebuilt, not deserialized. `MissingTheorem` only for evaluator-Holds claims without a receipt; Fails is decided, not a missing lemma |
+| lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
 | roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove. Budget is a cap, not a proof |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
@@ -84,9 +85,6 @@ dual expanders. `physis prove` uses the same preference.
 - `SemanticAssurance::Canonical` (reserved; not agent-mintable)
 - P4 independent reproduction (in-process `reproduce` remints and
   **refuses** to assign P4; a distinct implementation is still required)
-- A first-class knowledge-gap *dependency* store of lemmas (the live
-  graph exists as `physis gaps`, rebuilt from verdicts and receipts;
-  it is not a deserialized authority)
 - Mathlib-scale Physlib; only the two catalog identities are kernel-checked
 - Trust tiers do not yet *gate* which operations run; they label evidence.
   Named *roles* now gate ops (`--role explorer` cannot `prove`).

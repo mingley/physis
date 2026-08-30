@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Live lemma edges in the gap graph**
+  (`Claim::depends_on`, `physis gaps`, `physis why`). Poincaré
+  (`dec.closed-equals-exact`) records a live edge to `dec.d-squared-zero`.
+  The edge is rebuilt from the theory encoding, never deserialized as
+  authority, and is not part of the statement hash. Proving d² flips the
+  edge to `have receipt`; Poincaré itself still `needs receipt`. Verified:
+  statement-hash invariance unit test, gap-graph lab test, `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Failing evaluations are not missing theorems**
   (`gap_for`). `MissingTheorem` is only for evaluator-`Holds`
   mathematical / model-internal / phenomenological claims without a
