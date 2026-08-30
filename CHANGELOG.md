@@ -32,6 +32,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Dulong–Petit quartic virial is an IR mutation**
+  (`dulong-petit`, `add-quartic`). Harmonic `U = 3 N k T` is the live
+  encoding; appending `U = 9/4 N k T` flips `thermo.dulong-petit` holds
+  to fails. The third law still fails (`C_V` stays `9/4 N k`), so that
+  cell is not a unit flag and not Einstein freeze-out. High-T
+  correspondence also fails: quartic virial is not `3 N k` at any T.
+  That is not a knob. `quantum` and `spectrum` stay knobs. Mutants stay
+  `dulong-petit`. `einstein-solid` has no package. Mutants are not
+  installed, not journaled, and not Canonical or P4. Catalog d² hash
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: IR round-trip; set anharmonic is unknown; hypothesize
+  dulong-petit; live harmonic restored; encode pin
+  `82138399bbfc4f442d125df64e3bc31833ae23f11070f5c8dbd0460b4531eaea`.
+
 - **Observer-geometry missing Spin(10) is an IR mutation**
   (`observer-geometry`, `add-missing-spin10`). `Spin(10) on 10-fibre` is
   the live encoding; appending `missing Spin(10)` flips

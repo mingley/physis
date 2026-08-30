@@ -31,8 +31,13 @@
 //! The 3D `ω²` continuum lives on the IR package of `debye-solid`. A 2D
 //! `ω` continuum (`add-2d`) is a package mutation, not a `spectrum` knob:
 //! `C_V ∝ T²` so `thermo.debye-t3` fails, while `C_V → 0` as T → 0 still
-//! holds. That is not Einstein freeze-out. `einstein-solid` and
-//! `dulong-petit` have no package.
+//! holds. That is not Einstein freeze-out.
+//!
+//! Harmonic `U = 3 N k T` lives on the IR package of `dulong-petit`. A
+//! pure quartic virial (`add-quartic`, `U = 9/4 N k T`) is a package
+//! mutation, not a `quantum` knob: `C_V = 9/4 N k` so Dulong–Petit fails
+//! at every T, including the high-T correspondence. That is not Einstein
+//! freeze-out. `einstein-solid` has no package.
 
 use std::f64::consts::PI;
 
@@ -99,10 +104,25 @@ fn debye_t3_domain() -> DomainOfValidity {
     )
 }
 
+fn dulong_harmonic_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["harmonic U = 3 N k T".into()],
+        vec!["C_V = 3 N k at the current temperature".into()],
+        "Dulong-Petit on this object is the harmonic encoding. A quartic virial \
+         U = 9/4 N k T is a new encoding, not a silent quantum knob.",
+    )
+}
+
 /// Live 3D Debye law on the `debye-solid` package.
 const DOS_EQ: &str = "g(w) = w^2";
 /// 2D encoding: linear DOS, covering of T³ fails.
 const FLAT_EQ: &str = "g(w) = w";
+/// Live harmonic law on the `dulong-petit` package.
+const HARMONIC_EQ: &str = "U = 3 N k T";
+/// Pure quartic virial: 2⟨K⟩ = 4⟨V⟩ ⇒ U = 9/4 N k T, covering of 3 N k fails.
+const QUARTIC_EQ: &str = "U = 9/4 N k T";
+/// C_V / (3 N k) for a pure x⁴ classical lattice.
+const QUARTIC_CV_OVER_3NK: f64 = 0.75;
 
 const SPECTRUM_OPTIONS: &[&str] = &["einstein", "debye"];
 
@@ -110,14 +130,14 @@ const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "quantum",
         layer: LayerId::Quantum,
-        doc: "If true, oscillators are Bose-occupied (Einstein or Debye). If false, every oscillator has energy kT (Dulong–Petit). Turning this off is the 1819 standing theory.",
+        doc: "If true, oscillators are Bose-occupied (Einstein or Debye). If false, every oscillator has energy kT (Dulong–Petit). Turning this off is the 1819 standing theory. A quartic virial is not this knob: add-quartic is an IR mutation on dulong-petit.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "spectrum",
         layer: LayerId::Quantum,
-        doc: "Phonon spectrum when quantum is true: einstein (single ω, exponential freeze-out) or debye (ω² density of states, T³). Ignored classically. A 2D ω continuum is not this knob: add-2d is an IR mutation on debye-solid.",
+        doc: "Phonon spectrum when quantum is true: einstein (single ω, exponential freeze-out) or debye (ω² density of states, T³). Ignored classically. A 2D ω continuum is not this knob: add-2d is an IR mutation on debye-solid. A quartic virial is not this knob: add-quartic is an IR mutation on dulong-petit.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Choice(SPECTRUM_OPTIONS),
     },
@@ -181,6 +201,8 @@ impl PhononSpectrum {
 ///
 /// The 3D `ω²` continuum lives on the IR package of `debye-solid`.
 /// A 2D `ω` continuum (`add-2d`) is a package mutation, not a knob.
+/// Harmonic `U = 3 N k T` lives on the IR package of `dulong-petit`.
+/// A quartic virial (`add-quartic`) is a package mutation, not a knob.
 /// `spectrum` and `quantum` stay knobs.
 #[derive(Clone, Debug, PartialEq)]
 pub struct EinsteinSolid {
@@ -192,6 +214,8 @@ pub struct EinsteinSolid {
     oscillators: f64,
     /// Whether the encoding is a 2D `ω` continuum (`g(w) = w`).
     two_d: bool,
+    /// Whether the classical encoding is a pure quartic virial (`U = 9/4 N k T`).
+    anharmonic: bool,
 }
 
 impl Default for EinsteinSolid {
@@ -211,6 +235,7 @@ impl EinsteinSolid {
             einstein_temp_k: DEFAULT_THETA_K,
             oscillators: DEFAULT_N,
             two_d: false,
+            anharmonic: false,
         }
     }
 
@@ -224,6 +249,7 @@ impl EinsteinSolid {
             einstein_temp_k: DEFAULT_THETA_K,
             oscillators: DEFAULT_N,
             two_d: false,
+            anharmonic: false,
         }
     }
 
@@ -237,6 +263,7 @@ impl EinsteinSolid {
             einstein_temp_k: DEFAULT_THETA_K,
             oscillators: DEFAULT_N,
             two_d: false,
+            anharmonic: false,
         }
     }
 
@@ -256,12 +283,21 @@ impl EinsteinSolid {
         self.is_debye() && self.two_d
     }
 
+    fn is_classical_quartic(&self) -> bool {
+        !self.quantum && self.anharmonic
+    }
+
     /// Internal energy of 3N oscillators, typed.
     fn internal_energy_at(&self, t_k: f64) -> Qty<Energy> {
         let n3 = 3.0 * self.oscillators;
         let kt: Qty<Energy> = k_boltzmann() * kelvin(t_k);
         if !self.quantum {
-            return kt * n3;
+            let scale = if self.anharmonic {
+                QUARTIC_CV_OVER_3NK
+            } else {
+                1.0
+            };
+            return kt * n3 * scale;
         }
         match self.spectrum {
             PhononSpectrum::Einstein => {
@@ -300,7 +336,11 @@ impl EinsteinSolid {
 
     fn cv_over_3nk_at(&self, t_k: f64) -> f64 {
         if !self.quantum {
-            return 1.0;
+            return if self.anharmonic {
+                QUARTIC_CV_OVER_3NK
+            } else {
+                1.0
+            };
         }
         match self.spectrum {
             PhononSpectrum::Einstein => {
@@ -340,9 +380,18 @@ impl EinsteinSolid {
         }
     }
 
-    /// IR package for this continuum. Equations are `g(w) = w^2` and, when
-    /// forked, `g(w) = w`. `spectrum` and `quantum` stay on the struct.
+    /// IR package for this object. Debye equations are `g(w) = w^2` and, when
+    /// forked, `g(w) = w`. Dulong equations are `U = 3 N k T` and, when forked,
+    /// `U = 9/4 N k T`. `spectrum` and `quantum` stay on the struct.
     pub fn package(&self) -> TheoryPackage {
+        if self.id == "dulong-petit" {
+            self.dulong_package()
+        } else {
+            self.debye_package()
+        }
+    }
+
+    fn debye_package(&self) -> TheoryPackage {
         let mut equations = vec![DOS_EQ.to_string()];
         if self.two_d {
             equations.push(FLAT_EQ.to_string());
@@ -364,24 +413,58 @@ impl EinsteinSolid {
         }
     }
 
-    /// Load a 3D Debye encoding from a package. Knobs default; overlay them
-    /// from a live debye-solid object when forking.
-    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
-        if pkg.id != "debye-solid" {
-            return Err(format!(
-                "debye-solid package id '{}' is not debye-solid",
-                pkg.id
-            ));
+    fn dulong_package(&self) -> TheoryPackage {
+        let mut equations = vec![HARMONIC_EQ.to_string()];
+        if self.anharmonic {
+            equations.push(QUARTIC_EQ.to_string());
         }
-        let two_d = parse_debye_dos(pkg)?;
-        Ok(Self {
-            two_d,
-            ..Self::debye()
-        })
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["harmonic-equipartition".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: DULONG_PETIT.into(),
+                statement: "The heat capacity is 3 N k, independent of temperature (Dulong–Petit)."
+                    .into(),
+                layer: "statistical".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a Debye or Dulong encoding from a package. Knobs default; overlay
+    /// them from a live object when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        match pkg.id.as_str() {
+            "debye-solid" => {
+                let two_d = parse_debye_dos(pkg)?;
+                Ok(Self {
+                    two_d,
+                    ..Self::debye()
+                })
+            }
+            "dulong-petit" => {
+                let anharmonic = parse_dulong_energy(pkg)?;
+                Ok(Self {
+                    anharmonic,
+                    ..Self::dulong_petit()
+                })
+            }
+            other => Err(format!(
+                "solid package id '{other}' is not debye-solid or dulong-petit"
+            )),
+        }
     }
 
     fn flat_equation() -> String {
         FLAT_EQ.to_string()
+    }
+
+    fn quartic_equation() -> String {
+        QUARTIC_EQ.to_string()
     }
 }
 
@@ -486,6 +569,22 @@ fn parse_debye_dos(pkg: &TheoryPackage) -> Result<bool, String> {
     Ok(flat)
 }
 
+fn parse_dulong_energy(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut harmonic = false;
+    let mut quartic = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            HARMONIC_EQ => harmonic = true,
+            QUARTIC_EQ => quartic = true,
+            _ => {}
+        }
+    }
+    if !harmonic {
+        return Err(format!("{} package has no harmonic U = 3 N k T", pkg.id));
+    }
+    Ok(quartic)
+}
+
 impl Knobbed for EinsteinSolid {
     fn specs(&self) -> &'static [KnobSpec] {
         SPECS
@@ -560,13 +659,17 @@ impl Theory for EinsteinSolid {
         )
     }
     fn claims(&self) -> Vec<Claim> {
+        let mut dulong = Claim::new(
+            DULONG_PETIT,
+            "The heat capacity is 3 N k, independent of temperature (Dulong–Petit).",
+            LayerId::Statistical,
+            ClaimClass::ModelInternal,
+        );
+        if self.id == "dulong-petit" {
+            dulong = dulong.with_domain(dulong_harmonic_domain());
+        }
         vec![
-            Claim::new(
-                DULONG_PETIT,
-                "The heat capacity is 3 N k, independent of temperature (Dulong–Petit).",
-                LayerId::Statistical,
-                ClaimClass::ModelInternal,
-            ),
+            dulong,
             Claim::new(
                 HIGH_T_CLASSICAL,
                 "At T ≫ Θ the heat capacity recovers the classical 3 N k.",
@@ -605,7 +708,9 @@ impl Theory for EinsteinSolid {
                         self.temperature_k / self.einstein_temp_k
                     )])
                 } else {
-                    let why = if self.is_debye() {
+                    let why = if self.is_classical_quartic() {
+                        "C_V is not 3 N k: quartic virial is 9/4 N k"
+                    } else if self.is_debye() {
                         "C_V is not 3 N k: Debye phonon modes are frozen out"
                     } else {
                         "C_V is not 3 N k: Einstein oscillators are frozen out"
@@ -625,6 +730,11 @@ impl Theory for EinsteinSolid {
                         .with_evidence([format!("T/Θ = {ratio_t:.2}, C_V/(3Nk) = {cv:.4}")])
                 } else if !self.quantum && (cv - 1.0).abs() < 0.05 {
                     Verdict::holds(claim, "classical C_V = 3 N k at every T, including T ≫ Θ")
+                        .with_evidence([format!(
+                            "C_V/(3Nk) = {cv:.4} (independent of T/Θ = {ratio_t:.3})"
+                        )])
+                } else if self.is_classical_quartic() {
+                    Verdict::fails(claim, "quartic virial is 9/4 N k, not 3 N k at T ≫ Θ")
                         .with_evidence([format!(
                             "C_V/(3Nk) = {cv:.4} (independent of T/Θ = {ratio_t:.3})"
                         )])
@@ -653,11 +763,12 @@ impl Theory for EinsteinSolid {
                         "C_V/(3Nk) = {cv:.3e} at T = Θ/40 = {t_probe:.3} K"
                     )])
                 } else {
-                    Verdict::fails(
-                        claim,
-                        "classical C_V = 3 N k down to T → 0; the third law fails",
-                    )
-                    .with_evidence([format!(
+                    let why = if self.is_classical_quartic() {
+                        "classical C_V = 9/4 N k down to T → 0; the third law fails"
+                    } else {
+                        "classical C_V = 3 N k down to T → 0; the third law fails"
+                    };
+                    Verdict::fails(claim, why).with_evidence([format!(
                         "C_V/(3Nk) = {cv:.4} at T = Θ/40 = {t_probe:.3} K (does not vanish)"
                     )])
                 }
@@ -667,34 +778,58 @@ impl Theory for EinsteinSolid {
         }
     }
     fn ir_package(&self) -> Option<TheoryPackage> {
-        if self.id != "debye-solid" {
+        if self.id != "debye-solid" && self.id != "dulong-petit" {
             return None;
         }
         Some(self.package())
     }
     fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        if pkg.id != self.id {
+            return Err(format!(
+                "{} cannot reparse package id '{}'",
+                self.id, pkg.id
+            ));
+        }
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.two_d = parsed.two_d;
+        fork.anharmonic = parsed.anharmonic;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.id != "debye-solid" || self.two_d {
+        if self.id == "debye-solid" && !self.two_d {
+            let src = render_package(&self.package());
+            let Ok(pkg) = parse_package(&src) else {
+                return Vec::new();
+            };
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::flat_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.two_d {
+                    let mut fork = self.clone();
+                    fork.two_d = true;
+                    return vec![("add-2d".into(), Box::new(fork))];
+                }
+            }
             return Vec::new();
         }
-        let src = render_package(&self.package());
-        let Ok(pkg) = parse_package(&src) else {
-            return Vec::new();
-        };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::flat_equation()),
-        );
-        if let Ok(parsed) = Self::from_package(&mutated) {
-            if parsed.two_d {
-                let mut fork = self.clone();
-                fork.two_d = true;
-                return vec![("add-2d".into(), Box::new(fork))];
+        if self.id == "dulong-petit" && !self.anharmonic {
+            let src = render_package(&self.package());
+            let Ok(pkg) = parse_package(&src) else {
+                return Vec::new();
+            };
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::quartic_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.anharmonic {
+                    let mut fork = self.clone();
+                    fork.anharmonic = true;
+                    return vec![("add-quartic".into(), Box::new(fork))];
+                }
             }
         }
         Vec::new()
@@ -765,6 +900,7 @@ pub fn solid() -> ExperimentReport {
             "`thermo.high-t-classical` is the correspondence: raising T far above Θ on einstein-solid or debye-solid flips dulong-petit fails → holds.".into(),
             "`set einstein-solid spectrum debye` flips thermo.debye-t3 fails → holds. `set einstein-solid quantum false` restores Dulong–Petit.".into(),
             "`add-2d` is an IR mutation on debye-solid: a 2D ω continuum fails T³ while freeze-out still holds. That is not the spectrum knob.".into(),
+            "`add-quartic` is an IR mutation on dulong-petit: a quartic virial fails 3 N k at every T. That is not the quantum knob.".into(),
         ],
         &solid_rows(),
         vec![
@@ -854,6 +990,29 @@ mod tests {
         assert_eq!(verdict(&dp, HIGH_T_CLASSICAL), VerdictKind::Holds);
         assert_eq!(verdict(&dp, THIRD_LAW), VerdictKind::Fails);
         assert_eq!(verdict(&dp, DEBYE_T3), VerdictKind::Fails);
+        let cell = dp
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == DULONG_PETIT)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "dulong-petit must name harmonic U = 3 N k T: {:?}",
+            cell.domain()
+        );
+        assert!(
+            cell.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("U = 3 N k T")),
+            "harmonic regime: {:?}",
+            cell.domain()
+        );
+        assert!(
+            !cell.domain().notes.contains("theory "),
+            "domain notes must not contain 'theory ': {}",
+            cell.domain().notes
+        );
     }
 
     #[test]
@@ -910,7 +1069,7 @@ mod tests {
             .unwrap();
         assert!(
             dp.domain().is_encoding_wide(),
-            "Dulong–Petit at the current T stays encoding-wide"
+            "Dulong–Petit on debye-solid at the current T stays encoding-wide"
         );
         // Einstein over-freezes relative to Debye at the same Θ and T.
         let e = EinsteinSolid::einstein();
@@ -1164,6 +1323,168 @@ mod tests {
             "debye-solid keeps the spectrum knob"
         );
         assert!(EinsteinSolid::einstein().ir_package().is_none());
-        assert!(EinsteinSolid::dulong_petit().ir_package().is_none());
+        assert!(EinsteinSolid::dulong_petit().ir_package().is_some());
+    }
+
+    #[test]
+    fn quartic_is_ir_not_a_knob() {
+        assert!(
+            EinsteinSolid::dulong_petit()
+                .set("anharmonic", KnobValue::Bool(true))
+                .is_err(),
+            "anharmonic is an IR mutation, not a knob"
+        );
+        assert!(
+            EinsteinSolid::dulong_petit()
+                .set("quartic", KnobValue::Bool(true))
+                .is_err(),
+            "quartic is not a knob"
+        );
+        assert!(
+            EinsteinSolid::dulong_petit()
+                .set("add-quartic", KnobValue::Bool(true))
+                .is_err(),
+            "add-quartic is not a knob"
+        );
+        let d = EinsteinSolid::dulong_petit();
+        assert!(!d.anharmonic);
+        let src = render_package(&d.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay harmonic");
+        assert_eq!(pkg.equations[0], HARMONIC_EQ);
+        assert_eq!(
+            EinsteinSolid::from_package(&pkg).unwrap(),
+            d,
+            "IR round-trip must preserve harmonic U = 3 N k T"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(EinsteinSolid::quartic_equation()),
+        );
+        let parsed = EinsteinSolid::from_package(&mutated).unwrap();
+        assert!(parsed.anharmonic);
+        let mut fork = d.clone();
+        fork.anharmonic = true;
+        assert_eq!(fork.id(), "dulong-petit");
+        assert_eq!(verdict(&fork, DULONG_PETIT), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, HIGH_T_CLASSICAL), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, THIRD_LAW), VerdictKind::Fails);
+        assert_eq!(verdict(&d, DULONG_PETIT), VerdictKind::Holds);
+        assert_eq!(verdict(&d, HIGH_T_CLASSICAL), VerdictKind::Holds);
+        assert!((fork.cv_over_3nk_at(fork.temperature_k) - QUARTIC_CV_OVER_3NK).abs() < 1e-12);
+        let analytic = fork.heat_capacity_at(fork.temperature_k).value();
+        let du = finite_diff_cv(&fork);
+        assert!(
+            (analytic - du).abs() / analytic < 1e-6,
+            "quartic C_V {analytic} vs dU/dT {du}"
+        );
+        let mut hot = fork.clone();
+        hot.set("temperature", KnobValue::Float(4000.0)).unwrap();
+        assert_eq!(verdict(&hot, DULONG_PETIT), VerdictKind::Fails);
+        assert_eq!(verdict(&hot, HIGH_T_CLASSICAL), VerdictKind::Fails);
+        let cell = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == DULONG_PETIT)
+            .unwrap();
+        let v = fork.evaluate(&cell);
+        assert!(
+            !v.summary.contains("spectrum")
+                && !v.summary.contains("Einstein")
+                && !v.summary.contains("quantum")
+                && !v.summary.contains("Debye"),
+            "quartic is not a knob: {}",
+            v.summary
+        );
+        assert!(
+            v.summary.contains("9/4") || v.summary.contains("quartic"),
+            "got {}",
+            v.summary
+        );
+
+        let mut bose_overlay = fork.clone();
+        bose_overlay.set("quantum", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&bose_overlay, DULONG_PETIT), VerdictKind::Fails);
+        assert_eq!(verdict(&bose_overlay, THIRD_LAW), VerdictKind::Holds);
+
+        let probes = EinsteinSolid::dulong_petit().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-quartic"),
+            "live dulong-petit must offer add-quartic: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-quartic")
+            .expect("add-quartic");
+        assert_eq!(verdict(probe.1.as_ref(), DULONG_PETIT), VerdictKind::Fails);
+        assert_eq!(
+            verdict(probe.1.as_ref(), HIGH_T_CLASSICAL),
+            VerdictKind::Fails
+        );
+        assert_eq!(verdict(probe.1.as_ref(), THIRD_LAW), VerdictKind::Fails);
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes.iter().all(|(label, _)| label != "add-quartic"),
+            "quartic fork must not re-offer add-quartic"
+        );
+        let live = EinsteinSolid::dulong_petit();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut quantum = EinsteinSolid::dulong_petit();
+        quantum.set("quantum", KnobValue::Bool(true)).unwrap();
+        let rebuilt = quantum.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("quantum").unwrap(),
+            KnobValue::Bool(true),
+            "reparse must overlay quartic IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), DULONG_PETIT),
+            VerdictKind::Fails,
+            "quantum live harmonic still Fails Dulong–Petit at T ≲ Θ"
+        );
+        assert_eq!(verdict(rebuilt.as_ref(), THIRD_LAW), VerdictKind::Holds);
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            verdict(live_rebuilt.as_ref(), DULONG_PETIT),
+            VerdictKind::Holds
+        );
+        assert!(
+            EinsteinSolid::einstein()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-quartic"),
+            "einstein-solid must not grow add-quartic"
+        );
+        assert!(
+            EinsteinSolid::debye()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-quartic"),
+            "debye-solid must not grow add-quartic"
+        );
+        assert!(
+            crate::olbers::OlbersSky::static_euclidean()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-quartic"),
+            "olbers-static must not grow add-quartic"
+        );
+        assert!(
+            crate::gut::Su5Gut::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-quartic"),
+            "su5-gut must not grow add-quartic"
+        );
+        assert!(
+            EinsteinSolid::dulong_petit()
+                .set("quantum", KnobValue::Bool(true))
+                .is_ok(),
+            "dulong-petit keeps the quantum knob"
+        );
+        assert!(EinsteinSolid::einstein().ir_package().is_none());
+        assert!(EinsteinSolid::debye().ir_package().is_some());
     }
 }

@@ -39,14 +39,15 @@ The lab id is fixed at construction. `set einstein-solid spectrum debye`
 changes the physics, not the id.
 
 The 3D `ω²` continuum lives on the IR package of `debye-solid`. A 2D
-`ω` continuum (`add-2d`) is not a `spectrum` knob. `einstein-solid` and
-`dulong-petit` have no package.
+`ω` continuum (`add-2d`) is not a `spectrum` knob. Harmonic `U = 3 N k T`
+lives on the IR package of `dulong-petit`. A quartic virial
+(`add-quartic`) is not a `quantum` knob. `einstein-solid` has no package.
 
 ## Knobs
 
 | knob | layer | effect |
 |---|---|---|
-| `quantum` | quantum | true: Bose occupation; false: every oscillator has energy `kT` |
+| `quantum` | quantum | true: Bose occupation; false: every oscillator has energy `kT`. A quartic virial is not this knob: `add-quartic` is an IR mutation on `dulong-petit`. |
 | `spectrum` | quantum | `einstein` (single `ω`) or `debye` (`ω²` DOS). Ignored classically. A 2D `ω` continuum is not this knob: `add-2d` is an IR mutation on `debye-solid`. |
 | `temperature` | statistical | lattice temperature (K) |
 | `einstein_temp` | statistical | characteristic `Θ` (K): Einstein `Θ_E = ħω/k` or Debye `Θ_D = ħω_D/k`. Classical physics ignores it |
@@ -60,7 +61,7 @@ relative to Debye.
 
 | id | meaning | Dulong–Petit | Einstein (default T) | Debye (default T) |
 |---|---|---|---|---|
-| `thermo.dulong-petit` | `C_V = 3 N k` at the current T (encoding-wide) | **holds** | **fails** (`C_V/(3Nk) ≈ 0.17`) | **fails** (frozen acoustic modes) |
+| `thermo.dulong-petit` | `C_V = 3 N k` at the current T. On `dulong-petit`: harmonic `U = 3 N k T`. On `einstein-solid` / `debye-solid`: encoding-wide | **holds** | **fails** (`C_V/(3Nk) ≈ 0.17`) | **fails** (frozen acoustic modes) |
 | `thermo.high-t-classical` | `T ≫ Θ` recovers `3 N k`. Domain: `T/Θ ≥ 8` | **holds** (always) | **fails** (not yet high-T) | **fails** (not yet high-T) |
 | `thermo.third-law` | `C_V → 0` as T → 0 (encoding-wide probe at `Θ/40`) | **fails** (`C_V` stays `3 N k` at `Θ/40`) | **holds** (exponential freeze-out) | **holds** (`T³ → 0`) |
 | `thermo.debye-t3` | low-T `C_V ∝ T³`. Domain: `T = Θ/20` 3D `ω²` phonon probe | **fails** (doubling = 1) | **fails** (exponential, doubling ≫ 8) | **holds** (doubling ≈ 8 at `Θ/20`) |
@@ -78,6 +79,12 @@ without restoring Dulong–Petit.
 continuum (`equation g(w) = w`); that is not a knob (`set debye-solid two_d
 true` is unknown). `C_V(2T)/C_V(T) ≈ 4` at `Θ/20`, so T³ fails, while
 freeze-out still holds. Mutants stay `debye-solid` and are not installed.
+
+`physis hypothesize dulong-petit` forks the package with a quartic virial
+(`equation U = 9/4 N k T`); that is not a knob (`set dulong-petit
+anharmonic true` is unknown). `C_V/(3Nk) = 0.75` at every T, so
+Dulong–Petit fails, and high-T correspondence fails with it. The third
+law still fails. Mutants stay `dulong-petit` and are not installed.
 
 ## What is computed
 
@@ -101,7 +108,9 @@ physis experiment thermo          # third-law row: gas and Dulong–Petit fail; 
 physis set einstein-solid temperature 4000   # Dulong–Petit recovered as correspondence
 physis set einstein-solid spectrum debye     # T³ fails → holds
 physis hypothesize debye-solid               # add-2d is IR, not set
+physis hypothesize dulong-petit              # add-quartic is IR, not set
 physis encode debye-solid                    # 3D ω²; not P3S, not a kernel proof
+physis encode dulong-petit                   # harmonic U = 3 N k T; not P3S
 physis set einstein-solid quantum false      # 1819 theory restored
 ```
 
@@ -117,7 +126,8 @@ physis set einstein-solid quantum false      # 1819 theory restored
   branches, real density-of-states structure, and anharmonicity are not
   encoded. The sampled doubling is the theorem of *this* encoding. A 2D
   `ω` continuum is a different encoding (`add-2d`), not a silent Einstein
-  spectrum.
+  spectrum. A quartic virial is a different encoding (`add-quartic`), not
+  a silent quantum knob.
 - Sharing `thermo.third-law` with the ideal gas is deliberate: one row, four
   theories, two honest classical failures, two quantum holds that then split
   on `thermo.debye-t3`.

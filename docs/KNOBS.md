@@ -106,8 +106,8 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 - `cutoff_hz` — ultraviolet frequency cutoff (Hz). Classical `u ∝ ν_max³`.
 
 ### solid (`einstein-solid`, `dulong-petit`, `debye-solid`)
-- `quantum` — Bose occupation (true) vs Dulong–Petit (false)
-- `spectrum` — `einstein` (single ω, exponential freeze-out) or `debye` (ω² DOS, T³). `set einstein-solid spectrum debye` flips `thermo.debye-t3` fails → holds. A 2D ω continuum is not this knob: `add-2d` is an IR mutation on `debye-solid`.
+- `quantum` — Bose occupation (true) vs Dulong–Petit (false). A quartic virial is not this knob: `add-quartic` is an IR mutation on `dulong-petit`.
+- `spectrum` — `einstein` (single ω, exponential freeze-out) or `debye` (ω² DOS, T³). `set einstein-solid spectrum debye` flips `thermo.debye-t3` fails → holds. A 2D ω continuum is not this knob: `add-2d` is an IR mutation on `debye-solid`. A quartic virial is not this knob: `add-quartic` is an IR mutation on `dulong-petit`.
 - `temperature` — lattice temperature (K). Raising it far above `Θ` recovers Dulong–Petit as correspondence.
 - `einstein_temp` — characteristic `Θ` (K): Einstein `Θ_E` or Debye `Θ_D`
 - `oscillators` — number of atoms N

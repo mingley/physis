@@ -62,7 +62,8 @@ Nothing gains authority merely because an agent wrote code that returns
   `thermo.high-t-classical` names `T/Θ ≥ 8`; `thermo.debye-t3` names the
   `Θ/20` phonon probe; `thermo.rj-ir-limit` names `hν = 0.01 kT`;
   `gauge.exact-area-law-2d` names 2D Wilson plaquette factorization.
-  Dulong–Petit at the current T stays encoding-wide.
+  On `dulong-petit`, `thermo.dulong-petit` names harmonic `U = 3 N k T`;
+  on `einstein-solid` and `debye-solid` it stays encoding-wide.
   Lean compiler versions live on the receipt, not
   the sentence.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
@@ -164,7 +165,7 @@ those tools; a local checkout without them still mints
 | 4 | `physis-numeric`, `physis-data` | Exact `Ratio` / `Interval`; SU(5) `3/8` disjoint from PDG `sin²θ_W(M_Z)` |
 | 5 | `physis-store` | Content-addressed DAG; descendants only are invalidated |
 | 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops. Knob diffs are scientific-axis (`VerdictKind` plus derivation / empirical / projected judgment); legacy kind-only journals still replay |
-| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, ideal-gas Maxwell–Boltzmann statistics, landauer-engine `kT ln2` bound, dirac-fermion naive 1D operator, general-relativity Einstein–Hilbert action, special-relativity Lorentz boost, and planck Bose occupation, and de-rham discrete coboundary, and turing-machine unrelativized TM, and olbers-static inverse-square Euclidean shells, and su5-gut complete `5bar + 10`, and debye-solid 3D `ω²` continuum, and standard-model complete one-generation Weyl, and observer-geometry Spin(10) on 10-fibre are live packages; `physis encode` independently round-trips them; not a Lean replacement |
+| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, ideal-gas Maxwell–Boltzmann statistics, landauer-engine `kT ln2` bound, dirac-fermion naive 1D operator, general-relativity Einstein–Hilbert action, special-relativity Lorentz boost, and planck Bose occupation, and de-rham discrete coboundary, and turing-machine unrelativized TM, and olbers-static inverse-square Euclidean shells, and su5-gut complete `5bar + 10`, and debye-solid 3D `ω²` continuum, and standard-model complete one-generation Weyl, and observer-geometry Spin(10) on 10-fibre, and dulong-petit harmonic `U = 3 N k T` are live packages; `physis encode` independently round-trips them; not a Lean replacement |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review |
@@ -213,7 +214,8 @@ identity; a slug-only review line is not P3S.
   `Θ/20` phonon probe; `thermo.rj-ir-limit` names `hν = 0.01 kT`;
   `gauge.exact-area-law-2d` names 2D plaquette factorization;
   `gauge.local` names nearest-neighbour Wilson plaquettes.
-  Dulong–Petit at the current T stays encoding-wide.
+  On `dulong-petit`, `thermo.dulong-petit` names harmonic `U = 3 N k T`;
+  on `einstein-solid` and `debye-solid` it stays encoding-wide.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op. A proof-searcher cannot

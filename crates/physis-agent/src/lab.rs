@@ -3922,7 +3922,16 @@ mod tests {
         let dpb = why_theory_block(&dp, "debye-solid");
         assert!(
             dpb.contains("not yet a machine-checked regime"),
-            "Dulong–Petit at the current T stays encoding-wide: {dpb}"
+            "Dulong–Petit on debye-solid at the current T stays encoding-wide: {dpb}"
+        );
+        let dpb_dp = why_theory_block(&dp, "dulong-petit");
+        assert!(
+            dpb_dp.contains("U = 3 N k T") || dpb_dp.contains("harmonic"),
+            "dulong-petit must name harmonic U = 3 N k T: {dpb_dp}"
+        );
+        assert!(
+            !dpb_dp.contains("not yet a machine-checked regime"),
+            "dulong-petit Dulong–Petit must not be encoding-wide: {dpb_dp}"
         );
 
         let rj = lab
@@ -6841,6 +6850,111 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_dulong_quartic_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["anharmonic", "quartic", "add-quartic"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "dulong-petit".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("dulong-petit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-quartic") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-quartic: package → add-quartic";
+        let start = text.find(marker).expect("add-quartic hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  dulong-petit  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let quartic_block = &rest[..end];
+        assert!(
+            quartic_block.contains("thermo.dulong-petit")
+                && quartic_block.contains("holds → fails"),
+            "add-quartic must flip dulong-petit holds to fails: {quartic_block}"
+        );
+        assert!(
+            !quartic_block.contains("thermo.third-law"),
+            "quartic freeze-out must still fail the third law without flipping it: {quartic_block}"
+        );
+        assert!(
+            text.contains("quantum"),
+            "quantum must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("dulong-petit").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "thermo.dulong-petit" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("quantum").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let quantum = lab.exec(Command::Set {
+            theory: "dulong-petit".into(),
+            knob: "quantum".into(),
+            value: "true".into(),
+        });
+        assert_eq!(quantum.exit_code(), 0, "{}", quantum.text());
+        assert!(
+            quantum.text().contains("thermo.dulong-petit")
+                && quantum.text().contains("holds → fails"),
+            "quantum still flips Dulong–Petit: {}",
+            quantum.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "dulong-petit".into(),
+            knob: "quantum".into(),
+            value: "false".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "thermo.dulong-petit".into(),
+            })
+            .text()
+            .to_string();
+        let dp = why_theory_block(&why, "dulong-petit");
+        assert!(
+            dp.contains("U = 3 N k T") || dp.contains("harmonic"),
+            "dulong-petit must name harmonic U = 3 N k T: {dp}"
+        );
+        assert!(
+            !dp.contains("not yet a machine-checked regime"),
+            "dulong-petit must not be encoding-wide: {dp}"
+        );
+        assert!(
+            dp.contains("encoding:    none"),
+            "hypothesize must not encode: {dp}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -8424,16 +8538,16 @@ mod tests {
             "einstein-solid has no IR package: {text}"
         );
         assert!(
-            !text.contains("encode  dulong-petit"),
-            "dulong-petit has no IR package: {text}"
-        );
-        assert!(
             text.contains("encode  standard-model"),
             "loop must independently round-trip complete Weyl content: {text}"
         );
         assert!(
             text.contains("encode  observer-geometry"),
             "loop must independently round-trip Spin(10) on 10-fibre: {text}"
+        );
+        assert!(
+            text.contains("encode  dulong-petit"),
+            "loop must independently round-trip harmonic U = 3 N k T: {text}"
         );
         assert!(
             !text.contains("encode  olbers-horizon"),
@@ -9953,12 +10067,29 @@ mod tests {
         assert_ne!(og_id, sm_id);
         assert_ne!(og_id, nand_id);
 
+        let dulong = lab
+            .exec(Command::Encode {
+                theory: "dulong-petit".into(),
+            })
+            .text()
+            .to_string();
+        assert!(dulong.contains("equations  1"), "{dulong}");
+        assert!(dulong.contains("round-trip canonical"), "{dulong}");
+        assert!(dulong.contains("not P3S"), "{dulong}");
+        assert!(!dulong.contains("receipt"), "{dulong}");
+        let dulong_id = encoding_package_id(&dulong);
+        assert_eq!(
+            dulong_id.to_hex(),
+            "82138399bbfc4f442d125df64e3bc31833ae23f11070f5c8dbd0460b4531eaea"
+        );
+        assert_ne!(dulong_id, og_id);
+        assert_ne!(dulong_id, nand_id);
+
         for theory in [
             "type-iib",
             "rayleigh-jeans",
             "olbers-horizon",
             "einstein-solid",
-            "dulong-petit",
         ] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
@@ -10419,6 +10550,25 @@ mod tests {
             encoding_package_id(&og_again),
             og_id,
             "hypothesize must not install the missing-spin10 mutant"
+        );
+
+        let hypo_dulong = lab
+            .exec(Command::Hypothesize {
+                theory: Some("dulong-petit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_dulong.contains("add-quartic"), "{hypo_dulong}");
+        let dulong_again = lab
+            .exec(Command::Encode {
+                theory: "dulong-petit".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&dulong_again),
+            dulong_id,
+            "hypothesize must not install the quartic mutant"
         );
 
         let p3s = lab
