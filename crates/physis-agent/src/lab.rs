@@ -592,6 +592,18 @@ mod tests {
     }
 
     #[test]
+    fn turning_on_susy_flips_gqw_weinberg_angle() {
+        let mut lab = Lab::standard();
+        let diffs = lab.set_knob("su5-gut", "supersymmetric", "true").unwrap().2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "gut.weinberg-angle-mz"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected weinberg-angle-mz Fails→Holds, got {diffs:?}"
+        );
+    }
+
+    #[test]
     fn response_serializes_to_json_for_agents() {
         let mut lab = Lab::standard();
         let resp = lab.exec(Command::Experiment {

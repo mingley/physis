@@ -36,6 +36,7 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10` | `encoded-fact`, holds (verified chain) |
 | `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **computed theorem** |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **computed theorem** |
+| `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive |
 | `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
 | `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`) |
 
@@ -54,10 +55,10 @@ fermion truth:
   multiplet. Using `Q = T₃ + Y` and `Σ T₃ = 0` per weak multiplet, the sums give
   `ΣT₃² = 2` and `ΣQ² = 16/3`, so `sin²θ_W = 3/8` exactly.
 
-Honesty note: `3/8 = 0.375` is the *boundary condition at the GUT scale*. The
-measured `sin²θ_W(M_Z) ≈ 0.231` differs because of renormalization-group
-running between `M_Z` and `M_GUT` — a computation this milestone does not yet
-perform. The theorem is the unification-scale value, and the verdict says so.
+Honesty note: `3/8 = 0.375` is the *boundary condition at the GUT scale*.
+Georgi–Quinn–Weinberg running of that number down to `M_Z` is
+`gut.weinberg-angle-mz`: it uses `α_em` and `α_s` only (not the measured
+mixing angle), so it is not tautological with `3/8`.
 
 ## Gauge-coupling unification is *computed*, not asserted
 
@@ -86,6 +87,32 @@ computed. The low SM `M_GUT` is also what feeds `gut.proton-decay-viable`: the
 dimension-6 rate scales as `M_GUT⁻⁴`, so a low scale means a short, excluded
 lifetime.
 
+## Georgi–Quinn–Weinberg: `3/8` run down to `M_Z`
+
+`gut.weinberg-angle-mz` is the low-energy sibling of the `3/8` theorem. Given
+`α_em(M_Z)` and `α_s(M_Z)`, one-loop unification `α_1 = α_2 = α_3` at a single
+`M_U` **predicts** `sin²θ_W(M_Z)`:
+
+```text
+t = 2π (α_em⁻¹ − 8/3 α_s⁻¹) / [(5/3)(b₁−b₃) + (b₂−b₃)]
+α₂⁻¹(M_Z) = α_s⁻¹ + (b₂−b₃) t / 2π
+sin²θ_W(M_Z) = α₂⁻¹(M_Z) / α_em⁻¹
+```
+
+This does **not** use the measured mixing angle (that would recover `3/8` at
+the `α_1`/`α_2` crossing by construction). Complementary to
+`gut.coupling-unification`, which uses the measured `sin²θ_W` to fix `α_1`/`α_2`
+and predicts `α_3`.
+
+- **Minimal SU(5)**: predicted `sin²θ_W(M_Z) ≈ 0.207` vs measured `0.231` — a
+  ~10% miss. The claim **fails**.
+- **MSSM**: predicted `sin²θ_W(M_Z) ≈ 0.231` vs `0.231` — agreement to a few
+  parts per thousand, at `M_U ≈ 2×10¹⁶ GeV`. The claim **holds** as a
+  `heuristic`.
+
+`set su5-gut supersymmetric true` flips this cell `fails → holds` with the
+other two unification claims.
+
 ### Two-loop running
 
 The verdict also carries a **two-loop** result: `GaugeRunning` integrates the
@@ -101,15 +128,16 @@ SUSY threshold corrections, which this milestone does not model.
 ## The knob → verdict diff
 
 ```
-physis run su5-gut               # coupling-unification + proton-decay-viable: fails
+physis run su5-gut               # coupling-unification, proton-decay, weinberg-angle-mz: fail
 physis set su5-gut supersymmetric true
 ```
 
-flips both `gut.coupling-unification` and `gut.proton-decay-viable`
-`fails → holds` (as `heuristic`s), because switching the beta coefficients from
-SM to MSSM brings the computed `α_3(M_Z)` into agreement and raises `M_GUT`.
-Minimal SU(5) is falsified; SUSY SU(5) survives current bounds but requires
-superpartners that have not been seen.
+flips `gut.coupling-unification`, `gut.proton-decay-viable`, and
+`gut.weinberg-angle-mz` `fails → holds` (as `heuristic`s), because switching the
+beta coefficients from SM to MSSM brings the computed `α_3(M_Z)` and
+`sin²θ_W(M_Z)` into agreement and raises `M_GUT`. Minimal SU(5) is falsified;
+SUSY SU(5) survives current bounds but requires superpartners that have not been
+seen.
 
 ## Relation to the string-critique
 
@@ -121,6 +149,8 @@ becomes concrete.
 
 ## Non-goals (this milestone)
 
+- A two-loop GQW *prediction* of `sin²θ_W(M_Z)` (the one-loop closed form is
+  the historical theorem; two-loop shooting is later).
 - SUSY threshold corrections and Yukawa contributions to the two-loop running
   (the gauge-only two-loop RGEs are integrated; thresholds close the residual).
 - A dynamical proton-decay *rate* from the dimension-6 operator coefficients

@@ -29,6 +29,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   the infrared), and Wien's classical failure is a sampled absence of an
   interior peak.
 
+- **Georgi–Quinn–Weinberg: run 3/8 down to M_Z**
+  (`crates/physis-theory/src/rge.rs`, `crates/physis-theory/src/gut.rs`,
+  `specs/013-grand-unification.md`). The GUT-scale theorem `sin²θ_W = 3/8` is
+  a boundary condition. Predicting `sin²θ_W(M_Z)` from `α_em` and `α_s`
+  (no measured mixing angle) is a one-loop computation:
+  minimal SU(5) lands at ≈0.207 and **fails** `gut.weinberg-angle-mz`; the
+  MSSM lands on 0.231 at `M_U ≈ 2×10¹⁶ GeV` and holds as a heuristic.
+  `set su5-gut supersymmetric true` flips that cell with unification and
+  proton decay. The 3/8 hold evidence no longer quotes the M_Z measurement.
+
 - **2-sphere: χ = 2, b₂ = 1, Poincaré still holds**
   (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). The
   boundary of a tetrahedron is a first-class `sphere` shape: 4 vertices, 6

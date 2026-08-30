@@ -9,7 +9,10 @@
 //!   `Tr Q = 0` over the multiplet — electric charge is forced onto a discrete
 //!   lattice (`gut.charge-quantization`, a computed theorem), and
 //! - **the weak mixing angle**: `sin²θ_W = Tr(T₃²)/Tr(Q²) = 3/8` at the
-//!   unification scale (`gut.weinberg-angle`, a computed theorem).
+//!   unification scale (`gut.weinberg-angle`, a computed theorem). Georgi–Quinn–
+//!   Weinberg running of that boundary condition down to `M_Z` is a separate
+//!   claim (`gut.weinberg-angle-mz`): minimal SU(5) predicts ≈0.21 and **fails**;
+//!   the MSSM predicts ≈0.231 and holds as a heuristic.
 //!
 //! It is also where the lab is honest about *failure*: minimal (non-SUSY)
 //! SU(5) does not unify the gauge couplings and predicts proton decay at a rate
@@ -33,6 +36,8 @@ pub const GUT_SM_EMBEDDING: &str = "gut.sm-embedding";
 pub const GUT_CHARGE_QUANTIZATION: &str = "gut.charge-quantization";
 /// The GUT-scale weak mixing angle is `sin²θ_W = 3/8`.
 pub const GUT_WEINBERG_ANGLE: &str = "gut.weinberg-angle";
+/// The GQW-evolved `sin²θ_W(M_Z)` matches the measured electroweak value.
+pub const GUT_WEINBERG_ANGLE_MZ: &str = "gut.weinberg-angle-mz";
 /// The three SM gauge couplings meet at a single unification scale.
 pub const GUT_COUPLING_UNIFICATION: &str = "gut.coupling-unification";
 /// The predicted proton lifetime is consistent with experiment.
@@ -89,9 +94,9 @@ impl Theory for Su5Gut {
     }
     fn summary(&self) -> &'static str {
         "Georgi–Glashow SU(5): one gauge group containing SU(3)×SU(2)×U(1). It \
-         derives charge quantization and sin²θ_W = 3/8, but minimal (non-SUSY) \
-         SU(5) fails gauge-coupling unification and is excluded by proton-decay \
-         searches. A knob turns on supersymmetry."
+         derives charge quantization and sin²θ_W = 3/8 at unification. Running \
+         that 3/8 down to M_Z with Georgi–Quinn–Weinberg, minimal SU(5) misses \
+         the measured 0.231; a supersymmetric knob revives the match."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -129,6 +134,12 @@ impl Theory for Su5Gut {
                 "The unification-scale weak mixing angle is sin²θ_W = 3/8.",
                 LayerId::Interaction,
                 Epistemic::Theorem,
+            ),
+            Claim::new(
+                GUT_WEINBERG_ANGLE_MZ,
+                "Georgi–Quinn–Weinberg running of 3/8 down to M_Z matches the measured sin²θ_W.",
+                LayerId::Effective,
+                Epistemic::Heuristic,
             ),
             Claim::new(
                 GUT_COUPLING_UNIFICATION,
@@ -179,8 +190,8 @@ impl Theory for Su5Gut {
                         "sin²θ_W = 3/8 at the unification scale (computed from the multiplet)",
                     )
                     .with_evidence([
-                        format!("sin²θ_W = Tr(T₃²)/Tr(Q²) = {s2:.4} = 3/8"),
-                        "measured sin²θ_W(M_Z) ≈ 0.231; the gap is RG running, not a contradiction"
+                        format!("sin²θ_W = Tr(T₃²)/Tr(Q²) = {s2:.4} = 3/8 at M_GUT"),
+                        "the low-energy value is gut.weinberg-angle-mz (GQW running), not this cell"
                             .to_string(),
                     ])
                 } else {
@@ -188,6 +199,38 @@ impl Theory for Su5Gut {
                         Epistemic::Theorem,
                         format!("computed sin²θ_W = {s2:.4} ≠ 3/8"),
                     )
+                }
+            }
+            GUT_WEINBERG_ANGLE_MZ => {
+                // Georgi–Quinn–Weinberg: α_em and α_s predict sin²θ_W(M_Z)
+                // assuming one-loop unification. This does not use the
+                // measured mixing angle, so it is not tautological with 3/8.
+                let run = if self.supersymmetric {
+                    GaugeRunning::mssm()
+                } else {
+                    GaugeRunning::standard_model()
+                };
+                let pred = run.predicted_sin2_mz();
+                let meas = run.measured_sin2_mz();
+                let mismatch = run.sin2_mismatch();
+                let evidence = [format!(
+                    "GQW one-loop: predicted sin²θ_W(M_Z) = {pred:.4} vs measured {meas:.4} \
+                     (mismatch {:.1}%), M_U ≈ {:.2e} GeV",
+                    100.0 * mismatch,
+                    run.gqw_unification_scale_gev()
+                )];
+                if mismatch < 0.03 {
+                    Verdict::holds(
+                        Epistemic::Heuristic,
+                        "GQW running of unification lands on the measured sin²θ_W(M_Z)",
+                    )
+                    .with_evidence(evidence)
+                } else {
+                    Verdict::fails(
+                        Epistemic::Heuristic,
+                        "GQW running of unification misses the measured sin²θ_W(M_Z)",
+                    )
+                    .with_evidence(evidence)
                 }
             }
             GUT_COUPLING_UNIFICATION => {
@@ -286,6 +329,48 @@ mod tests {
         let v = verdict(&g, GUT_WEINBERG_ANGLE);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.epistemic, Epistemic::Theorem);
+        // The GUT-scale cell must not pretend 3/8 is the M_Z value.
+        assert!(
+            !v.evidence
+                .iter()
+                .any(|e| e.contains("0.231") && e.contains("3/8")),
+            "do not mix the M_Z measurement into the 3/8 hold evidence: {:?}",
+            v.evidence
+        );
+    }
+
+    #[test]
+    fn gqw_running_fails_minimal_su5_and_holds_for_susy() {
+        let mut g = Su5Gut::default();
+        let v = verdict(&g, GUT_WEINBERG_ANGLE_MZ);
+        assert_eq!(v.kind, VerdictKind::Fails);
+        assert_eq!(v.epistemic, Epistemic::Heuristic);
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("predicted sin²θ_W(M_Z)")),
+            "evidence: {:?}",
+            v.evidence
+        );
+        // The fail evidence quotes the low-energy prediction, not 3/8 as if it
+        // were the M_Z value.
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("0.20") || e.contains("0.21")),
+            "SM GQW should quote ~0.21, got {:?}",
+            v.evidence
+        );
+        g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
+        let u = verdict(&g, GUT_WEINBERG_ANGLE_MZ);
+        assert_eq!(u.kind, VerdictKind::Holds);
+        assert_eq!(u.epistemic, Epistemic::Heuristic);
+        // A hold must not claim 3/8 at M_Z.
+        assert!(
+            !u.evidence.iter().any(|e| e.contains("3/8")),
+            "MSSM hold must not quote 3/8 as the M_Z value: {:?}",
+            u.evidence
+        );
     }
 
     #[test]
@@ -308,6 +393,7 @@ mod tests {
             verdict(&g, GUT_PROTON_DECAY_VIABLE).kind,
             VerdictKind::Fails
         );
+        assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Fails);
 
         // The knob → verdict diff: SUSY flips both to holds (as heuristics).
         g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
@@ -318,6 +404,7 @@ mod tests {
             verdict(&g, GUT_PROTON_DECAY_VIABLE).kind,
             VerdictKind::Holds
         );
+        assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Holds);
     }
 
     #[test]

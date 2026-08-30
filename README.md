@@ -77,10 +77,13 @@ theorem, and `set landauer-engine reversible true` flips
 
 The `su5-gut` theory mechanizes "accommodate vs derive" with real stakes:
 embedding one SM generation in a complete SU(5) multiplet **derives** charge
-quantization (`Tr Q = 0`) and `sin²θ_W = 3/8` as computed theorems, while
-minimal (non-SUSY) SU(5) is honestly **falsified** — it `fails`
-`gut.coupling-unification` and `gut.proton-decay-viable` (excluded by
-Super-Kamiokande), which a `supersymmetric` knob revives as heuristics.
+quantization (`Tr Q = 0`) and `sin²θ_W = 3/8` as computed theorems. Running
+that `3/8` down to `M_Z` (Georgi–Quinn–Weinberg, `α_em` and `α_s` only)
+**fails** for minimal SU(5) (`≈0.207` vs measured `0.231`) and holds for the
+MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
+`gut.coupling-unification`, `gut.weinberg-angle-mz`, and
+`gut.proton-decay-viable` (excluded by Super-Kamiokande), which a
+`supersymmetric` knob revives as heuristics.
 
 `physis epistemics` tallies the whole lab's knowledge state by epistemic tag
 (currently ~104 theorems alongside encoded-facts, conjectures, heuristics, and
@@ -118,8 +121,8 @@ cargo run -p physis -- experiment bell
 cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus/klein/sphere
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
 cargo run -p physis -- set special-relativity absolute_time true
-cargo run -p physis -- run su5-gut          # SU(5): sin²θ_W = 3/8, charge quantization
-cargo run -p physis -- set su5-gut supersymmetric true
+cargo run -p physis -- run su5-gut          # SU(5): 3/8 at M_GUT; GQW misses 0.231 at M_Z
+cargo run -p physis -- set su5-gut supersymmetric true   # GQW + unification fail → hold
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis -- epistemics
 cargo run -p physis --example kinetic_energy

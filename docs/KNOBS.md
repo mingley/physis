@@ -69,6 +69,11 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
   `set de-rham shape sphere` flips `dec.fundamental-class` fails → holds
   without flipping Poincaré (`b₁` stays 0).
 
+### su5-gut
+- `supersymmetric` — MSSM matter. Flips `gut.coupling-unification`,
+  `gut.proton-decay-viable`, and `gut.weinberg-angle-mz` fails → holds
+  (heuristics). The GUT-scale `3/8` theorem is independent of this knob.
+
 ## Dead knobs
 
 If you find a knob that no claim reads, either wire it or delete it. v0 `cosmological_constant` is *weakly* dead (it appears in the world note, not in a verdict). That is an accepted M0 hole; M1 should give Λ a claim or drop the knob.

@@ -14,6 +14,10 @@
 //! experiment. The minimal Standard Model misses by tens of percent; the MSSM
 //! agrees to about a percent — the celebrated (approximate) unification.
 //!
+//! The same one-loop betas give the Georgi–Quinn–Weinberg prediction of
+//! `sin²θ_W(M_Z)` from `α_em` and `α_s` alone (no measured mixing angle):
+//! minimal SU(5) lands near 0.21 and misses; the MSSM lands on 0.231.
+//!
 //! One loop is an approximation: two-loop terms and SUSY thresholds shift the
 //! numbers at the percent level. The verdicts that consume this are therefore
 //! tagged `Heuristic`, with the computed numbers as evidence.
@@ -116,6 +120,46 @@ impl GaugeRunning {
     /// Small means the three couplings (nearly) meet at one point.
     pub fn unification_mismatch(&self) -> f64 {
         (self.predicted_alpha3_mz() / self.measured_alpha3_mz() - 1.0).abs()
+    }
+
+    /// Measured `sin²θ_W(M_Z)` (PDG MS-bar). Input to `α_1`/`α_2`; *not* used
+    /// by [`Self::predicted_sin2_mz`].
+    pub fn measured_sin2_mz(&self) -> f64 {
+        weak_mixing_angle_sin2_mz().value()
+    }
+
+    /// `t = ln(M_U/M_Z)` implied by `α_em` + `α_s` under one-loop unification.
+    fn gqw_log(&self) -> f64 {
+        let inv_em = inverse_alpha_em_mz().value();
+        let inv_s = self.inv_alpha_mz[2];
+        let [b1, b2, b3] = self.b;
+        let denom = (5.0 / 3.0) * (b1 - b3) + (b2 - b3);
+        2.0 * PI * (inv_em - (8.0 / 3.0) * inv_s) / denom
+    }
+
+    /// Georgi–Quinn–Weinberg prediction of `sin²θ_W(M_Z)` from `α_em` and `α_s`,
+    /// assuming one-loop unification `α_1 = α_2 = α_3` at a single `M_U`.
+    ///
+    /// This does **not** use the measured mixing angle. `α_em` and `α_s` fix
+    /// `t = ln(M_U/M_Z)` and `α_U`, then `sin²θ_W = α_2⁻¹(M_Z) / α_em⁻¹`.
+    /// At unification that formula is identically `3/8`; here it is the
+    /// *low-energy* value after running.
+    pub fn predicted_sin2_mz(&self) -> f64 {
+        let inv_em = inverse_alpha_em_mz().value();
+        let inv_s = self.inv_alpha_mz[2];
+        let t = self.gqw_log();
+        let inv_a2 = inv_s + (self.b[1] - self.b[2]) / (2.0 * PI) * t;
+        inv_a2 / inv_em
+    }
+
+    /// Unification scale implied by `α_em` + `α_s` (GQW), in GeV.
+    pub fn gqw_unification_scale_gev(&self) -> f64 {
+        z_mass_gev().value() * self.gqw_log().exp()
+    }
+
+    /// Fractional disagreement between GQW-predicted and measured `sin²θ_W(M_Z)`.
+    pub fn sin2_mismatch(&self) -> f64 {
+        (self.predicted_sin2_mz() / self.measured_sin2_mz() - 1.0).abs()
     }
 
     /// Two-loop RGE derivative `d(α_i⁻¹)/dt` at inverse couplings `y`:
@@ -254,5 +298,40 @@ mod tests {
         let sm = GaugeRunning::standard_model();
         let mssm = GaugeRunning::mssm();
         assert!(mssm.unification_mismatch() < sm.unification_mismatch() / 5.0);
+    }
+
+    #[test]
+    fn gqw_sin2_misses_in_the_sm_and_hits_in_the_mssm() {
+        // Georgi–Quinn–Weinberg: α_em + α_s predict sin²θ_W(M_Z), without
+        // using the measured mixing angle. Minimal SU(5) lands near 0.21;
+        // the MSSM lands on 0.231.
+        let sm = GaugeRunning::standard_model();
+        let mssm = GaugeRunning::mssm();
+        let measured = sm.measured_sin2_mz();
+        assert!(
+            (measured - 0.231_21).abs() < 1e-6,
+            "PDG input drifted: {measured}"
+        );
+        let sm_pred = sm.predicted_sin2_mz();
+        let mssm_pred = mssm.predicted_sin2_mz();
+        assert!(
+            sm_pred < 0.22 && sm_pred > 0.20,
+            "SM GQW sin²θ_W = {sm_pred}"
+        );
+        assert!(
+            (mssm_pred - measured).abs() < 0.005,
+            "MSSM GQW sin²θ_W = {mssm_pred} vs {measured}"
+        );
+        assert!(sm.sin2_mismatch() > 0.05);
+        assert!(mssm.sin2_mismatch() < 0.03);
+        // The GQW scale for the MSSM is the phenomenological ~2×10^16 GeV.
+        let mssm_u = mssm.gqw_unification_scale_gev();
+        assert!(
+            (1e16..1e17).contains(&mssm_u),
+            "MSSM GQW M_U = {mssm_u:.2e}"
+        );
+        // And it is *not* the tautological 3/8: that is the GUT-scale value.
+        assert!((sm_pred - 0.375).abs() > 0.1);
+        assert!((mssm_pred - 0.375).abs() > 0.1);
     }
 }
