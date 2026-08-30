@@ -67,10 +67,11 @@ impl Challenge {
     }
 
     /// Build a challenge from a formal claim. Exact identities are looked up
-    /// in the catalog; other claims still get a Lean type (the English
-    /// statement as a Prop) but cannot be promoted by the exact backend.
+    /// by FormalClaim identity, not by slug. A matching slug with different
+    /// commitments is not a catalog obligation and cannot be promoted by
+    /// the exact backend.
     pub fn generate(claim: &FormalClaim) -> Self {
-        let spec = catalog::lookup(&claim.id.0);
+        let spec = catalog::lookup_matching(claim);
         let (lean_type, identity, axioms) = match spec {
             Some(s) => (
                 s.lean_type.to_string(),
@@ -182,5 +183,13 @@ mod tests {
         ));
         assert_ne!(a.statement_hash, b.statement_hash);
         assert_ne!(a.challenge_hash, b.challenge_hash);
+        assert!(
+            a.identity.is_none(),
+            "unspecified d² is not the catalog obligation"
+        );
+        assert!(
+            b.identity.is_some(),
+            "physlib forall d² is the catalog obligation"
+        );
     }
 }

@@ -13,5 +13,6 @@ physis-core.workspace = true
 physis-model.workspace = true
 physis-numeric.workspace = true
 physis-data.workspace = true
+physis-proof.workspace = true
 serde.workspace = true
 serde_json.workspace = true

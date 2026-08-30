@@ -2,10 +2,12 @@
 //! can set.
 //!
 //! The only public mint is [`review`]: it looks up a trusted dossier for the
-//! claim slug, binds the record to [`physis_core::formal::FormalClaim::statement_hash`],
+//! catalog FormalClaim (not merely the slug), binds the record to
+//! [`physis_core::formal::FormalClaim::statement_hash`],
 //! builds a [`physis_provenance::SourceRecord`], parses a second encoding, and
 //! *runs* the red-team corpus. [`SemanticAssurance::Canonical`] is never assigned.
-//! A review of one identity is not P3S for a later identity that kept the slug.
+//! A review of one identity is not P3S for a later identity that kept the slug,
+//! and a Physlib dossier will not mint against a different FormalClaim.
 //!
 //! External crates cannot construct [`SemanticRecord`] by struct literal:
 //!
@@ -36,7 +38,7 @@ use physis_core::artifact::ArtifactId;
 use physis_core::assurance::SemanticAssurance;
 use physis_core::formal::FormalClaim;
 use physis_ir::parse_package;
-use physis_proof::{lookup, parse_expr};
+use physis_proof::{lookup, lookup_matching, parse_expr};
 use physis_provenance::{Citation, SourceLocator, SourceRecord};
 use serde::Serialize;
 
@@ -51,6 +53,8 @@ pub enum SemanticError {
     Ir(String),
     /// Second encoding is missing, copied, or not the catalog identity tree.
     Encoding(String),
+    /// A dossier exists for the slug, but this FormalClaim is not that identity.
+    WrongIdentity,
 }
 
 impl std::fmt::Display for SemanticError {
@@ -62,6 +66,10 @@ impl std::fmt::Display for SemanticError {
             SemanticError::VagueSource(s) => write!(f, "source: {s}"),
             SemanticError::Ir(s) => write!(f, "ir: {s}"),
             SemanticError::Encoding(s) => write!(f, "encoding: {s}"),
+            SemanticError::WrongIdentity => write!(
+                f,
+                "catalog identity does not match this FormalClaim; Unreviewed is the honest default"
+            ),
         }
     }
 }
@@ -266,6 +274,9 @@ impl SemanticStore {
 /// Never returns [`SemanticAssurance::Canonical`].
 pub fn review(claim: &FormalClaim) -> Result<SemanticRecord, SemanticError> {
     let d = dossier(&claim.id.0).ok_or(SemanticError::NoDossier)?;
+    if lookup_matching(claim).is_none() {
+        return Err(SemanticError::WrongIdentity);
+    }
     review_dossier(d, d.ir, claim)
 }
 
@@ -379,13 +390,12 @@ fn independent_ir(
 mod tests {
     use physis_core::assurance::{ClaimClass, SemanticAssurance};
     use physis_core::claim::Claim;
-    use physis_core::formal::ClaimCommitments;
     use physis_core::id::LayerId;
-    use physis_proof::CATALOG;
+    use physis_proof::{lookup, CATALOG};
 
     use super::*;
 
-    fn formal(id: &str) -> FormalClaim {
+    fn unspecified(id: &str) -> FormalClaim {
         FormalClaim::from_claim(&Claim::new(
             id,
             "The exterior derivative is nilpotent: d ∘ d = 0.",
@@ -394,20 +404,24 @@ mod tests {
         ))
     }
 
+    fn catalog_d2() -> FormalClaim {
+        lookup("dec.d-squared-zero").unwrap().formal_claim()
+    }
+
     #[test]
     fn catalog_dossiers_reach_adversarial_review() {
         for spec in CATALOG {
-            let rec = review(&formal(spec.claim_id)).unwrap();
+            let rec = review(&spec.formal_claim()).unwrap();
             assert_eq!(rec.assurance(), SemanticAssurance::AdversariallyReviewed);
             assert_ne!(rec.assurance(), SemanticAssurance::Canonical);
             assert_ne!(rec.assurance(), SemanticAssurance::Unreviewed);
-            assert_eq!(rec.statement_hash(), formal(spec.claim_id).statement_hash);
+            assert_eq!(rec.statement_hash(), spec.formal_claim().statement_hash);
         }
     }
 
     #[test]
     fn conjecture_has_no_dossier() {
-        let err = review(&formal("predictivity.unique-vacuum")).unwrap_err();
+        let err = review(&unspecified("predictivity.unique-vacuum")).unwrap_err();
         assert_eq!(err, SemanticError::NoDossier);
     }
 
@@ -421,7 +435,7 @@ equation 0
 claim mathematical mathematical dec.d-squared-zero : d^2 = 0
 lean_ref ∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0
 "#;
-        let err = review_dossier(d, ir, &formal("dec.d-squared-zero")).unwrap_err();
+        let err = review_dossier(d, ir, &catalog_d2()).unwrap_err();
         assert!(matches!(err, SemanticError::Encoding(_)), "{err:?}");
     }
 
@@ -435,7 +449,7 @@ equation (b - a) - (c - a) - (c - b)
 claim mathematical mathematical dec.d-squared-zero : d^2 = 0
 lean_ref ∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0
 "#;
-        let err = review_dossier(d, ir, &formal("dec.d-squared-zero")).unwrap_err();
+        let err = review_dossier(d, ir, &catalog_d2()).unwrap_err();
         assert!(matches!(err, SemanticError::Encoding(_)), "{err:?}");
     }
 
@@ -443,7 +457,7 @@ lean_ref ∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0
     fn store_only_grows_via_record() {
         let mut store = SemanticStore::empty();
         assert!(store.is_empty());
-        let rec = review(&formal("dec.d-squared-zero")).unwrap();
+        let rec = review(&catalog_d2()).unwrap();
         store.record(&rec);
         assert_eq!(store.len(), 1);
         assert_eq!(
@@ -461,38 +475,18 @@ lean_ref ∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0
 
     #[test]
     fn slug_review_is_not_p3s_for_a_changed_identity() {
-        let unspecified = formal("dec.d-squared-zero");
-        let live = FormalClaim::from_claim(
-            &Claim::new(
-                "dec.d-squared-zero",
-                "The exterior derivative is nilpotent: d ∘ d = 0.",
-                LayerId::Mathematical,
-                ClaimClass::Mathematical,
-            )
-            .with_commitments(ClaimCommitments::physlib_forall()),
-        );
+        let unspecified = unspecified("dec.d-squared-zero");
+        let live = catalog_d2();
         assert_ne!(unspecified.statement_hash, live.statement_hash);
 
-        let rec = review(&unspecified).unwrap();
-        assert_eq!(rec.statement_hash(), unspecified.statement_hash);
+        let err = review(&unspecified).unwrap_err();
+        assert_eq!(err, SemanticError::WrongIdentity);
+
+        let rec = review(&live).unwrap();
+        assert_eq!(rec.statement_hash(), live.statement_hash);
         let mut store = SemanticStore::empty();
         store.record(&rec);
-        assert!(store.by_claim("dec.d-squared-zero").is_some());
-        assert!(store.by_statement(unspecified.statement_hash).is_some());
-        assert!(store.by_statement(live.statement_hash).is_none());
-
-        store.record(&review(&live).unwrap());
-        assert_eq!(store.len(), 2);
-        assert_eq!(
-            store.by_statement(live.statement_hash).unwrap().assurance(),
-            SemanticAssurance::AdversariallyReviewed
-        );
-        assert_eq!(
-            store
-                .by_statement(unspecified.statement_hash)
-                .unwrap()
-                .assurance(),
-            SemanticAssurance::AdversariallyReviewed
-        );
+        assert!(store.by_statement(live.statement_hash).is_some());
+        assert!(store.by_statement(unspecified.statement_hash).is_none());
     }
 }

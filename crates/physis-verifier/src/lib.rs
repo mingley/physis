@@ -37,7 +37,7 @@
 
 use physis_core::artifact::ArtifactId;
 use physis_core::axiom::AxiomId;
-use physis_proof::{identity_is_zero, scan_lean_source, Challenge, UntrustedProof};
+use physis_proof::{identity_is_zero, scan_lean_source, Challenge, UntrustedProof, CATALOG};
 use serde::Serialize;
 
 mod lean;
@@ -200,6 +200,7 @@ pub fn verify(
     if recomputed != challenge.challenge_hash {
         return Err(VerifyError::ChallengeTampered);
     }
+    bind_catalog(challenge)?;
 
     match artifact {
         UntrustedProof::ExactIdentity => verify_exact(challenge),
@@ -214,6 +215,44 @@ pub fn verify(
         }
         UntrustedProof::LeanExport { .. } => Err(VerifyError::LeanPipelineNotWired),
     }
+}
+
+/// Catalog backends (exact polynomial, catalog Lean type) bind to the
+/// catalog FormalClaim, not the slug. A matching slug with a different
+/// identity cannot borrow the Physlib obligation.
+fn bind_catalog(challenge: &Challenge) -> Result<(), VerifyError> {
+    if let Some(spec) = CATALOG
+        .iter()
+        .find(|s| s.formal_claim().statement_hash == challenge.statement_hash)
+    {
+        if spec.claim_id != challenge.claim_id {
+            return Err(VerifyError::NoExactIdentity);
+        }
+        if challenge.lean_type != spec.lean_type {
+            return Err(VerifyError::StatementMismatch);
+        }
+        match &challenge.identity {
+            Some(id) if id.canonical() == (spec.identity)().canonical() => {}
+            Some(_) => {
+                return Err(VerifyError::IdentityFailed(
+                    "not the catalog identity tree".into(),
+                ));
+            }
+            None => {}
+        }
+        return Ok(());
+    }
+    for spec in CATALOG {
+        if challenge.lean_type == spec.lean_type {
+            return Err(VerifyError::NoExactIdentity);
+        }
+        if let Some(id) = &challenge.identity {
+            if id.canonical() == (spec.identity)().canonical() {
+                return Err(VerifyError::NoExactIdentity);
+            }
+        }
+    }
+    Ok(())
 }
 
 fn verify_exact(challenge: &Challenge) -> Result<Verified<CheckedProof>, VerifyError> {
@@ -346,16 +385,24 @@ mod tests {
     use physis_core::id::LayerId;
     use physis_proof::catalog::discrete_d2;
     use physis_proof::expr::{add, sub, Expr};
+    use physis_proof::lookup;
 
     use super::*;
 
     fn d2_claim() -> Claim {
-        Claim::new(
-            "dec.d-squared-zero",
-            "The exterior derivative is nilpotent: d ∘ d = 0.",
-            LayerId::Mathematical,
-            ClaimClass::Mathematical,
-        )
+        lookup("dec.d-squared-zero").unwrap().lab_claim()
+    }
+
+    fn interval_claim() -> Claim {
+        lookup("sr.invariant-interval").unwrap().lab_claim()
+    }
+
+    fn composition_claim() -> Claim {
+        lookup("sr.subluminal-composition").unwrap().lab_claim()
+    }
+
+    fn mass_shell_claim() -> Claim {
+        lookup("sr.energy-momentum-invariant").unwrap().lab_claim()
     }
 
     #[test]
@@ -493,12 +540,7 @@ mod tests {
             }
             return;
         }
-        let claim = Claim::new(
-            "sr.invariant-interval",
-            "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
-            LayerId::Spacetime,
-            ClaimClass::ModelInternal,
-        );
+        let claim = interval_claim();
         let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
         let v = verify(
             &challenge,
@@ -536,25 +578,44 @@ mod tests {
     }
 
     #[test]
-    fn lorentz_catalog_mints() {
-        let claim = Claim::new(
-            "sr.invariant-interval",
-            "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
-            LayerId::Spacetime,
-            ClaimClass::ModelInternal,
+    fn unspecified_slug_cannot_borrow_the_catalog_certificate() {
+        let stale = Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
         );
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
+        let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
+        assert_eq!(err, VerifyError::NoExactIdentity);
+
+        let spec = lookup("dec.d-squared-zero").unwrap();
+        let mut stolen = challenge.clone();
+        stolen.identity = Some((spec.identity)());
+        stolen.lean_type = spec.lean_type.into();
+        stolen.axioms = spec.axioms.iter().map(|a| (*a).to_string()).collect();
+        stolen.challenge_hash = ArtifactId::of(Challenge::canonical_bytes(
+            &stolen.claim_id,
+            stolen.statement_hash,
+            stolen.assumption_hash,
+            &stolen.lean_type,
+            stolen.identity.as_ref(),
+            &stolen.axioms,
+        ));
+        let err = verify(&stolen, &UntrustedProof::ExactIdentity).unwrap_err();
+        assert_eq!(err, VerifyError::NoExactIdentity);
+    }
+
+    #[test]
+    fn lorentz_catalog_mints() {
+        let claim = interval_claim();
         let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
         verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
     }
 
     #[test]
     fn composition_catalog_mints() {
-        let claim = Claim::new(
-            "sr.subluminal-composition",
-            "Composing two subluminal velocities stays below c.",
-            LayerId::Spacetime,
-            ClaimClass::ModelInternal,
-        );
+        let claim = composition_claim();
         let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
         verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
     }
@@ -567,12 +628,7 @@ mod tests {
             }
             return;
         }
-        let claim = Claim::new(
-            "sr.subluminal-composition",
-            "Composing two subluminal velocities stays below c.",
-            LayerId::Spacetime,
-            ClaimClass::ModelInternal,
-        );
+        let claim = composition_claim();
         let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
         let v = verify(
             &challenge,
@@ -584,15 +640,6 @@ mod tests {
         assert!(matches!(v.receipt().formal_backend, FormalBackend::Lean4));
         assert_eq!(v.receipt().primary_checker.checker, "lean-kernel");
         assert_eq!(v.receipt().secondary_checker.checker, "nanoda");
-    }
-
-    fn mass_shell_claim() -> Claim {
-        Claim::new(
-            "sr.energy-momentum-invariant",
-            "The mass shell E² − (pc)² = (mc²)² is frame-independent.",
-            LayerId::Particle,
-            ClaimClass::ModelInternal,
-        )
     }
 
     #[test]

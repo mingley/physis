@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Catalog obligation is the FormalClaim, not the slug**
+  (`IdentitySpec::lab_claim`, `lookup_matching`, `bind_catalog`).
+  ExactIdentity and encoding review mint only when the live identity is
+  the catalog sentence (quantifier, units, constants, conventions,
+  Physlib). The same slug with unspecified commitments cannot borrow
+  the polynomial, the Lean type, or the dossier. Live theories host
+  catalog claims from the spec so hashes cannot drift. Verified:
+  unspecified d² ExactIdentity is NoExactIdentity even if the catalog
+  polynomial is attached; review is WrongIdentity; live prove/review
+  still mint. `fmt`, `clippy -D warnings`, full suite, CLI (live d²
+  Lean+nanoda P3F+P3S; identity hash unchanged).
+
 - **P3S keys to statement hash, not slug**
   (`SemanticRecord.statement_hash`, `Lab::semantic_tag`). Encoding
   review mints against the live `FormalClaim`. Changing commitments

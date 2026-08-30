@@ -3,12 +3,9 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-use physis_core::assurance::ClaimClass;
-use physis_core::claim::Claim;
 use physis_core::formal::FormalClaim;
-use physis_core::id::LayerId;
 use physis_proof::expr::{add, mul, pow, sub, Expr};
-use physis_proof::{identity_is_zero, Challenge, UntrustedProof};
+use physis_proof::{identity_is_zero, lookup, Challenge, UntrustedProof};
 use physis_verifier::{verify, VerifyError};
 
 /// A named corruption and whether verify/identity must reject it.
@@ -97,12 +94,7 @@ pub fn corpus() -> Vec<Mutation> {
 
 /// Run the corpus. Every mutation must fail to promote.
 pub fn attack() -> Result<(), String> {
-    let claim = Claim::new(
-        "dec.d-squared-zero",
-        "The exterior derivative is nilpotent: d ∘ d = 0.",
-        LayerId::Mathematical,
-        ClaimClass::Mathematical,
-    );
+    let claim = lookup("dec.d-squared-zero").unwrap().lab_claim();
     let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
     for m in corpus() {
         match m.kind {

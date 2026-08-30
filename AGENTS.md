@@ -65,8 +65,9 @@ slug), non-default identity
 fields, and `kernel proof: none` until `physis prove` records a
 receipt. A P3F result that is still `Unreviewed` prints a danger note.
 When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a
-catalog identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).
-Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
+catalog FormalClaim identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).
+The catalog obligation is that identity, not the slug: a matching id with
+different commitments cannot borrow ExactIdentity or Physlib. Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
 an agent can set. `physis review` overlays a justified semantic tag from a
 trusted dossier bound to the live FormalClaim; journal restore re-runs
 review of that identity rather than deserializing the tag. A review of an

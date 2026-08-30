@@ -13,15 +13,15 @@
 //! invariant, velocities add past `c`, and the mass shell is not preserved.
 //! This is the Galilean→Einstein revolution as a single mechanical knob turn.
 
-use physis_core::claim::{Claim, ClaimClass, Verdict};
+use physis_core::claim::{Claim, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
-use physis_core::{ClaimCommitments, Quantifier};
 use physis_core::{Energy, Momentum, Qty};
 use physis_model::constants::{electron_mass, C};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
+use physis_proof::lookup;
 
 use crate::framework::Theory;
 
@@ -140,49 +140,17 @@ impl Theory for SpecialRelativity {
     }
     fn claims(&self) -> Vec<Claim> {
         vec![
-            Claim::new(
-                SR_INVARIANT_INTERVAL,
-                "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
-                LayerId::Spacetime,
-                ClaimClass::ModelInternal,
-            )
-            .with_commitments(ClaimCommitments {
-                quantifier: Quantifier::ForAll,
-                units: vec!["1".into()],
-                constants: vec!["c=1".into()],
-                conventions: vec!["minkowski-mostly-minus".into()],
-                formal_libraries: vec!["physlib:unversioned".into()],
-                ..ClaimCommitments::unspecified()
-            }),
-            Claim::new(
-                SR_SUBLUMINAL_COMPOSITION,
-                "Composing two subluminal velocities stays below c.",
-                LayerId::Spacetime,
-                ClaimClass::ModelInternal,
-            )
-            .with_commitments(ClaimCommitments {
-                quantifier: Quantifier::ForAll,
-                units: vec!["1".into()],
-                constants: vec!["c=1".into()],
-                formal_libraries: vec!["physlib:unversioned".into()],
-                ..ClaimCommitments::unspecified()
-            })
-            .with_dependencies(&[SR_INVARIANT_INTERVAL]),
-            Claim::new(
-                SR_ENERGY_MOMENTUM,
-                "The mass shell E² − (pc)² = (mc²)² is frame-independent.",
-                LayerId::Particle,
-                ClaimClass::ModelInternal,
-            )
-            .with_commitments(ClaimCommitments {
-                quantifier: Quantifier::ForAll,
-                units: vec!["1".into()],
-                constants: vec!["c=1".into()],
-                conventions: vec!["minkowski-mostly-minus".into()],
-                formal_libraries: vec!["physlib:unversioned".into()],
-                ..ClaimCommitments::unspecified()
-            })
-            .with_dependencies(&[SR_INVARIANT_INTERVAL]),
+            lookup(SR_INVARIANT_INTERVAL)
+                .expect("interval is a catalog identity")
+                .lab_claim(),
+            lookup(SR_SUBLUMINAL_COMPOSITION)
+                .expect("composition is a catalog identity")
+                .lab_claim()
+                .with_dependencies(&[SR_INVARIANT_INTERVAL]),
+            lookup(SR_ENERGY_MOMENTUM)
+                .expect("mass shell is a catalog identity")
+                .lab_claim()
+                .with_dependencies(&[SR_INVARIANT_INTERVAL]),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {

@@ -30,9 +30,9 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
-use physis_core::ClaimCommitments;
 use physis_core::ParameterOrigin;
 use physis_model::World;
+use physis_proof::lookup;
 
 use crate::framework::Theory;
 
@@ -597,13 +597,9 @@ impl Theory for DeRham {
     }
     fn claims(&self) -> Vec<Claim> {
         vec![
-            Claim::new(
-                D_SQUARED_ZERO,
-                "The exterior derivative is nilpotent: d ∘ d = 0.",
-                LayerId::Mathematical,
-                ClaimClass::Mathematical,
-            )
-            .with_commitments(ClaimCommitments::physlib_forall()),
+            lookup(D_SQUARED_ZERO)
+                .expect("d² is a catalog identity")
+                .lab_claim(),
             Claim::new(
                 FIRST_BETTI,
                 "The first Betti number counts independent 1-cycles (holes).",

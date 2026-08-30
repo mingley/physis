@@ -12,7 +12,7 @@ use physis_core::judgment::{
 };
 use physis_core::knob::{KnobDomain, KnobValue};
 use physis_core::AxiomLedger;
-use physis_proof::{lookup, Challenge, UntrustedProof, CATALOG};
+use physis_proof::{lookup_matching, Challenge, UntrustedProof, CATALOG};
 use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
 use physis_theory::blackbody::Blackbody;
@@ -1096,7 +1096,11 @@ impl Lab {
         &mut self,
         claim_id: &str,
     ) -> Result<physis_verifier::ProofReceipt, String> {
-        if physis_proof::lookup(claim_id).is_some() && discover_tools().is_some() {
+        let claim = self
+            .find_claim(claim_id)
+            .ok_or_else(|| format!("unknown claim '{claim_id}'"))?;
+        if lookup_matching(&FormalClaim::from_claim(&claim)).is_some() && discover_tools().is_some()
+        {
             match self.remint_lean(claim_id) {
                 Err(VerifyError::LeanPipelineNotWired) => self.remint_exact(claim_id),
                 Ok(r) => Ok(r),
@@ -1131,7 +1135,10 @@ impl Lab {
 
     /// Catalog encoding as untrusted bytes. Never calls `verify`.
     fn formalize_claim(&self, claim_id: &str) -> Response {
-        let Some(spec) = lookup(claim_id) else {
+        let Some(claim) = self.find_claim(claim_id) else {
+            return Response::err(format!("formalize {claim_id}: unknown claim"));
+        };
+        let Some(spec) = lookup_matching(&FormalClaim::from_claim(&claim)) else {
             return Response::err(format!(
                 "formalize {claim_id}: no catalog identity; this is not a mint"
             ));
@@ -2160,10 +2167,9 @@ mod tests {
             "physlib forall must not be the unspecified default identity"
         );
         let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
-        let v = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
-        lab.receipts.record(&v);
-        assert!(lab.receipts.by_claim("dec.d-squared-zero").is_some());
-        assert!(lab.receipts.by_statement(stale.statement_hash).is_some());
+        let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
+        assert_eq!(err, physis_verifier::VerifyError::NoExactIdentity);
+        assert!(lab.receipts.by_statement(stale.statement_hash).is_none());
         assert!(lab.receipts.by_statement(live.statement_hash).is_none());
 
         let why = lab
@@ -2204,6 +2210,20 @@ mod tests {
     }
 
     #[test]
+    fn live_catalog_claims_are_the_catalog_identities() {
+        let lab = Lab::standard();
+        for spec in CATALOG {
+            let live = lab.find_claim(spec.claim_id).unwrap();
+            assert_eq!(
+                live.statement_hash,
+                spec.formal_claim().statement_hash,
+                "{} live hash must be the catalog FormalClaim",
+                spec.claim_id
+            );
+        }
+    }
+
+    #[test]
     fn slug_review_is_not_p3s_for_a_changed_identity() {
         let mut lab = Lab::standard();
         let stale = physis_core::claim::Claim::new(
@@ -2217,10 +2237,12 @@ mod tests {
             stale.statement_hash, live.statement_hash,
             "physlib forall must not be the unspecified default identity"
         );
-        let rec = physis_semantic::review(&FormalClaim::from_claim(&stale)).unwrap();
-        lab.reviews.record(&rec);
-        assert!(lab.reviews.by_claim("dec.d-squared-zero").is_some());
-        assert!(lab.reviews.by_statement(stale.statement_hash).is_some());
+        let err = physis_semantic::review(&FormalClaim::from_claim(&stale)).unwrap_err();
+        assert!(
+            err.to_string().contains("catalog identity does not match"),
+            "{err}"
+        );
+        assert!(lab.reviews.by_statement(stale.statement_hash).is_none());
         assert!(lab.reviews.by_statement(live.statement_hash).is_none());
 
         let why = lab
@@ -2258,10 +2280,7 @@ mod tests {
         assert!(d2b.contains("semantic:   adversarially-reviewed"), "{d2b}");
         assert!(d2b.contains("P3S"), "{d2b}");
         assert!(lab.reviews.by_statement(live.statement_hash).is_some());
-        assert!(
-            lab.reviews.by_statement(stale.statement_hash).is_some(),
-            "a review of the live identity must not erase the stale record"
-        );
+        assert!(lab.reviews.by_statement(stale.statement_hash).is_none());
     }
 
     #[test]

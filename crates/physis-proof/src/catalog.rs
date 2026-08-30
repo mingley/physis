@@ -4,15 +4,29 @@
 //! Mutating a sign produces a different challenge hash and, for these
 //! particular identities, a non-zero polynomial that both checkers reject.
 
+use physis_core::assurance::ClaimClass;
+use physis_core::claim::Claim;
+use physis_core::formal::{ClaimCommitments, FormalClaim};
+use physis_core::id::LayerId;
+
 use crate::expr::{add, mul, pow, sub, Expr};
 
-/// Catalog row: claim id, Lean-facing type (documentation of the obligation),
-/// the polynomial that must be identically zero, and axiom ids in the closure.
+/// Catalog row: the FormalClaim identity this polynomial / Lean type is
+/// about, plus the trusted obligation. A matching slug with different
+/// commitments is a different sentence and is not this row.
 #[derive(Clone, Copy, Debug)]
 pub struct IdentitySpec {
     /// Lab claim id.
     pub claim_id: &'static str,
-    /// Lean theorem name in [`PHYSLIB_SOURCE`].
+    /// English statement the catalog identity is about.
+    pub statement: &'static str,
+    /// Claim class.
+    pub class: ClaimClass,
+    /// Layer.
+    pub layer: LayerId,
+    /// First-class identity fields committed in the statement hash.
+    pub commitments: fn() -> ClaimCommitments,
+    /// Lean theorem name in [`crate::PHYSLIB_SOURCE`].
     pub lean_theorem: &'static str,
     /// Lean-shaped theorem type the obligation corresponds to.
     pub lean_type: &'static str,
@@ -20,6 +34,42 @@ pub struct IdentitySpec {
     pub axioms: &'static [&'static str],
     /// Builder for the trusted identity.
     pub identity: fn() -> Expr,
+}
+
+impl IdentitySpec {
+    /// Lab claim for this catalog row. Theories that host the identity
+    /// should use this so the live `statement_hash` is the catalog hash.
+    pub fn lab_claim(&self) -> Claim {
+        Claim::new(self.claim_id, self.statement, self.layer, self.class)
+            .with_commitments((self.commitments)())
+    }
+
+    /// Formal identity the exact / Lean backends may prove.
+    pub fn formal_claim(&self) -> FormalClaim {
+        FormalClaim::from_claim(&self.lab_claim())
+    }
+
+    /// True when `claim` is this catalog identity, not merely the same slug.
+    pub fn matches(&self, claim: &FormalClaim) -> bool {
+        claim.statement_hash == self.formal_claim().statement_hash
+    }
+}
+
+fn physlib_d2_commitments() -> ClaimCommitments {
+    ClaimCommitments::physlib_forall()
+}
+
+fn minkowski_interval_commitments() -> ClaimCommitments {
+    let mut c = ClaimCommitments::physlib_forall();
+    c.constants = vec!["c=1".into()];
+    c.conventions = vec!["minkowski-mostly-minus".into()];
+    c
+}
+
+fn einstein_composition_commitments() -> ClaimCommitments {
+    let mut c = ClaimCommitments::physlib_forall();
+    c.constants = vec!["c=1".into()];
+    c
 }
 
 /// Discrete exterior calculus: `(b − a) − (c − a) + (c − b) ≡ 0`.
@@ -93,6 +143,10 @@ pub fn energy_momentum() -> Expr {
 pub const CATALOG: &[IdentitySpec] = &[
     IdentitySpec {
         claim_id: "dec.d-squared-zero",
+        statement: "The exterior derivative is nilpotent: d ∘ d = 0.",
+        class: ClaimClass::Mathematical,
+        layer: LayerId::Mathematical,
+        commitments: physlib_d2_commitments,
         lean_theorem: "d_squared_zero",
         lean_type: "∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0",
         axioms: &["integer-arithmetic", "discrete-coboundary"],
@@ -100,6 +154,10 @@ pub const CATALOG: &[IdentitySpec] = &[
     },
     IdentitySpec {
         claim_id: "sr.invariant-interval",
+        statement: "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
+        class: ClaimClass::ModelInternal,
+        layer: LayerId::Spacetime,
+        commitments: minkowski_interval_commitments,
         lean_theorem: "invariant_interval",
         lean_type: "∀ (t x β : Int), (t - β*x)^2 - (x - β*t)^2 = (1 - β^2)*(t^2 - x^2)",
         axioms: &["integer-arithmetic", "minkowski-interval-signature"],
@@ -107,6 +165,10 @@ pub const CATALOG: &[IdentitySpec] = &[
     },
     IdentitySpec {
         claim_id: "sr.subluminal-composition",
+        statement: "Composing two subluminal velocities stays below c.",
+        class: ClaimClass::ModelInternal,
+        layer: LayerId::Spacetime,
+        commitments: einstein_composition_commitments,
         lean_theorem: "subluminal_composition",
         lean_type: "∀ (u v : Int), (1 + u*v)^2 - (u + v)^2 = (1 - u^2)*(1 - v^2)",
         axioms: &["integer-arithmetic", "einstein-velocity-addition"],
@@ -114,6 +176,10 @@ pub const CATALOG: &[IdentitySpec] = &[
     },
     IdentitySpec {
         claim_id: "sr.energy-momentum-invariant",
+        statement: "The mass shell E² − (pc)² = (mc²)² is frame-independent.",
+        class: ClaimClass::ModelInternal,
+        layer: LayerId::Particle,
+        commitments: minkowski_interval_commitments,
         lean_theorem: "energy_momentum_invariant",
         lean_type: "∀ (E p β : Int), (E - β*p)^2 - (p - β*E)^2 = (1 - β^2)*(E^2 - p^2)",
         axioms: &["integer-arithmetic", "minkowski-interval-signature"],
@@ -121,9 +187,16 @@ pub const CATALOG: &[IdentitySpec] = &[
     },
 ];
 
-/// Lookup by claim id.
+/// Lookup by claim slug. Not a catalog proof: a changed FormalClaim
+/// identity keeps the slug and must use [`lookup_matching`].
 pub fn lookup(claim_id: &str) -> Option<&'static IdentitySpec> {
     CATALOG.iter().find(|s| s.claim_id == claim_id)
+}
+
+/// Catalog row whose FormalClaim identity is `claim`. Same slug with
+/// different commitments is not a hit.
+pub fn lookup_matching(claim: &FormalClaim) -> Option<&'static IdentitySpec> {
+    CATALOG.iter().find(|s| s.matches(claim))
 }
 
 #[cfg(test)]
@@ -149,5 +222,19 @@ mod tests {
         );
         let spec = lookup("sr.energy-momentum-invariant").unwrap();
         assert_eq!(spec.axioms, lookup("sr.invariant-interval").unwrap().axioms);
+    }
+
+    #[test]
+    fn unspecified_slug_is_not_the_catalog_identity() {
+        let spec = lookup("dec.d-squared-zero").unwrap();
+        let unspecified = FormalClaim::from_claim(&Claim::new(
+            spec.claim_id,
+            spec.statement,
+            spec.layer,
+            spec.class,
+        ));
+        assert!(!spec.matches(&unspecified));
+        assert!(lookup_matching(&unspecified).is_none());
+        assert!(lookup_matching(&spec.formal_claim()).is_some());
     }
 }
