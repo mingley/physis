@@ -5,7 +5,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 ## What you may do
 
 1. Read `specs/`, `plans/`, `docs/`, and crate-level rustdoc.
-2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|falsify|sweep|branch|audit|review|inspect|loop`).
+2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|formalize|falsify|sweep|branch|audit|review|inspect|loop`). `--role explorer` (and the other named roles) can observe but cannot mint. `--budget prove=N,review=N,set=N` is a research cap, not a proof.
 3. Turn knobs through `Lab::set_knob` / `physis set`. Illegal values must be rejected by domain checks.
 4. Add tests that demonstrate a knob → verdict diff.
 5. Add a new theory as a `Theory` impl with its own knobs and claims. Do not special-case it in the CLI.

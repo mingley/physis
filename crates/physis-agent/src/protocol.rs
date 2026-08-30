@@ -121,6 +121,44 @@ pub enum Command {
         /// Value to match (`P0`, `conjecture`, `chosen`, `missing-theorem`).
         value: Option<String>,
     },
+    /// Emit the catalog encoding of a claim as untrusted bytes. Does not mint.
+    Formalize {
+        /// Claim id.
+        claim: String,
+    },
+}
+
+impl Command {
+    /// Protocol verb, for role/budget errors.
+    pub fn verb(&self) -> &'static str {
+        match self {
+            Command::Layers => "layers",
+            Command::Theories => "theories",
+            Command::Knobs { .. } => "knobs",
+            Command::Run { .. } => "run",
+            Command::Set { .. } => "set",
+            Command::Epistemics => "epistemics",
+            Command::Why { .. } => "why",
+            Command::Experiments => "experiments",
+            Command::Experiment { .. } => "experiment",
+            Command::Journal => "journal",
+            Command::Replay { .. } => "replay",
+            Command::Score { .. } => "score",
+            Command::Prove { .. } => "prove",
+            Command::Falsify { .. } => "falsify",
+            Command::Sweep { .. } => "sweep",
+            Command::Branch { .. } => "branch",
+            Command::Checkout { .. } => "checkout",
+            Command::Compare { .. } => "compare",
+            Command::Audit => "audit",
+            Command::Design { .. } => "design",
+            Command::Sensitivity { .. } => "sensitivity",
+            Command::Review { .. } => "review",
+            Command::Loop => "loop",
+            Command::Inspect { .. } => "inspect",
+            Command::Formalize { .. } => "formalize",
+        }
+    }
 }
 
 /// Lab → agent.

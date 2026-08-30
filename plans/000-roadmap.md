@@ -21,6 +21,8 @@ Level-3 trust
   L3-M9 experiment rank    ✓ physis design
   L3-M10 research loop     ✓ physis loop (orchestrator)
   L3 Lean/nanoda kernels   ✓ Physlib d²=0 and interval; lake + nanoda on export
+  L3 inspect / origin      ✓ ParameterOrigin; physis inspect
+  L3 roles / budget        ✓ Role gates exec; formalize is untrusted; budget caps prove/review/set
 ```
 
 Each milestone must:

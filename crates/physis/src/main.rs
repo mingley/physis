@@ -1,14 +1,20 @@
 //! physis — turn knobs on typed theories of reality.
 
-use physis::{Journal, Lab};
+use physis::{Journal, Lab, ResearchBudget, Role};
 use physis_agent::Command;
 
 fn main() {
     let raw: Vec<String> = std::env::args().skip(1).collect();
-    let (journal_path, json, args) = extract_opts(&raw);
+    let opts = match extract_opts(&raw) {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("error: {e}");
+            std::process::exit(2);
+        }
+    };
 
     let mut lab = Lab::standard();
-    if let Some(path) = &journal_path {
+    if let Some(path) = &opts.journal {
         match Journal::file(path) {
             // Persist this session's new events to the file; existing history
             // is loaded and replayed so `set` turns accumulate across process
@@ -23,16 +29,19 @@ fn main() {
             }
         }
     }
+    // Role and budget gate the live command, not journal reconstitution.
+    lab.set_role(opts.role);
+    lab.set_budget(opts.budget);
 
-    let cmd = match parse(&args) {
+    let cmd = match parse(&opts.args) {
         Ok(c) => c,
         Err(help) => {
             eprintln!("{help}");
-            std::process::exit(if args.is_empty() { 0 } else { 2 });
+            std::process::exit(if opts.args.is_empty() { 0 } else { 2 });
         }
     };
     let response = lab.exec(cmd);
-    if json {
+    if opts.json {
         // Structured output for agents: the full typed response (matrix,
         // diffs, verdicts) as JSON, not just the human-readable text.
         match serde_json::to_string_pretty(&response) {
@@ -48,12 +57,20 @@ fn main() {
     std::process::exit(response.exit_code());
 }
 
-/// Strip leading global options (`--journal <path>`/`-j <path>` and `--json`),
-/// in any order, returning the journal path, whether JSON output was requested,
-/// and the remaining args. Options must precede the subcommand.
-fn extract_opts(args: &[String]) -> (Option<String>, bool, Vec<String>) {
+struct CliOpts {
+    journal: Option<String>,
+    json: bool,
+    role: Role,
+    budget: ResearchBudget,
+    args: Vec<String>,
+}
+
+/// Strip leading global options. Options must precede the subcommand.
+fn extract_opts(args: &[String]) -> Result<CliOpts, String> {
     let mut journal = None;
     let mut json = false;
+    let mut role = Role::Lab;
+    let mut budget = ResearchBudget::unlimited();
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
@@ -65,10 +82,29 @@ fn extract_opts(args: &[String]) -> (Option<String>, bool, Vec<String>) {
                 json = true;
                 i += 1;
             }
+            "--role" if i + 1 < args.len() => {
+                let name = &args[i + 1];
+                role = Role::parse(name).ok_or_else(|| {
+                    format!(
+                        "unknown role '{name}' (lab|explorer|formalizer|proof-searcher|falsifier|reviewer|auditor)"
+                    )
+                })?;
+                i += 2;
+            }
+            "--budget" if i + 1 < args.len() => {
+                budget = ResearchBudget::parse(&args[i + 1])?;
+                i += 2;
+            }
             _ => break,
         }
     }
-    (journal, json, args[i..].to_vec())
+    Ok(CliOpts {
+        journal,
+        json,
+        role,
+        budget,
+        args: args[i..].to_vec(),
+    })
 }
 
 fn parse(args: &[String]) -> Result<Command, String> {
@@ -184,6 +220,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             axis: args.get(1).cloned(),
             value: args.get(2).cloned(),
         }),
+        "formalize" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Formalize { claim })
+        }
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -192,7 +232,7 @@ fn usage() -> String {
     r#"physis — mechanically verifiable models of reality
 
 USAGE:
-    physis [--journal <file.jsonl>] [--json] <command>
+    physis [--journal <file.jsonl>] [--json] [--role <role>] [--budget prove=N,review=N,set=N] <command>
     physis layers
     physis theories
     physis knobs [theory]
@@ -202,6 +242,7 @@ USAGE:
     physis epistemics
     physis why <claim-id>
     physis prove <claim-id>
+    physis formalize <claim-id>
     physis falsify <claim-id>
     physis sweep <theory> <knob> <v1,v2,...>
     physis branch <name>

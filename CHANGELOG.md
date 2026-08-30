@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Agent roles propose; they do not mint**
+  (`Role`, `ResearchBudget`, `physis formalize`). Explorer / formalizer /
+  proof-searcher / falsifier / reviewer / auditor are processes that
+  `exec` may refuse. `formalize` prints the catalog encoding as
+  untrusted bytes and does not call `verify`. `--budget prove=N` is a
+  research cap: a spent slot cannot mint. `loop` and `replay` stay
+  lab-only. Journal restore reconstitutes as the lab, then the live
+  command is role-gated. P4 is still not assigned. Verified: role
+  permit tests, explorer-does-not-mint, formalizer-without-receipt,
+  spent-budget second prove, `fmt`, `clippy -D warnings`, full suite,
+  CLI.
+
 - **Chosen knobs vs measured ones, and inverse inspect**
   (`ParameterOrigin` on every `KnobSpec`, `physis inspect`). String
   `observed_dim` and SM `generations` are measured; compact radius and

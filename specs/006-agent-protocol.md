@@ -22,6 +22,7 @@ Layer: agent
 | `sensitivity` | perturb one knob, count flips |
 | `review <claim>` | raise semantic assurance from a trusted dossier (never Canonical) |
 | `inspect <axis> <value>` | inverse query over `trust`, `class`, knob `origin`, or knowledge `gap` |
+| `formalize <claim>` | emit the catalog encoding as untrusted bytes (not a receipt) |
 | `loop` | one research cycle: observe → hypothesize → prove → falsify → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |
@@ -31,6 +32,14 @@ Layer: agent
 | `replay <path>` | replay a recorded JSONL journal and verify it reproduces |
 
 CLI tokens map 1:1 onto `physis_agent::Command`.
+
+`--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor`
+gates which ops `exec` will dispatch. Named roles may observe; each may
+run one kind of untrusted work. None of them mint `Verified` — `prove`
+still goes through `physis_verifier::verify`. `loop` and `replay` stay
+lab-only. `--budget prove=N,review=N,set=N` is a research cap on the
+lab, not a proof. Journal restore reconstitutes as the lab, then the
+live command is role-gated.
 
 ## Responses
 

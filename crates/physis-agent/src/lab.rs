@@ -12,7 +12,7 @@ use physis_core::judgment::{
 };
 use physis_core::knob::{KnobDomain, KnobValue};
 use physis_core::AxiomLedger;
-use physis_proof::{Challenge, UntrustedProof, CATALOG};
+use physis_proof::{lookup, Challenge, UntrustedProof, CATALOG};
 use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
 use physis_theory::blackbody::Blackbody;
@@ -35,6 +35,7 @@ use physis_theory::{
 use crate::journal::{Journal, JournalEvent};
 use crate::protocol::{Command, Response};
 use crate::replay::replay_journal;
+use crate::role::{ResearchBudget, Role};
 use physis_verifier::{discover_tools, verify, ReceiptStore, Verified, VerifyError};
 
 /// Named snapshot of every theory's knobs.
@@ -52,6 +53,8 @@ pub struct Lab {
     branches: BTreeMap<String, BranchState>,
     store: ArtifactStore,
     axioms: AxiomLedger,
+    role: Role,
+    budget: ResearchBudget,
 }
 
 /// The experiments the lab can run, with one-line descriptions.
@@ -113,6 +116,8 @@ impl Lab {
             branches: BTreeMap::new(),
             store: ArtifactStore::empty(),
             axioms: AxiomLedger::physis_defaults(),
+            role: Role::Lab,
+            budget: ResearchBudget::unlimited(),
         }
     }
 
@@ -181,6 +186,21 @@ impl Lab {
     /// Mutable journal (for file persistence).
     pub fn journal_mut(&mut self) -> &mut Journal {
         &mut self.journal
+    }
+
+    /// Active role. Default is [`Role::Lab`].
+    pub fn role(&self) -> Role {
+        self.role
+    }
+
+    /// Restrict which commands [`Self::exec`] will dispatch.
+    pub fn set_role(&mut self, role: Role) {
+        self.role = role;
+    }
+
+    /// Remaining research actions. Default is unlimited.
+    pub fn set_budget(&mut self, budget: ResearchBudget) {
+        self.budget = budget;
     }
 
     /// Theory ids.
@@ -340,7 +360,20 @@ impl Lab {
     }
 
     /// Dispatch a protocol command.
+    ///
+    /// The active [`Role`] may refuse the op. A refusal is not a mint:
+    /// explorers cannot `prove`, and a spent prove budget cannot either.
     pub fn exec(&mut self, cmd: Command) -> Response {
+        if !self.role.permits(&cmd) {
+            return Response::err(format!(
+                "role {} cannot {}; proposers do not mint Verified",
+                self.role.as_str(),
+                cmd.verb()
+            ));
+        }
+        if let Err(e) = self.budget.try_consume(&cmd) {
+            return Response::err(e);
+        }
         match cmd {
             Command::Layers => {
                 let mut text = String::from("layers (finest → coarsest)\n");
@@ -650,6 +683,7 @@ impl Lab {
             Command::Review { claim } => self.review_claim(&claim),
             Command::Loop => self.research_loop(),
             Command::Inspect { axis, value } => self.inspect(axis.as_deref(), value.as_deref()),
+            Command::Formalize { claim } => self.formalize_claim(&claim),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -970,6 +1004,28 @@ impl Lab {
             }
             Err(e) => Response::err(e),
         }
+    }
+
+    /// Catalog encoding as untrusted bytes. Never calls `verify`.
+    fn formalize_claim(&self, claim_id: &str) -> Response {
+        let Some(spec) = lookup(claim_id) else {
+            return Response::err(format!(
+                "formalize {claim_id}: no catalog identity; this is not a mint"
+            ));
+        };
+        let expr = (spec.identity)();
+        Response::ok(format!(
+            "formalize {claim_id}\n\
+             status     untrusted encoding (not a receipt)\n\
+             lean       {}\n\
+             type       {}\n\
+             identity   {expr} ≡ 0\n\
+             axioms     {}\n\
+             note       Physlib.lean bytes remain untrusted until physis-verifier::verify runs\n",
+            spec.lean_theorem,
+            spec.lean_type,
+            spec.axioms.join(", "),
+        ))
     }
 
     fn research_loop(&mut self) -> Response {
@@ -2234,5 +2290,109 @@ mod tests {
             LayerId::Mathematical,
         );
         assert_eq!(proved, None);
+    }
+
+    #[test]
+    fn explorer_cannot_prove_and_does_not_mint() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let resp = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert_eq!(resp.exit_code(), 1, "{}", resp.text());
+        assert!(
+            resp.text().contains("explorer cannot prove"),
+            "{}",
+            resp.text()
+        );
+        let p3f = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3f.contains("count 0"), "{p3f}");
+    }
+
+    #[test]
+    fn formalizer_emits_untrusted_encoding_without_a_receipt() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Formalizer);
+        let text = lab
+            .exec(Command::Formalize {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("untrusted encoding"), "{text}");
+        assert!(text.contains("d_squared_zero"), "{text}");
+        assert!(!text.contains("backend"), "{text}");
+        let prove = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            prove.text().contains("formalizer cannot prove"),
+            "{}",
+            prove.text()
+        );
+        let conj = lab.exec(Command::Formalize {
+            claim: "predictivity.unique-vacuum".into(),
+        });
+        assert_eq!(conj.exit_code(), 1);
+        assert!(
+            conj.text().contains("no catalog identity"),
+            "{}",
+            conj.text()
+        );
+    }
+
+    #[test]
+    fn proof_searcher_can_prove_under_a_spent_budget() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::ProofSearcher);
+        lab.set_budget(ResearchBudget::limited(1, 0, 0));
+        let first = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            first.contains("lean-kernel") || first.contains("expand-recursive"),
+            "{first}"
+        );
+        let second = lab.exec(Command::Prove {
+            claim: "sr.invariant-interval".into(),
+        });
+        assert_eq!(second.exit_code(), 1, "{}", second.text());
+        assert!(
+            second.text().contains("budget exhausted"),
+            "{}",
+            second.text()
+        );
+        let p3f = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3f.contains("dec.d-squared-zero"), "{p3f}");
+        assert!(!p3f.contains("sr.invariant-interval"), "{p3f}");
+    }
+
+    #[test]
+    fn reviewer_cannot_prove() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Reviewer);
+        let resp = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            resp.text().contains("reviewer cannot prove"),
+            "{}",
+            resp.text()
+        );
     }
 }
