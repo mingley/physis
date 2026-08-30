@@ -119,6 +119,11 @@
 //! let _ = EmpiricalJudgment::Compatible;
 //! ```
 //!
+//! ```compile_fail
+//! use physis_core::judgment::HeuristicJudgment;
+//! let _ = HeuristicJudgment::Suggestive;
+//! ```
+//!
 //! JSON cannot mint a [`claim::Claim`] identity hash either (the hash is
 //! derived from the live sentence; there is no stored field to forge):
 //!

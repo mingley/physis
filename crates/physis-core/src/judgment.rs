@@ -43,6 +43,16 @@
 //! use physis_core::judgment::EmpiricalJudgment;
 //! let _ = EmpiricalJudgment { kind: todo!() };
 //! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::HeuristicJudgment;
+//! let _ = HeuristicJudgment::Suggestive;
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::HeuristicJudgment;
+//! let _ = HeuristicJudgment { kind: todo!() };
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -249,13 +259,47 @@ pub enum StatisticalJudgment {
 }
 
 /// Heuristic judgment — explicitly not a proof.
+///
+/// Suggestive / failed values are produced only by [`Judgment::from_lab`].
+/// There is no public `Suggestive` constructor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[serde(transparent)]
+pub struct HeuristicJudgment {
+    kind: HeuristicKind,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum HeuristicJudgment {
-    /// Order-of-magnitude / folklore, labelled as such.
+enum HeuristicKind {
     Suggestive,
-    /// Heuristic that failed its own encoded check.
     Failed,
+}
+
+impl HeuristicJudgment {
+    pub(crate) const fn suggestive() -> Self {
+        Self {
+            kind: HeuristicKind::Suggestive,
+        }
+    }
+
+    pub(crate) const fn failed() -> Self {
+        Self {
+            kind: HeuristicKind::Failed,
+        }
+    }
+
+    /// True when this is labelled folklore, not a failed check.
+    pub const fn is_suggestive(self) -> bool {
+        matches!(self.kind, HeuristicKind::Suggestive)
+    }
+
+    /// Stable kebab-case name (`suggestive`, `failed`).
+    pub const fn as_str(self) -> &'static str {
+        match self.kind {
+            HeuristicKind::Suggestive => "suggestive",
+            HeuristicKind::Failed => "failed",
+        }
+    }
 }
 
 /// Origin of a theory parameter. Distinguishes derived predictions from
@@ -563,9 +607,9 @@ impl Judgment {
             }
             ClaimClass::Heuristic => {
                 let j = if kind == VerdictKind::Fails {
-                    HeuristicJudgment::Failed
+                    HeuristicJudgment::failed()
                 } else {
-                    HeuristicJudgment::Suggestive
+                    HeuristicJudgment::suggestive()
                 };
                 Judgment::Heuristic(j)
             }
@@ -598,13 +642,7 @@ impl Judgment {
                     StatisticalJudgment::Computed => "computed",
                 }
             ),
-            Judgment::Heuristic(j) => format!(
-                "heuristic {}",
-                match j {
-                    HeuristicJudgment::Suggestive => "suggestive",
-                    HeuristicJudgment::Failed => "failed",
-                }
-            ),
+            Judgment::Heuristic(j) => format!("heuristic {}", j.as_str()),
         }
     }
 }
@@ -824,5 +862,32 @@ mod tests {
         );
         assert_eq!(compatible.label(), "empirical compatible");
         assert!(matches!(&compatible, Judgment::Empirical(e) if e.is_compatible()));
+    }
+
+    #[test]
+    fn heuristic_holds_is_suggestive_not_proved() {
+        let j = Judgment::from_lab(
+            crate::assurance::ClaimClass::Heuristic,
+            crate::claim::VerdictKind::Holds,
+            crate::assurance::EmpiricalStatus::NotApplicable,
+            crate::assurance::DerivationAssurance::Asserted,
+            false,
+            None,
+            None,
+        );
+        assert_eq!(j.label(), "heuristic suggestive");
+        assert!(matches!(&j, Judgment::Heuristic(h) if h.is_suggestive()));
+        assert_ne!(j.label(), "logical proved");
+        let failed = Judgment::from_lab(
+            crate::assurance::ClaimClass::Heuristic,
+            crate::claim::VerdictKind::Fails,
+            crate::assurance::EmpiricalStatus::NotApplicable,
+            crate::assurance::DerivationAssurance::Asserted,
+            false,
+            None,
+            None,
+        );
+        assert_eq!(failed.label(), "heuristic failed");
+        assert!(!matches!(&failed, Judgment::Heuristic(h) if h.is_suggestive()));
     }
 }

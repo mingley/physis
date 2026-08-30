@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **HeuristicJudgment cannot mint suggestive**
+  (`HeuristicJudgment` is a transparent wrapper with a private kind).
+  Suggestive / failed are produced only by `from_lab`. A heuristic Holds
+  is `heuristic suggestive`, not `logical proved`. Catalog d² hash
+  unchanged. Verified: compile-fail against `HeuristicJudgment::Suggestive`
+  and a kind struct literal; heuristic Holds is suggestive. Live prove
+  of catalog d² is still Lean+nanoda; `why` of GQW at `M_Z` is still
+  heuristic. `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **EmpiricalJudgment cannot mint compatible**
   (`EmpiricalJudgment` is a transparent wrapper with a private kind).
   Compatible / excluded are produced only by `from_lab` from a

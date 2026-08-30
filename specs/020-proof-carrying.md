@@ -62,7 +62,9 @@ Nothing gains authority merely because an agent wrote code that returns
   constructor: only `from_lab` can produce a certified enclosure, and
   only from a `CertifiedNumeric` Holds. `EmpiricalJudgment` has no public
   `Compatible` constructor: only `from_lab` can produce compatible, and
-  only from a registered empirical overlay. The lab projects `Judgment` from evaluator
+  only from a registered empirical overlay. `HeuristicJudgment` has no
+  public `Suggestive` constructor: only `from_lab` can produce it.
+  The lab projects `Judgment` from evaluator
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set

@@ -58,7 +58,8 @@ not a kernel proof; a coarse lattice is `numeric unresolved`; `Judgment`
 has no `Deserialize`, so JSON cannot mint `logical proved`;
 `LogicalJudgment` has no public `Proved` constructor;
 `NumericJudgment` has no public `Certified` constructor;
-`EmpiricalJudgment` has no public `Compatible` constructor),
+`EmpiricalJudgment` has no public `Compatible` constructor;
+`HeuristicJudgment` has no public `Suggestive` constructor),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
 encoding review of the live `statement_hash`, not the slug; P4 is not assigned from an in-process remint), the
 statement hash (which commits to quantifiers, units, constants, boundary
