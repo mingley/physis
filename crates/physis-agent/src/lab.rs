@@ -4597,6 +4597,56 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_bell_test_product_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "bell-test".into(),
+            knob: "product".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("product"),
+            "{}",
+            blocked.text()
+        );
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("bell-test".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-product") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("quantum.bell-violation") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("bell-test").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "quantum.bell-violation" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("visibility").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5295,6 +5345,10 @@ mod tests {
         assert!(
             text.contains("encode  ohm-circuit"),
             "loop must independently round-trip the lumped Kirchhoff netlist: {text}"
+        );
+        assert!(
+            text.contains("encode  bell-test"),
+            "loop must independently round-trip the singlet ket: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -6504,6 +6558,24 @@ mod tests {
         assert_ne!(ohm_id, nand_id);
         assert_ne!(ohm_id, u1_id);
 
+        let bell = lab
+            .exec(Command::Encode {
+                theory: "bell-test".into(),
+            })
+            .text()
+            .to_string();
+        assert!(bell.contains("equations  1"), "{bell}");
+        assert!(bell.contains("round-trip canonical"), "{bell}");
+        assert!(bell.contains("not P3S"), "{bell}");
+        assert!(!bell.contains("receipt"), "{bell}");
+        let bell_id = encoding_package_id(&bell);
+        assert_eq!(
+            bell_id.to_hex(),
+            "4a54aa1db88b053ef04a53593732c435331a71dcc0f8ad3749e7cbb6786990dc"
+        );
+        assert_ne!(bell_id, ohm_id);
+        assert_ne!(bell_id, nand_id);
+
         for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
@@ -6609,6 +6681,25 @@ mod tests {
             encoding_package_id(&ohm_again),
             ohm_id,
             "hypothesize must not install the tline mutant"
+        );
+
+        let hypo_bell = lab
+            .exec(Command::Hypothesize {
+                theory: Some("bell-test".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_bell.contains("add-product"), "{hypo_bell}");
+        let bell_again = lab
+            .exec(Command::Encode {
+                theory: "bell-test".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&bell_again),
+            bell_id,
+            "hypothesize must not install the product-state mutant"
         );
 
         let p3s = lab

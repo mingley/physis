@@ -20,15 +20,15 @@ Born rule) its first `Theory`, where earlier milestones only used it internally.
 
 | knob | effect |
 |---|---|
-| `visibility` | Werner-state visibility V ∈ [0,1]; the CHSH value scales as V·2√2 |
+| `visibility` | Werner-state visibility V ∈ [0,1]; the CHSH value scales as V·2√2 on the singlet. Topology is not this knob: `add-product` is an IR mutation |
 
 ## Claims
 
 | id | meaning | how it is decided |
 |---|---|---|
-| `quantum.born-normalization` | the singlet is normalized | computed from the ket: `⟨ψ|ψ⟩ = 1`, `Σ pᵢ = 1` |
-| `quantum.correlator-from-operators` | `E(a,b) = ⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b)` | **derived from the operators**: builds `σ(θ) = cos θ·σ_z + sin θ·σ_x`, tensors them, and evaluates the expectation on the singlet |
-| `quantum.bell-violation` | `|S| > 2` (local realism refuted) | computed CHSH `S` at the optimal angles; holds iff `S > 2` |
+| `quantum.born-normalization` | the ket is normalized | computed from the live ket: `⟨ψ|ψ⟩ = 1`, `Σ pᵢ = 1` |
+| `quantum.correlator-from-operators` | `E(a,b) = ⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b)` | **derived from the operators** on the singlet. Domain: two-qubit singlet. `add-product` appends `state product` and this cell fails. That is not a knob |
+| `quantum.bell-violation` | `|S| > 2` (local realism refuted) | computed CHSH `S` at the optimal angles; holds iff `S > 2`. Domain: two-qubit singlet. A product ket fails. `visibility` still scales the singlet independently |
 | `quantum.tsirelson-bound` | `|S| ≤ 2√2` | **computed by maximization**: brute-force over a 90³ angle grid finds `|S|max ≈ 2.827`, never exceeding `2√2` |
 | `quantum.local-realism-bound` | the LHV maximum of `|S|` is exactly 2 | **derived by enumeration** of all `2⁴` deterministic ±1 strategies; the max is 2 |
 
@@ -59,12 +59,14 @@ signature of quantum nonlocality.
 ```
 physis experiment bell
 physis set bell-test visibility 0.5   # S = √2 < 2: a local model now suffices
+physis hypothesize bell-test          # add-product is IR, not set
 ```
 
 ## Non-goals (this milestone)
 
-- A full density-matrix / measurement simulator; the correlator is computed in
-  closed form with a visibility parameter.
+- A full density-matrix / measurement simulator; the singlet correlator is
+  computed in closed form with a visibility parameter. The product-ket fork
+  evaluates operator expectations on `|01⟩`, not a circuit simulator.
 - Loophole modelling (detection, locality) — the point here is the ideal bound.
 
 ## Related

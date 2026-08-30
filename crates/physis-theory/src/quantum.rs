@@ -10,15 +10,20 @@
 //! this lab exists to scrutinize.
 //!
 //! A `visibility` knob (Werner-state mixedness) turns the violation off: below
-//! `1/√2` the correlations are reproducible by a local model.
+//! `1/√2` the correlations are reproducible by a local model. The ket lives on
+//! the IR package. A product-state encoding is a package mutation
+//! (`add-product`), not a knob: the singlet correlator and the Bell violation
+//! fail on the mutant.
 
 use std::f64::consts::PI;
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::{expectation4, spin_measurement, tensor2, Complex, Ket, World};
 
 use crate::critique::{report_from_rows, ExperimentReport};
@@ -48,6 +53,35 @@ pub fn quantum_rows() -> [&'static str; 5] {
 
 /// Angle-grid resolution for the brute-force Tsirelson maximization.
 const ANGLE_STEPS: usize = 90;
+/// Two-qubit singlet ket on the IR package.
+const SINGLET_EQ: &str = "state singlet";
+/// Product-state encoding (computational |01⟩).
+const PRODUCT_EQ: &str = "state product";
+
+fn parse_bell_state(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut singlet = false;
+    let mut product = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            SINGLET_EQ => singlet = true,
+            PRODUCT_EQ => product = true,
+            _ => {}
+        }
+    }
+    if !singlet {
+        return Err(format!("{} package has no singlet ket", pkg.id));
+    }
+    Ok(product)
+}
+
+fn singlet_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["two-qubit singlet".into()],
+        vec!["CHSH on |ψ⁻⟩".into()],
+        "Bell violation here is the singlet encoding. A product ket is a new \
+         encoding, not a silent Werner mixture.",
+    )
+}
 
 /// The signed CHSH combination `S` for the singlet correlator
 /// `E(x,y) = −V·cos(x−y)` at four measurement angles. The `−cos(x−y)` form is
@@ -95,15 +129,23 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
     domain: KnobDomain::Float { min: 0.0, max: 1.0 },
 }];
 
-/// A CHSH Bell test on a two-qubit singlet.
-#[derive(Clone, Debug)]
+/// A CHSH Bell test. The ket lives on the IR package.
+///
+/// Default encoding is a two-qubit singlet. A product state is a package
+/// mutation (`add-product`), not a knob: the singlet correlator and Bell
+/// violation fail on the mutant. `visibility` stays a Werner mixedness knob.
+#[derive(Clone, Debug, PartialEq)]
 pub struct BellTest {
     visibility: f64,
+    product: bool,
 }
 
 impl Default for BellTest {
     fn default() -> Self {
-        Self { visibility: 1.0 }
+        Self {
+            visibility: 1.0,
+            product: false,
+        }
     }
 }
 
@@ -121,10 +163,70 @@ impl BellTest {
         }
     }
 
-    /// The CHSH correlator |S| for the singlet at the optimal angles, scaled by
-    /// the visibility. E(a,b) = −V·cos(2(a−b)); optimal angles give |S| = V·2√2.
+    /// Computational-basis product |01⟩.
+    fn product_ket() -> Ket {
+        Ket {
+            amps: vec![Complex::ZERO, Complex::ONE, Complex::ZERO, Complex::ZERO],
+        }
+    }
+
+    fn ket(&self) -> Ket {
+        if self.product {
+            Self::product_ket()
+        } else {
+            Self::singlet()
+        }
+    }
+
+    /// IR package for this ket. Equations are `state singlet` and, when
+    /// forked, `state product`. Visibility stays on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![SINGLET_EQ.to_string()];
+        if self.product {
+            equations.push(PRODUCT_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["two-qubit-singlet".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: BELL_VIOLATION.into(),
+                statement: "The CHSH correlator exceeds the local-realism bound of 2.".into(),
+                layer: "quantum".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a ket encoding from a package. Visibility defaults; overlay it
+    /// from a live test when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "bell-test" {
+            return Err(format!(
+                "bell-test package id '{}' is not bell-test",
+                pkg.id
+            ));
+        }
+        Ok(Self {
+            product: parse_bell_state(pkg)?,
+            ..Self::default()
+        })
+    }
+
+    fn product_equation() -> String {
+        PRODUCT_EQ.to_string()
+    }
+
+    /// The CHSH correlator |S| at the optimal singlet angles.
     fn chsh_s(&self) -> f64 {
-        chsh_value(self.visibility, 0.0, PI / 2.0, PI / 4.0, 3.0 * PI / 4.0).abs()
+        if self.product {
+            product_chsh().abs()
+        } else {
+            chsh_value(self.visibility, 0.0, PI / 2.0, PI / 4.0, 3.0 * PI / 4.0).abs()
+        }
     }
 
     /// Maximize `|S|` over all measurement angles by brute-force grid search
@@ -132,6 +234,9 @@ impl BellTest {
     /// checks Tsirelson's bound: for the quantum correlator no angle choice
     /// exceeds `V·2√2`, and at full visibility the maximum saturates `2√2`.
     fn max_chsh_over_angles(&self) -> f64 {
+        if self.product {
+            return self.chsh_s();
+        }
         let v = self.visibility;
         let step = PI / ANGLE_STEPS as f64;
         let mut best = 0.0_f64;
@@ -147,6 +252,18 @@ impl BellTest {
         }
         best
     }
+}
+
+fn product_correlator(a: f64, b: f64) -> f64 {
+    let op = tensor2(spin_measurement(a), spin_measurement(b));
+    expectation4(&op, &BellTest::product_ket())
+        .map(|c| c.re)
+        .unwrap_or(f64::NAN)
+}
+
+fn product_chsh() -> f64 {
+    let e = product_correlator;
+    e(0.0, PI / 4.0) - e(0.0, 3.0 * PI / 4.0) + e(PI / 2.0, PI / 4.0) + e(PI / 2.0, 3.0 * PI / 4.0)
 }
 
 impl Knobbed for BellTest {
@@ -185,9 +302,10 @@ impl Theory for BellTest {
         "CHSH Bell test"
     }
     fn summary(&self) -> &'static str {
-        "A CHSH test on a two-qubit singlet. Local hidden-variable theories obey \
-         |S| ≤ 2; quantum mechanics computes |S| = 2√2, mechanically refuting \
-         local realism. A visibility knob turns the violation off."
+        "A CHSH test on a two-qubit ket. Local hidden-variable theories obey \
+         |S| ≤ 2; the singlet encoding computes |S| = 2√2, mechanically \
+         refuting local realism. A product ket is an IR mutation, not a knob. \
+         A visibility knob turns the singlet violation off."
     }
     fn world(&self) -> Option<World> {
         None // quantum foundations live on the quantum/information layers
@@ -212,13 +330,15 @@ impl Theory for BellTest {
                 "The singlet correlator equals ⟨ψ|σ(a)⊗σ(b)|ψ⟩ = −cos(a−b).",
                 LayerId::Quantum,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(singlet_domain()),
             Claim::new(
                 BELL_VIOLATION,
                 "The CHSH correlator exceeds the local-realism bound of 2.",
                 LayerId::Quantum,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(singlet_domain()),
             Claim::new(
                 TSIRELSON_BOUND,
                 "The CHSH correlator does not exceed Tsirelson's bound 2√2.",
@@ -236,7 +356,7 @@ impl Theory for BellTest {
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id_str() {
             BORN_NORMALIZATION => {
-                let psi = Self::singlet();
+                let psi = self.ket();
                 let n = psi.norm_sqr();
                 let p_sum: f64 = (0..psi.dim()).filter_map(|i| psi.born(i)).sum();
                 if (n - 1.0).abs() < 1e-12 && (p_sum - 1.0).abs() < 1e-12 {
@@ -247,27 +367,34 @@ impl Theory for BellTest {
                 }
             }
             QM_CORRELATOR => {
-                // Verify the closed form used everywhere else is the genuine
-                // quantum expectation, computed from σ(a)⊗σ(b) on the singlet.
-                let mut worst = 0.0_f64;
-                for (a, b) in [(0.0, 0.4), (0.3, 1.1), (1.0, 2.0), (0.0, PI / 2.0)] {
-                    let from_ops = singlet_correlator(a, b);
-                    let closed = -(a - b).cos();
-                    worst = worst.max((from_ops - closed).abs());
-                }
-                if worst < 1e-12 {
-                    Verdict::holds(
-                        claim,
-                        "⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b), computed from the operators",
-                    )
-                    .with_evidence([format!(
-                        "max |operator expectation − (−cos Δ)| = {worst:.2e} over sampled angles"
-                    )])
-                } else {
+                if self.product {
                     Verdict::fails(
                         claim,
-                        format!("operator correlator disagrees with −cos(a−b) by {worst:.2e}"),
+                        "product state: ⟨ψ|σ(a)⊗σ(b)|ψ⟩ is not the singlet −cos(a−b)",
                     )
+                } else {
+                    // Verify the closed form used everywhere else is the genuine
+                    // quantum expectation, computed from σ(a)⊗σ(b) on the singlet.
+                    let mut worst = 0.0_f64;
+                    for (a, b) in [(0.0, 0.4), (0.3, 1.1), (1.0, 2.0), (0.0, PI / 2.0)] {
+                        let from_ops = singlet_correlator(a, b);
+                        let closed = -(a - b).cos();
+                        worst = worst.max((from_ops - closed).abs());
+                    }
+                    if worst < 1e-12 {
+                        Verdict::holds(
+                            claim,
+                            "⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b), computed from the operators",
+                        )
+                        .with_evidence([format!(
+                            "max |operator expectation − (−cos Δ)| = {worst:.2e} over sampled angles"
+                        )])
+                    } else {
+                        Verdict::fails(
+                            claim,
+                            format!("operator correlator disagrees with −cos(a−b) by {worst:.2e}"),
+                        )
+                    }
                 }
             }
             BELL_VIOLATION => {
@@ -330,6 +457,36 @@ impl Theory for BellTest {
             _ => Verdict::inapplicable(claim, "claim not made by a quantum-foundations object"),
         }
     }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.product = parsed.product;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.product {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::product_equation()),
+        );
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.product => {
+                let mut fork = self.clone();
+                fork.product = true;
+                vec![("add-product".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
+        }
+    }
 }
 
 /// The quantum-foundations experiment: a CHSH Bell test.
@@ -342,12 +499,14 @@ pub fn bell() -> ExperimentReport {
          from the quantum state; |S| > 2 refutes local hidden variables, and the \
          quantum value saturates Tsirelson's bound 2√2.",
         "The Born rule, the CHSH value, and Tsirelson's bound are computed from \
-         the two-qubit state. Local realism is a falsifiable assumption here, and \
-         it fails.",
+         the two-qubit ket. Local realism is a falsifiable assumption here, and \
+         it fails on the singlet. A product ket is an IR fork (`add-product`), \
+         not a visibility knob.",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "S is computed at the optimal CHSH angles; the classical bound is 2, the quantum (Tsirelson) bound is 2√2.".into(),
             "`set bell-test visibility 0.5` drops S below 2 — a local model then suffices.".into(),
+            "`hypothesize bell-test`: add-product is IR, not set.".into(),
         ],
         &quantum_rows(),
         theories,
@@ -437,6 +596,73 @@ mod tests {
                 .and_then(|m| m.get("bell-test"))
                 .copied(),
             Some(VerdictKind::Holds)
+        );
+    }
+
+    #[test]
+    fn product_state_is_ir_not_a_knob() {
+        let mut t = BellTest::default();
+        assert!(
+            t.set("product", KnobValue::Bool(true)).is_err(),
+            "product ket is an IR mutation, not a knob"
+        );
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            BellTest::from_package(&pkg).unwrap(),
+            t,
+            "IR round-trip must preserve the singlet ket"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(BellTest::product_equation()),
+        );
+        let parsed = BellTest::from_package(&mutated).unwrap();
+        assert!(parsed.product);
+        let mut fork = t.clone();
+        fork.product = true;
+        assert_eq!(verdict(&fork, BELL_VIOLATION), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, QM_CORRELATOR), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, BORN_NORMALIZATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, TSIRELSON_BOUND), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, LOCAL_REALISM_BOUND), VerdictKind::Holds);
+        assert_eq!(verdict(&t, BELL_VIOLATION), VerdictKind::Holds);
+        assert_eq!(verdict(&t, QM_CORRELATOR), VerdictKind::Holds);
+        t.set("visibility", KnobValue::Float(0.5)).unwrap();
+        assert_eq!(verdict(&t, BELL_VIOLATION), VerdictKind::Fails);
+        assert_eq!(verdict(&t, QM_CORRELATOR), VerdictKind::Holds);
+        let probes = BellTest::default().structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-product");
+        assert_eq!(
+            verdict(probes[0].1.as_ref(), BELL_VIOLATION),
+            VerdictKind::Fails
+        );
+        assert!(fork.structural_mutations().is_empty());
+        let live = BellTest::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            verdict(rebuilt.as_ref(), BELL_VIOLATION),
+            VerdictKind::Holds
+        );
+        for (a, b) in [(0.0, 0.4), (1.0, 2.0)] {
+            let ops = super::product_correlator(a, b);
+            let closed = -a.cos() * b.cos();
+            assert!((ops - closed).abs() < 1e-12, "a={a} b={b} ops={ops}");
+        }
+        assert!((fork.chsh_s() - 2.0_f64.sqrt()).abs() < 1e-9);
+        let bell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == BELL_VIOLATION)
+            .unwrap();
+        assert!(
+            !bell.domain().is_encoding_wide(),
+            "Bell violation must name the singlet: {:?}",
+            bell.domain()
         );
     }
 }

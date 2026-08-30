@@ -163,7 +163,7 @@ those tools; a local checkout without them still mints
 | 4 | `physis-numeric`, `physis-data` | Exact `Ratio` / `Interval`; SU(5) `3/8` disjoint from PDG `sin²θ_W(M_Z)` |
 | 5 | `physis-store` | Content-addressed DAG; descendants only are invalidated |
 | 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops. Knob diffs are scientific-axis (`VerdictKind` plus derivation / empirical / projected judgment); legacy kind-only journals still replay |
-| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, and ohm-circuit lumped branches are live packages; `physis encode` independently round-trips them; not a Lean replacement |
+| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, ohm-circuit lumped branches, and bell-test singlet ket are live packages; `physis encode` independently round-trips them; not a Lean replacement |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review |

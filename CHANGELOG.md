@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Bell-test product ket is an IR mutation**
+  (`bell-test`, `add-product`). The CHSH lab ket is the two-qubit singlet
+  (`state singlet`); appending `state product` flips
+  `quantum.bell-violation` and `quantum.correlator-from-operators` holds
+  to fails. That is not a knob. `visibility` still scales the singlet
+  Werner mixture independently. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: IR
+  round-trip; set product is unknown; hypothesize bell-test; live
+  singlet restored; encode pin
+  `4a54aa1db88b053ef04a53593732c435331a71dcc0f8ad3749e7cbb6786990dc`.
+
 - **Ohm-circuit transmission-line delay is an IR mutation**
   (`ohm-circuit`, `add-tline`). Kirchhoff current law is the lumped
   branch netlist (`branch R 0 1`); appending `tline 0 1` flips
@@ -68,7 +80,7 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   reconstructs live theory IR packages (`combinational-circuit` NAND
   netlist, `klein-gordon` nearest-neighbour stencil, `wilson-u1` /
   `wilson-su2` / `wilson-su3` 1×1 plaquettes, `ohm-circuit` lumped
-  branches). A forged
+  branches, `bell-test` singlet ket). A forged
   `package_hash` cannot mint. Refuses theories with no package.
   Hypothesize mutants are not installed. Not P3S, not a kernel receipt,
   not Canonical, not P4. Loop encodes after cite. Unique-vacuum graph
@@ -84,6 +96,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `03bd82af34a6e36ee04985c243a0e2a35ab9fe56a1b28d3ad0bb63ea8461d8d3`.
   Ohm-circuit package id
   `fb14d2c8a8cf2c51fe67c2f334a9307860c6ebb5cfbeca1c35467d61f1387af1`.
+  Bell-test package id
+  `4a54aa1db88b053ef04a53593732c435331a71dcc0f8ad3749e7cbb6786990dc`.
   Verified: role gates; journal restore; hypothesize does not change
   the live package id.
 
