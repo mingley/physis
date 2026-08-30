@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Einstein composition is a catalog identity**
+  (`sr.subluminal-composition`, Physlib `subluminal_composition`).
+  The polynomial `(1+uv)² − (u+v)² − (1−u²)(1−v²) ≡ 0` is dual-expanded
+  and kernel-checked. `|w|<1` over ℝ remains the evaluator. Galilean
+  addition is not an identity. The claim depends on
+  `sr.invariant-interval`. Verified: expander and parse tests, exact
+  mint, Lean+nanoda when wired, loop prove, `fmt`, `clippy -D warnings`,
+  full suite, CLI.
+
 - **Trust gates reproduce and loop-review**
   (`Lab::exec` trust check). Role, then trust, then budget.
   `reproduce` requires P3F and does not spend prove budget on a

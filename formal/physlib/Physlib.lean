@@ -16,3 +16,10 @@ theorem d_squared_zero (a b c : Int) :
 theorem invariant_interval (t x β : Int) :
     (t - β * x) ^ 2 - (x - β * t) ^ 2 = (1 - β ^ 2) * (t ^ 2 - x ^ 2) := by
   grind
+
+/-- Einstein velocity addition: `1 − w²` shares the sign of `(1 − u²)(1 − v²)`
+when `w = (u + v) / (1 + u v)`. Polynomial form; the inequality over ℝ is
+still the lab evaluator. -/
+theorem subluminal_composition (u v : Int) :
+    (1 + u * v) ^ 2 - (u + v) ^ 2 = (1 - u ^ 2) * (1 - v ^ 2) := by
+  grind

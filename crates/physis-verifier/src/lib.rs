@@ -545,4 +545,43 @@ mod tests {
         let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
         verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
     }
+
+    #[test]
+    fn composition_catalog_mints() {
+        let claim = Claim::new(
+            "sr.subluminal-composition",
+            "Composing two subluminal velocities stays below c.",
+            LayerId::Spacetime,
+            ClaimClass::ModelInternal,
+        );
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
+    }
+
+    #[test]
+    fn physlib_composition_dual_kernel_mints_when_pipeline_is_wired() {
+        if discover_tools().is_none() {
+            if std::env::var("CI").is_ok() {
+                panic!("CI must install Lean 4.34 and lean4export (LEAN4EXPORT)");
+            }
+            return;
+        }
+        let claim = Claim::new(
+            "sr.subluminal-composition",
+            "Composing two subluminal velocities stays below c.",
+            LayerId::Spacetime,
+            ClaimClass::ModelInternal,
+        );
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let v = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: physis_proof::PHYSLIB_SOURCE.into(),
+            },
+        )
+        .expect("Lean kernel + nanoda must mint for Physlib composition identity");
+        assert!(matches!(v.receipt().formal_backend, FormalBackend::Lean4));
+        assert_eq!(v.receipt().primary_checker.checker, "lean-kernel");
+        assert_eq!(v.receipt().secondary_checker.checker, "nanoda");
+    }
 }

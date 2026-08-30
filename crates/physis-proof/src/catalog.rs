@@ -51,6 +51,22 @@ pub fn lorentz_interval() -> Expr {
     sub(boosted, orig)
 }
 
+/// Einstein velocity addition: `(1 + uv)² − (u + v)² − (1 − u²)(1 − v²) ≡ 0`.
+///
+/// If `w = (u + v) / (1 + uv)` then `1 − w²` is proportional to
+/// `(1 − u²)(1 − v²)`. The catalog checks the polynomial; `|w| < 1` over
+/// the reals remains the evaluator.
+pub fn einstein_composition() -> Expr {
+    let u = Expr::var("u");
+    let v = Expr::var("v");
+    let left = sub(
+        pow(add(Expr::c(1), mul(u.clone(), v.clone())), 2),
+        pow(add(u.clone(), v.clone()), 2),
+    );
+    let right = mul(sub(Expr::c(1), pow(u, 2)), sub(Expr::c(1), pow(v, 2)));
+    sub(left, right)
+}
+
 /// Known exact identities. A claim not in this list cannot be promoted by
 /// the exact-certificate backend.
 pub const CATALOG: &[IdentitySpec] = &[
@@ -68,6 +84,13 @@ pub const CATALOG: &[IdentitySpec] = &[
         axioms: &["integer-arithmetic", "minkowski-interval-signature"],
         identity: lorentz_interval,
     },
+    IdentitySpec {
+        claim_id: "sr.subluminal-composition",
+        lean_theorem: "subluminal_composition",
+        lean_type: "∀ (u v : Int), (1 + u*v)^2 - (u + v)^2 = (1 - u^2)*(1 - v^2)",
+        axioms: &["integer-arithmetic", "einstein-velocity-addition"],
+        identity: einstein_composition,
+    },
 ];
 
 /// Lookup by claim id.
@@ -83,6 +106,7 @@ mod tests {
     fn catalog_covers_the_vertical_slice() {
         assert!(lookup("dec.d-squared-zero").is_some());
         assert!(lookup("sr.invariant-interval").is_some());
+        assert!(lookup("sr.subluminal-composition").is_some());
         assert!(lookup("predictivity.unique-vacuum").is_none());
     }
 }

@@ -165,6 +165,11 @@ impl AxiomLedger {
                 AxiomClass::PhysicalPostulate,
                 "Minkowski signature (+,-,-,-) at c = 1, polynomial form",
             ),
+            (
+                "einstein-velocity-addition",
+                AxiomClass::PhysicalPostulate,
+                "Einstein composition of collinear velocities, polynomial form",
+            ),
         ];
         for (id, class, provenance) in builtins {
             l.records.insert(

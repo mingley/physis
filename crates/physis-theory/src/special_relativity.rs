@@ -150,7 +150,8 @@ impl Theory for SpecialRelativity {
                 "Composing two subluminal velocities stays below c.",
                 LayerId::Spacetime,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_dependencies(&[SR_INVARIANT_INTERVAL]),
             Claim::new(
                 SR_ENERGY_MOMENTUM,
                 "The mass shell E² − (pc)² = (mc²)² is frame-independent.",

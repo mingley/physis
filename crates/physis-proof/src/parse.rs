@@ -146,7 +146,7 @@ fn infix_bp(op: Option<u8>) -> Option<(u8, u8, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::catalog::{discrete_d2, lorentz_interval};
+    use crate::catalog::{discrete_d2, einstein_composition, lorentz_interval};
 
     #[test]
     fn human_d2_matches_catalog_tree() {
@@ -162,8 +162,14 @@ mod tests {
     }
 
     #[test]
+    fn human_composition_matches_catalog_tree() {
+        let e = parse_expr("(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)").unwrap();
+        assert_eq!(e, einstein_composition());
+    }
+
+    #[test]
     fn display_round_trips_catalog() {
-        for e in [discrete_d2(), lorentz_interval()] {
+        for e in [discrete_d2(), lorentz_interval(), einstein_composition()] {
             assert_eq!(parse_expr(&e.to_string()).unwrap(), e);
         }
     }

@@ -37,6 +37,12 @@ expression would not compile.
 | `sr.subluminal-composition` | composing two subluminal velocities stays below `c` |
 | `sr.energy-momentum-invariant` | the mass shell `E² − (pc)² = (mc²)²` is frame-independent |
 
+The algebraic content of Einstein addition is a catalog identity
+(`(1+uv)² − (u+v)² ≡ (1−u²)(1−v²)`), kernel-checked as
+`subluminal_composition`. The lab evaluator still checks the inequality
+`0.8c ⊕ 0.7c < c`. The claim declares a live lemma edge to
+`sr.invariant-interval`.
+
 ## How each is computed
 
 Both the spacetime coordinates `(cΔt, Δx)` and the energy–momentum `(E, pc)` are

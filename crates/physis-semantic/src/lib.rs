@@ -110,7 +110,25 @@ lean_ref ∀ (t x β : Int), (t - β*x)^2 - (x - β*t)^2 = (1 - β^2)*(t^2 - x^2
 "#,
 };
 
-const DOSSIERS: &[Dossier] = &[D2, LORENTZ];
+/// Einstein 1905 §5: composition of velocities, polynomial content.
+const COMPOSITION: Dossier = Dossier {
+    claim_id: "sr.subluminal-composition",
+    work: "On the Electrodynamics of Moving Bodies (Einstein)",
+    edition: "Annalen der Physik 17 (1905)",
+    version: "1905",
+    section: Some("5"),
+    equation: Some("V"),
+    ir: r#"
+id = einstein-composition
+name = Einstein velocity addition algebraic identity
+assumption einstein-velocity-addition
+equation (1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)
+claim model-internal spacetime sr.subluminal-composition : composing subluminal velocities stays below c
+lean_ref ∀ (u v : Int), (1 + u*v)^2 - (u + v)^2 = (1 - u^2)*(1 - v^2)
+"#,
+};
+
+const DOSSIERS: &[Dossier] = &[D2, LORENTZ, COMPOSITION];
 
 fn dossier(claim_id: &str) -> Option<&'static Dossier> {
     DOSSIERS.iter().find(|d| d.claim_id == claim_id)

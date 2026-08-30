@@ -2183,6 +2183,7 @@ mod tests {
         let text = lab.exec(Command::Loop).text().to_string();
         assert!(text.contains("prove  dec.d-squared-zero"), "{text}");
         assert!(text.contains("prove  sr.invariant-interval"), "{text}");
+        assert!(text.contains("prove  sr.subluminal-composition"), "{text}");
         assert!(text.contains("counterexample"), "{text}");
         assert!(text.contains("replicate  dec.d-squared-zero  ok"), "{text}");
         assert!(text.contains("audit  red-team corpus caught"), "{text}");
@@ -2636,6 +2637,10 @@ mod tests {
         );
         assert!(
             text.contains("review  sr.invariant-interval  trust P3F required"),
+            "{text}"
+        );
+        assert!(
+            text.contains("review  sr.subluminal-composition  trust P3F required"),
             "{text}"
         );
         assert!(

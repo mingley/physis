@@ -37,6 +37,9 @@ stack) *and* kernel-checked as Physlib theorems (`formal/physlib`):
 - `dec.d-squared-zero`: `(b−a)−(c−a)+(c−b) ≡ 0` (`d_squared_zero`, `omega`)
 - `sr.invariant-interval`: `(t−βx)² − (x−βt)² − (1−β²)(t²−x²) ≡ 0`
   (`invariant_interval`, `grind`)
+- `sr.subluminal-composition`: `(1+uv)² − (u+v)² − (1−u²)(1−v²) ≡ 0`
+  (`subluminal_composition`, `grind`). Algebraic content of Einstein
+  addition; `|w|<1` over ℝ remains the evaluator.
 
 A one-byte mutation of the challenge bytes is `ChallengeTampered`.
 A sign flip of the identity fails both expanders. `axiom` / `sorry` /
@@ -86,7 +89,8 @@ dual expanders. `physis prove` uses the same preference.
 - `SemanticAssurance::Canonical` (reserved; not agent-mintable)
 - P4 independent reproduction (in-process `reproduce` remints and
   **refuses** to assign P4; a distinct implementation is still required)
-- Mathlib-scale Physlib; only the two catalog identities are kernel-checked
+- Mathlib-scale Physlib; three catalog identities are kernel-checked
+  (`d²`, interval, Einstein composition). That is not Mathlib.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op.
@@ -97,6 +101,7 @@ dual expanders. `physis prove` uses the same preference.
 |---|---|
 | A. `d² = 0` | Dual-expanded identity **and** Lean kernel + nanoda receipt; `physis review` raises semantic |
 | B. Lorentz interval | Same backends |
+| B2. Einstein composition | Same backends; `|w|<1` over ℝ remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |

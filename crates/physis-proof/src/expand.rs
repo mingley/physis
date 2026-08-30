@@ -227,7 +227,7 @@ pub fn identity_is_zero(expr: &Expr) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::catalog::{discrete_d2, lorentz_interval};
+    use crate::catalog::{discrete_d2, einstein_composition, lorentz_interval};
     use crate::expr::{add, mul, sub, Expr};
 
     #[test]
@@ -238,6 +238,11 @@ mod tests {
     #[test]
     fn lorentz_interval_is_zero() {
         identity_is_zero(&lorentz_interval()).unwrap();
+    }
+
+    #[test]
+    fn einstein_composition_is_zero() {
+        identity_is_zero(&einstein_composition()).unwrap();
     }
 
     #[test]
@@ -274,5 +279,20 @@ mod tests {
             crate::expr::pow(t.clone(), 2)
         }
         assert!(identity_is_zero(&sub(boosted, orig)).is_err());
+    }
+
+    #[test]
+    fn galilean_composition_is_not_identity() {
+        // 1 − (u+v)² − (1−u²)(1−v²) is not identically zero.
+        let u = Expr::var("u");
+        let v = Expr::var("v");
+        let galilean = sub(
+            sub(Expr::c(1), crate::expr::pow(add(u.clone(), v.clone()), 2)),
+            mul(
+                sub(Expr::c(1), crate::expr::pow(u, 2)),
+                sub(Expr::c(1), crate::expr::pow(v, 2)),
+            ),
+        );
+        assert!(identity_is_zero(&galilean).is_err());
     }
 }
