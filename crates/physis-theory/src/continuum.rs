@@ -15,6 +15,7 @@
 
 use std::f64::consts::PI;
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -307,7 +308,13 @@ impl Theory for KleinGordonField {
                 "The discretization is second-order accurate (error ∝ a²).",
                 LayerId::Field,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["|k a| < 1 at the Richardson probe".into()],
+                vec!["O(a^2) stencil at long wavelength".into()],
+                "Outside |k a| < 1 the Richardson order is not a stencil verdict. \
+                 That spacing is undecidable / insufficient-precision, not a failed theorem.",
+            )),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -490,6 +497,20 @@ mod tests {
         };
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.empirical, EmpiricalStatus::NotApplicable);
+        let order_claim = f
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == SECOND_ORDER)
+            .unwrap();
+        assert!(
+            order_claim
+                .domain
+                .regimes
+                .iter()
+                .any(|r| r.contains("|k a| < 1")),
+            "second-order is a long-wavelength claim, not encoding-wide: {:?}",
+            order_claim.domain
+        );
         assert!((f.convergence_order() - 2.0).abs() < 0.1);
         // An absurdly coarse lattice is a resolution gap, not a failed stencil.
         let mut coarse = KleinGordonField::default();

@@ -57,7 +57,10 @@ A theory can `Executed`-derive a prediction that nature `Excluded`. That is a fe
 not a kernel proof; a coarse lattice is `numeric unresolved`),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
 encoding review; P4 is not assigned from an in-process remint), the
-statement hash, and `kernel proof: none` until `physis prove` records a
+statement hash (which commits to quantifiers, units, constants, boundary
+conditions, conventions, theory version, definitions, datasets, and
+formal-library identity; the lab slug is stable), non-default identity
+fields, and `kernel proof: none` until `physis prove` records a
 receipt. A P3F result that is still `Unreviewed` prints a danger note.
 When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a
 catalog identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).

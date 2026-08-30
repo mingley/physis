@@ -29,7 +29,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
-use physis_core::ParameterOrigin;
+use physis_core::{ClaimCommitments, ParameterOrigin};
 use physis_data::{pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_numeric::{Interval, Ratio};
@@ -153,20 +153,36 @@ impl Theory for Su5Gut {
                 "The unification-scale weak mixing angle is sin²θ_W = 3/8.",
                 LayerId::Interaction,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                units: vec!["1".into()],
+                boundary: vec!["unification-scale".into()],
+                definitions: vec!["sin^2 theta_W = Tr(T3^2)/Tr(Q^2)".into()],
+                ..ClaimCommitments::unspecified()
+            }),
             Claim::new(
                 GUT_WEINBERG_ANGLE_MZ,
                 "Georgi–Quinn–Weinberg running of 3/8 down to M_Z matches the measured sin²θ_W.",
                 LayerId::Effective,
                 ClaimClass::Heuristic,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                boundary: vec!["M_Z".into()],
+                ..ClaimCommitments::unspecified()
+            }),
             Claim::new(
                 GUT_WEINBERG_ANGLE_MZ_INTERVAL,
                 "The one-loop GQW prediction of sin²θ_W(M_Z), enclosed by the heuristic 3% \
                  truncation band, lies inside the PDG measurement.",
                 LayerId::Effective,
                 ClaimClass::EmpiricalPrediction,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                units: vec!["1".into()],
+                boundary: vec!["M_Z".into()],
+                datasets: vec!["pdg-2024-sin2theta".into()],
+                ..ClaimCommitments::unspecified()
+            }),
             Claim::new(
                 GUT_COUPLING_UNIFICATION,
                 "The three SM gauge couplings meet at a single scale.",

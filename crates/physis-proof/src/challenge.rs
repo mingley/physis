@@ -114,7 +114,7 @@ mod tests {
 
     use super::*;
 
-    fn claim(id: &str, stmt: &str) -> FormalClaim {
+    fn claim_with(id: &str, stmt: &str, commitments: physis_core::ClaimCommitments) -> FormalClaim {
         let assumptions = AssumptionSet::encoding_internal();
         let domain = DomainOfValidity::encoding_wide();
         let statement_hash = ArtifactId::of(FormalClaim::canonical_bytes(
@@ -124,6 +124,7 @@ mod tests {
             LayerId::Mathematical,
             &assumptions,
             &domain,
+            &commitments,
         ));
         FormalClaim {
             id: ClaimId::new(id),
@@ -133,7 +134,12 @@ mod tests {
             domain,
             class: ClaimClass::Mathematical,
             layer: LayerId::Mathematical,
+            commitments,
         }
+    }
+
+    fn claim(id: &str, stmt: &str) -> FormalClaim {
+        claim_with(id, stmt, physis_core::ClaimCommitments::unspecified())
     }
 
     #[test]
@@ -163,5 +169,18 @@ mod tests {
             Challenge::generate(&a).statement_hash,
             Challenge::generate(&b).statement_hash
         );
+    }
+
+    #[test]
+    fn physlib_forall_is_not_the_unspecified_d2_challenge() {
+        let stmt = "The exterior derivative is nilpotent: d ∘ d = 0.";
+        let a = Challenge::generate(&claim("dec.d-squared-zero", stmt));
+        let b = Challenge::generate(&claim_with(
+            "dec.d-squared-zero",
+            stmt,
+            physis_core::ClaimCommitments::physlib_forall(),
+        ));
+        assert_ne!(a.statement_hash, b.statement_hash);
+        assert_ne!(a.challenge_hash, b.challenge_hash);
     }
 }

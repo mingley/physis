@@ -10,7 +10,7 @@ M3 domain reuse   ✓ electricity (Maxwell + ohm-circuit) and computation
 M4 continuum      ◑ fields as actual local objects (klein-gordon lattice seed)
 
 Level-3 trust
-  L3-M1 trust model        ✓ MachineProved unforgeable; FormalClaim; assumptions; why
+  L3-M1 trust model        ✓ MachineProved unforgeable; FormalClaim commitments; assumptions; why
   L3-M2 exact dual-check   ✓ catalog identities + dual expanders
   L3-M3 provenance         ✓ SourceRecord rejects slogan locators
   L3-M4 numerics           ✓ Ratio / Interval; empirical receipts

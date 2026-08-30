@@ -30,6 +30,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ClaimCommitments;
 use physis_core::ParameterOrigin;
 use physis_model::World;
 
@@ -601,7 +602,8 @@ impl Theory for DeRham {
                 "The exterior derivative is nilpotent: d ∘ d = 0.",
                 LayerId::Mathematical,
                 ClaimClass::Mathematical,
-            ),
+            )
+            .with_commitments(ClaimCommitments::physlib_forall()),
             Claim::new(
                 FIRST_BETTI,
                 "The first Betti number counts independent 1-cycles (holes).",
@@ -785,7 +787,7 @@ impl Theory for DeRham {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
-    use physis_core::DerivationAssurance;
+    use physis_core::{DerivationAssurance, Quantifier};
 
     fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
@@ -1023,6 +1025,27 @@ mod tests {
             derivation(&t, D_SQUARED_ZERO),
             DerivationAssurance::Executed,
             "d² = 0 is a single-path identity, not a two-path cross-check"
+        );
+        let d2 = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == D_SQUARED_ZERO)
+            .unwrap();
+        assert_eq!(d2.commitments.quantifier, Quantifier::ForAll);
+        assert!(d2
+            .commitments
+            .formal_libraries
+            .iter()
+            .any(|l| l == "physlib:unversioned"));
+        let poincare = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == CLOSED_EQUALS_EXACT)
+            .unwrap();
+        assert_eq!(poincare.commitments.quantifier, Quantifier::Unspecified);
+        assert!(
+            poincare.commitments.formal_libraries.is_empty(),
+            "Poincaré is not a catalog polynomial"
         );
         assert_eq!(
             derivation(&t, CLOSED_EQUALS_EXACT),

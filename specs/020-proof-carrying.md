@@ -17,7 +17,16 @@ Nothing gains authority merely because an agent wrote code that returns
   `SemanticAssurance`. No `Epistemic::Theorem`. No `MachineProved` enum.
 - `Verified<T>` has private fields, crate-private mint, and **no
   `Deserialize` impl** (JSON cannot mint a kernel proof).
-- Every claim has assumptions, a domain, and a SHA-256 statement identity.
+- Every claim has assumptions, a domain, and a SHA-256 statement identity
+  that also commits to quantifiers, units, constants, boundary conditions,
+  conventions, theory version, definitions, datasets, and formal-library
+  identity. Changing ∀/∃, a sign, a unit, a constant, or a boundary is a
+  new hash. The lab slug is unchanged. Catalog identities are `forall` in
+  unversioned Physlib; Poincaré is not. `field.second-order-accurate`
+  names `|k a| < 1` as its domain. GUT-scale `3/8` commits to the
+  unification-scale boundary; the PDG cell commits to
+  `pdg-2024-sin2theta`. Lean compiler versions live on the receipt, not
+  the sentence.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set
   as an enum; P4 is not assigned from an in-process remint. P3N is

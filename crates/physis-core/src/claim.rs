@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::artifact::ArtifactId;
 use crate::assumption::{AssumptionSet, DomainOfValidity};
-use crate::formal::FormalClaim;
+use crate::formal::{ClaimCommitments, FormalClaim};
 use crate::id::{ClaimId, LayerId};
 
 pub use crate::assurance::{ClaimClass, DerivationAssurance, EmpiricalStatus, SemanticAssurance};
@@ -193,6 +193,9 @@ pub struct Claim {
     pub assumptions: AssumptionSet,
     /// Domain of validity.
     pub domain: DomainOfValidity,
+    /// First-class identity fields committed in [`Self::statement_hash`].
+    #[serde(default)]
+    pub commitments: ClaimCommitments,
     /// Content address of the formal identity.
     pub statement_hash: ArtifactId,
     /// Lemma ids this claim uses. Not part of [`statement_hash`]: a lab
@@ -215,6 +218,7 @@ impl Claim {
         let statement = statement.into();
         let assumptions = AssumptionSet::encoding_internal();
         let domain = DomainOfValidity::encoding_wide();
+        let commitments = ClaimCommitments::unspecified();
         let statement_hash = ArtifactId::of(FormalClaim::canonical_bytes(
             &id.0,
             &statement,
@@ -222,6 +226,7 @@ impl Claim {
             layer,
             &assumptions,
             &domain,
+            &commitments,
         ));
         Self {
             id,
@@ -233,14 +238,43 @@ impl Claim {
             semantic: SemanticAssurance::Unreviewed,
             assumptions,
             domain,
+            commitments,
             statement_hash,
             depends_on: Vec::new(),
         }
     }
 
+    fn rehash(&mut self) {
+        self.statement_hash = ArtifactId::of(FormalClaim::canonical_bytes(
+            &self.id.0,
+            &self.statement,
+            self.class,
+            self.layer,
+            &self.assumptions,
+            &self.domain,
+            &self.commitments,
+        ));
+    }
+
     /// Record lemma ids this claim uses. Does not change [`Self::statement_hash`].
     pub fn with_dependencies(mut self, lemmas: &[&str]) -> Self {
         self.depends_on = lemmas.iter().copied().map(ClaimId::new).collect();
+        self
+    }
+
+    /// Overlay first-class identity fields and recompute the statement hash.
+    /// The slug [`ClaimId`] is unchanged.
+    pub fn with_commitments(mut self, commitments: ClaimCommitments) -> Self {
+        self.commitments = commitments;
+        self.rehash();
+        self
+    }
+
+    /// Overlay a domain of validity and recompute the statement hash.
+    /// Extrapolating outside it is a new claim, not a silent reuse.
+    pub fn with_domain(mut self, domain: DomainOfValidity) -> Self {
+        self.domain = domain;
+        self.rehash();
         self
     }
 }
@@ -294,6 +328,40 @@ mod tests {
         assert_eq!(a.statement_hash, b.statement_hash);
         assert!(a.depends_on.is_empty());
         assert_eq!(b.depends_on[0].0, "dec.d-squared-zero");
+    }
+
+    #[test]
+    fn commitments_change_the_hash_not_the_slug() {
+        let a = Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
+        );
+        let b = a
+            .clone()
+            .with_commitments(ClaimCommitments::physlib_forall());
+        assert_eq!(a.id, b.id);
+        assert_ne!(a.statement_hash, b.statement_hash);
+        assert_eq!(b.commitments.quantifier, crate::formal::Quantifier::ForAll);
+    }
+
+    #[test]
+    fn domain_overlay_changes_the_hash() {
+        let a = Claim::new(
+            "field.second-order-accurate",
+            "The discretization is second-order accurate (error ∝ a²).",
+            LayerId::Field,
+            ClaimClass::ModelInternal,
+        );
+        let b = a.clone().with_domain(DomainOfValidity::new(
+            vec!["|k a| < 1 at the Richardson probe".into()],
+            vec!["O(a^2) stencil at long wavelength".into()],
+            "Outside |k a| < 1 the Richardson order is not a stencil verdict.",
+        ));
+        assert_eq!(a.id, b.id);
+        assert_ne!(a.statement_hash, b.statement_hash);
+        assert!(b.domain.regimes.iter().any(|r| r.contains("|k a| < 1")));
     }
 
     #[test]

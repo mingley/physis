@@ -18,6 +18,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
+use physis_core::{ClaimCommitments, Quantifier};
 use physis_core::{Energy, Momentum, Qty};
 use physis_model::constants::{electron_mass, C};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
@@ -144,13 +145,28 @@ impl Theory for SpecialRelativity {
                 "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
                 LayerId::Spacetime,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                quantifier: Quantifier::ForAll,
+                units: vec!["1".into()],
+                constants: vec!["c=1".into()],
+                conventions: vec!["minkowski-mostly-minus".into()],
+                formal_libraries: vec!["physlib:unversioned".into()],
+                ..ClaimCommitments::unspecified()
+            }),
             Claim::new(
                 SR_SUBLUMINAL_COMPOSITION,
                 "Composing two subluminal velocities stays below c.",
                 LayerId::Spacetime,
                 ClaimClass::ModelInternal,
             )
+            .with_commitments(ClaimCommitments {
+                quantifier: Quantifier::ForAll,
+                units: vec!["1".into()],
+                constants: vec!["c=1".into()],
+                formal_libraries: vec!["physlib:unversioned".into()],
+                ..ClaimCommitments::unspecified()
+            })
             .with_dependencies(&[SR_INVARIANT_INTERVAL]),
             Claim::new(
                 SR_ENERGY_MOMENTUM,
@@ -158,6 +174,14 @@ impl Theory for SpecialRelativity {
                 LayerId::Particle,
                 ClaimClass::ModelInternal,
             )
+            .with_commitments(ClaimCommitments {
+                quantifier: Quantifier::ForAll,
+                units: vec!["1".into()],
+                constants: vec!["c=1".into()],
+                conventions: vec!["minkowski-mostly-minus".into()],
+                formal_libraries: vec!["physlib:unversioned".into()],
+                ..ClaimCommitments::unspecified()
+            })
             .with_dependencies(&[SR_INVARIANT_INTERVAL]),
         ]
     }

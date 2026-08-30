@@ -601,6 +601,10 @@ impl Lab {
                                 );
                             }
                             text.push_str(&format!("  identity:   {}\n", c.statement_hash));
+                            for line in c.commitments.why_lines() {
+                                text.push_str(&line);
+                                text.push('\n');
+                            }
                             text.push_str(&format!("  domain:     {}\n", c.domain.notes));
                             if !c.depends_on.is_empty() {
                                 text.push_str("  lemmas:\n");
@@ -2034,10 +2038,90 @@ mod tests {
         assert!(text.contains("derivation: executed"));
         assert!(text.contains("encoding-is-the-model"));
         assert!(text.contains("kernel proof: none"));
+        assert!(!text.contains("quantifier: forall"), "{text}");
+        assert!(!text.contains("physlib:unversioned"), "{text}");
         assert!(text.contains("judgment:   logical undetermined"), "{text}");
         assert!(text.contains("trust:      P1"), "{text}");
         assert!(!text.contains("P3F"));
         assert!(!text.contains("theorem"));
+    }
+
+    #[test]
+    fn why_prints_first_class_identity_fields() {
+        let mut lab = Lab::standard();
+        let d2 = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2b = why_theory_block(&d2, "de-rham");
+        assert!(d2b.contains("quantifier: forall"), "{d2b}");
+        assert!(d2b.contains("physlib:unversioned"), "{d2b}");
+        assert!(d2b.contains("  units:"), "{d2b}");
+
+        let poincare = lab
+            .exec(Command::Why {
+                claim: "dec.closed-equals-exact".into(),
+            })
+            .text()
+            .to_string();
+        let pb = why_theory_block(&poincare, "de-rham");
+        assert!(!pb.contains("quantifier: forall"), "{pb}");
+        assert!(
+            !pb.contains("physlib:unversioned"),
+            "Poincaré is not a catalog polynomial: {pb}"
+        );
+
+        let gut = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        let gb = why_theory_block(&gut, "su5-gut");
+        assert!(
+            gb.contains("  boundary:") && gb.contains("unification-scale"),
+            "{gb}"
+        );
+        assert!(gb.contains("Tr(T3^2)/Tr(Q^2)"), "{gb}");
+        assert!(!gb.contains("pdg-2024-sin2theta"), "{gb}");
+
+        let mz = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        let mzb = why_theory_block(&mz, "su5-gut");
+        assert!(
+            mzb.contains("  datasets:") && mzb.contains("pdg-2024-sin2theta"),
+            "{mzb}"
+        );
+        assert!(mzb.contains("M_Z"), "{mzb}");
+
+        let q = lab
+            .exec(Command::Why {
+                claim: "empirical.charge-quantization".into(),
+            })
+            .text()
+            .to_string();
+        let qb = why_theory_block(&q, "standard-model");
+        assert!(
+            qb.contains("  definitions:") && qb.contains("Q = T3 + Y"),
+            "{qb}"
+        );
+
+        let interval = lab
+            .exec(Command::Why {
+                claim: "sr.invariant-interval".into(),
+            })
+            .text()
+            .to_string();
+        let ib = why_theory_block(&interval, "special-relativity");
+        assert!(ib.contains("quantifier: forall"), "{ib}");
+        assert!(ib.contains("c=1"), "{ib}");
+        assert!(ib.contains("minkowski-mostly-minus"), "{ib}");
     }
 
     #[test]
@@ -2338,6 +2422,10 @@ mod tests {
             "the 1.8–2.2 f64 window is not P3N: {why_ok}"
         );
         assert!(!why_ok.contains("numeric certified"), "{why_ok}");
+        assert!(
+            why_ok.contains("|k a| < 1"),
+            "domain must name the long-wavelength regime: {why_ok}"
+        );
 
         let diffs = lab.set_knob("klein-gordon", "spacing", "100").unwrap().2;
         assert!(
@@ -2580,6 +2668,8 @@ mod tests {
         assert!(why.contains("axiom closure:"), "{why}");
         assert!(why.contains("discrete-coboundary"), "{why}");
         assert!(why.contains("[model-assumption]"), "{why}");
+        assert!(why.contains("quantifier: forall"), "{why}");
+        assert!(why.contains("physlib:unversioned"), "{why}");
         let epi = lab.exec(Command::Epistemics).text().to_string();
         assert!(epi.contains("machine-proved          1"), "{epi}");
     }

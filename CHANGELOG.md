@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **FormalClaim identity is first-class**
+  (`ClaimCommitments`, `Quantifier`). The statement hash commits to
+  quantifiers, units, constants, boundary conditions, conventions,
+  theory version, definitions, datasets, and formal-library identity,
+  not just English prose. Changing forall/exists, a sign, a unit, a
+  constant, or a boundary is a new hash; the lab slug is unchanged.
+  Catalog identities (`d²`, interval, composition, mass shell) are
+  `forall` in `physlib:unversioned`. Poincaré is not a catalog
+  polynomial. `field.second-order-accurate` names `|k a| < 1` as its
+  domain. GUT-scale `3/8` commits to the unification-scale boundary;
+  the PDG interval cell commits to `pdg-2024-sin2theta`. Lean compiler
+  versions stay on the receipt. Verified: unit tests per axis, why
+  identity fields, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **P3N why is numeric certified**
   (`Judgment::from_lab`, `Verdict.numeric_lo` / `numeric_hi`).
   `CertifiedNumeric` Holds projects `numeric certified` with a display

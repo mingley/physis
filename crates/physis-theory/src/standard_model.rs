@@ -5,7 +5,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
-use physis_core::ParameterOrigin;
+use physis_core::{ClaimCommitments, ParameterOrigin};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_numeric::Ratio;
 
@@ -469,13 +469,29 @@ impl Theory for StandardModel {
                 "Chiral gauge anomalies cancel within each generation.",
                 LayerId::Interaction,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                units: vec!["1".into()],
+                definitions: vec![
+                    "[SU(3)]^2 U(1)".into(),
+                    "[SU(2)]^2 U(1)".into(),
+                    "[grav]^2 U(1)".into(),
+                    "[U(1)]^3".into(),
+                ],
+                ..ClaimCommitments::unspecified()
+            }),
             claims::c(
                 SM_HYPERCHARGE_DERIVED,
                 "Weak hypercharges are fixed by anomaly cancellation up to normalization.",
                 LayerId::Interaction,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                units: vec!["1".into()],
+                conventions: vec!["Y_Q = 1/6".into()],
+                definitions: vec!["anomaly cancellation in Q".into()],
+                ..ClaimCommitments::unspecified()
+            }),
             claims::c(
                 claims::THREE_GENERATIONS,
                 "Three generations of fermions.",
@@ -493,7 +509,12 @@ impl Theory for StandardModel {
                 "Electric charge is quantized so that atoms are exactly neutral.",
                 LayerId::Particle,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_commitments(ClaimCommitments {
+                units: vec!["1".into()],
+                definitions: vec!["Q = T3 + Y".into()],
+                ..ClaimCommitments::unspecified()
+            }),
             claims::c(
                 claims::GRAVITY,
                 "Gravity is part of the Standard Model.",

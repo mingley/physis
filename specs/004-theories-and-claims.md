@@ -21,7 +21,12 @@ A claim is a sentence with:
 - a `DerivationAssurance` (never `MachineProved` — that is not an enum)
 - an `EmpiricalStatus` and `SemanticAssurance`
 - an explicit `AssumptionSet` and `DomainOfValidity`
-- a content-addressed `statement_hash`
+- a content-addressed `statement_hash` (sentence, class, layer,
+  assumptions, domain, quantifiers, units, constants, boundary
+  conditions, conventions, theory version, definitions, datasets,
+  formal-library identity)
+- `ClaimCommitments` so a unit or ∀/∃ change is a new identity without
+  renaming the lab slug
 - an evaluator that returns `Verdict { kind, class, derivation, empirical, semantic, summary, evidence }`
 
 Kinds: `holds`, `fails`, `undecidable`, `inapplicable`.

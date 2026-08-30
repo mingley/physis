@@ -119,7 +119,7 @@ pub use dim::{
     Temperature, Time, Velocity, SI,
 };
 pub use error::CoreError;
-pub use formal::FormalClaim;
+pub use formal::{ClaimCommitments, FormalClaim, Quantifier};
 pub use id::{ClaimId, KnobId, LayerId, TheoryId};
 pub use judgment::{
     EmpiricalJudgment, GapReason, HeuristicJudgment, Judgment, LogicalJudgment, NumericJudgment,
