@@ -2855,7 +2855,7 @@ mod tests {
         assert!(sm_anom.contains("P3N"), "{sm_anom}");
         assert!(!sm_anom.contains("P3F"), "{sm_anom}");
         assert!(sm_anom.contains("kernel proof: none"), "{sm_anom}");
-        assert!(sm_anom.contains("one SM generation"), "{sm_anom}");
+        assert!(sm_anom.contains("complete Q_L"), "{sm_anom}");
         assert!(
             !sm_anom.contains("not yet a machine-checked regime"),
             "SM anomalies must not be encoding-wide: {sm_anom}"
@@ -6611,6 +6611,116 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_sm_missing_e_r_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["missing_e_r", "missing-eR", "add-missing-eR"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "standard-model".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("standard-model".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-missing-eR") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-missing-eR: package → add-missing-eR";
+        let start = text.find(marker).expect("add-missing-eR hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  standard-model  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let missing_block = &rest[..end];
+        assert!(
+            missing_block.contains("consistency.anomaly-cancellation")
+                && missing_block.contains("holds → fails"),
+            "add-missing-eR must flip anomaly holds to fails: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("sm.hypercharge-derivation"),
+            "missing e_R is not the hypercharge quadratic: {missing_block}"
+        );
+        assert!(
+            !missing_block.contains("empirical.charge-quantization")
+                && !missing_block.contains("consistency.charge-quantization"),
+            "hydrogen Q=T3+Y must still hold: {missing_block}"
+        );
+        assert!(
+            text.contains("include_higgs") || text.contains("neutrino_masses"),
+            "chosen knobs must still be probed: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("standard-model").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "consistency.anomaly-cancellation" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("generations").unwrap().display(),
+            "3",
+            "hypothesize must restore knobs"
+        );
+        let gens = lab.exec(Command::Set {
+            theory: "standard-model".into(),
+            knob: "generations".into(),
+            value: "2".into(),
+        });
+        assert_eq!(gens.exit_code(), 0, "{}", gens.text());
+        assert!(
+            gens.text().contains("empirical.three-generations")
+                && gens.text().contains("holds → fails"),
+            "generations still flips three-generations: {}",
+            gens.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "standard-model".into(),
+            knob: "generations".into(),
+            value: "3".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "consistency.anomaly-cancellation".into(),
+            })
+            .text()
+            .to_string();
+        let sm = why_theory_block(&why, "standard-model");
+        assert!(
+            sm.contains("complete Q_L") || sm.contains("eRc"),
+            "anomaly must name complete Weyl content: {sm}"
+        );
+        assert!(
+            !sm.contains("not yet a machine-checked regime"),
+            "anomaly must not be encoding-wide: {sm}"
+        );
+        assert!(
+            sm.contains("encoding:    none"),
+            "hypothesize must not encode: {sm}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -8198,16 +8308,16 @@ mod tests {
             "dulong-petit has no IR package: {text}"
         );
         assert!(
+            text.contains("encode  standard-model"),
+            "loop must independently round-trip complete Weyl content: {text}"
+        );
+        assert!(
             !text.contains("encode  olbers-horizon"),
             "olbers-horizon has no IR package: {text}"
         );
         assert!(
             !text.contains("encode  rayleigh-jeans"),
             "Rayleigh–Jeans has no IR package: {text}"
-        );
-        assert!(
-            !text.contains("encode  standard-model"),
-            "the Standard Model has no IR package: {text}"
         );
         assert!(
             !text.contains("encode  type-iib"),
@@ -9683,8 +9793,25 @@ mod tests {
         assert_ne!(debye_id, gut_id);
         assert_ne!(debye_id, nand_id);
 
+        let sm = lab
+            .exec(Command::Encode {
+                theory: "standard-model".into(),
+            })
+            .text()
+            .to_string();
+        assert!(sm.contains("equations  1"), "{sm}");
+        assert!(sm.contains("round-trip canonical"), "{sm}");
+        assert!(sm.contains("not P3S"), "{sm}");
+        assert!(!sm.contains("receipt"), "{sm}");
+        let sm_id = encoding_package_id(&sm);
+        assert_eq!(
+            sm_id.to_hex(),
+            "860f037bdf4e717007487d9539836f5201adc6d456dc475f05e2e8470781013d"
+        );
+        assert_ne!(sm_id, debye_id);
+        assert_ne!(sm_id, nand_id);
+
         for theory in [
-            "standard-model",
             "type-iib",
             "rayleigh-jeans",
             "olbers-horizon",
@@ -10112,6 +10239,25 @@ mod tests {
             encoding_package_id(&debye_again),
             debye_id,
             "hypothesize must not install the 2d mutant"
+        );
+
+        let hypo_sm = lab
+            .exec(Command::Hypothesize {
+                theory: Some("standard-model".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_sm.contains("add-missing-eR"), "{hypo_sm}");
+        let sm_again = lab
+            .exec(Command::Encode {
+                theory: "standard-model".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&sm_again),
+            sm_id,
+            "hypothesize must not install the missing-eR mutant"
         );
 
         let p3s = lab

@@ -4,7 +4,7 @@ A theory is not a PDF. It is an object that can be wrong *inside the lab*.
 
 ## Controls
 
-**Standard Model.** The thing that actually describes collider physics. Fails gravity. Fails UV-completion. Holds three generations (until you turn the knob).
+**Standard Model.** The thing that actually describes collider physics. Fails gravity. Fails UV-completion. Holds three generations (until you turn the knob). `hypothesize standard-model` forks a missing `e_R` as IR, not the measured `generations` knob.
 
 **General relativity.** The thing that actually describes gravity. Grazing solar deflection 1.75″ and Mercury's 43″ perihelion are computed Schwarzschild integrals. Fails SM matter. Fails perturbative UV-completion.
 

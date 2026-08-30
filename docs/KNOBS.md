@@ -17,7 +17,7 @@ lists every fitted knob in the lab.
 ## Inventory (default lab)
 
 ### standard-model
-- `generations` (1–4) — **measured** (nature: 3)
+- `generations` (1–4) — **measured** (nature: 3). A missing `e_R` is not this knob: `add-missing-eR` is an IR mutation on `standard-model`.
 - `include_higgs` — chosen
 - `include_gravity` — chosen
 - `neutrino_masses` — chosen; minimal SM stores them as 0; oscillations show they are nonzero (`empirical.neutrino-masses`)

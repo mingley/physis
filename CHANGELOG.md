@@ -32,6 +32,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **SM missing e_R is an IR mutation**
+  (`standard-model`, `add-missing-eR`). Complete `Q_L + uRc + dRc + L_L
+  + eRc` is the live encoding; appending `missing e_R` flips
+  `consistency.anomaly-cancellation` holds to fails (`ΣY = -1`). The
+  hypercharge quadratic and hydrogen `Q = T₃ + Y` still hold as
+  five-field identities, so those P3N cells are not a unit flag and not
+  the measured `generations` knob. Mutants stay `standard-model`.
+  Mutants are not installed, not journaled, and not Canonical or P4.
+  Catalog d² hash unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: IR round-trip; set missing_e_r is unknown;
+  hypothesize standard-model; live Weyl content restored; encode pin
+  `860f037bdf4e717007487d9539836f5201adc6d456dc475f05e2e8470781013d`.
+
 - **Debye 2D continuum is an IR mutation**
   (`debye-solid`, `add-2d`). 3D `ω²` is the live encoding; appending
   `g(w) = w` flips `thermo.debye-t3` holds to fails. Freeze-out still

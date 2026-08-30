@@ -1,5 +1,13 @@
 //! Standard Model as an effective quantum field theory: empirically sharp,
 //! UV-incomplete, many parameters.
+//!
+//! The one-generation Weyl content lives on the IR package of
+//! `standard-model`. A missing `e_R` (`add-missing-eR`) is a package
+//! mutation, not a `generations` knob: `[grav]²U(1)` and `[U(1)]³` no
+//! longer vanish, so `consistency.anomaly-cancellation` fails, while
+//! the hypercharge quadratic and hydrogen `Q = T₃ + Y` still hold as
+//! identities of the five-field algebra. That is not a second or fourth
+//! generation.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -7,6 +15,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::{ClaimCommitments, ParameterOrigin};
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_numeric::Ratio;
 
@@ -16,6 +25,11 @@ use crate::framework::Theory;
 /// The weak hypercharges are fixed by anomaly cancellation up to normalization.
 const SM_HYPERCHARGE_DERIVED: &str = "sm.hypercharge-derivation";
 
+/// Live one-generation law on the `standard-model` package.
+const GENERATION_EQ: &str = "Q_L + uRc + dRc + L_L + eRc";
+/// Incomplete encoding: the anti-electron is absent, anomaly cancellation fails.
+const MISSING_EQ: &str = "missing e_R";
+
 /// One left-handed Weyl fermion of a generation, with its SU(3)×SU(2)
 /// representation dimensions and weak hypercharge `Y` (convention `Q = T₃ + Y`).
 ///
@@ -23,6 +37,7 @@ const SM_HYPERCHARGE_DERIVED: &str = "sm.hypercharge-derivation";
 /// multiplicity) is what lets the four gauge anomalies — and the derivation of
 /// `Y` itself — be a computation over the representation content, not a stored
 /// table of answers.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct WeylField {
     /// Species label.
     name: &'static str,
@@ -67,10 +82,6 @@ const SM_WEYL_FIELDS: &[WeylField] = &[
         y: Ratio::int(1),
     }, // anti-electron
 ];
-
-/// Number of SU(2) doublets in one generation (3 quark colours + 1 lepton):
-/// the Witten SU(2) global anomaly needs this to be even.
-const SM_WEAK_DOUBLETS: u32 = 4;
 
 /// The weak hypercharges derived from anomaly cancellation (see
 /// [`derive_hypercharges`]).
@@ -215,13 +226,12 @@ pub(crate) fn gut_weinberg_traces_exact() -> Option<(Ratio, Ratio)> {
 /// A vanishing `Tr Q` is charge quantization in a GUT: `Q` is a traceless
 /// SU(5) generator, so charges are forced onto a discrete lattice.
 pub(crate) fn gut_trace_charge_exact() -> Ratio {
-    hypercharge_sum_exact()
+    hypercharge_sum_over(SM_WEYL_FIELDS)
 }
 
-/// The [SU(3)]²U(1) mixed anomaly over one generation (colour triplets only).
-fn anomaly_su3_u1_exact() -> Ratio {
+fn anomaly_su3_u1_over(fields: &[WeylField]) -> Ratio {
     let half = Ratio::new(1, 2);
-    SM_WEYL_FIELDS
+    fields
         .iter()
         .filter(|f| f.color > 1)
         .fold(Ratio::int(0), |acc, f| {
@@ -229,10 +239,9 @@ fn anomaly_su3_u1_exact() -> Ratio {
         })
 }
 
-/// The [SU(2)]²U(1) mixed anomaly over one generation (weak doublets only).
-fn anomaly_su2_u1_exact() -> Ratio {
+fn anomaly_su2_u1_over(fields: &[WeylField]) -> Ratio {
     let half = Ratio::new(1, 2);
-    SM_WEYL_FIELDS
+    fields
         .iter()
         .filter(|f| f.weak > 1)
         .fold(Ratio::int(0), |acc, f| {
@@ -240,18 +249,24 @@ fn anomaly_su2_u1_exact() -> Ratio {
         })
 }
 
-/// The gravitational [grav]²U(1) anomaly: Σ (colour·weak) · Y over a generation.
-fn hypercharge_sum_exact() -> Ratio {
-    SM_WEYL_FIELDS.iter().fold(Ratio::int(0), |acc, f| {
+fn hypercharge_sum_over(fields: &[WeylField]) -> Ratio {
+    fields.iter().fold(Ratio::int(0), |acc, f| {
         acc + Ratio::int(f.color) * Ratio::int(f.weak) * f.y
     })
 }
 
-/// The [U(1)]³ anomaly: Σ (colour·weak) · Y³ over a generation.
-fn hypercharge_cube_sum_exact() -> Ratio {
-    SM_WEYL_FIELDS.iter().fold(Ratio::int(0), |acc, f| {
+fn hypercharge_cube_sum_over(fields: &[WeylField]) -> Ratio {
+    fields.iter().fold(Ratio::int(0), |acc, f| {
         acc + Ratio::int(f.color) * Ratio::int(f.weak) * f.y.pow(3)
     })
+}
+
+fn weak_doublet_count(fields: &[WeylField]) -> u32 {
+    fields
+        .iter()
+        .filter(|f| f.weak > 1)
+        .map(|f| f.color as u32)
+        .sum()
 }
 
 /// Electric charge (in units of e/3) of a species by flavor, from the catalog.
@@ -276,7 +291,7 @@ const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "generations",
         layer: LayerId::Particle,
-        doc: "Number of fermion generations. Nature: 3. This knob exists so agents can watch empirical claims flip.",
+        doc: "Number of fermion generations. Nature: 3. This knob exists so agents can watch empirical claims flip. A missing e_R is not this knob: add-missing-eR is an IR mutation.",
         origin: ParameterOrigin::Measured,
         domain: KnobDomain::UInt { min: 1, max: 4 },
     },
@@ -304,12 +319,18 @@ const SPECS: &[KnobSpec] = &[
 ];
 
 /// The Standard Model of particle physics (effective QFT).
-#[derive(Clone, Debug)]
+///
+/// One-generation Weyl content lives on the IR package. A missing `e_R`
+/// (`add-missing-eR`) is a package mutation, not a knob.
+/// `generations` stays a measured knob.
+#[derive(Clone, Debug, PartialEq)]
 pub struct StandardModel {
     generations: u8,
     include_higgs: bool,
     include_gravity: bool,
     neutrino_masses: bool,
+    /// Whether the encoding is missing the anti-electron (`e_R^c`).
+    missing_e_r: bool,
 }
 
 impl Default for StandardModel {
@@ -320,6 +341,7 @@ impl Default for StandardModel {
             include_gravity: false,
             // The textbook minimal SM leaves neutrinos massless — a known lie.
             neutrino_masses: false,
+            missing_e_r: false,
         }
     }
 }
@@ -366,6 +388,77 @@ impl StandardModel {
         }
         s
     }
+
+    fn weyl_fields(&self) -> Vec<WeylField> {
+        SM_WEYL_FIELDS
+            .iter()
+            .copied()
+            .filter(|f| !(self.missing_e_r && f.name == "e_R^c"))
+            .collect()
+    }
+
+    /// IR package for this generation. Equations are
+    /// `Q_L + uRc + dRc + L_L + eRc` and, when forked, `missing e_R`.
+    /// `generations` stays on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![GENERATION_EQ.to_string()];
+        if self.missing_e_r {
+            equations.push(MISSING_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["complete-one-generation-weyl".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: claims::ANOMALY_CANCELLATION.into(),
+                statement: "Chiral gauge anomalies cancel within each generation.".into(),
+                layer: "interaction".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a generation from a package. Knobs default; overlay them from
+    /// a live standard-model object when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "standard-model" {
+            return Err(format!(
+                "standard-model package id '{}' is not standard-model",
+                pkg.id
+            ));
+        }
+        let missing_e_r = parse_sm_generation(pkg)?;
+        Ok(Self {
+            missing_e_r,
+            ..Self::default()
+        })
+    }
+
+    fn missing_equation() -> String {
+        MISSING_EQ.to_string()
+    }
+}
+
+fn parse_sm_generation(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut complete = false;
+    let mut missing = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            GENERATION_EQ => complete = true,
+            MISSING_EQ => missing = true,
+            _ => {}
+        }
+    }
+    if !complete {
+        return Err(format!(
+            "{} package has no complete Q_L + uRc + dRc + L_L + eRc generation",
+            pkg.id
+        ));
+    }
+    Ok(missing)
 }
 
 impl Knobbed for StandardModel {
@@ -482,10 +575,11 @@ impl Theory for StandardModel {
                 ..ClaimCommitments::unspecified()
             })
             .with_domain(DomainOfValidity::new(
-                vec!["one SM generation".into()],
+                vec!["complete Q_L + uRc + dRc + L_L + eRc generation".into()],
                 vec!["chiral fermions of SU(3)×SU(2)×U(1)".into()],
                 "Exact Ratio cancellation of the four chiral anomaly sums. \
-                 Not a kernel proof. A different generation content is a new claim.",
+                 A missing e_R is a new encoding, not a silent generations knob. \
+                 Not a kernel proof.",
             )),
             claims::c(
                 SM_HYPERCHARGE_DERIVED,
@@ -575,12 +669,14 @@ impl Theory for StandardModel {
             claims::FERMIONS => Verdict::holds(claim, "quarks and leptons"),
             claims::SM_GAUGE => Verdict::holds(claim, "SU(3)×SU(2)×U(1)"),
             claims::ANOMALY_CANCELLATION => {
-                let a3 = anomaly_su3_u1_exact();
-                let a2 = anomaly_su2_u1_exact();
-                let sy = hypercharge_sum_exact();
-                let sy3 = hypercharge_cube_sum_exact();
+                let fields = self.weyl_fields();
+                let a3 = anomaly_su3_u1_over(&fields);
+                let a2 = anomaly_su2_u1_over(&fields);
+                let sy = hypercharge_sum_over(&fields);
+                let sy3 = hypercharge_cube_sum_over(&fields);
+                let doublets = weak_doublet_count(&fields);
                 let all_zero = a3.is_zero() && a2.is_zero() && sy.is_zero() && sy3.is_zero();
-                if all_zero && SM_WEAK_DOUBLETS % 2 == 0 {
+                if all_zero && doublets % 2 == 0 {
                     Verdict::holds(
                         claim,
                         "all four SM chiral gauge anomalies cancel as exact Ratio sums",
@@ -588,9 +684,20 @@ impl Theory for StandardModel {
                     .with_evidence([
                         format!("[SU(3)]²U(1) = {a3}, [SU(2)]²U(1) = {a2} (exact Ratio)"),
                         format!("[grav]²U(1) ΣY = {sy}, [U(1)]³ ΣY³ = {sy3} (exact Ratio)"),
-                        format!("Witten SU(2): {SM_WEAK_DOUBLETS} doublets (even)"),
+                        format!("Witten SU(2): {doublets} doublets (even)"),
                     ])
                     .with_certified_numeric(format!("{sy}"), format!("{sy}"))
+                } else if self.missing_e_r {
+                    Verdict::fails(
+                        claim,
+                        "missing e_R: SM fermions do not fill a complete anomaly-free generation",
+                    )
+                    .with_evidence([
+                        format!("[SU(3)]²U(1) = {a3}, [SU(2)]²U(1) = {a2} (exact Ratio)"),
+                        format!("[grav]²U(1) ΣY = {sy}, [U(1)]³ ΣY³ = {sy3} (exact Ratio)"),
+                        "Q_L + uRc + dRc + L_L + eRc is the live encoding; missing e_R is not a generations knob"
+                            .to_string(),
+                    ])
                 } else {
                     Verdict::fails(
                         claim,
@@ -720,6 +827,36 @@ impl Theory for StandardModel {
             _ => Verdict::inapplicable(claim, "claim not made by the Standard Model object"),
         }
     }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.missing_e_r = parsed.missing_e_r;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.missing_e_r {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::missing_equation()),
+        );
+        if let Ok(parsed) = Self::from_package(&mutated) {
+            if parsed.missing_e_r {
+                let mut fork = self.clone();
+                fork.missing_e_r = true;
+                return vec![("add-missing-eR".into(), Box::new(fork))];
+            }
+        }
+        Vec::new()
+    }
 }
 
 #[cfg(test)]
@@ -822,15 +959,32 @@ mod tests {
         assert!(charges_from_hypercharges(d).is_none());
     }
 
+    /// Number of SU(2) doublets in one generation (3 quark colours + 1 lepton):
+    /// the Witten SU(2) global anomaly needs this to be even.
+    const SM_WEAK_DOUBLETS: u32 = 4;
+
     #[test]
     fn all_four_gauge_anomalies_vanish_over_a_generation() {
-        assert!(anomaly_su3_u1_exact().is_zero(), "[SU(3)]²U(1)");
-        assert!(anomaly_su2_u1_exact().is_zero(), "[SU(2)]²U(1)");
-        assert!(hypercharge_sum_exact().is_zero(), "[grav]²U(1)");
-        assert!(hypercharge_cube_sum_exact().is_zero(), "[U(1)]³");
+        assert!(
+            anomaly_su3_u1_over(SM_WEYL_FIELDS).is_zero(),
+            "[SU(3)]²U(1)"
+        );
+        assert!(
+            anomaly_su2_u1_over(SM_WEYL_FIELDS).is_zero(),
+            "[SU(2)]²U(1)"
+        );
+        assert!(
+            hypercharge_sum_over(SM_WEYL_FIELDS).is_zero(),
+            "[grav]²U(1)"
+        );
+        assert!(
+            hypercharge_cube_sum_over(SM_WEYL_FIELDS).is_zero(),
+            "[U(1)]³"
+        );
+        assert_eq!(weak_doublet_count(SM_WEYL_FIELDS), SM_WEAK_DOUBLETS);
         assert_eq!(SM_WEAK_DOUBLETS % 2, 0);
         // A sign flip of the cubic is not a cancellation.
-        assert!(!(hypercharge_cube_sum_exact() + Ratio::int(1)).is_zero());
+        assert!(!(hypercharge_cube_sum_over(SM_WEYL_FIELDS) + Ratio::int(1)).is_zero());
     }
 
     #[test]
@@ -893,14 +1047,14 @@ mod tests {
         let anom = claim(claims::ANOMALY_CANCELLATION);
         assert!(
             !anom.domain().is_encoding_wide(),
-            "anomaly cancellation must name one generation: {:?}",
+            "anomaly cancellation must name complete Weyl content: {:?}",
             anom.domain()
         );
         assert!(
             anom.domain()
                 .regimes
                 .iter()
-                .any(|r| r.contains("one SM generation")),
+                .any(|r| r.contains("complete Q_L") && r.contains("eRc")),
             "anomaly regime: {:?}",
             anom.domain()
         );
@@ -964,5 +1118,158 @@ mod tests {
             .find(|c| c.id_str() == claims::THREE_GENERATIONS)
             .unwrap();
         assert_eq!(t.evaluate(&gens).kind, VerdictKind::Fails);
+    }
+
+    fn verdict(t: &dyn Theory, id: &str) -> Verdict {
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
+        t.evaluate(&c)
+    }
+
+    #[test]
+    fn missing_e_r_is_ir_not_a_knob() {
+        assert!(
+            StandardModel::default()
+                .set("missing_e_r", KnobValue::Bool(true))
+                .is_err(),
+            "missing e_R is an IR mutation, not a knob"
+        );
+        assert!(
+            StandardModel::default()
+                .set("missing-eR", KnobValue::Bool(true))
+                .is_err(),
+            "missing-eR is not a knob"
+        );
+        assert!(
+            StandardModel::default()
+                .set("add-missing-eR", KnobValue::Bool(true))
+                .is_err(),
+            "add-missing-eR is not a knob"
+        );
+        let sm = StandardModel::default();
+        assert!(!sm.missing_e_r);
+        let src = render_package(&sm.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay complete");
+        assert_eq!(pkg.equations[0], GENERATION_EQ);
+        assert_eq!(
+            StandardModel::from_package(&pkg).unwrap(),
+            sm,
+            "IR round-trip must preserve complete Weyl content"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(StandardModel::missing_equation()),
+        );
+        let parsed = StandardModel::from_package(&mutated).unwrap();
+        assert!(parsed.missing_e_r);
+        let mut fork = sm.clone();
+        fork.missing_e_r = true;
+        assert_eq!(fork.id(), "standard-model");
+        let anom = verdict(&fork, claims::ANOMALY_CANCELLATION);
+        assert_eq!(anom.kind, VerdictKind::Fails);
+        assert_ne!(anom.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(
+            verdict(&fork, SM_HYPERCHARGE_DERIVED).kind,
+            VerdictKind::Holds
+        );
+        assert_eq!(
+            verdict(&fork, claims::CHARGE_QUANTIZATION).kind,
+            VerdictKind::Holds
+        );
+        assert_eq!(
+            verdict(&fork, claims::THREE_GENERATIONS).kind,
+            VerdictKind::Holds
+        );
+        assert_eq!(
+            verdict(&sm, claims::ANOMALY_CANCELLATION).kind,
+            VerdictKind::Holds
+        );
+        assert!(
+            !anom.summary.contains("generations") && !anom.summary.contains("Higgs"),
+            "missing e_R is not a knob: {}",
+            anom.summary
+        );
+        assert!(
+            anom.evidence
+                .iter()
+                .any(|e| e.contains("ΣY") && e.contains("-1")),
+            "got {:?}",
+            anom.evidence
+        );
+
+        let probes = StandardModel::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-missing-eR"),
+            "live SM must offer add-missing-eR: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-missing-eR")
+            .expect("add-missing-eR");
+        assert_eq!(
+            verdict(probe.1.as_ref(), claims::ANOMALY_CANCELLATION).kind,
+            VerdictKind::Fails
+        );
+        assert_eq!(
+            verdict(probe.1.as_ref(), SM_HYPERCHARGE_DERIVED).kind,
+            VerdictKind::Holds
+        );
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-missing-eR"),
+            "missing-eR fork must not re-offer add-missing-eR"
+        );
+        let live = StandardModel::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut two_gen = StandardModel::default();
+        two_gen.set("generations", KnobValue::UInt(2)).unwrap();
+        let rebuilt = two_gen.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("generations").unwrap(),
+            KnobValue::UInt(2),
+            "reparse must overlay missing-eR IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), claims::ANOMALY_CANCELLATION).kind,
+            VerdictKind::Holds,
+            "live complete generation still Holds anomaly"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), claims::THREE_GENERATIONS).kind,
+            VerdictKind::Fails
+        );
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            verdict(live_rebuilt.as_ref(), claims::ANOMALY_CANCELLATION).kind,
+            VerdictKind::Holds
+        );
+        assert!(
+            crate::gut::Su5Gut::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-eR"),
+            "su5-gut must not grow add-missing-eR"
+        );
+        assert!(
+            crate::solid::EinsteinSolid::debye()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-missing-eR"),
+            "debye-solid must not grow add-missing-eR"
+        );
+        assert!(
+            StandardModel::default()
+                .set("generations", KnobValue::UInt(2))
+                .is_ok(),
+            "SM keeps the generations knob"
+        );
+        assert_eq!(
+            verdict(&sm, claims::ANOMALY_CANCELLATION).derivation(),
+            DerivationAssurance::CertifiedNumeric
+        );
     }
 }
