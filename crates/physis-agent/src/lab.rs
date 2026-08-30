@@ -255,7 +255,11 @@ impl Lab {
                     }
                 }
                 JournalEvent::Prove { claim, .. } => {
-                    let _ = self.remint_preferred(&claim);
+                    // Restore must remint; a Lean kernel miss still has the
+                    // exact expanders as an independently checkable receipt.
+                    if self.remint_preferred(&claim).is_err() {
+                        let _ = self.remint_exact(&claim);
+                    }
                 }
                 JournalEvent::Review { claim, .. } => {
                     let _ = self.remint_review(&claim);
