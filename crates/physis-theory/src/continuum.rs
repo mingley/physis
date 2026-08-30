@@ -284,7 +284,14 @@ impl Theory for KleinGordonField {
                 "The long-wavelength dispersion matches the continuum ω² = m² + k².",
                 LayerId::Field,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["longest non-zero lattice mode".into()],
+                vec!["discrete Laplacian vs continuum ω² = m² + k²".into()],
+                "This is the long-wavelength mode, not the Nyquist mode and not \
+                 the Richardson |k a| < 1 probe. Using the continuum dispersion \
+                 at short wavelength is a new claim.",
+            )),
             Claim::new(
                 STABLE,
                 "There is no tachyonic mode (min ω² ≥ 0).",
@@ -442,6 +449,29 @@ mod tests {
         assert_eq!(verdict(&f, CAUSAL), VerdictKind::Holds);
         assert_eq!(verdict(&f, DISPERSION), VerdictKind::Holds);
         assert_eq!(verdict(&f, LOCAL), VerdictKind::Holds);
+        let disp = f
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == DISPERSION)
+            .unwrap();
+        assert!(
+            !disp.domain.is_encoding_wide(),
+            "long-wavelength dispersion must name a regime: {:?}",
+            disp.domain
+        );
+        assert!(
+            disp.domain
+                .regimes
+                .iter()
+                .any(|r| r.contains("longest non-zero")),
+            "dispersion regime: {:?}",
+            disp.domain
+        );
+        let stable = f.claims().into_iter().find(|c| c.id.0 == STABLE).unwrap();
+        assert!(
+            stable.domain.is_encoding_wide(),
+            "stability is the current lattice encoding, not a hidden continuum regime"
+        );
     }
 
     #[test]

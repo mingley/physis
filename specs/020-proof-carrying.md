@@ -34,7 +34,10 @@ Nothing gains authority merely because an agent wrote code that returns
   `AssumptionSet`; Lean kernel axioms stay on the receipt. Physlib forall
   with only `encoding-is-the-model` is not those identities.
   Poincaré is not catalogued. `field.second-order-accurate`
-  names `|k a| < 1` as its domain. GUT-scale `3/8`, GQW at `M_Z`, and
+  names `|k a| < 1` as its domain. `field.dispersion-continuum-limit`
+  names the longest non-zero lattice mode, not that Richardson probe.
+  Ohm-circuit `em.quasi-static-valid` names `λ > 100 ×` circuit size;
+  Maxwell's inapplicable copy stays encoding-wide. GUT-scale `3/8`, GQW at `M_Z`, and
   the PDG interval name unification-scale / `M_Z` as
   `DomainOfValidity` (not the encoding-wide placeholder). SM anomalies,
   hypercharge solve, and hydrogen neutrality name one generation /
@@ -150,7 +153,9 @@ identity; a slug-only review line is not P3S.
   GUT mixing-angle and SM P3N cells name unification-scale / `M_Z` /
   one generation / hydrogen. Super-K and GUT `Tr Q` stay encoding-wide.
   `dec.hodge-harmonic` names discrete combinatorial Hodge; Euler–Poincaré
-  and Poincaré stay encoding-wide.
+  and Poincaré stay encoding-wide. `field.dispersion-continuum-limit` names
+  the longest lattice mode; ohm-circuit `em.quasi-static-valid` names
+  `λ > 100 ×` circuit size. Maxwell's copy of that slug stays encoding-wide.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op.

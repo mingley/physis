@@ -11,6 +11,7 @@
 //! the refractive index `n = √(ε_r μ_r)` slows light below `c` and selects a
 //! rest frame, so the wave-speed and Lorentz-invariance claims flip.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -552,6 +553,21 @@ impl Theory for OhmCircuit {
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()
+            .into_iter()
+            .map(|c| {
+                if c.id.0 == QUASI_STATIC_VALID {
+                    c.with_domain(DomainOfValidity::new(
+                        vec!["λ > 100 × 0.1 m circuit".into()],
+                        vec!["lumped elements; no wave propagation".into()],
+                        "Quasi-static Ohm circuits, not full Maxwell. Using this \
+                         when c/f is comparable to the circuit is a new claim, \
+                         not a silent extrapolation.",
+                    ))
+                } else {
+                    c
+                }
+            })
+            .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id.0.as_str() {
@@ -737,6 +753,27 @@ mod tests {
         assert_eq!(verdict(&c, LORENTZ_INVARIANCE), VerdictKind::Fails);
         assert_eq!(verdict(&c, CHARGE_CONSERVATION), VerdictKind::Holds);
         assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Holds);
+        let qs = c
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id.0 == QUASI_STATIC_VALID)
+            .unwrap();
+        assert!(
+            !qs.domain.is_encoding_wide(),
+            "lumped validity must name λ >> circuit size: {:?}",
+            qs.domain
+        );
+        let maxwell = MaxwellVacuum;
+        let mqs = maxwell
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id.0 == QUASI_STATIC_VALID)
+            .unwrap();
+        assert!(
+            mqs.domain.is_encoding_wide(),
+            "Maxwell's inapplicable copy stays encoding-wide: {:?}",
+            mqs.domain
+        );
     }
 
     #[test]

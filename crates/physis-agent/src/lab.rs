@@ -2773,6 +2773,58 @@ mod tests {
     }
 
     #[test]
+    fn long_wavelength_cells_name_a_domain() {
+        let mut lab = Lab::standard();
+        let disp = lab
+            .exec(Command::Why {
+                claim: "field.dispersion-continuum-limit".into(),
+            })
+            .text()
+            .to_string();
+        let db = why_theory_block(&disp, "klein-gordon");
+        assert!(db.contains("longest non-zero lattice mode"), "{db}");
+        assert!(
+            !db.contains("not yet a machine-checked regime"),
+            "dispersion must not be encoding-wide: {db}"
+        );
+        assert!(
+            !db.contains("|k a| < 1 at the Richardson probe"),
+            "dispersion is not the Richardson cell: {db}"
+        );
+
+        let order = lab
+            .exec(Command::Why {
+                claim: "field.second-order-accurate".into(),
+            })
+            .text()
+            .to_string();
+        let ob = why_theory_block(&order, "klein-gordon");
+        assert!(ob.contains("|k a| < 1"), "{ob}");
+        assert!(
+            !ob.contains("longest non-zero lattice mode"),
+            "Richardson probe is not the longest-mode cell: {ob}"
+        );
+
+        let qs = lab
+            .exec(Command::Why {
+                claim: "em.quasi-static-valid".into(),
+            })
+            .text()
+            .to_string();
+        let ohm = why_theory_block(&qs, "ohm-circuit");
+        assert!(ohm.contains("λ > 100"), "{ohm}");
+        assert!(
+            !ohm.contains("not yet a machine-checked regime"),
+            "ohm-circuit quasi-static must name λ >> circuit: {ohm}"
+        );
+        let mx = why_theory_block(&qs, "maxwell-vacuum");
+        assert!(
+            mx.contains("not yet a machine-checked regime"),
+            "Maxwell's inapplicable copy stays encoding-wide: {mx}"
+        );
+    }
+
+    #[test]
     fn bounding_the_tape_does_not_make_search_feasible() {
         let mut lab = Lab::standard();
         let diffs = lab

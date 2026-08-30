@@ -42,7 +42,7 @@ There is nothing tabulated here: the module computes ω_j² for every mode.
 | id | meaning | how it is decided |
 |---|---|---|
 | `field.finite-modes` | N normal modes | N = `sites` |
-| `field.dispersion-continuum-limit` | long-wavelength ω² matches m² + k² | computed relative error < 5% |
+| `field.dispersion-continuum-limit` | long-wavelength ω² matches m² + k² | computed relative error < 5% on the longest non-zero mode. Domain: that mode, not Nyquist, not the Richardson `|k a| < 1` probe |
 | `field.stable` | no tachyonic mode | `min_j ω_j² ≥ 0` |
 | `field.causal` | group velocity ≤ c | `max_j |dω/dk| ≤ c` |
 | `field.local` | nearest-neighbour coupling | structural |

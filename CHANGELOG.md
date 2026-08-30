@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Long-wavelength cells name a DomainOfValidity**
+  (`field.dispersion-continuum-limit`, ohm-circuit `em.quasi-static-valid`).
+  Encoding-wide "long-wavelength" is a hidden regime. Dispersion is the
+  longest non-zero lattice mode, not the Nyquist mode and not the
+  Richardson `|k a| < 1` probe. Lumped validity is `λ > 100 ×` circuit
+  size; Maxwell's inapplicable copy stays encoding-wide. Catalog d² hash
+  unchanged. Verified: those cells are not encoding-wide; `field.stable`
+  and Maxwell quasi-static are; `why` names the regime. Live prove of
+  catalog d² is still Lean+nanoda. `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **Hodge P2 names a discrete DomainOfValidity**
   (`dec.hodge-harmonic`). Encoding-wide "Hodge theorem" is a hidden
   regime: the cell is combinatorial Laplacian nullity vs coboundary

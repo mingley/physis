@@ -44,7 +44,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem (backed by a numerically-verified `∇·(∇×A) = 0`) |
 | `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
-| `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit); inapplicable to full Maxwell |
+| `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit names `λ > 100 ×` circuit size); inapplicable to full Maxwell (encoding-wide) |
 
 ## The control: `ohm-circuit`
 
@@ -54,7 +54,9 @@ Faraday's law. Wave propagation is dropped (`em.wave-speed-c` inapplicable) and
 the theory has a preferred rest frame (`em.lorentz-invariance` fails). It is
 valid only while the wavelength `c/f` dwarfs the circuit: raising `frequency_hz`
 past that point flips `em.quasi-static-valid` from `holds` to `fails`, using
-typed `Qty<Length>` wavelengths.
+typed `Qty<Length>` wavelengths. The ohm-circuit cell names that
+`λ > 100 ×` circuit-size regime; Maxwell's copy of the slug stays
+encoding-wide and inapplicable.
 
 ## Homogeneous Maxwell equations, verified
 
