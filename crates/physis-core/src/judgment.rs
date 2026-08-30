@@ -134,7 +134,7 @@ impl ParameterOrigin {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GapReason {
-    /// A needed lemma has no receipt.
+    /// An evaluator-Holds lemma has no dual-checked receipt.
     MissingTheorem,
     /// No registered dataset.
     MissingDataset,

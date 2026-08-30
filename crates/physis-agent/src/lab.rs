@@ -1553,6 +1553,8 @@ fn gap_for(
     // evaluator reports Undecidable (P vs NP). Information-layer
     // Undecidable is computability (halting, Rice). Other undecidable
     // evaluations are encoding gaps, not logical undecidability.
+    // MissingTheorem is only for Holds: a Fails evaluation is already
+    // decided by the encoding, not a missing lemma.
     match class {
         Conjecture | OpenProblem | Heuristic => Some(GapReason::ScientificOpenProblem),
         _ if kind == VerdictKind::Undecidable => {
@@ -1562,8 +1564,11 @@ fn gap_for(
                 Some(GapReason::UnsupportedFormalPrimitive)
             }
         }
+        // Fails and Inapplicable are already decided by the encoding.
+        // A kernel receipt would not turn a failing evaluation into a lemma.
         Mathematical | ModelInternal | Phenomenological
-            if derivation != physis_core::DerivationAssurance::Asserted =>
+            if kind == VerdictKind::Holds
+                && derivation != physis_core::DerivationAssurance::Asserted =>
         {
             Some(GapReason::MissingTheorem)
         }
@@ -2230,6 +2235,16 @@ mod tests {
                 .any(|l| l.contains("turing-machine") && l.contains("comp.halts")),
             "unbounded TM halting is not a missing lemma: {gap}"
         );
+        assert!(
+            !gap.lines()
+                .any(|l| l.contains("combinational-circuit") && l.contains("comp.turing-complete")),
+            "a failing Turing-completeness evaluation is not a missing lemma: {gap}"
+        );
+        assert!(
+            gap.lines()
+                .any(|l| l.contains("combinational-circuit") && l.contains("comp.halts")),
+            "combinational halt-on-every-input Holds and still needs a receipt: {gap}"
+        );
 
         let undec = lab
             .exec(Command::Inspect {
@@ -2404,6 +2419,29 @@ mod tests {
             LayerId::Mathematical,
         );
         assert_eq!(proved, None);
+
+        let failing_tc = gap_for(
+            physis_core::ClaimClass::Phenomenological,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Fails,
+            physis_core::EmpiricalStatus::NotApplicable,
+            false,
+            LayerId::Information,
+        );
+        assert_eq!(
+            failing_tc, None,
+            "a failing evaluation is decided, not a missing lemma"
+        );
+
+        let combinational_halts = gap_for(
+            physis_core::ClaimClass::ModelInternal,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Holds,
+            physis_core::EmpiricalStatus::NotApplicable,
+            false,
+            LayerId::Information,
+        );
+        assert_eq!(combinational_halts, Some(GapReason::MissingTheorem));
     }
 
     #[test]
@@ -2614,6 +2652,18 @@ mod tests {
             before.lines().any(|l| l.contains("turing-machine")
                 && l.contains("comp.halts")
                 && l.contains("computability")),
+            "{before}"
+        );
+        assert!(
+            !before.lines().any(|l| l.contains("combinational-circuit")
+                && l.contains("comp.turing-complete")
+                && l.contains("needs receipt")),
+            "combinational Turing-completeness Fails; it is not a missing lemma: {before}"
+        );
+        assert!(
+            before.lines().any(|l| l.contains("combinational-circuit")
+                && l.contains("comp.halts")
+                && l.contains("needs receipt")),
             "{before}"
         );
 

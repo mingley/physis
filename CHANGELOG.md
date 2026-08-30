@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Failing evaluations are not missing theorems**
+  (`gap_for`). `MissingTheorem` is only for evaluator-`Holds`
+  mathematical / model-internal / phenomenological claims without a
+  dual-checked receipt. Combinational `comp.turing-complete` Fails and
+  leaves the gap graph; combinational `comp.halts` Holds and still
+  `needs receipt` until proved. Verified: gap_for unit test, inspect
+  and `physis gaps` lab tests, `fmt`, `clippy -D warnings`, full suite,
+  CLI.
+
 - **Live knowledge-gap graph**
   (`physis gaps`, `NodeKind::KnowledgeGap`). Rebuilt from current
   verdicts and receipts, content-addressed in the artifact DAG, never
