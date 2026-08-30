@@ -714,6 +714,7 @@ impl Theory for DeRham {
                         c.betti1(),
                         c.betti2()
                     )])
+                    .with_cross_checked()
                 } else {
                     Verdict::fails(
                         claim,
@@ -734,6 +735,7 @@ impl Theory for DeRham {
                     .with_evidence([format!(
                         "nullity of Δ₁ = d₀d₀ᵀ + d₁ᵀd₁ is {harmonic}, matching b₁ = {b1}"
                     )])
+                    .with_cross_checked()
                 } else {
                     Verdict::fails(claim, format!("harmonic 1-forms dim {harmonic} ≠ b₁ {b1}"))
                 }
@@ -780,10 +782,16 @@ impl Theory for DeRham {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
+    use physis_core::DerivationAssurance;
 
     fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
         t.evaluate(&c).kind
+    }
+
+    fn derivation(t: &dyn Theory, id: &str) -> DerivationAssurance {
+        let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        t.evaluate(&c).derivation
     }
 
     #[test]
@@ -958,13 +966,39 @@ mod tests {
         let mut t = DeRham::default();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        assert_eq!(
+            derivation(&t, EULER_POINCARE),
+            DerivationAssurance::CrossChecked
+        );
+        assert_eq!(
+            derivation(&t, HODGE_HARMONIC),
+            DerivationAssurance::CrossChecked
+        );
+        assert_eq!(
+            derivation(&t, D_SQUARED_ZERO),
+            DerivationAssurance::Executed,
+            "d² = 0 is a single-path identity, not a two-path cross-check"
+        );
+        assert_eq!(
+            derivation(&t, CLOSED_EQUALS_EXACT),
+            DerivationAssurance::Executed,
+            "Poincaré is b₁ = 0, not two independent χ computations"
+        );
         // Both are identities: they still hold on the circle and the torus.
         t.set("shape", KnobValue::Choice("circle".into())).unwrap();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        assert_eq!(
+            derivation(&t, EULER_POINCARE),
+            DerivationAssurance::CrossChecked
+        );
         t.set("shape", KnobValue::Choice("torus".into())).unwrap();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        assert_eq!(
+            derivation(&t, CLOSED_EQUALS_EXACT),
+            DerivationAssurance::Executed
+        );
         t.set("shape", KnobValue::Choice("sphere".into())).unwrap();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);

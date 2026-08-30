@@ -103,7 +103,10 @@ check they agree — the kind of redundant, mechanical cross-check the lab is fo
   from the coboundary matrices.
 
 Both are identities, so they `hold` on every shape alike; only the numbers change
-with the `shape` knob.
+with the `shape` knob. Agreement overlays `DerivationAssurance::CrossChecked`
+(P2), not a Lean receipt, not P3N, and not P4. A mismatch `fails` and does not
+mint P2. Poincaré (`dec.closed-equals-exact`) stays a single `b₁ = 0` check
+(`executed`); it is not this two-path overlay.
 
 ## Non-orientability: the Klein bottle vs the torus
 

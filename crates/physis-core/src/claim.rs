@@ -150,6 +150,13 @@ impl Verdict {
         self.derivation = DerivationAssurance::CertifiedNumeric;
         self
     }
+
+    /// Overlay two-path agreement. Does not mint a kernel proof and is not P4.
+    pub fn with_cross_checked(mut self) -> Self {
+        debug_assert_eq!(self.kind, VerdictKind::Holds);
+        self.derivation = DerivationAssurance::CrossChecked;
+        self
+    }
 }
 
 /// A sentence a theory is willing to be judged on.
@@ -330,5 +337,19 @@ mod tests {
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
         assert_ne!(v.derivation, DerivationAssurance::Asserted);
+    }
+
+    #[test]
+    fn cross_checked_is_not_a_kernel_proof() {
+        let c = Claim::new(
+            "dec.euler-poincare",
+            "The Euler characteristic V−E+F equals b₀−b₁+b₂.",
+            LayerId::Mathematical,
+            ClaimClass::ModelInternal,
+        );
+        let v = Verdict::holds(&c, "cell count matches Betti alternating sum").with_cross_checked();
+        assert_eq!(v.kind, VerdictKind::Holds);
+        assert_eq!(v.derivation, DerivationAssurance::CrossChecked);
+        assert_ne!(v.derivation, DerivationAssurance::CertifiedNumeric);
     }
 }

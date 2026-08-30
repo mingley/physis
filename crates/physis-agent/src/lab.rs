@@ -1718,6 +1718,10 @@ mod tests {
             text.contains("certified-numeric"),
             "P3N must appear as a derivation row once SM anomalies are exact: {text}"
         );
+        assert!(
+            text.contains("cross-checked"),
+            "P2 two-path identities must appear as a derivation row: {text}"
+        );
     }
 
     #[test]
@@ -1793,6 +1797,88 @@ mod tests {
         assert!(
             why.contains("derivation: executed"),
             "string GS must not inherit P3N: {why}"
+        );
+    }
+
+    #[test]
+    fn euler_poincare_and_hodge_earn_p2_not_p3f() {
+        let mut lab = Lab::standard();
+        let p2 = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P2".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p2.lines()
+                .any(|l| l.contains("de-rham") && l.contains("dec.euler-poincare")),
+            "{p2}"
+        );
+        assert!(
+            p2.lines()
+                .any(|l| l.contains("de-rham") && l.contains("dec.hodge-harmonic")),
+            "{p2}"
+        );
+        assert!(
+            p2.lines().any(|l| l.trim() == "count 2"),
+            "P2 is the two DEC two-path cells, not more: {p2}"
+        );
+        assert!(
+            !p2.contains("dec.d-squared-zero"),
+            "d² needs a receipt for P3F, not a two-path overlay: {p2}"
+        );
+        assert!(
+            !p2.contains("dec.closed-equals-exact"),
+            "Poincaré is b₁ = 0, not χ cross-checked: {p2}"
+        );
+        assert!(!p2.contains("gut.weinberg"), "GQW is not P2: {p2}");
+        assert!(!p2.contains("predictivity.unique-vacuum"), "{p2}");
+        assert!(!p2.contains("sm.hypercharge-derivation"), "{p2}");
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.euler-poincare".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("derivation: cross-checked"), "{why}");
+        assert!(why.contains("P2"), "{why}");
+        assert!(!why.contains("P3F"), "{why}");
+        assert!(!why.contains("P3N"), "{why}");
+        assert!(why.contains("kernel proof: none"), "{why}");
+
+        let why_h = lab
+            .exec(Command::Why {
+                claim: "dec.hodge-harmonic".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_h.contains("derivation: cross-checked"), "{why_h}");
+        assert!(why_h.contains("P2"), "{why_h}");
+        assert!(!why_h.contains("P3F"), "{why_h}");
+        assert!(why_h.contains("kernel proof: none"), "{why_h}");
+
+        let run = lab
+            .exec(Command::Run {
+                theory: "de-rham".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            run.lines()
+                .any(|l| l.contains("dec.euler-poincare") && l.contains("cross-checked")),
+            "{run}"
+        );
+        assert!(
+            run.lines()
+                .any(|l| l.contains("dec.hodge-harmonic") && l.contains("cross-checked")),
+            "{run}"
+        );
+        assert!(
+            run.lines()
+                .any(|l| l.contains("dec.closed-equals-exact") && l.contains("executed")),
+            "Poincaré must stay executed: {run}"
         );
     }
 

@@ -27,6 +27,7 @@ Level-3 trust
   L3 gap graph             ✓ physis gaps rebuilds a content-addressed snapshot; MissingTheorem is Holds-only; lemma edges are live
   L3 trust gate            ✓ reproduce and loop-review require P3F; standalone review stays encoding-axis
   L3 P3N numeric           ✓ SM chiral anomalies vanish as exact Ratio; hypercharges solved in Q; not Lean, not GQW 3%
+  L3 P2 cross-check        ✓ Euler–Poincaré and Hodge two-path agreement; not Poincaré, not Lean
 ```
 
 Each milestone must:

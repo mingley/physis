@@ -508,6 +508,21 @@ mod tests {
     }
 
     #[test]
+    fn cross_checked_earns_p2_not_p3f() {
+        let p = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::CrossChecked,
+            semantic: SemanticAssurance::Unreviewed,
+            dual_checked_receipt: false,
+            numeric_certificate: false,
+        });
+        assert!(p.has(TrustTier::P1));
+        assert!(p.has(TrustTier::P2));
+        assert!(!p.has(TrustTier::P3N));
+        assert!(!p.has(TrustTier::P3F));
+        assert!(!p.has(TrustTier::P4));
+    }
+
+    #[test]
     fn parameter_origin_names_are_stable_and_unique() {
         let names: Vec<_> = ParameterOrigin::ALL.iter().map(|o| o.as_str()).collect();
         assert_eq!(names.len(), 6);
