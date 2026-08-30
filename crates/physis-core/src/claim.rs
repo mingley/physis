@@ -32,6 +32,16 @@
 //! );
 //! c.statement_hash = physis_core::ArtifactId::of(b"forged");
 //! ```
+//!
+//! JSON cannot mint a [`Verdict`] either (`certified-numeric` Holds is not
+//! a deserializable overlay):
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::claim::Verdict>();
+//! }
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -73,7 +83,13 @@ impl VerdictKind {
 }
 
 /// Result of evaluating a claim.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+///
+/// There is no [`serde::Deserialize`] impl: JSON cannot mint a
+/// `certified-numeric` overlay or an `adversarially-reviewed` tag.
+/// Theories construct verdicts with [`Verdict::from_claim`] and the
+/// overlay builders (`with_certified_numeric`, `with_cross_checked`,
+/// `with_empirical`).
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Verdict {
     /// Holds / fails / …
     pub kind: VerdictKind,

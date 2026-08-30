@@ -62,7 +62,8 @@ has no `Deserialize`, so JSON cannot mint `logical proved`;
 `HeuristicJudgment` has no public `Suggestive` constructor;
 `StatisticalJudgment` has no public `Computed` constructor;
 there is no `SemanticAssurance::Canonical` variant; P3S is a review-store
-tag, not an evaluator field),
+tag, not an evaluator field; `Verdict` has no `Deserialize`, so JSON
+cannot mint a `certified-numeric` overlay),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
 encoding review of the live `statement_hash`, not the slug; P4 is not assigned from an in-process remint), the
 statement hash (which commits to quantifiers, units, constants, boundary

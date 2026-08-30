@@ -12,6 +12,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Verdict is not JSON-mintable**
+  (`Verdict` has no Deserialize). Journal diffs still store
+  `VerdictKind` only. JSON cannot mint a `certified-numeric` overlay or
+  an encoding-review tag. Catalog d² hash unchanged. Verified:
+  compile-fail against Verdict Deserialize. Live prove of catalog d² is
+  still Lean+nanoda. `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Canonical is not a mintable semantic tag**
   (`SemanticAssurance` has no `Canonical` variant; P3S is taken from the
   review store of the live statement hash, not `Verdict.semantic`).

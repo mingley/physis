@@ -144,6 +144,16 @@
 //! }
 //! ```
 //!
+//! JSON cannot mint a [`claim::Verdict`] overlay either (`certified-numeric`
+//! Holds is not a deserializable tag):
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::claim::Verdict>();
+//! }
+//! ```
+//!
 //! JSON cannot mint a [`formal::FormalClaim`] identity hash either
 //! (`from_claim` recomputes the hash; there is no struct-literal constructor):
 //!
