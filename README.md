@@ -73,7 +73,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `string-critique` | string constructions vs SM/GR/observer-geometry — predictivity and the "accommodate vs derive" critique (a `euler_number` knob makes three generations a *choice*, not a derivation) |
 | `em-vacuum` | electromagnetism — `1/√(ε₀μ₀)=c` and the Maxwell equations as **computed theorems**; a medium and a lumped circuit as effective limits |
 | `computation` | a combinational circuit vs a Turing machine — the halting problem and P vs NP as honest `undecidable`/`open` |
-| `field-modes` | a Klein–Gordon scalar and a 1D Dirac fermion on a lattice — computed dispersion, a tachyon from `mass² < 0`, and naive doubling lifted by `add-wilson` |
+| `field-modes` | a Klein–Gordon scalar and a 1D Dirac fermion on a lattice — computed dispersion, a tachyon from `mass² < 0`, unbounded minus-φ⁴ via `add-quartic`, and naive doubling lifted by `add-wilson` |
 | `gauge-lattice` | compact U(1) vs SU(2)/SU(3) — asymptotic freedom, a computed strong-coupling area law, and the 4D mass gap as a `conjecture` |
 | `thermo` | a classical ideal gas — equipartition and the second law hold; the third law **fails honestly** (needs quantum statistics) |
 | `blackbody` | cavity radiation — **Rayleigh–Jeans fails** finite energy, T⁴, and Wien's peak; Planck holds them; `set planck quantum false` restores the ultraviolet catastrophe |

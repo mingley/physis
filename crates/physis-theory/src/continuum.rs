@@ -14,7 +14,10 @@
 //! the same instability notion as the string bosonic tachyon, but computed.
 //!
 //! Nearest-neighbour coupling lives on the IR package. Next-nearest stencil
-//! is a package mutation (`add-next-nearest`), not a knob.
+//! is a package mutation (`add-next-nearest`), not a knob. An unbounded
+//! minus-φ⁴ potential is a second package mutation (`add-quartic`), not a
+//! `mass_squared` knob: `V(φ) = ½ m² φ² − φ⁴/4` runs to −∞ and
+//! `field.stable` fails.
 //!
 //! [`DiracFermion`] is a 1D naive lattice Dirac operator on the same kind of
 //! periodic chain. Its poles are *computed*: `sin(ka) = 0` at `k = 0` and
@@ -109,11 +112,17 @@ const SPECS: &[KnobSpec] = &[
 const NN_EQUATION: &str = "laplacian nn";
 /// IR equation for an extra next-nearest stencil term.
 const NNN_EQUATION: &str = "laplacian nnn";
+/// IR equation for an unbounded minus-φ⁴ potential.
+const QUARTIC_EQ: &str = "potential minus-phi4";
+/// λ in V = ½ m² φ² + λ φ⁴/24. Negative so the potential is unbounded below.
+const PHI4_LAMBDA: f64 = -6.0;
+/// Field value at which the potential is sampled for boundedness.
+const PHI4_PROBE: f64 = 100.0;
 
 /// A real scalar (Klein–Gordon) field on a finite 1D periodic lattice.
 ///
-/// The stencil is package structure, not a knob. Next-nearest coupling is
-/// set only by an IR fork.
+/// The stencil and potential live on the IR package. Next-nearest coupling
+/// and an unbounded minus-φ⁴ term are set only by IR forks.
 #[derive(Clone, Debug, PartialEq)]
 pub struct KleinGordonField {
     sites: u32,
@@ -121,6 +130,8 @@ pub struct KleinGordonField {
     spacing: f64,
     /// Extra next-nearest Laplacian term. Not a knob.
     next_nearest: bool,
+    /// Unbounded minus-φ⁴ potential. Not a knob.
+    quartic: bool,
 }
 
 impl Default for KleinGordonField {
@@ -130,8 +141,18 @@ impl Default for KleinGordonField {
             mass_squared: 1.0,
             spacing: 1.0,
             next_nearest: false,
+            quartic: false,
         }
     }
+}
+
+fn stable_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["quadratic Klein-Gordon potential".into()],
+        vec!["V = ½ m² φ²; min ω² from the discrete Laplacian".into()],
+        "The stability cell is the quadratic encoding. An unbounded minus-phi4 \
+         potential is a new encoding, not a silent mass_squared knob.",
+    )
 }
 
 fn local_domain() -> DomainOfValidity {
@@ -255,12 +276,27 @@ impl KleinGordonField {
         }
     }
 
+    /// Potential sampled at a large field value. Live encoding is quadratic
+    /// (`½ m² φ²`). The minus-φ⁴ mutant is `½ m² φ² + λ φ⁴/24` with λ < 0.
+    fn potential(&self, phi: f64) -> f64 {
+        let quad = 0.5 * self.mass_squared * phi * phi;
+        if self.quartic {
+            quad + PHI4_LAMBDA * phi.powi(4) / 24.0
+        } else {
+            quad
+        }
+    }
+
     /// IR package for this stencil. Equations are `laplacian nn` and,
-    /// when forked, `laplacian nnn`. Knobs stay on the struct.
+    /// when forked, `laplacian nnn` and/or `potential minus-phi4`.
+    /// Knobs stay on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![NN_EQUATION.to_string()];
         if self.next_nearest {
             equations.push(NNN_EQUATION.to_string());
+        }
+        if self.quartic {
+            equations.push(QUARTIC_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -283,10 +319,12 @@ impl KleinGordonField {
     pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
         let mut nn = false;
         let mut nnn = false;
+        let mut quartic = false;
         for eq in &pkg.equations {
             match eq.trim() {
                 NN_EQUATION => nn = true,
                 NNN_EQUATION => nnn = true,
+                QUARTIC_EQ => quartic = true,
                 _ => {}
             }
         }
@@ -295,12 +333,17 @@ impl KleinGordonField {
         }
         Ok(Self {
             next_nearest: nnn,
+            quartic,
             ..Self::default()
         })
     }
 
     fn nnn_equation() -> String {
         NNN_EQUATION.to_string()
+    }
+
+    fn quartic_equation() -> String {
+        QUARTIC_EQ.to_string()
     }
 }
 
@@ -346,8 +389,9 @@ impl Theory for KleinGordonField {
     fn summary(&self) -> &'static str {
         "A real scalar field as an actual local object: N lattice sites coupled \
          by a nearest-neighbour Laplacian, with computed normal modes. \
-         Next-nearest coupling is an IR package mutation, not a knob. Stability \
-         and dispersion are theorems of the computation, not flags."
+         Next-nearest coupling and an unbounded minus-φ⁴ potential are IR \
+         package mutations, not knobs. Stability and dispersion are computed, \
+         not flags."
     }
     fn world(&self) -> Option<World> {
         // A 1+1 D field: one time direction, one spatial lattice direction.
@@ -398,10 +442,11 @@ impl Theory for KleinGordonField {
             )),
             Claim::new(
                 STABLE,
-                "There is no tachyonic mode (min ω² ≥ 0).",
+                "The vacuum is stable: min ω² ≥ 0 and the potential is bounded below.",
                 LayerId::Field,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(stable_domain()),
             Claim::new(
                 CAUSAL,
                 "The group velocity is bounded by c.",
@@ -454,7 +499,20 @@ impl Theory for KleinGordonField {
             }
             STABLE => {
                 let m = self.min_omega_sq();
-                if m >= -1e-12 {
+                let v_probe = if self.quartic {
+                    Some(self.potential(PHI4_PROBE))
+                } else {
+                    None
+                };
+                if let Some(v) = v_probe.filter(|v| *v < 0.0) {
+                    Verdict::fails(
+                        claim,
+                        format!("unbounded minus-phi4 potential: V(φ={PHI4_PROBE}) = {v:.3e} < 0"),
+                    )
+                    .with_evidence([format!(
+                        "V = ½ m² φ² + λ φ⁴/24 with λ = {PHI4_LAMBDA} at φ = {PHI4_PROBE}"
+                    )])
+                } else if m >= -1e-12 {
                     Verdict::holds(claim, format!("min ω² = {m:.4} ≥ 0"))
                 } else {
                     Verdict::fails(
@@ -528,25 +586,40 @@ impl Theory for KleinGordonField {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.next_nearest = parsed.next_nearest;
+        fork.quartic = parsed.quartic;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.next_nearest {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(&pkg, &PackageMutation::AppendEquation(Self::nnn_equation()));
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.next_nearest => {
-                let mut fork = self.clone();
-                fork.next_nearest = true;
-                vec![("add-next-nearest".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.next_nearest {
+            let mutated =
+                apply_mutation(&pkg, &PackageMutation::AppendEquation(Self::nnn_equation()));
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.next_nearest {
+                    let mut fork = self.clone();
+                    fork.next_nearest = true;
+                    out.push(("add-next-nearest".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.quartic {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::quartic_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.quartic {
+                    let mut fork = self.clone();
+                    fork.quartic = true;
+                    out.push(("add-quartic".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -958,11 +1031,13 @@ pub fn field_modes() -> ExperimentReport {
          operator, not tabulated. `field.stable` reads the sign of the minimum \
          ω²; a negative mass_squared knob makes it fail, the same instability as \
          the bosonic string's tachyon. `fermion.no-doublers` reads the light \
-         copies of sin(ka)=0; add-wilson is IR, not a mass knob.",
+         copies of sin(ka)=0; add-wilson is IR, not a mass knob. \
+         `add-quartic` is IR, not mass_squared: V(φ) = ½ m² φ² − φ⁴/4 runs to −∞.",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "Modes and dispersion are computed: ω_j² = m² + (4/a²) sin²(π j / N).".into(),
             "`set klein-gordon mass_squared -1` makes the zero mode tachyonic and `field.stable` fails.".into(),
+            "`hypothesize klein-gordon`: add-next-nearest and add-quartic are IR, not set.".into(),
             "`hypothesize dirac-fermion`: add-wilson is IR, not set.".into(),
         ],
         &field_rows(),
@@ -1011,8 +1086,9 @@ mod tests {
             .find(|c| c.id_str() == STABLE)
             .unwrap();
         assert!(
-            stable.domain().is_encoding_wide(),
-            "stability is the current lattice encoding, not a hidden continuum regime"
+            !stable.domain().is_encoding_wide(),
+            "stability must name the quadratic potential: {:?}",
+            stable.domain()
         );
         let local = f
             .claims()
@@ -1185,11 +1261,34 @@ mod tests {
         assert_eq!(verdict(&f, LOCAL), VerdictKind::Holds);
         assert_eq!(verdict(&fork, DISPERSION), VerdictKind::Fails);
         let probes = f.structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-next-nearest");
-        assert_eq!(verdict(probes[0].1.as_ref(), LOCAL), VerdictKind::Fails);
+        assert_eq!(probes.len(), 2);
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-next-nearest"),
+            "live KG must offer add-next-nearest: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-quartic"),
+            "live KG must offer add-quartic: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let nnn = probes
+            .iter()
+            .find(|(label, _)| label == "add-next-nearest")
+            .unwrap();
+        assert_eq!(verdict(nnn.1.as_ref(), LOCAL), VerdictKind::Fails);
         assert_eq!(verdict(&f, LOCAL), VerdictKind::Holds);
-        assert!(fork.structural_mutations().is_empty());
+        let nnn_probes = fork.structural_mutations();
+        assert!(
+            nnn_probes
+                .iter()
+                .all(|(label, _)| label != "add-next-nearest"),
+            "nnn fork must not re-offer add-next-nearest"
+        );
+        assert!(
+            nnn_probes.iter().any(|(label, _)| label == "add-quartic"),
+            "nnn fork must still offer add-quartic"
+        );
         let canonical = physis_ir::certify_round_trip(&f.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
         let rebuilt = f.reparse_package(&parsed).unwrap();
@@ -1201,6 +1300,119 @@ mod tests {
                 .iter()
                 .all(|(label, _)| label != "add-wilson"),
             "klein-gordon must not grow add-wilson"
+        );
+    }
+
+    #[test]
+    fn unbounded_phi4_is_ir_not_a_knob() {
+        let mut f = KleinGordonField::default();
+        assert!(
+            KleinGordonField::default()
+                .set("quartic", KnobValue::Bool(true))
+                .is_err(),
+            "minus-phi4 is an IR mutation, not a knob"
+        );
+        assert!(
+            KleinGordonField::default()
+                .set("lambda", KnobValue::Float(-1.0))
+                .is_err(),
+            "lambda is not a knob"
+        );
+        assert!(
+            KleinGordonField::default()
+                .set("phi4", KnobValue::Bool(true))
+                .is_err(),
+            "phi4 is not a knob"
+        );
+        let src = render_package(&f.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay laplacian nn"
+        );
+        assert_eq!(
+            pkg.equations[0], NN_EQUATION,
+            "live KG encode pin is laplacian nn only"
+        );
+        assert!(
+            !pkg.equations.iter().any(|e| e == QUARTIC_EQ),
+            "live package must not grow potential minus-phi4"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(KleinGordonField::quartic_equation()),
+        );
+        let parsed = KleinGordonField::from_package(&mutated).unwrap();
+        assert!(parsed.quartic);
+        let mut fork = f.clone();
+        fork.quartic = true;
+        assert_eq!(verdict(&fork, STABLE), VerdictKind::Fails);
+        assert_eq!(verdict(&f, STABLE), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, LOCAL), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, DISPERSION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CAUSAL), VerdictKind::Holds);
+        let v_live = f.potential(PHI4_PROBE);
+        let v_mut = fork.potential(PHI4_PROBE);
+        assert!(
+            v_live > 0.0,
+            "quadratic V must be positive at the probe, got {v_live}"
+        );
+        assert!(
+            v_mut < 0.0,
+            "minus-phi4 V must be negative at the probe, got {v_mut}"
+        );
+        f.set("mass_squared", KnobValue::Float(-1.0)).unwrap();
+        assert_eq!(verdict(&f, STABLE), VerdictKind::Fails);
+        assert_eq!(verdict(&f, CAUSAL), VerdictKind::Fails);
+        let probes = KleinGordonField::default().structural_mutations();
+        let q = probes
+            .iter()
+            .find(|(label, _)| label == "add-quartic")
+            .expect("add-quartic");
+        assert_eq!(verdict(q.1.as_ref(), STABLE), VerdictKind::Fails);
+        let q_probes = fork.structural_mutations();
+        assert!(
+            q_probes.iter().all(|(l, _)| l != "add-quartic"),
+            "quartic fork must not re-offer add-quartic"
+        );
+        assert!(
+            q_probes.iter().any(|(l, _)| l == "add-next-nearest"),
+            "quartic fork must still offer add-next-nearest"
+        );
+        let live = KleinGordonField::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("mass_squared").unwrap(),
+            KnobValue::Float(1.0),
+            "reparse must overlay potential IR onto live knobs"
+        );
+        assert_eq!(verdict(rebuilt.as_ref(), STABLE), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == STABLE)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "KG stability must name quadratic potential: {:?}",
+            cell.domain()
+        );
+        assert!(
+            DiracFermion::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-quartic"),
+            "dirac-fermion must not grow add-quartic"
+        );
+        assert!(
+            KleinGordonField::default()
+                .set("mass_squared", KnobValue::Float(-1.0))
+                .is_ok(),
+            "klein-gordon keeps the mass_squared knob"
         );
     }
 

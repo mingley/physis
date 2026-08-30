@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Klein–Gordon unbounded minus-φ⁴ is an IR mutation**
+  (`klein-gordon`, `add-quartic`). The live scalar potential is
+  quadratic; appending `potential minus-phi4` makes
+  `V(φ) = ½ m² φ² − φ⁴/4` run to −∞ and flips `field.stable` holds to
+  fails. That is not a knob. `sites` / `mass_squared` / `spacing` stay
+  knobs; `mass_squared: -1` still produces a tachyon. Next-nearest
+  locality is still a separate fork (`add-next-nearest`). Stability
+  names the quadratic Klein-Gordon potential. Mutants stay
+  `klein-gordon`; they are not a silent Dirac install. Mutants are
+  not installed, not journaled, and not Canonical or P4. Catalog d²
+  hash unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Live encode pin unchanged. Verified: IR round-trip; set quartic is
+  unknown; hypothesize klein-gordon; live quadratic potential restored;
+  encode pin
+  `32b0997d38afb977615e8fc6527ee5d766271e8a31fb5c882912ca740a3b4e4f`.
+
 - **Naive Dirac doubling is an IR mutation**
   (`dirac-fermion`, `add-wilson`). Naive 1D lattice Dirac is the live
   encoding (`dirac naive`); `sin(ka) = 0` at `k = 0` and `k = π/a` so

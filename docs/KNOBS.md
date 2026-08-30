@@ -78,7 +78,7 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 
 ### klein-gordon
 - `sites` — number of lattice sites N
-- `mass_squared` — m²; negative values make the zero mode tachyonic. Stencil is not this knob: `add-next-nearest` is an IR mutation
+- `mass_squared` — m²; negative values make the zero mode tachyonic. Stencil is not this knob: `add-next-nearest` is an IR mutation. Potential boundedness is not this knob: `add-quartic` is an IR mutation
 - `spacing` — lattice spacing a
 
 ### dirac-fermion

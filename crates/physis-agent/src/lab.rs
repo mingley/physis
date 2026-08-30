@@ -4448,6 +4448,99 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_klein_gordon_quartic_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["quartic", "phi4", "lambda"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "klein-gordon".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("klein-gordon".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-quartic") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-quartic: package → add-quartic";
+        let start = text.find(marker).expect("add-quartic hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  klein-gordon  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let quartic_block = &rest[..end];
+        assert!(
+            quartic_block.contains("field.stable") && quartic_block.contains("holds → fails"),
+            "add-quartic must flip field.stable holds to fails: {quartic_block}"
+        );
+        assert!(
+            !quartic_block.contains("field.causal"),
+            "add-quartic is not the mass_squared tachyon: {quartic_block}"
+        );
+        assert!(
+            !quartic_block.contains("field.local"),
+            "add-quartic is not the next-nearest fork: {quartic_block}"
+        );
+        assert!(
+            text.contains("add-next-nearest"),
+            "next-nearest must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("klein-gordon").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "field.stable" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("mass_squared").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+        let df = lab.theory("dirac-fermion").unwrap();
+        assert_eq!(
+            df.get("mass").unwrap().display(),
+            "1",
+            "KG quartic IR must not convert the Dirac mass knob"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "field.stable".into(),
+            })
+            .text()
+            .to_string();
+        let kg = why_theory_block(&why, "klein-gordon");
+        assert!(
+            kg.contains("quadratic Klein-Gordon potential"),
+            "KG stability must name quadratic potential: {kg}"
+        );
+        assert!(
+            !kg.contains("not yet a machine-checked regime"),
+            "KG stability must not be encoding-wide: {kg}"
+        );
+    }
+
+    #[test]
     fn hypothesize_dirac_fermion_wilson_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -7283,6 +7376,26 @@ mod tests {
             encoding_package_id(&nand2),
             nand_id,
             "hypothesize must not install the feedback mutant"
+        );
+
+        let hypo_kg = lab
+            .exec(Command::Hypothesize {
+                theory: Some("klein-gordon".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_kg.contains("add-next-nearest"), "{hypo_kg}");
+        assert!(hypo_kg.contains("add-quartic"), "{hypo_kg}");
+        let kg_again = lab
+            .exec(Command::Encode {
+                theory: "klein-gordon".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&kg_again),
+            kg_id,
+            "hypothesize must not install the Klein-Gordon mutants"
         );
 
         let hypo_u1 = lab

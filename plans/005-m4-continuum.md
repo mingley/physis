@@ -19,8 +19,10 @@ New theory `klein-gordon`: a real scalar field on a finite 1D periodic lattice.
   - `field.finite-modes` — N normal modes.
   - `field.dispersion-continuum-limit` — the long-wavelength mode matches the
     continuum `ω² = m² + k²` within tolerance (a theorem of the computation).
-  - `field.stable` — no tachyonic mode (`min ω² ≥ 0`); a negative `mass_squared`
-    knob flips it to `fails`, a real computed instability.
+  - `field.stable` — no tachyonic mode (`min ω² ≥ 0`) and a potential bounded
+    below. A negative `mass_squared` knob flips it to `fails` (tachyon). An
+    unbounded minus-φ⁴ term is a package mutation (`add-quartic`), not that
+    knob: `V` runs to −∞ and the cell fails.
   - `field.causal` — the group velocity is bounded by c.
   - `field.local` — nearest-neighbour coupling.
 - Experiment `field-modes`.
@@ -45,6 +47,13 @@ holds; U(1) fails) and its 4D confinement holds as a **conjecture** (the
 Yang–Mills mass-gap Millennium Problem), while U(1) deconfines in 4D. The
 unimproved 1×1 Wilson stencil is a live IR package on both U(1) and SU(N);
 `add-rectangle` is an IR fork, not a knob.
+
+## Unbounded minus-φ⁴ — ✅ done
+
+A second IR fork on the live Klein–Gordon package. The live potential is
+quadratic; `add-quartic` appends `potential minus-phi4`. That is not a
+`mass_squared` knob, and it does not change the live encode pin.
+`add-next-nearest` remains a separate locality fork.
 
 ## Dirac fermion on a 1D lattice — ✅ done
 
