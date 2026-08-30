@@ -56,6 +56,56 @@ pub enum Command {
         /// Theory id.
         theory: String,
     },
+    /// Dual-check a catalogued identity and mint a receipt (verifier only).
+    Prove {
+        /// Claim id.
+        claim: String,
+    },
+    /// Search knob space for a failing evaluation of a currently-holding claim.
+    Falsify {
+        /// Claim id.
+        claim: String,
+    },
+    /// Evaluate a knob at many values; report verdict diffs.
+    Sweep {
+        /// Theory id.
+        theory: String,
+        /// Knob name.
+        knob: String,
+        /// Raw values.
+        values: Vec<String>,
+    },
+    /// Snapshot current knobs under a branch name (content-addressed later).
+    Branch {
+        /// Branch name.
+        name: String,
+    },
+    /// Restore a named branch.
+    Checkout {
+        /// Branch name.
+        name: String,
+    },
+    /// Compare two theories' verdict kinds on shared claim ids.
+    Compare {
+        /// First theory.
+        a: String,
+        /// Second theory.
+        b: String,
+    },
+    /// Run the red-team corpus. Exit non-zero if a corruption is not caught.
+    Audit,
+    /// Rank claims that distinguish a list of theories (experiment design).
+    Design {
+        /// Theory ids.
+        theories: Vec<String>,
+    },
+    /// Perturb one knob and list claims whose kind flipped (sensitivity).
+    Sensitivity {
+        /// Theory id.
+        theory: String,
+        /// Knob name.
+        knob: String,
+    },
 }
 
 /// Lab → agent.

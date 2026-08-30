@@ -598,7 +598,7 @@ impl Theory for DeRham {
                 D_SQUARED_ZERO,
                 "The exterior derivative is nilpotent: d ∘ d = 0.",
                 LayerId::Mathematical,
-                ClaimClass::ModelInternal,
+                ClaimClass::Mathematical,
             ),
             Claim::new(
                 FIRST_BETTI,

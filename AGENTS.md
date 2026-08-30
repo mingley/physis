@@ -5,12 +5,12 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 ## What you may do
 
 1. Read `specs/`, `plans/`, `docs/`, and crate-level rustdoc.
-2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why`).
+2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|falsify|sweep|branch|audit`).
 3. Turn knobs through `Lab::set_knob` / `physis set`. Illegal values must be rejected by domain checks.
 4. Add tests that demonstrate a knob → verdict diff.
 5. Add a new theory as a `Theory` impl with its own knobs and claims. Do not special-case it in the CLI.
 6. Add a new scientific domain as layers + theories, following `specs/007-reuse-domains.md`.
-7. Propose candidate theorems, counterexamples, and encodings. You may not mint `Verified<T>`.
+7. Propose candidate theorems, counterexamples, and encodings. You may not mint `Verified<T>`. Call `physis_verifier::verify` with a trusted `Challenge`; you still cannot deserialize a `Verified` from JSON.
 
 ## What you must not do
 
@@ -21,7 +21,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 - Do not implement Geometric Unity, or claim to. `observer-geometry` is a scaffold.
 - Do not declare string theory false because `predictivity.unique-vacuum` fails. That cell *is* the landscape objection, labelled heuristic.
 - Do not add `unsafe`. The workspace is `#![forbid(unsafe_code)]`.
-- Do not add FFI or non-Rust **physics engines**. Unverified external computation is never authoritative. External formal systems may later produce proof *artifacts* only through isolated certificate-checking boundaries (`specs/020-proof-carrying.md`). That pipeline is not wired yet.
+- Do not add FFI or non-Rust **physics engines**. Unverified external computation is never authoritative. External formal systems may later produce proof *artifacts* only through isolated certificate-checking boundaries (`specs/020-proof-carrying.md`). Lean kernel + nanoda dual replay is not wired; `verify` on Lean source/export returns `LeanPipelineNotWired` rather than minting.
 - Do not paper over type errors with `f64` bags. If two quantities should not add, they must not share a type.
 - Do not invent particles, groups, or critical dimensions. Cite, or mark `OpenProblem`.
 - Do not rewrite history in the journal. Append only.
@@ -51,7 +51,7 @@ Every claim answers four questions. They are different Rust types.
 
 A theory can `Executed`-derive a prediction that nature `Excluded`. That is a feature.
 
-`physis why <claim>` prints assumptions, the statement hash, and `kernel proof: none` until a receipt exists.
+`physis why <claim>` prints assumptions, the statement hash, and `kernel proof: none` until `physis prove` (or `verify`) records a receipt. `ExactCertificate` is not a Lean kernel proof.
 
 ## First lab
 

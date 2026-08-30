@@ -1,14 +1,15 @@
 [package]
-name = "physis-verifier"
+name = "physis-constants"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "Trusted minting of verification receipts. The only crate that can produce Verified<T>."
+description = "Versioned physical constants. Changing a release invalidates dependents."
 
 [dependencies]
 physis-core.workspace = true
-physis-proof.workspace = true
+physis-numeric.workspace = true
+physis-provenance.workspace = true
 serde.workspace = true

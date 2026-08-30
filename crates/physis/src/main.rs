@@ -117,6 +117,64 @@ fn parse(args: &[String]) -> Result<Command, String> {
             let path = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Replay { path })
         }
+        "prove" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Prove { claim })
+        }
+        "falsify" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Falsify { claim })
+        }
+        "sweep" => {
+            if args.len() < 4 {
+                return Err(usage());
+            }
+            let values = args[3]
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            Ok(Command::Sweep {
+                theory: args[1].clone(),
+                knob: args[2].clone(),
+                values,
+            })
+        }
+        "branch" => {
+            let name = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Branch { name })
+        }
+        "checkout" => {
+            let name = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Checkout { name })
+        }
+        "compare" => {
+            if args.len() < 3 {
+                return Err(usage());
+            }
+            Ok(Command::Compare {
+                a: args[1].clone(),
+                b: args[2].clone(),
+            })
+        }
+        "audit" => Ok(Command::Audit),
+        "design" => {
+            if args.len() < 3 {
+                return Err(usage());
+            }
+            Ok(Command::Design {
+                theories: args[1..].to_vec(),
+            })
+        }
+        "sensitivity" => {
+            if args.len() < 3 {
+                return Err(usage());
+            }
+            Ok(Command::Sensitivity {
+                theory: args[1].clone(),
+                knob: args[2].clone(),
+            })
+        }
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -134,6 +192,15 @@ USAGE:
     physis score <theory>
     physis epistemics
     physis why <claim-id>
+    physis prove <claim-id>
+    physis falsify <claim-id>
+    physis sweep <theory> <knob> <v1,v2,...>
+    physis branch <name>
+    physis checkout <name>
+    physis compare <theory-a> <theory-b>
+    physis design <theory> <theory> [...]
+    physis sensitivity <theory> <knob>
+    physis audit
     physis experiments
     physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice | thermo | blackbody | solid | gravity | olbers | bell]
     physis journal

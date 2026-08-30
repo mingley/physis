@@ -89,11 +89,34 @@ dependencies = [
 name = "physis-agent"
 version = "0.1.0"
 dependencies = [
+ "physis-audit",
  "physis-core",
  "physis-model",
+ "physis-proof",
+ "physis-store",
  "physis-theory",
+ "physis-verifier",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "physis-audit"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "physis-proof",
+ "physis-verifier",
+]
+
+[[package]]
+name = "physis-constants"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "physis-numeric",
+ "physis-provenance",
+ "serde",
 ]
 
 [[package]]
@@ -106,12 +129,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "physis-data"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "physis-numeric",
+ "physis-provenance",
+ "serde",
+]
+
+[[package]]
+name = "physis-ir"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "serde",
+]
+
+[[package]]
 name = "physis-model"
 version = "0.1.0"
 dependencies = [
  "physis-core",
  "serde",
  "typenum",
+]
+
+[[package]]
+name = "physis-numeric"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "serde",
+]
+
+[[package]]
+name = "physis-proof"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "serde",
+]
+
+[[package]]
+name = "physis-provenance"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "serde",
+]
+
+[[package]]
+name = "physis-store"
+version = "0.1.0"
+dependencies = [
+ "physis-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -129,6 +203,7 @@ name = "physis-verifier"
 version = "0.1.0"
 dependencies = [
  "physis-core",
+ "physis-proof",
  "serde",
 ]
 

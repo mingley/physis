@@ -10,10 +10,17 @@ M3 domain reuse   ✓ electricity (Maxwell + ohm-circuit) and computation
 M4 continuum      ◑ fields as actual local objects (klein-gordon lattice seed)
 
 Level-3 trust
-  L3-M1 trust model   ✓ MachineProved unforgeable; FormalClaim; assumptions; why
-  L3-M2 Lean proofs     planned (specs/020)
-  L3-M3 provenance      planned
-  ...
+  L3-M1 trust model        ✓ MachineProved unforgeable; FormalClaim; assumptions; why
+  L3-M2 exact dual-check   ✓ catalog identities + dual expanders; Lean/nanoda still open
+  L3-M3 provenance         ✓ SourceRecord rejects slogan locators
+  L3-M4 numerics           ✓ Ratio / Interval; empirical receipts
+  L3-M5 artifact DAG       ✓ content-addressed store + descendant invalidation
+  L3-M6 protocol v2        ✓ prove, falsify, sweep, branch, compare, sensitivity
+  L3-M7 physis-ir          ✓ line-oriented theory packages
+  L3-M8 red-team corpus    ✓ physis audit
+  L3-M9 experiment rank    ✓ physis design
+  L3-M10 research loop     planned (orchestrator)
+  L3 Lean/nanoda kernels   planned
 ```
 
 Each milestone must:

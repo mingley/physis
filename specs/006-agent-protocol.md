@@ -13,7 +13,14 @@ Layer: agent
 | `run <theory>` | evaluate all claims |
 | `set <theory> <knob> <value>` | turn a knob, print Δverdicts |
 | `epistemics` | tally every verdict by class, derivation, and semantic axes (no theorem row) |
-| `why <claim>` | print assumptions, statement hash, and that no kernel receipt exists |
+| `why <claim>` | print assumptions, statement hash, kernel receipt or none |
+| `prove <claim>` | dual-check a catalogued identity; only `physis-verifier` mints |
+| `falsify <claim>` | search knobs for a failing evaluation |
+| `sweep <theory> <knob> <v,v,…>` | evaluate many values; report changed claims |
+| `branch` / `checkout` | snapshot / restore knob state |
+| `compare` / `design` | discriminating claims; rank theory pairs |
+| `sensitivity` | perturb one knob, count flips |
+| `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |
 | `experiment <id>` | canonical experiment (fresh defaults) |
 | `score <theory>` | grade a theory against the empirical-target fixture |

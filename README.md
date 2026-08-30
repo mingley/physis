@@ -34,8 +34,16 @@ This repository does **not** decide whether string theory is false. It makes the
 | `physis-core` | SI dimensions, quantities, layers, knobs, claims, orthogonal assurance, content-addressed identity |
 | `physis-model` | Spacetime, finite Hilbert space, SM spectrum, gauge groups, `World` |
 | `physis-theory` | five domains on one substrate: fundamental physics (SM, GR, strings/M, observer-geometry), **electromagnetism**, **computation**, **thermodynamics**, and **quantum foundations** |
-| `physis-verifier` | the only crate that can mint `Verified<T>`; public store starts empty |
-| `physis-agent` | Lab, protocol, JSONL journal |
+| `physis-proof` | trusted challenges and untrusted artifacts (no physics, no mint) |
+| `physis-verifier` | the only crate that can mint `Verified<T>`; runs dual checkers |
+| `physis-numeric` | exact ratios and interval enclosures |
+| `physis-provenance` | source records; slogan locators are rejected |
+| `physis-store` | content-addressed artifact DAG |
+| `physis-data` | datasets and empirical receipts |
+| `physis-ir` | declarative theory packages |
+| `physis-audit` | red-team corpus |
+| `physis-constants` | versioned constants |
+| `physis-agent` | Lab, protocol v2, hash-linked journal |
 | `physis` | Facade + CLI |
 
 Layers, finest first: `mathematical → spacetime → quantum → field → particle → interaction → effective → statistical → information → agent`.
@@ -132,6 +140,11 @@ cargo run -p physis -- set su5-gut supersymmetric true   # GQW + unification fai
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis -- epistemics
 cargo run -p physis -- why consistency.critical-dimension
+cargo run -p physis -- prove dec.d-squared-zero
+cargo run -p physis -- prove sr.invariant-interval
+cargo run -p physis -- falsify consistency.critical-dimension
+cargo run -p physis -- sweep type-iib total_dim 8,9,10,11,12
+cargo run -p physis -- audit
 cargo run -p physis --example kinetic_energy
 
 # record a session across runs, then mechanically verify it replays:

@@ -4,8 +4,11 @@ use std::collections::BTreeMap;
 
 use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
+use physis_core::formal::FormalClaim;
 use physis_core::id::LayerId;
-use physis_core::knob::KnobValue;
+use physis_core::knob::{KnobDomain, KnobValue};
+use physis_proof::{Challenge, UntrustedProof};
+use physis_store::{ArtifactStore, Node, NodeKind};
 use physis_theory::blackbody::Blackbody;
 use physis_theory::computation::{CombinationalCircuit, LandauerEngine, TuringMachine};
 use physis_theory::continuum::KleinGordonField;
@@ -26,6 +29,22 @@ use physis_theory::{
 use crate::journal::{Journal, JournalEvent};
 use crate::protocol::{Command, Response};
 use crate::replay::replay_journal;
+use physis_verifier::{verify, ReceiptStore};
+
+/// Named snapshot of every theory's knobs.
+#[derive(Clone, Debug)]
+struct BranchState {
+    knobs: BTreeMap<String, Vec<(String, KnobValue)>>,
+}
+
+/// An agent-operable collection of theories.
+pub struct Lab {
+    theories: BTreeMap<String, Box<dyn Theory>>,
+    journal: Journal,
+    receipts: ReceiptStore,
+    branches: BTreeMap<String, BranchState>,
+    store: ArtifactStore,
+}
 
 /// The experiments the lab can run, with one-line descriptions.
 pub const EXPERIMENTS: &[(&str, &str)] = &[
@@ -75,18 +94,15 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
     ),
 ];
 
-/// An agent-operable collection of theories.
-pub struct Lab {
-    theories: BTreeMap<String, Box<dyn Theory>>,
-    journal: Journal,
-}
-
 impl Lab {
     /// Empty lab with an in-memory journal.
     pub fn empty() -> Self {
         Self {
             theories: BTreeMap::new(),
             journal: Journal::memory(),
+            receipts: ReceiptStore::empty(),
+            branches: BTreeMap::new(),
+            store: ArtifactStore::empty(),
         }
     }
 
@@ -226,13 +242,18 @@ impl Lab {
     /// one-shot diffs.
     pub fn restore_from_journal(&mut self) {
         for ev in self.journal.events().to_vec() {
-            if let JournalEvent::SetKnob {
-                theory, knob, to, ..
-            } = ev
-            {
-                if let Ok(t) = self.theory_mut(&theory) {
-                    let _ = t.set(&knob, to);
+            match ev {
+                JournalEvent::SetKnob {
+                    theory, knob, to, ..
+                } => {
+                    if let Ok(t) = self.theory_mut(&theory) {
+                        let _ = t.set(&knob, to);
+                    }
                 }
+                JournalEvent::Prove { claim, .. } => {
+                    let _ = self.remint_exact(&claim);
+                }
+                _ => {}
             }
         }
     }
@@ -438,7 +459,10 @@ impl Lab {
                     &["asserted", "executed", "cross-checked", "certified-numeric"],
                     &by_derivation,
                 );
-                text.push_str("  machine-proved          0   (none; physis-verifier has minted no receipts)\n");
+                text.push_str(&format!(
+                    "  machine-proved          {}   (receipts minted by physis-verifier)\n",
+                    self.receipts.len()
+                ));
                 dump(
                     &mut text,
                     "\nclass\n",
@@ -498,9 +522,26 @@ impl Lab {
                                 v.kind.as_str(),
                                 v.summary
                             ));
-                            text.push_str(
-                                "  kernel proof: none (MachineProved is not an enum this lab can set)\n",
-                            );
+                            match self.receipts.by_statement(c.statement_hash) {
+                                Some(r) => {
+                                    text.push_str(&format!(
+                                        "  kernel proof: receipt {} / {} + {} (backend {:?})\n",
+                                        r.challenge_hash,
+                                        r.primary_checker.checker,
+                                        r.secondary_checker.checker,
+                                        r.formal_backend
+                                    ));
+                                    text.push_str("  axioms:\n");
+                                    for a in &r.axioms_used {
+                                        text.push_str(&format!("    - {}\n", a.0));
+                                    }
+                                }
+                                None => {
+                                    text.push_str(
+                                        "  kernel proof: none (MachineProved is not an enum this lab can set)\n",
+                                    );
+                                }
+                            }
                         }
                     }
                 }
@@ -533,6 +574,22 @@ impl Lab {
                 }
                 Err(e) => Response::err(e.to_string()),
             },
+            Command::Prove { claim } => self.prove_claim(&claim),
+            Command::Falsify { claim } => self.falsify_claim(&claim),
+            Command::Sweep {
+                theory,
+                knob,
+                values,
+            } => self.sweep(&theory, &knob, &values),
+            Command::Branch { name } => self.branch(&name),
+            Command::Checkout { name } => self.checkout(&name),
+            Command::Compare { a, b } => self.compare_theories(&a, &b),
+            Command::Audit => match physis_audit::attack() {
+                Ok(()) => Response::ok("audit: red-team corpus caught (no mutation promoted)\n"),
+                Err(e) => Response::err(e),
+            },
+            Command::Design { theories } => self.design(&theories),
+            Command::Sensitivity { theory, knob } => self.sensitivity(&theory, &knob),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -559,6 +616,335 @@ impl Lab {
                 Err(e) => Response::err(format!("cannot read journal '{path}': {e}")),
             },
         }
+    }
+
+    fn snapshot_knobs(&self) -> BranchState {
+        let mut knobs = BTreeMap::new();
+        for (id, t) in &self.theories {
+            knobs.insert(
+                id.clone(),
+                t.snapshot()
+                    .into_iter()
+                    .map(|(s, v)| (s.name.to_string(), v))
+                    .collect(),
+            );
+        }
+        BranchState { knobs }
+    }
+
+    fn restore_knobs(&mut self, state: &BranchState) {
+        for (id, pairs) in &state.knobs {
+            if let Some(t) = self.theories.get_mut(id) {
+                for (name, val) in pairs {
+                    let _ = t.set(name, val.clone());
+                }
+            }
+        }
+    }
+
+    fn find_claim(&self, claim_id: &str) -> Option<physis_core::claim::Claim> {
+        for t in self.theories.values() {
+            for (c, _) in t.evaluate_all() {
+                if c.id.0 == claim_id {
+                    return Some(c);
+                }
+            }
+        }
+        None
+    }
+
+    /// Re-run the dual checkers. Never deserializes a `Verified` value.
+    fn remint_exact(&mut self, claim_id: &str) -> Result<physis_verifier::ProofReceipt, String> {
+        let claim = self
+            .find_claim(claim_id)
+            .ok_or_else(|| format!("unknown claim '{claim_id}'"))?;
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let v = verify(&challenge, &UntrustedProof::ExactIdentity).map_err(|e| e.to_string())?;
+        let r = v.receipt().clone();
+        self.receipts.record(&v);
+        self.store.insert(Node::new(
+            NodeKind::VerificationReceipt,
+            vec![r.statement_hash],
+            r.challenge_hash.to_hex().as_bytes(),
+        ));
+        Ok(r)
+    }
+
+    fn prove_claim(&mut self, claim_id: &str) -> Response {
+        match self.remint_exact(claim_id) {
+            Ok(r) => {
+                self.journal
+                    .record(JournalEvent::prove(claim_id, r.challenge_hash.to_hex()));
+                Response::ok(format!(
+                    "prove {claim_id}\n  challenge {} \n  backend {:?}\n  checkers {} + {}\n  axioms {}\n",
+                    r.challenge_hash,
+                    r.formal_backend,
+                    r.primary_checker.checker,
+                    r.secondary_checker.checker,
+                    r.axioms_used
+                        .iter()
+                        .map(|a| a.0.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ))
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    fn falsify_claim(&mut self, claim_id: &str) -> Response {
+        let mut text = format!("falsify {claim_id}\n");
+        let mut found_any = false;
+        let mut counter = None;
+        let ids: Vec<String> = self.theories.keys().cloned().collect();
+        for id in ids {
+            let t = self.theories[&id].as_ref();
+            let Some((claim, verdict)) = t
+                .evaluate_all()
+                .into_iter()
+                .find(|(c, _)| c.id.0 == claim_id)
+            else {
+                continue;
+            };
+            found_any = true;
+            if verdict.kind != VerdictKind::Holds {
+                text.push_str(&format!("  {id}: already {}\n", verdict.kind.as_str()));
+                continue;
+            }
+            let mut snapshot = t
+                .snapshot()
+                .into_iter()
+                .map(|(s, v)| (s.name.to_string(), s.domain.clone(), v))
+                .collect::<Vec<_>>();
+            snapshot.sort_by_key(|(_, domain, _)| match domain {
+                KnobDomain::UInt { .. } => 0,
+                KnobDomain::Int { .. } => 1,
+                KnobDomain::Float { .. } => 2,
+                KnobDomain::Bool => 3,
+                KnobDomain::Choice(_) => 4,
+            });
+            for (name, domain, current) in &snapshot {
+                for cand in domain_probes(domain, current) {
+                    if cand == *current {
+                        continue;
+                    }
+                    {
+                        let t = self.theories.get_mut(&id).unwrap();
+                        if t.set(name, cand.clone()).is_err() {
+                            continue;
+                        }
+                    }
+                    let now = self.theories[&id]
+                        .evaluate_all()
+                        .into_iter()
+                        .find(|(c, _)| c.id.0 == claim_id)
+                        .map(|(_, v)| v.kind);
+                    {
+                        let t = self.theories.get_mut(&id).unwrap();
+                        let _ = t.set(name, current.clone());
+                    }
+                    if now == Some(VerdictKind::Fails) {
+                        counter = Some(format!(
+                            "  counterexample: {id} {name} {} → {}  ({} holds → fails)\n",
+                            current.display(),
+                            cand.display(),
+                            claim.id.0
+                        ));
+                        break;
+                    }
+                }
+                if counter.is_some() {
+                    break;
+                }
+            }
+            if counter.is_some() {
+                break;
+            }
+        }
+        if !found_any {
+            return Response::err(format!("unknown claim '{claim_id}'"));
+        }
+        match counter {
+            Some(line) => {
+                text.push_str(&line);
+                Response::ok(text)
+            }
+            None => {
+                text.push_str("  no counterexample in local knob probes\n");
+                Response::ok(text)
+            }
+        }
+    }
+
+    fn sweep(&mut self, theory: &str, knob: &str, values: &[String]) -> Response {
+        if !self.theories.contains_key(theory) {
+            return Response::err(format!("unknown theory '{theory}'"));
+        }
+        let original = match self.theories[theory].get(knob) {
+            Ok(v) => v,
+            Err(e) => return Response::err(e.to_string()),
+        };
+        let mut text = format!("sweep {theory} {knob}\n");
+        for raw in values {
+            let _ = self
+                .theories
+                .get_mut(theory)
+                .unwrap()
+                .set(knob, original.clone());
+            match self.set_knob(theory, knob, raw) {
+                Ok((_, _, diffs)) => {
+                    let changed: Vec<_> = diffs.iter().map(|d| d.claim.as_str()).collect();
+                    text.push_str(&format!(
+                        "  {raw:<8} changed_claims={} {:?}\n",
+                        changed.len(),
+                        changed
+                    ));
+                }
+                Err(e) => text.push_str(&format!("  {raw:<8} error: {e}\n")),
+            }
+        }
+        let _ = self.theories.get_mut(theory).unwrap().set(knob, original);
+        Response::ok(text)
+    }
+
+    fn branch(&mut self, name: &str) -> Response {
+        let snap = self.snapshot_knobs();
+        self.branches.insert(name.to_string(), snap);
+        Response::ok(format!("branch {name}  theories={}\n", self.theories.len()))
+    }
+
+    fn checkout(&mut self, name: &str) -> Response {
+        let Some(state) = self.branches.get(name).cloned() else {
+            return Response::err(format!("unknown branch '{name}'"));
+        };
+        self.restore_knobs(&state);
+        Response::ok(format!("checkout {name}\n"))
+    }
+
+    fn compare_theories(&self, a: &str, b: &str) -> Response {
+        let ta = match self.theory(a) {
+            Ok(t) => t,
+            Err(e) => return Response::err(e.to_string()),
+        };
+        let tb = match self.theory(b) {
+            Ok(t) => t,
+            Err(e) => return Response::err(e.to_string()),
+        };
+        let ea = ta.evaluate_all();
+        let eb: BTreeMap<_, _> = tb
+            .evaluate_all()
+            .into_iter()
+            .map(|(c, v)| (c.id.0, v))
+            .collect();
+        let mut text = format!("compare {a} vs {b}\n");
+        let mut n = 0usize;
+        for (c, va) in ea {
+            if let Some(vb) = eb.get(&c.id.0) {
+                if va.kind != vb.kind {
+                    n += 1;
+                    text.push_str(&format!(
+                        "  {:<32} {} vs {}\n",
+                        c.id.0,
+                        va.kind.as_str(),
+                        vb.kind.as_str()
+                    ));
+                }
+            }
+        }
+        text.push_str(&format!("discriminating_claims={n}\n"));
+        Response::ok(text)
+    }
+
+    fn design(&self, theories: &[String]) -> Response {
+        if theories.len() < 2 {
+            return Response::err("design needs at least two theories");
+        }
+        let mut text = String::from("design (rank by discriminating claim count)\n");
+        let mut rows: Vec<(String, String, usize)> = Vec::new();
+        for i in 0..theories.len() {
+            for j in (i + 1)..theories.len() {
+                let a = &theories[i];
+                let b = &theories[j];
+                let cmp = self.compare_theories(a, b);
+                let n = cmp
+                    .text()
+                    .lines()
+                    .filter(|l| l.contains(" vs ") && l.starts_with("  "))
+                    .count();
+                rows.push((a.clone(), b.clone(), n));
+            }
+        }
+        rows.sort_by_key(|x| std::cmp::Reverse(x.2));
+        for (a, b, n) in rows {
+            text.push_str(&format!("  {a} vs {b}: {n} discriminating claims\n"));
+        }
+        Response::ok(text)
+    }
+
+    fn sensitivity(&mut self, theory: &str, knob: &str) -> Response {
+        if !self.theories.contains_key(theory) {
+            return Response::err(format!("unknown theory '{theory}'"));
+        }
+        let spec = match self.theories[theory].spec(knob) {
+            Ok(s) => s,
+            Err(e) => return Response::err(e.to_string()),
+        };
+        let current = match self.theories[theory].get(knob) {
+            Ok(v) => v,
+            Err(e) => return Response::err(e.to_string()),
+        };
+        let probes = domain_probes(&spec.domain, &current);
+        let mut text = format!("sensitivity {theory} {knob} (from {})\n", current.display());
+        let mut max_flips = 0usize;
+        for cand in probes {
+            if cand == current {
+                continue;
+            }
+            match self.set_knob(theory, knob, &cand.display()) {
+                Ok((_, _, diffs)) => {
+                    max_flips = max_flips.max(diffs.len());
+                    text.push_str(&format!("  → {}  flips={}\n", cand.display(), diffs.len()));
+                }
+                Err(e) => text.push_str(&format!("  → {}  error: {e}\n", cand.display())),
+            }
+            let _ = self
+                .theories
+                .get_mut(theory)
+                .unwrap()
+                .set(knob, current.clone());
+        }
+        text.push_str(&format!("max_flips={max_flips}\n"));
+        Response::ok(text)
+    }
+}
+
+fn domain_probes(domain: &KnobDomain, current: &KnobValue) -> Vec<KnobValue> {
+    match domain {
+        KnobDomain::Bool => vec![KnobValue::Bool(true), KnobValue::Bool(false)],
+        KnobDomain::Int { min, max } => {
+            vec![KnobValue::Int(*min), KnobValue::Int(*max), current.clone()]
+        }
+        KnobDomain::UInt { min, max } => {
+            let mut v = vec![KnobValue::UInt(*min), KnobValue::UInt(*max)];
+            if let KnobValue::UInt(x) = current {
+                if *x > *min {
+                    v.push(KnobValue::UInt(*x - 1));
+                }
+                if *x < *max {
+                    v.push(KnobValue::UInt(*x + 1));
+                }
+            }
+            v
+        }
+        KnobDomain::Float { min, max } => vec![
+            KnobValue::Float(*min),
+            KnobValue::Float(*max),
+            current.clone(),
+        ],
+        KnobDomain::Choice(opts) => opts
+            .iter()
+            .map(|s| KnobValue::Choice((*s).into()))
+            .collect(),
     }
 }
 
@@ -874,5 +1260,107 @@ mod tests {
         assert_eq!(resp.exit_code(), 1, "empty session must not certify");
         assert!(resp.text().contains("no set-knob events"));
         let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn prove_d2_mints_a_receipt_and_why_shows_it() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("expand-recursive"), "{text}");
+        assert!(text.contains("expand-postfix"), "{text}");
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("kernel proof: receipt"), "{why}");
+        let epi = lab.exec(Command::Epistemics).text().to_string();
+        assert!(epi.contains("machine-proved          1"), "{epi}");
+    }
+
+    #[test]
+    fn prove_conjecture_is_refused() {
+        let mut lab = Lab::standard();
+        let resp = lab.exec(Command::Prove {
+            claim: "predictivity.unique-vacuum".into(),
+        });
+        assert_eq!(resp.exit_code(), 1);
+        assert!(resp.text().contains("no exact identity"));
+    }
+
+    #[test]
+    fn prove_restores_by_reverify_not_by_deserialize() {
+        let mut lab = Lab::standard();
+        lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let jsonl = lab.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"prove\""));
+        let mut lab2 = Lab::standard();
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab2.restore_from_journal();
+        let why = lab2
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("kernel proof: receipt"), "{why}");
+    }
+
+    #[test]
+    fn falsify_critical_dimension_finds_total_dim() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Falsify {
+                claim: "consistency.critical-dimension".into(),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("counterexample"), "{text}");
+        assert!(text.contains("total_dim"), "{text}");
+    }
+
+    #[test]
+    fn sweep_and_compare_and_audit() {
+        let mut lab = Lab::standard();
+        let sweep = lab
+            .exec(Command::Sweep {
+                theory: "type-iib".into(),
+                knob: "total_dim".into(),
+                values: vec!["9".into(), "10".into()],
+            })
+            .text()
+            .to_string();
+        assert!(sweep.contains("changed_claims"), "{sweep}");
+        assert!(
+            sweep.contains("9        changed_claims=2") || sweep.contains("changed_claims=2"),
+            "{sweep}"
+        );
+        let cmp = lab
+            .exec(Command::Compare {
+                a: "olbers-static".into(),
+                b: "olbers-horizon".into(),
+            })
+            .text()
+            .to_string();
+        assert!(cmp.contains("discriminating_claims="), "{cmp}");
+        let audit = lab.exec(Command::Audit);
+        assert_eq!(audit.exit_code(), 0, "{}", audit.text());
+        lab.exec(Command::Branch {
+            name: "hypothesis-a".into(),
+        });
+        lab.set_knob("type-iib", "total_dim", "9").unwrap();
+        lab.exec(Command::Checkout {
+            name: "hypothesis-a".into(),
+        });
+        let t = lab.theory("type-iib").unwrap();
+        assert_eq!(t.get("total_dim").unwrap().display(), "10");
     }
 }

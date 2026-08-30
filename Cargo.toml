@@ -5,7 +5,15 @@ members = [
     "crates/physis-model",
     "crates/physis-theory",
     "crates/physis-agent",
+    "crates/physis-proof",
     "crates/physis-verifier",
+    "crates/physis-numeric",
+    "crates/physis-provenance",
+    "crates/physis-store",
+    "crates/physis-data",
+    "crates/physis-ir",
+    "crates/physis-audit",
+    "crates/physis-constants",
     "crates/physis",
 ]
 
@@ -23,7 +31,15 @@ physis-core = { path = "crates/physis-core", version = "0.1.0" }
 physis-model = { path = "crates/physis-model", version = "0.1.0" }
 physis-theory = { path = "crates/physis-theory", version = "0.1.0" }
 physis-agent = { path = "crates/physis-agent", version = "0.1.0" }
+physis-proof = { path = "crates/physis-proof", version = "0.1.0" }
 physis-verifier = { path = "crates/physis-verifier", version = "0.1.0" }
+physis-numeric = { path = "crates/physis-numeric", version = "0.1.0" }
+physis-provenance = { path = "crates/physis-provenance", version = "0.1.0" }
+physis-store = { path = "crates/physis-store", version = "0.1.0" }
+physis-data = { path = "crates/physis-data", version = "0.1.0" }
+physis-ir = { path = "crates/physis-ir", version = "0.1.0" }
+physis-audit = { path = "crates/physis-audit", version = "0.1.0" }
+physis-constants = { path = "crates/physis-constants", version = "0.1.0" }
 typenum = { version = "1.17", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

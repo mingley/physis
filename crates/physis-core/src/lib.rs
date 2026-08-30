@@ -92,6 +92,7 @@ pub mod dim;
 pub mod error;
 pub mod formal;
 pub mod id;
+pub mod judgment;
 pub mod knob;
 pub mod layer;
 pub mod qty;
@@ -111,6 +112,10 @@ pub use dim::{
 pub use error::CoreError;
 pub use formal::FormalClaim;
 pub use id::{ClaimId, KnobId, LayerId, TheoryId};
+pub use judgment::{
+    EmpiricalJudgment, GapReason, HeuristicJudgment, Judgment, LogicalJudgment, NumericJudgment,
+    ParameterOrigin, StatisticalJudgment, TrustTier,
+};
 pub use knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 pub use layer::Layer;
 pub use qty::Qty;

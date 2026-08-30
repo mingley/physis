@@ -6,6 +6,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use physis_core::artifact::ArtifactId;
 use physis_core::knob::KnobValue;
 use physis_theory::VerdictDiff;
 use serde::{Deserialize, Serialize};
@@ -55,6 +56,16 @@ pub enum JournalEvent {
         fails: usize,
         /// Other counts.
         other: usize,
+    },
+    /// A dual-checked receipt was minted. Restore re-verifies; it does not
+    /// deserialize a `Verified` value.
+    Prove {
+        /// Unix millis.
+        t: u64,
+        /// Claim id.
+        claim: String,
+        /// Challenge hash hex.
+        challenge_hash: String,
     },
 }
 
@@ -126,13 +137,47 @@ impl JournalEvent {
             id: id.into(),
         }
     }
+
+    /// A successful prove, stamped with the current time.
+    pub fn prove(claim: impl Into<String>, challenge_hash: impl Into<String>) -> Self {
+        JournalEvent::Prove {
+            t: now_ms(),
+            claim: claim.into(),
+            challenge_hash: challenge_hash.into(),
+        }
+    }
 }
 
-/// JSONL journal, optionally persisted.
+/// JSONL journal, optionally persisted. Events are hash-linked in memory
+/// (`tip` changes if history is rewritten).
 #[derive(Clone, Debug, Default)]
 pub struct Journal {
     events: Vec<JournalEvent>,
+    hashes: Vec<ArtifactId>,
     path: Option<PathBuf>,
+}
+
+fn genesis() -> ArtifactId {
+    ArtifactId::of(b"physis-journal-genesis")
+}
+
+fn hash_event(prev: ArtifactId, event: &JournalEvent) -> ArtifactId {
+    let body = serde_json::to_string(event).unwrap_or_default();
+    ArtifactId::of(format!("{}\n{body}", prev.to_hex()).as_bytes())
+}
+
+fn with_chain(events: Vec<JournalEvent>, path: Option<PathBuf>) -> Journal {
+    let mut hashes = Vec::with_capacity(events.len());
+    let mut prev = genesis();
+    for ev in &events {
+        prev = hash_event(prev, ev);
+        hashes.push(prev);
+    }
+    Journal {
+        events,
+        hashes,
+        path,
+    }
 }
 
 impl Journal {
@@ -140,8 +185,14 @@ impl Journal {
     pub fn memory() -> Self {
         Self {
             events: Vec::new(),
+            hashes: Vec::new(),
             path: None,
         }
+    }
+
+    /// Merkle tip (genesis if empty).
+    pub fn tip(&self) -> ArtifactId {
+        self.hashes.last().copied().unwrap_or_else(genesis)
     }
 
     /// Parse a JSONL string into an in-memory journal (no file backing).
@@ -151,7 +202,7 @@ impl Journal {
     /// dropped lines matters (e.g. before certifying a replay).
     pub fn from_jsonl(s: &str) -> Self {
         let (events, _) = parse_jsonl_lines(s);
-        Self { events, path: None }
+        with_chain(events, None)
     }
 
     /// Like [`Journal::from_jsonl`], but also returns how many non-blank lines
@@ -159,7 +210,7 @@ impl Journal {
     /// truncated, or schema-incompatible and must not be trusted as complete.
     pub fn from_jsonl_counting(s: &str) -> (Self, usize) {
         let (events, malformed) = parse_jsonl_lines(s);
-        (Self { events, path: None }, malformed)
+        (with_chain(events, None), malformed)
     }
 
     /// Append to a JSONL file (created if needed).
@@ -178,14 +229,13 @@ impl Journal {
                 }
             }
         }
-        Ok(Self {
-            events,
-            path: Some(path),
-        })
+        Ok(with_chain(events, Some(path)))
     }
 
     /// Record an event.
     pub fn record(&mut self, event: JournalEvent) {
+        let prev = self.tip();
+        let h = hash_event(prev, &event);
         if let Some(path) = &self.path {
             if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {
                 if let Ok(line) = serde_json::to_string(&event) {
@@ -194,6 +244,7 @@ impl Journal {
             }
         }
         self.events.push(event);
+        self.hashes.push(h);
     }
 
     /// All events, oldest first.
@@ -218,5 +269,26 @@ impl fmt::Display for Journal {
             writeln!(f, "{}", serde_json::to_string(ev).unwrap_or_default())?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rewriting_history_changes_the_tip() {
+        let mut j = Journal::memory();
+        j.record(JournalEvent::boot(vec!["a".into()]));
+        j.record(JournalEvent::run("a", 1, 0, 0));
+        let tip = j.tip();
+        let mut k = Journal::memory();
+        k.record(JournalEvent::boot(vec!["a".into()]));
+        k.record(JournalEvent::run("a", 0, 1, 0));
+        assert_ne!(tip, k.tip());
+        let mut j2 = Journal::memory();
+        j2.record(JournalEvent::boot(vec!["a".into()]));
+        j2.record(JournalEvent::run("a", 1, 0, 0));
+        assert_eq!(j.tip(), j2.tip());
     }
 }

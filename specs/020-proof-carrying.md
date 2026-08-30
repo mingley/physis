@@ -1,6 +1,6 @@
 # 020 — Proof-carrying Physis (Level 3)
 
-Status: active (Milestone 1 implemented; Milestones 2–10 planned)
+Status: active (Milestones 1–9 sliced; Lean/nanoda dual kernel still open)
 Layer: all
 Id: `proof-carrying`
 
@@ -9,90 +9,79 @@ Id: `proof-carrying`
 Nothing gains authority merely because an agent wrote code that returns
 `Holds`. Authority comes from explicit, independently checkable artifacts.
 
-This spec is the trust kernel of Level-3 Physis. The full laboratory
-(Lean/Physlib, provenance, certified numerics, agent protocol v2, IR,
-adversarial roles, experiment design) is ordered so that a fast lab cannot
-accumulate incorrectly encoded “knowledge.”
+## What is true now
 
-## What shipped in Milestone 1
+### Milestone 1 — trust model
 
-### Three orthogonal questions
+- Orthogonal axes: `ClaimClass`, `DerivationAssurance`, `EmpiricalStatus`,
+  `SemanticAssurance`. No `Epistemic::Theorem`. No `MachineProved` enum.
+- `Verified<T>` has private fields, crate-private mint, and **no
+  `Deserialize` impl** (JSON cannot mint a kernel proof).
+- Every claim has assumptions, a domain, and a SHA-256 statement identity.
+- `physis why` / `physis epistemics` do not print a `theorem` tag.
 
-Every claim and verdict carries:
+### Milestone 2 — exact dual-check (Lean still open)
 
-| Axis | Type | M1 default for former `Epistemic::Theorem` |
+Trusted side: `physis-proof::Challenge::generate` from a `FormalClaim`.
+Untrusted side: `UntrustedProof`. The only public mint is
+`physis_verifier::verify`, which *runs* two checkers.
+
+Catalogued polynomial identities, dual-expanded (recursive AST vs postfix
+stack):
+
+- `dec.d-squared-zero`: `(b−a)−(c−a)+(c−b) ≡ 0`
+- `sr.invariant-interval`: `(t−βx)² − (x−βt)² − (1−β²)(t²−x²) ≡ 0`
+
+A one-byte mutation of the challenge bytes is `ChallengeTampered`.
+A sign flip of the identity fails both expanders. `axiom` / `sorry` /
+`admit` in Lean source is `UnauthorizedAxiom`. Clean Lean without two
+kernels is `LeanPipelineNotWired` — **refuses to mint**.
+
+`physis prove dec.d-squared-zero` records a `FormalBackend::ExactCertificate`
+receipt. That is not a Lean kernel proof; the receipt says so.
+
+Still open: Lean 4 + Physlib + Lean kernel + nanoda on the same export.
+
+### Milestones 3–9 — first slices
+
+| Slice | Crate / CLI | What it does |
 |---|---|---|
-| What kind of claim? | `ClaimClass` | `ModelInternal` (or `Mathematical` / `Phenomenological` when that is what the encoding actually is) |
-| How was the deduction checked? | `DerivationAssurance` | `Executed` |
-| What does observation say? | `EmpiricalStatus` | `NotApplicable` or `Untested` |
-| Is the encoding the intended physics? | `SemanticAssurance` | `Unreviewed` |
+| 3 | `physis-provenance` | Rejects `source: textbook`; requires a page/equation/… locator |
+| 4 | `physis-numeric`, `physis-data` | Exact `Ratio` / `Interval`; SU(5) `3/8` disjoint from PDG `sin²θ_W(M_Z)` |
+| 5 | `physis-store` | Content-addressed DAG; descendants only are invalidated |
+| 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops |
+| 7 | `physis-ir` | Line-oriented theory package (not a Lean replacement) |
+| 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
+| 9 | `physis design` | Rank theory pairs by discriminating claim count |
+| constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
-Former `Conjecture` / `Heuristic` / `Open` map to the matching `ClaimClass`
-with `DerivationAssurance::Asserted`.
+Journal events are hash-linked in memory (`Journal::tip`).
 
-This is **not** a judgement that the science is doubtful. It records that
-Physis has not mechanically established a kernel proof.
+## What is not yet true
 
-### `MachineProved` is unforgeable
+- Lean kernel replay + nanoda on a `lean4export` file
+- Semantic review workflow that can raise `SemanticAssurance` above `Unreviewed`
+- Full autonomous research loop (observe → hypothesize → prove → falsify →
+  replicate → design next experiment) as a single scheduled orchestrator
+- Agents other than the lab protocol (Explorer, Formalizer, … as processes)
 
-There is no `DerivationAssurance::MachineProved` and no `Epistemic::Theorem`.
+## Vertical slice
 
-A kernel-checked result is `physis_verifier::Verified<T>`. Fields are
-private. The mint function is `pub(crate)`. External crates cannot
-construct it (compile-fail). The public `ReceiptStore` starts empty.
-
-### Formal identity
-
-`Claim.statement_hash` is a SHA-256 of a canonical listing: id, statement,
-class, layer, assumption-set id, domain id. Changing the sentence (∀ vs ∃,
-a sign, a unit) yields a new hash. `FormalClaim` is that identity object.
-
-### Assumptions and domain
-
-Every claim has a non-empty `AssumptionSet` (M1 default:
-`encoding-is-the-model`) and a `DomainOfValidity` (M1 default:
-encoding-wide, with an explicit note that silent extrapolation is a new
-claim). `AxiomLedger::propose` always stores `Unreviewed`.
-
-### CLI
-
-```
-physis epistemics   # derivation / class / semantic ledgers; no theorem row
-physis why <claim>  # assumptions, identity hash, kernel proof: none
-```
-
-`physis run` prints `executed` / `asserted`, not `theorem`.
-
-## What is not yet true (later milestones)
-
-| Milestone | Work |
+| Item | Status |
 |---|---|
-| 2 | Lean 4 + Physlib + Lean kernel + independent checker (nanoda). Immutable challenge. Dual replay. `ProofReceipt`. One-byte statement mutation invalidates the receipt. Unauthorized `axiom` / `sorry` / `admit` blocks promotion. |
-| 3 | `physis-provenance`, source locks, semantic review workflow |
-| 4 | Validated numerics; naked `f64` is not authoritative for threshold claims |
-| 5 | Content-addressed artifact DAG and incremental invalidation |
-| 6 | Agent protocol v2 (`branch`, `sweep`, `falsify`, `prove`, …) |
-| 7 | Declarative `physis-ir` theory packages |
-| 8 | Adversarial laboratory and red-team corpus |
-| 9 | Experimental design engine |
-| 10 | Autonomous research loop |
+| A. `d² = 0` | Dual-expanded exact identity; `physis prove` mints a receipt |
+| B. Lorentz interval | Same backend |
+| C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
+| D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset |
+| E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` refuses it |
 
 ## Pure-Rust rule (revised)
 
-Runtime, orchestration, and unverified physics computation remain
-unsafe-free Rust. Unverified external computation is never authoritative.
-External formal systems may produce **proof artifacts** only through
-isolated certificate-checking boundaries. Lean is not asked to simulate
-the physics. The final proof can be independently checked on the Rust
-side (nanoda).
-
-## Vertical slice (after M2+)
-
-A. `d² = 0` (mathematical)
-B. Lorentz interval preservation (model-internal)
-C. Interval-certified numeric prediction
-D. Empirical comparison with a versioned dataset
-E. An honest open/conjectural result
+Runtime and unverified physics computation remain unsafe-free Rust.
+Unverified external computation is never authoritative. External formal
+systems may produce proof artifacts only through isolated
+certificate-checking boundaries. That Lean/nanoda boundary is typed but
+not wired.
 
 ## Related
 

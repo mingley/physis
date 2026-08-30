@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Level-3 dual-check receipts and protocol v2**
+  (`physis-proof`, `physis-verifier`, `physis-audit`, `physis-numeric`,
+  `physis-provenance`, `physis-store`, `physis-data`, `physis-ir`,
+  `physis-constants`, `physis-agent`). `Verified` is not Deserialize, so
+  JSON cannot forge a kernel proof. `verify` runs two independent expanders
+  on catalogued identities (discrete d squared = 0, Lorentz interval) and
+  refuses Lean source that contains axiom, sorry, or admit, or that lacks
+  dual kernels. `physis prove` records a receipt; `physis why` then prints
+  it. Conjectures cannot be proved by the exact backend. `physis falsify`,
+  `sweep`, `branch`, `compare`, `design`, `sensitivity`, and `audit` are
+  first-class ops. Provenance rejects textbook slogans. Intervals exclude
+  SU(5) 3/8 from the MZ mixing-angle enclosure. The artifact DAG invalidates
+  only descendants. Lean kernel + nanoda replay is typed but not wired.
+  Verified: compile-fail against Deserialize of Verified, identity mutation
+  and sorry/axiom rejection, red-team corpus, prove/why/falsify/sweep/audit
+  lab tests, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Level-3 Milestone 1: theorem is no longer an enum**
   (`crates/physis-core` assurance/assumption/artifact/axiom/formal,
   `crates/physis-verifier`, `specs/020-proof-carrying.md`). Former

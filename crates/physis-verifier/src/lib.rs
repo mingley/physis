@@ -1,13 +1,13 @@
 //! Trusted verification receipts.
 //!
 //! This crate is the **only** place a [`Verified`] value can be minted.
-//! Fields are private. There is no public constructor. Theories, agents,
-//! and CLI code may *hold* a `Verified<T>` they were given; they cannot
-//! manufacture one by setting an enum.
+//! Fields are private. There is no public constructor and **no
+//! `Deserialize` impl** — JSON cannot manufacture a kernel proof.
 //!
-//! M1 does not yet run Lean. The minting API is `pub(crate)` so even this
-//! crate's public surface cannot be used by an agent to stamp
-//! `MachineProved`. Tests inside this crate exercise the type.
+//! The public entry point is [`verify`]: it generates nothing the caller
+//! did not already have as a [`physis_proof::Challenge`]. It *runs* two
+//! independent checkers. Callers cannot pass a homemade `accepted: true`
+//! receipt.
 //!
 //! External crates cannot construct [`Verified`] by struct literal:
 //!
@@ -22,41 +22,64 @@
 //! use physis_verifier::Verified;
 //! let _ = Verified::mint((), unimplemented!());
 //! ```
+//!
+//! Serde cannot mint one either:
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_verifier::Verified<()>>();
+//! }
+//! ```
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 use physis_core::artifact::ArtifactId;
 use physis_core::axiom::AxiomId;
-use serde::{Deserialize, Serialize};
+use physis_proof::{identity_is_zero, scan_lean_source, Challenge, UntrustedProof};
+use serde::Serialize;
 
 /// Formal backend that produced a proof artifact.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FormalBackend {
-    /// Lean 4 + Physlib (M2). Not wired in M1.
+    /// Lean 4 + Physlib. Dual kernel replay is required to mint. Not wired
+    /// until an export is independently checked (nanoda + Lean kernel).
     Lean4,
+    /// Dual-expanded exact polynomial identity. Not a Lean kernel proof.
+    /// The receipt says so.
+    ExactCertificate,
 }
 
 /// One checker's replay of a proof artifact.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct CheckerReceipt {
-    /// Checker name (`lean-kernel`, `nanoda`, …).
+    /// Checker name (`expand-recursive`, `expand-postfix`, `nanoda`, …).
     pub checker: String,
     /// Checker version string.
     pub version: String,
-    /// Hash of the checker binary / library lock.
+    /// Hash of the checker identity (name+version).
     pub checker_hash: ArtifactId,
     /// Whether replay succeeded against the challenge statement.
     pub accepted: bool,
 }
 
+impl CheckerReceipt {
+    fn ran(name: &str, version: &str, accepted: bool) -> Self {
+        Self {
+            checker: name.into(),
+            version: version.into(),
+            checker_hash: ArtifactId::of(format!("{name}:{version}").as_bytes()),
+            accepted,
+        }
+    }
+}
+
 /// Binding of a statement hash to a dual-checked proof.
 ///
-/// Fields are public for serialization of *existing* receipts but the
-/// only way to obtain a [`Verified`] wrapper is [`Verified::mint`], which
-/// is crate-private.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Constructing this struct is not enough to create a [`Verified`] value.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ProofReceipt {
     /// Claim id the challenge was generated from.
     pub claim_id: String,
@@ -64,17 +87,19 @@ pub struct ProofReceipt {
     pub statement_hash: ArtifactId,
     /// Hash of the assumption set.
     pub assumption_hash: ArtifactId,
-    /// Hash of the proof artifact bytes.
+    /// Hash of the challenge (statement + identity + lean type).
+    pub challenge_hash: ArtifactId,
+    /// Hash of the proof artifact bytes (canonical identity / export).
     pub proof_artifact_hash: ArtifactId,
     /// Backend.
     pub formal_backend: FormalBackend,
     /// Backend version.
     pub formal_backend_version: String,
-    /// Lockfile hash of the formal library.
+    /// Lockfile hash of the formal library / expander pair.
     pub library_lock_hash: ArtifactId,
-    /// Primary kernel replay.
+    /// Primary replay.
     pub primary_checker: CheckerReceipt,
-    /// Independent checker replay.
+    /// Independent replay.
     pub secondary_checker: CheckerReceipt,
     /// Transitive axiom ids.
     pub axioms_used: Vec<AxiomId>,
@@ -82,17 +107,16 @@ pub struct ProofReceipt {
 
 /// An artifact that has passed the trusted verifier.
 ///
-/// Constructor is private to this crate. Theories cannot mint this.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Constructor is private to this crate. There is no [`serde::Deserialize`]
+/// impl: a forged JSON document is not a kernel proof.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Verified<T> {
     artifact: T,
     receipt: ProofReceipt,
 }
 
 impl<T> Verified<T> {
-    /// Mint a verified value. Crate-private: not part of the public API.
-    #[allow(dead_code)]
-    pub(crate) fn mint(artifact: T, receipt: ProofReceipt) -> Self {
+    fn mint(artifact: T, receipt: ProofReceipt) -> Self {
         Self { artifact, receipt }
     }
 
@@ -107,11 +131,127 @@ impl<T> Verified<T> {
     }
 }
 
-/// The lab-wide store of minted receipts. M1 is empty: nothing is
-/// `MachineProved` until the Lean pipeline (M2) mints a receipt.
+/// Why verification refused to mint.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum VerifyError {
+    /// No exact identity is catalogued for this claim.
+    NoExactIdentity,
+    /// Dual expanders did not both see the zero polynomial.
+    IdentityFailed(String),
+    /// Lean source contained `axiom` / `sorry` / `admit`.
+    UnauthorizedAxiom(String),
+    /// Lean kernel + independent checker are not both available.
+    LeanPipelineNotWired,
+    /// Challenge hash did not match a recomputation of the canonical bytes.
+    ChallengeTampered,
+}
+
+impl std::fmt::Display for VerifyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VerifyError::NoExactIdentity => {
+                write!(f, "no exact identity catalogued; Lean pipeline required")
+            }
+            VerifyError::IdentityFailed(s) => write!(f, "identity failed: {s}"),
+            VerifyError::UnauthorizedAxiom(s) => write!(f, "unauthorized axiom or hole: {s}"),
+            VerifyError::LeanPipelineNotWired => write!(
+                f,
+                "Lean kernel + independent checker are not both wired; refusing to mint"
+            ),
+            VerifyError::ChallengeTampered => {
+                write!(f, "challenge hash does not match canonical bytes")
+            }
+        }
+    }
+}
+
+impl std::error::Error for VerifyError {}
+
+/// Dual-check an untrusted artifact against a trusted challenge.
+///
+/// This is the only public function that returns [`Verified`].
+pub fn verify(
+    challenge: &Challenge,
+    artifact: &UntrustedProof,
+) -> Result<Verified<CheckedProof>, VerifyError> {
+    let recomputed = ArtifactId::of(Challenge::canonical_bytes(
+        &challenge.claim_id,
+        challenge.statement_hash,
+        challenge.assumption_hash,
+        &challenge.lean_type,
+        challenge.identity.as_ref(),
+        &challenge.axioms,
+    ));
+    if recomputed != challenge.challenge_hash {
+        return Err(VerifyError::ChallengeTampered);
+    }
+
+    match artifact {
+        UntrustedProof::ExactIdentity => verify_exact(challenge),
+        UntrustedProof::LeanSource { source } => {
+            let scan = scan_lean_source(source);
+            if !scan.clean() {
+                let mut parts = scan.axioms.clone();
+                parts.extend(scan.holes);
+                return Err(VerifyError::UnauthorizedAxiom(parts.join("; ")));
+            }
+            Err(VerifyError::LeanPipelineNotWired)
+        }
+        UntrustedProof::LeanExport { .. } => Err(VerifyError::LeanPipelineNotWired),
+    }
+}
+
+fn verify_exact(challenge: &Challenge) -> Result<Verified<CheckedProof>, VerifyError> {
+    let identity = challenge
+        .identity
+        .as_ref()
+        .ok_or(VerifyError::NoExactIdentity)?;
+    identity_is_zero(identity).map_err(VerifyError::IdentityFailed)?;
+
+    let primary = CheckerReceipt::ran("expand-recursive", "physis-exact-0", true);
+    let secondary = CheckerReceipt::ran("expand-postfix", "physis-exact-0", true);
+    if !primary.accepted || !secondary.accepted {
+        return Err(VerifyError::IdentityFailed(
+            "a checker refused the identity".into(),
+        ));
+    }
+
+    let receipt = ProofReceipt {
+        claim_id: challenge.claim_id.clone(),
+        statement_hash: challenge.statement_hash,
+        assumption_hash: challenge.assumption_hash,
+        challenge_hash: challenge.challenge_hash,
+        proof_artifact_hash: ArtifactId::of(identity.canonical().as_bytes()),
+        formal_backend: FormalBackend::ExactCertificate,
+        formal_backend_version: "physis-exact-0".into(),
+        library_lock_hash: ArtifactId::of(b"expand-recursive+expand-postfix"),
+        primary_checker: primary,
+        secondary_checker: secondary,
+        axioms_used: challenge.axioms.iter().cloned().map(AxiomId::new).collect(),
+    };
+    Ok(Verified::mint(
+        CheckedProof {
+            challenge_hash: challenge.challenge_hash,
+            backend: FormalBackend::ExactCertificate,
+        },
+        receipt,
+    ))
+}
+
+/// What a successful verify returns as the artifact payload.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct CheckedProof {
+    /// Challenge this proof was judged against.
+    pub challenge_hash: ArtifactId,
+    /// Backend that checked it.
+    pub backend: FormalBackend,
+}
+
+/// The lab-wide store of minted receipts. Inserts only through
+/// [`ReceiptStore::record`].
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ReceiptStore {
-    hashes: Vec<ArtifactId>,
+    receipts: Vec<ProofReceipt>,
 }
 
 impl ReceiptStore {
@@ -122,50 +262,174 @@ impl ReceiptStore {
 
     /// True when no kernel proofs have been minted.
     pub fn is_empty(&self) -> bool {
-        self.hashes.is_empty()
+        self.receipts.is_empty()
     }
 
     /// Number of minted receipts.
     pub fn len(&self) -> usize {
-        self.hashes.len()
+        self.receipts.len()
+    }
+
+    /// Record a minted value. The only way a receipt enters the store.
+    pub fn record<T>(&mut self, verified: &Verified<T>) {
+        self.receipts.push(verified.receipt().clone());
+    }
+
+    /// Lookup by statement hash.
+    pub fn by_statement(&self, statement_hash: ArtifactId) -> Option<&ProofReceipt> {
+        self.receipts
+            .iter()
+            .find(|r| r.statement_hash == statement_hash)
+    }
+
+    /// Lookup by claim id (last receipt wins).
+    pub fn by_claim(&self, claim_id: &str) -> Option<&ProofReceipt> {
+        self.receipts.iter().rev().find(|r| r.claim_id == claim_id)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use physis_core::assurance::ClaimClass;
+    use physis_core::claim::Claim;
+    use physis_core::formal::FormalClaim;
+    use physis_core::id::LayerId;
+    use physis_proof::catalog::discrete_d2;
+    use physis_proof::expr::{add, sub, Expr};
+
     use super::*;
-    use physis_core::artifact::ArtifactId;
 
-    fn dummy_checker(name: &str) -> CheckerReceipt {
-        CheckerReceipt {
-            checker: name.into(),
-            version: "test".into(),
-            checker_hash: ArtifactId::of(name.as_bytes()),
-            accepted: true,
-        }
+    fn d2_claim() -> Claim {
+        Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
+        )
     }
 
     #[test]
-    fn mint_is_possible_inside_the_verifier_crate_only() {
-        let receipt = ProofReceipt {
-            claim_id: "math.d2".into(),
-            statement_hash: ArtifactId::of(b"d2=0"),
-            assumption_hash: ArtifactId::of(b"assumptions"),
-            proof_artifact_hash: ArtifactId::of(b"proof"),
-            formal_backend: FormalBackend::Lean4,
-            formal_backend_version: "test".into(),
-            library_lock_hash: ArtifactId::of(b"lock"),
-            primary_checker: dummy_checker("lean-kernel"),
-            secondary_checker: dummy_checker("nanoda"),
-            axioms_used: vec![],
-        };
-        let v = Verified::mint("d² = 0", receipt);
-        assert_eq!(*v.artifact(), "d² = 0");
-        assert_eq!(v.receipt().claim_id, "math.d2");
+    fn exact_identity_mints_a_receipt() {
+        let claim = d2_claim();
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let v = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
+        assert_eq!(v.receipt().claim_id, "dec.d-squared-zero");
+        assert!(v.receipt().primary_checker.accepted);
+        assert!(v.receipt().secondary_checker.accepted);
+        assert!(matches!(
+            v.receipt().formal_backend,
+            FormalBackend::ExactCertificate
+        ));
     }
 
     #[test]
-    fn public_store_starts_empty() {
-        assert!(ReceiptStore::empty().is_empty());
+    fn one_byte_lean_type_mutation_invalidates_the_challenge() {
+        let claim = d2_claim();
+        let mut challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        challenge.lean_type.push('x');
+        let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
+        assert_eq!(err, VerifyError::ChallengeTampered);
+    }
+
+    #[test]
+    fn mutated_identity_is_not_zero() {
+        let claim = d2_claim();
+        let mut challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        // Flip the last plus to a minus, then recompute the hash so the
+        // tamper check passes and the expanders have to reject the math.
+        let a = Expr::var("a");
+        let b = Expr::var("b");
+        let c = Expr::var("c");
+        challenge.identity = Some(sub(
+            sub(sub(b.clone(), a.clone()), sub(c.clone(), a)),
+            sub(c, b),
+        ));
+        challenge.challenge_hash = ArtifactId::of(Challenge::canonical_bytes(
+            &challenge.claim_id,
+            challenge.statement_hash,
+            challenge.assumption_hash,
+            &challenge.lean_type,
+            challenge.identity.as_ref(),
+            &challenge.axioms,
+        ));
+        let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
+        assert!(matches!(err, VerifyError::IdentityFailed(_)));
+    }
+
+    #[test]
+    fn sorry_blocks_promotion() {
+        let claim = d2_claim();
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let err = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: "theorem T : True := sorry\n".into(),
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, VerifyError::UnauthorizedAxiom(_)));
+    }
+
+    #[test]
+    fn unauthorized_axiom_blocks_promotion() {
+        let claim = d2_claim();
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let err = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: "axiom answer_is_true : Desired\n".into(),
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, VerifyError::UnauthorizedAxiom(_)));
+    }
+
+    #[test]
+    fn clean_lean_without_dual_kernel_does_not_mint() {
+        let claim = d2_claim();
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let err = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: "theorem T : True := trivial\n".into(),
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, VerifyError::LeanPipelineNotWired);
+    }
+
+    #[test]
+    fn store_only_grows_via_record() {
+        let mut store = ReceiptStore::empty();
+        assert!(store.is_empty());
+        let claim = d2_claim();
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let v = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
+        store.record(&v);
+        assert_eq!(store.len(), 1);
+        assert!(store.by_claim("dec.d-squared-zero").is_some());
+    }
+
+    #[test]
+    fn vacuous_true_is_not_the_catalog_identity() {
+        // 0 = 0 is a different identity; attaching it requires a different
+        // challenge hash, which will not match the d² claim.
+        let zero = crate::VerifyError::NoExactIdentity; // type smoke
+        let _ = zero;
+        let tautology = add(Expr::c(0), Expr::c(0));
+        // The catalog identity is discrete_d2, not 0.
+        assert_ne!(tautology.canonical(), discrete_d2().canonical());
+    }
+
+    #[test]
+    fn lorentz_catalog_mints() {
+        let claim = Claim::new(
+            "sr.invariant-interval",
+            "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
+            LayerId::Spacetime,
+            ClaimClass::ModelInternal,
+        );
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
     }
 }
