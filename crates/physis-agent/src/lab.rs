@@ -4118,6 +4118,11 @@ mod tests {
             .text()
             .to_string();
         let live = evidence_graph_id(&first);
+        assert_eq!(
+            live.to_hex(),
+            "6ee50cdc3de02838465b178b47061d8d5b36d6c135baf40f80988ff640a36bc9",
+            "journaling must not change the unique-vacuum evidence payload"
+        );
         let jsonl = lab1.journal().to_string();
         assert!(jsonl.contains("\"event\":\"evidence\""), "{jsonl}");
         assert!(

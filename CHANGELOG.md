@@ -17,8 +17,10 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   evaluations. A tampered `graph_hash` cannot mint the snapshot.
   Restore does not journal again. `replay_journal` still certifies only
   `set-knob`. Not Canonical, not P4. Catalog d² hash unchanged.
-  Verified: unique-vacuum reconstitutes the live graph id; a forged
-  hash is absent from the store; two-process CLI prints the same id.
+  Verified: unique-vacuum reconstitutes graph
+  `6ee50cdc3de02838465b178b47061d8d5b36d6c135baf40f80988ff640a36bc9`;
+  a forged hash is absent from the store; two-process CLI prints the
+  same id; dump-only restore does not append.
 
 - **Inverse query over projected judgments**
   (`physis inspect judgment`). `statistical-computed` lists the PDG
