@@ -487,7 +487,7 @@ impl Lab {
                         by_derivation.entry(v.derivation.as_str()).or_default()[idx] += 1;
                         by_class.entry(v.class.as_str()).or_default()[idx] += 1;
                         by_semantic.entry(semantic.as_str()).or_default()[idx] += 1;
-                        let profile = self.profile_for(&c.id.0, v.derivation, semantic);
+                        let profile = self.profile_for(&c, v.derivation, semantic);
                         for tier in TrustTier::ALL {
                             if profile.has(tier) {
                                 *by_trust.entry(tier.as_str()).or_default() += 1;
@@ -580,7 +580,7 @@ impl Lab {
                             ));
                             let semantic = self.semantic_tag(&c.id.0, v.semantic);
                             let dual = self.receipts.by_statement(c.statement_hash).is_some();
-                            let profile = self.profile_for(&c.id.0, v.derivation, semantic);
+                            let profile = self.profile_for(&c, v.derivation, semantic);
                             let judgment = Judgment::from_lab(
                                 v.class,
                                 v.kind,
@@ -609,7 +609,7 @@ impl Lab {
                             if !c.depends_on.is_empty() {
                                 text.push_str("  lemmas:\n");
                                 for dep in &c.depends_on {
-                                    let status = if self.receipts.by_claim(&dep.0).is_some() {
+                                    let status = if self.has_live_receipt(&dep.0) {
                                         "have receipt"
                                     } else {
                                         "needs receipt"
@@ -751,9 +751,9 @@ impl Lab {
     fn trust_permits(&self, cmd: &Command) -> Result<(), String> {
         match cmd {
             Command::Reproduce { claim } => {
-                if self.receipts.by_claim(claim).is_none() {
+                if !self.has_live_receipt(claim) {
                     Err(format!(
-                        "reproduce {claim}: trust P3F required (no dual-checked receipt); not prove and not P4"
+                        "reproduce {claim}: trust P3F required (no dual-checked receipt for this identity); not prove and not P4"
                     ))
                 } else {
                     Ok(())
@@ -807,16 +807,24 @@ impl Lab {
 
     fn profile_for(
         &self,
-        claim_id: &str,
+        claim: &physis_core::claim::Claim,
         derivation: physis_core::DerivationAssurance,
         semantic: SemanticAssurance,
     ) -> TrustProfile {
         TrustProfile::derive(TrustEvidence {
             derivation,
             semantic,
-            dual_checked_receipt: self.receipts.by_claim(claim_id).is_some(),
+            dual_checked_receipt: self.receipts.by_statement(claim.statement_hash).is_some(),
             numeric_certificate: derivation == physis_core::DerivationAssurance::CertifiedNumeric,
         })
+    }
+
+    /// A dual-checked receipt for this slug counts only when it matches the
+    /// live [`physis_core::claim::Claim::statement_hash`]. A stale receipt
+    /// for an older identity is not P3F.
+    fn has_live_receipt(&self, claim_id: &str) -> bool {
+        self.find_claim(claim_id)
+            .is_some_and(|c| self.receipts.by_statement(c.statement_hash).is_some())
     }
 
     fn accept_verified<T>(&mut self, v: &Verified<T>) -> physis_verifier::ProofReceipt {
@@ -850,7 +858,7 @@ impl Lab {
                 for (id, t) in &self.theories {
                     for (c, verdict) in t.evaluate_all() {
                         let semantic = self.semantic_tag(&c.id.0, verdict.semantic);
-                        let profile = self.profile_for(&c.id.0, verdict.derivation, semantic);
+                        let profile = self.profile_for(&c, verdict.derivation, semantic);
                         if profile.has(tier) {
                             n += 1;
                             text.push_str(&format!(
@@ -930,7 +938,7 @@ impl Lab {
                 let mut n = 0usize;
                 for (id, t) in &self.theories {
                     for (c, verdict) in t.evaluate_all() {
-                        let dual = self.receipts.by_claim(&c.id.0).is_some();
+                        let dual = self.receipts.by_statement(c.statement_hash).is_some();
                         if let Some(g) = gap_for(
                             verdict.class,
                             verdict.derivation,
@@ -972,7 +980,7 @@ impl Lab {
         let mut n = 0usize;
         for (id, t) in &self.theories {
             for (c, verdict) in t.evaluate_all() {
-                let dual = self.receipts.by_claim(&c.id.0).is_some();
+                let dual = self.receipts.by_statement(c.statement_hash).is_some();
                 if let Some(g) = gap_for(
                     verdict.class,
                     verdict.derivation,
@@ -985,7 +993,7 @@ impl Lab {
                     n += 1;
                     let mut row = format!("  {id:<20} {:<36} needs {}\n", c.id.0, need_for(g));
                     for dep in &c.depends_on {
-                        let status = if self.receipts.by_claim(&dep.0).is_some() {
+                        let status = if self.has_live_receipt(&dep.0) {
                             "have receipt"
                         } else {
                             "needs receipt"
@@ -1136,9 +1144,12 @@ impl Lab {
 
     /// Same-process remint against a stored receipt. Never assigns P4.
     fn reproduce_claim(&mut self, claim_id: &str) -> Response {
-        let Some(prior) = self.receipts.by_claim(claim_id).cloned() else {
+        let Some(live) = self.find_claim(claim_id) else {
+            return Response::err(format!("reproduce {claim_id}: claim not in this lab"));
+        };
+        let Some(prior) = self.receipts.by_statement(live.statement_hash).cloned() else {
             return Response::err(format!(
-                "reproduce {claim_id}: no prior receipt; this is not prove and not P4"
+                "reproduce {claim_id}: no prior receipt for this identity; this is not prove and not P4"
             ));
         };
         match self.remint_preferred(claim_id) {
@@ -1193,7 +1204,7 @@ impl Lab {
 
         let mut hypo: Vec<&str> = Vec::new();
         for spec in CATALOG {
-            if self.receipts.by_claim(spec.claim_id).is_none() {
+            if !self.has_live_receipt(spec.claim_id) {
                 hypo.push(spec.claim_id);
             }
         }
@@ -1237,10 +1248,11 @@ impl Lab {
                 text.push_str(&format!("replicate  {}  {e}\n", spec.claim_id));
                 continue;
             }
-            let before = self
-                .receipts
-                .by_claim(spec.claim_id)
-                .map(|r| r.challenge_hash);
+            let before = self.find_claim(spec.claim_id).and_then(|c| {
+                self.receipts
+                    .by_statement(c.statement_hash)
+                    .map(|r| r.challenge_hash)
+            });
             match self.remint_preferred(spec.claim_id) {
                 Ok(r) if Some(r.challenge_hash) == before => {
                     text.push_str(&format!("replicate  {}  ok\n", spec.claim_id));
@@ -1277,7 +1289,7 @@ impl Lab {
 
         let mut reviewed = Vec::new();
         for spec in CATALOG {
-            if self.receipts.by_claim(spec.claim_id).is_none() {
+            if !self.has_live_receipt(spec.claim_id) {
                 text.push_str(&format!(
                     "review  {}  trust P3F required (no receipt)\n",
                     spec.claim_id
@@ -2122,6 +2134,64 @@ mod tests {
         assert!(ib.contains("quantifier: forall"), "{ib}");
         assert!(ib.contains("c=1"), "{ib}");
         assert!(ib.contains("minkowski-mostly-minus"), "{ib}");
+    }
+
+    #[test]
+    fn slug_receipt_is_not_p3f_for_a_changed_identity() {
+        let mut lab = Lab::standard();
+        let stale = physis_core::claim::Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            physis_core::ClaimClass::Mathematical,
+        );
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        assert_ne!(
+            stale.statement_hash, live.statement_hash,
+            "physlib forall must not be the unspecified default identity"
+        );
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
+        let v = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
+        lab.receipts.record(&v);
+        assert!(lab.receipts.by_claim("dec.d-squared-zero").is_some());
+        assert!(lab.receipts.by_statement(stale.statement_hash).is_some());
+        assert!(lab.receipts.by_statement(live.statement_hash).is_none());
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2 = why_theory_block(&why, "de-rham");
+        assert!(d2.contains("judgment:   logical undetermined"), "{d2}");
+        assert!(!d2.contains("P3F"), "{d2}");
+        assert!(d2.contains("kernel proof: none"), "{d2}");
+
+        let p3f = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            !p3f.contains("dec.d-squared-zero"),
+            "stale slug receipt must not inspect as P3F: {p3f}"
+        );
+
+        lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let why2 = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2b = why_theory_block(&why2, "de-rham");
+        assert!(d2b.contains("judgment:   logical proved"), "{d2b}");
+        assert!(d2b.contains("P3F"), "{d2b}");
     }
 
     #[test]

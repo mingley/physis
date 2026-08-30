@@ -331,7 +331,8 @@ impl ReceiptStore {
             .find(|r| r.statement_hash == statement_hash)
     }
 
-    /// Lookup by claim id (last receipt wins).
+    /// Lookup by claim slug (last receipt wins). Not P3F: a changed
+    /// statement identity keeps the slug and must use [`Self::by_statement`].
     pub fn by_claim(&self, claim_id: &str) -> Option<&ProofReceipt> {
         self.receipts.iter().rev().find(|r| r.claim_id == claim_id)
     }

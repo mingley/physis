@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **P3F keys to statement hash, not slug**
+  (`Lab::has_live_receipt`). A dual-checked receipt proves the live
+  `statement_hash`. Changing commitments keeps the lab slug and is a
+  new identity: a stale `by_claim` lookup is not P3F, not a closed
+  MissingTheorem gap, and not a reproduce. `why` already judged by
+  hash; trust, inspect, gaps, the loop, and reproduce now match.
+  Verified: stale unspecified d² receipt does not inspect as P3F;
+  proving the live identity does. `fmt`, `clippy -D warnings`, suite.
+
 - **FormalClaim identity is first-class**
   (`ClaimCommitments`, `Quantifier`). The statement hash commits to
   quantifiers, units, constants, boundary conditions, conventions,

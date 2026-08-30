@@ -21,7 +21,8 @@ Nothing gains authority merely because an agent wrote code that returns
   that also commits to quantifiers, units, constants, boundary conditions,
   conventions, theory version, definitions, datasets, and formal-library
   identity. Changing ∀/∃, a sign, a unit, a constant, or a boundary is a
-  new hash. The lab slug is unchanged. Catalog identities are `forall` in
+  new hash. The lab slug is unchanged. P3F looks up the live hash, not
+  the slug. Catalog identities are `forall` in
   unversioned Physlib; Poincaré is not. `field.second-order-accurate`
   names `|k a| < 1` as its domain. GUT-scale `3/8` commits to the
   unification-scale boundary; the PDG cell commits to
