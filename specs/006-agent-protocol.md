@@ -14,7 +14,7 @@ Layer: agent
 | `set <theory> <knob> <value>` | turn a knob, print Δverdicts (kind plus derivation / empirical / judgment when those axes move) |
 | `epistemics` | tally every verdict by class, derivation, and semantic axes (no theorem row) |
 | `why <claim>` | assumptions, typed judgment, derived trust, axiom closure, kernel receipt or none |
-| `evidence <claim>` | competing encodings (distinct statement hashes of one slug) and competing evaluations; confidence is a derived TrustProfile, not a numeric score; never Canonical or P4 |
+| `evidence <claim>` | competing encodings (distinct statement hashes of one slug) and competing evaluations; inserts a content-addressed Evidence DAG (not deserialized); confidence is a derived TrustProfile, not a numeric score; never Canonical or P4 |
 | `prove <claim>` | dual-check a catalogued identity; only `physis-verifier` mints |
 | `falsify <claim>` | search knobs for a failing evaluation |
 | `hypothesize [theory]` | constrained structural mutation: probe chosen/fitted knobs for scientific-axis diffs; measured/derived knobs stay frozen; does not persist or mint |

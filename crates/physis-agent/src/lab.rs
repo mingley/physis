@@ -829,9 +829,11 @@ impl Lab {
     }
 
     /// Competing encodings and evaluations of a lab slug. Groups by
-    /// statement hash: a shared id is not one FormalClaim. Confidence is
-    /// the derived TrustProfile, not a numeric score. Does not mint.
-    fn evidence_claim(&self, claim_id: &str) -> Response {
+    /// statement hash: a shared id is not one FormalClaim. Inserts a
+    /// rebuilt [`NodeKind::Evidence`] snapshot (Statement and Evaluation
+    /// parents). Confidence is the derived TrustProfile, not a numeric
+    /// score. The graph is not deserialized as authority and does not mint.
+    fn evidence_claim(&mut self, claim_id: &str) -> Response {
         let mut rows: Vec<EvidenceRow> = Vec::new();
         for t in self.theories.values() {
             for (c, v) in t.evaluate_all() {
@@ -983,7 +985,36 @@ impl Lab {
         text.push_str(
             "  confidence  derived from TrustProfile; no numeric score; not Canonical; not P4\n",
         );
-        Response::ok(text)
+
+        let mut eval_ids: Vec<physis_core::artifact::ArtifactId> = Vec::new();
+        for (hash, nodes) in &identities {
+            let stmt = self
+                .store
+                .insert(Node::new(NodeKind::Statement, vec![], hash.as_bytes()));
+            for n in nodes {
+                let payload = format!(
+                    "{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                    n.theory, n.kind, n.judgment, n.trust, n.class, n.derivation, n.empirical
+                );
+                eval_ids.push(self.store.insert(Node::new(
+                    NodeKind::Evaluation,
+                    vec![stmt],
+                    payload.as_bytes(),
+                )));
+            }
+        }
+        eval_ids.sort();
+        let graph = self
+            .store
+            .insert(Node::new(NodeKind::Evidence, eval_ids, text.as_bytes()));
+        let mut out = format!("evidence  {claim_id}  graph {}\n", graph.to_hex());
+        let prefix = format!("evidence  {claim_id}\n");
+        if let Some(rest) = text.strip_prefix(&prefix) {
+            out.push_str(rest);
+        } else {
+            out.push_str(&text);
+        }
+        Response::ok(out)
     }
 
     /// A dual-checked receipt for this slug counts only when it matches the
@@ -3644,6 +3675,10 @@ mod tests {
             "{uniq}"
         );
         assert!(
+            uniq.lines().next().unwrap_or("").contains("graph "),
+            "evidence must print a store graph id: {uniq}"
+        );
+        assert!(
             uniq.contains("distinct FormalClaims share this slug"),
             "unique-vacuum is not one identity: {uniq}"
         );
@@ -3728,6 +3763,216 @@ mod tests {
             claim: "no.such.claim".into(),
         });
         assert_eq!(unknown.exit_code(), 1);
+    }
+
+    fn evidence_graph_id(text: &str) -> physis_core::artifact::ArtifactId {
+        let line = text.lines().next().expect("empty evidence");
+        let hex = line.split_whitespace().last().expect("graph hex");
+        physis_core::artifact::ArtifactId::from_hex(hex)
+            .unwrap_or_else(|| panic!("expected 64 hex graph id in {line}"))
+    }
+
+    fn unique_vacuum_statement(lab: &Lab, theory: &str) -> physis_core::artifact::ArtifactId {
+        let (c, _) = lab
+            .theory(theory)
+            .unwrap()
+            .evaluate_all()
+            .into_iter()
+            .find(|(c, _)| c.id_str() == physis_theory::claims::UNIQUE_VACUUM)
+            .unwrap_or_else(|| panic!("{theory} unique-vacuum"));
+        Node::new(
+            NodeKind::Statement,
+            vec![],
+            c.statement_hash().to_hex().as_bytes(),
+        )
+        .id
+    }
+
+    fn store_kind<'a>(
+        lab: &'a Lab,
+        ids: impl IntoIterator<Item = &'a physis_core::artifact::ArtifactId>,
+        kind: NodeKind,
+    ) -> Vec<physis_core::artifact::ArtifactId> {
+        ids.into_iter()
+            .copied()
+            .filter(|id| lab.store.get(*id).is_some_and(|n| n.kind == kind))
+            .collect()
+    }
+
+    #[test]
+    fn evidence_graph_is_a_store_dag() {
+        let mut lab = Lab::standard();
+        let uniq = lab
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        let graph = evidence_graph_id(&uniq);
+        assert_eq!(
+            lab.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Statement)
+                .count(),
+            4,
+            "four FormalClaims of unique-vacuum"
+        );
+        assert_eq!(
+            lab.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Evaluation)
+                .count(),
+            10,
+            "seven string constructions plus GR, SM, observer-geometry"
+        );
+        assert_eq!(
+            lab.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Evidence)
+                .count(),
+            1
+        );
+        assert_eq!(
+            lab.store.get(graph).map(|n| n.kind),
+            Some(NodeKind::Evidence)
+        );
+        assert_eq!(lab.store.get(graph).map(|n| n.parents.len()), Some(10));
+
+        let again = lab
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            evidence_graph_id(&again),
+            graph,
+            "same live lab ⇒ same graph"
+        );
+        assert_eq!(lab.store.len(), 15, "re-evidence is content-addressed");
+
+        let string_stmt = unique_vacuum_statement(&lab, "type-iib");
+        assert_eq!(
+            unique_vacuum_statement(&lab, "bosonic"),
+            string_stmt,
+            "string constructions share one Statement node"
+        );
+        let sm_stmt = unique_vacuum_statement(&lab, "standard-model");
+        let og_stmt = unique_vacuum_statement(&lab, "observer-geometry");
+        assert_ne!(string_stmt, sm_stmt);
+        assert_ne!(string_stmt, og_stmt);
+
+        let string_desc = lab.store.descendants(string_stmt);
+        let string_evals = store_kind(&lab, &string_desc, NodeKind::Evaluation);
+        assert_eq!(string_evals.len(), 7);
+        assert!(string_desc.contains(&graph));
+
+        let sm_desc = lab.store.descendants(sm_stmt);
+        let sm_evals = store_kind(&lab, &sm_desc, NodeKind::Evaluation);
+        assert_eq!(sm_evals.len(), 1);
+        assert!(!string_desc.contains(&sm_evals[0]));
+        assert!(sm_desc.contains(&graph));
+
+        let kept = lab.store.preserved_if_changed(string_stmt);
+        assert!(kept.contains(&sm_stmt));
+        assert!(kept.contains(&sm_evals[0]));
+        assert!(!kept.contains(&graph));
+        for e in &string_evals {
+            assert!(!kept.contains(e));
+        }
+
+        let og_eval_old = store_kind(&lab, &lab.store.descendants(og_stmt), NodeKind::Evaluation);
+        assert_eq!(og_eval_old.len(), 1);
+        let og_old = og_eval_old[0];
+
+        let set = lab
+            .exec(Command::Set {
+                theory: "observer-geometry".into(),
+                knob: "unique_vacuum".into(),
+                value: "false".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            set.contains("holds → fails") || set.contains("predictivity.unique-vacuum"),
+            "{set}"
+        );
+
+        let after = lab
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        let graph2 = evidence_graph_id(&after);
+        assert_ne!(graph, graph2, "a verdict flip is a new evidence graph");
+        assert!(
+            after.contains("observer-geometry") && after.contains("fails"),
+            "{after}"
+        );
+        assert_eq!(
+            lab.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Evaluation)
+                .count(),
+            11,
+            "old observer-geometry eval remains"
+        );
+        assert_eq!(
+            lab.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Evidence)
+                .count(),
+            2
+        );
+        assert!(lab.store.descendants(og_old).contains(&graph));
+        assert!(!lab.store.descendants(og_old).contains(&graph2));
+
+        let n = lab.store.len();
+        let unknown = lab.exec(Command::Evidence {
+            claim: "no.such.claim".into(),
+        });
+        assert_eq!(unknown.exit_code(), 1);
+        assert_eq!(lab.store.len(), n, "unknown slug must not insert");
+
+        lab.set_role(Role::Explorer);
+        let observed = lab
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(evidence_graph_id(&observed), graph2);
+        assert_eq!(lab.store.len(), n);
+
+        let qs = lab
+            .exec(Command::Evidence {
+                claim: "em.quasi-static-valid".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            qs.contains("encoding-wide") && qs.contains("λ > 100"),
+            "{qs}"
+        );
+        let qs_graph = lab.store.get(evidence_graph_id(&qs)).unwrap();
+        assert_eq!(qs_graph.kind, NodeKind::Evidence);
+        assert_eq!(
+            qs_graph.parents.len(),
+            3,
+            "Maxwell, linear-medium, and ohm-circuit each evaluate the slug: {qs}"
+        );
+
+        let sk = lab
+            .exec(Command::Evidence {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        assert!(sk.contains("this slug is one FormalClaim"), "{sk}");
+        let sk_graph = lab.store.get(evidence_graph_id(&sk)).unwrap();
+        assert_eq!(sk_graph.kind, NodeKind::Evidence);
+        assert_eq!(sk_graph.parents.len(), 1);
     }
 
     #[test]

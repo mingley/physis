@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Evidence graphs are a store DAG**
+  (`physis evidence <claim>`, `NodeKind::Evidence`). Each FormalClaim
+  identity is a Statement node; each theory evaluation is an Evaluation
+  parented by that statement; the Evidence root's parents are the
+  evaluation ids. A verdict flip is a new graph. Same live lab is the
+  same graph id. The snapshot is not deserialized as authority, not
+  Canonical, and not P4. Catalog d² hash unchanged. Verified: unique-vacuum
+  has 4 statements / 10 evaluations / 1 graph; descendants of the
+  string statement exclude the SM evaluation; turning unique_vacuum off
+  mints a new graph while the old one remains a descendant of the old
+  observer-geometry eval; Super-K and quasi-static still print their
+  encoding contract.
+
 - **Unique-vacuum encodings name a DomainOfValidity**
   (`predictivity.unique-vacuum`). String constructions share the
   flux/moduli landscape regime; observer-geometry names the

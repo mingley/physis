@@ -38,8 +38,9 @@ pub enum Command {
         claim: String,
     },
     /// Evidence graph: competing encodings and evaluations of a lab slug.
-    /// Groups by statement hash. Confidence is a derived TrustProfile, not
-    /// a numeric score. Does not mint.
+    /// Groups by statement hash. Inserts a rebuilt snapshot into the
+    /// artifact DAG (not deserialized as authority). Confidence is a
+    /// derived TrustProfile, not a numeric score. Does not mint.
     Evidence {
         /// Claim id (lab slug).
         claim: String,

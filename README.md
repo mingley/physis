@@ -107,7 +107,9 @@ assurance (currently hundreds of `executed` model-internal evaluations).
 `physis why <claim>` prints assumptions, the statement hash, and the
 receipt or `kernel proof: none`. `physis evidence <claim>` groups those
 evaluations by statement hash: a shared slug is not one FormalClaim, and
-confidence is a derived TrustProfile (not a numeric score). `physis --json <command>` emits the typed
+confidence is a derived TrustProfile (not a numeric score). The command
+inserts a content-addressed Evidence DAG; that snapshot is not
+deserialized as authority. `physis --json <command>` emits the typed
 matrices and verdict diffs for agents.
 
 ## Smallest level of modern physics

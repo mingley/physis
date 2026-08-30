@@ -27,6 +27,9 @@ pub enum NodeKind {
     Proof,
     /// A calculation.
     Calculation,
+    /// A live evaluator snapshot of one FormalClaim on one theory.
+    /// Not a kernel proof and not a numeric certificate.
+    Evaluation,
     /// A source record.
     Source,
     /// An experiment.
@@ -41,6 +44,9 @@ pub enum NodeKind {
     SemanticReview,
     /// A rebuilt knowledge-gap snapshot (not deserialized as authority).
     KnowledgeGap,
+    /// A rebuilt evidence graph: competing encodings and evaluations of
+    /// one lab slug. Not deserialized as authority; never Canonical or P4.
+    Evidence,
 }
 
 /// One DAG node.
@@ -141,6 +147,11 @@ impl ArtifactStore {
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
+
+    /// All stored nodes, ordered by id.
+    pub fn iter(&self) -> impl Iterator<Item = &Node> {
+        self.nodes.values()
+    }
 }
 
 #[cfg(test)]
@@ -170,5 +181,33 @@ mod tests {
         let a = Node::new(NodeKind::Claim, vec![], b"hello");
         let b = Node::new(NodeKind::Claim, vec![], b"hello");
         assert_eq!(a.id, b.id);
+    }
+
+    #[test]
+    fn evidence_root_invalidates_when_an_evaluation_changes() {
+        let mut g = ArtifactStore::empty();
+        let s = g.insert(Node::new(NodeKind::Statement, vec![], b"hash-a"));
+        let e1 = g.insert(Node::new(NodeKind::Evaluation, vec![s], b"theory-a\tholds"));
+        let e2 = g.insert(Node::new(NodeKind::Evaluation, vec![s], b"theory-b\tfails"));
+        let mut parents = vec![e1, e2];
+        parents.sort();
+        let graph = g.insert(Node::new(NodeKind::Evidence, parents, b"slug"));
+
+        assert!(g.descendants(s).contains(&e1));
+        assert!(g.descendants(s).contains(&graph));
+
+        let e1b = g.insert(Node::new(NodeKind::Evaluation, vec![s], b"theory-a\tfails"));
+        assert_ne!(e1, e1b);
+        let mut parents2 = vec![e1b, e2];
+        parents2.sort();
+        let graph2 = g.insert(Node::new(NodeKind::Evidence, parents2, b"slug-flipped"));
+        assert_ne!(graph, graph2);
+
+        assert!(g.descendants(e1).contains(&graph));
+        assert!(!g.descendants(e1).contains(&graph2));
+        let kept = g.preserved_if_changed(e1);
+        assert!(kept.contains(&e2));
+        assert!(!kept.contains(&graph));
+        assert!(kept.contains(&graph2));
     }
 }
