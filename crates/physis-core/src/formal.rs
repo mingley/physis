@@ -268,7 +268,8 @@ impl FormalClaim {
         &self.id
     }
 
-    /// The sentence as encoded today (English until physis-ir exists).
+    /// The sentence as encoded today (English; physis-ir packages are a
+    /// second encoding of netlists and catalog identities, not this field).
     pub fn statement(&self) -> &str {
         &self.statement
     }

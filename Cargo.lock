@@ -279,6 +279,7 @@ version = "0.1.0"
 dependencies = [
  "physis-core",
  "physis-data",
+ "physis-ir",
  "physis-model",
  "physis-numeric",
  "physis-proof",

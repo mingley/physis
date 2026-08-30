@@ -114,9 +114,10 @@ pub enum Command {
         /// Knob name.
         knob: String,
     },
-    /// Search chosen/fitted knob probes for scientific-axis diffs.
-    /// Measured, derived, and fundamental-input knobs are frozen: they are
-    /// not hypotheses about the encoding. Does not persist and does not mint.
+    /// Search chosen/fitted knob probes and IR package forks for
+    /// scientific-axis diffs. Measured, derived, and fundamental-input
+    /// knobs are frozen. Package mutations are not knobs and are not
+    /// installed. Does not persist and does not mint.
     Hypothesize {
         /// Restrict to one theory. `None` searches the whole lab.
         theory: Option<String>,

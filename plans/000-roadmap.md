@@ -16,7 +16,7 @@ Level-3 trust
   L3-M4 numerics           ✓ Ratio / Interval; empirical receipts
   L3-M5 artifact DAG       ✓ content-addressed store + descendant invalidation
   L3-M6 protocol v2        ✓ prove, falsify, sweep, branch, compare, sensitivity
-  L3-M7 physis-ir          ✓ line-oriented theory packages
+  L3-M7 physis-ir          ✓ line-oriented theory packages plus constrained mutations; combinational NAND netlist is a live package
   L3-M8 red-team corpus    ✓ physis audit
   L3-M9 experiment rank    ✓ physis design
   L3-M10 research loop     ✓ physis loop (orchestrator)
@@ -42,7 +42,7 @@ Level-3 trust
   L3 claim-hash derived    ✓ Claim::statement_hash is a getter; no stored field; id/statement/class/layer/assumptions/domain/commitments are private; mutating the sentence cannot keep a stale receipt; derivation/empirical/semantic fields are private
   L3 causal diffs          ✓ set/sweep/compare/replay carry derivation, empirical, and judgment axes; legacy kind-only journals still replay
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
-  L3 hypothesize           ✓ constrained structural mutation of chosen/fitted knobs; measured knobs frozen; explorer can observe; does not mint
+  L3 hypothesize           ✓ chosen/fitted knob probes and IR package forks; measured knobs frozen; mutants not installed; explorer can observe; does not mint
   L3 evidence graph        ✓ physis evidence groups by statement hash and inserts a content-addressed Evidence DAG (Statement + Evaluation parents); competing encodings vs evaluations; derived TrustProfile, not a numeric score; not Canonical; not P4
   L3 Super-K dataset       ✓ gut.proton-lifetime-sk compares dim-6 M_GUT^4 scaling to Takenaka et al. PRD 102 112011; not P3N; not dim-5; Tr Q stays encoding-wide
   L3 unique-vacuum domain  ✓ four FormalClaims of predictivity.unique-vacuum name landscape / program axiom / Einstein-Hilbert / Higgs vacuum; still Asserted; not Canonical

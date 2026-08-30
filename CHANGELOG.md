@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Hypothesis search mutates IR packages, not only knobs**
+  (`physis hypothesize`, `physis-ir::apply_mutation`).
+  `combinational-circuit` is a NAND netlist in a theory package.
+  `add-feedback` appends a gate equation; that is not a knob.
+  Cycle detection flips `comp.acyclic` holds to fails and takes
+  `comp.halts` out of the combinational domain (inapplicable).
+  Mutants are not installed, not journaled, and not Canonical or P4.
+  Catalog d² hash unchanged. Verified: IR round-trip; set feedback
+  is unknown; hypothesize combinational-circuit; live netlist restored.
+
 - **Evidence graphs are a store DAG**
   (`physis evidence <claim>`, `NodeKind::Evidence`). Each FormalClaim
   identity is a Statement node; each theory evaluation is an Evaluation

@@ -40,7 +40,7 @@ This repository does **not** decide whether string theory is false. It makes the
 | `physis-provenance` | source records; slogan locators are rejected |
 | `physis-store` | content-addressed artifact DAG |
 | `physis-data` | datasets and empirical receipts |
-| `physis-ir` | declarative theory packages |
+| `physis-ir` | declarative theory packages and constrained mutations |
 | `physis-audit` | red-team corpus |
 | `physis-semantic` | encoding review from evidence; no `Canonical` variant |
 | `physis-constants` | versioned constants |
@@ -164,6 +164,7 @@ cargo run -p physis -- gaps
 cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension
 cargo run -p physis -- hypothesize type-iib
+cargo run -p physis -- hypothesize combinational-circuit
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- sweep type-iib total_dim 8,9,10,11,12
 cargo run -p physis -- audit

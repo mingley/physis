@@ -14,6 +14,7 @@
 //! `None` from `Theory::world()` and describe themselves via `Theory::note()`
 //! instead of borrowing a physics-shaped placeholder.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -21,6 +22,7 @@ use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::kelvin;
 use physis_core::ParameterOrigin;
 use physis_core::{Energy, Qty};
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::k_boltzmann;
 use physis_model::World;
 
@@ -41,6 +43,8 @@ pub const RESOURCE_BOUNDED: &str = "comp.resource-bounded";
 pub const FEASIBLE_DECISION: &str = "comp.feasible-decision";
 /// Whether P = NP in this model.
 pub const P_EQUALS_NP: &str = "comp.p-equals-np";
+/// The gate graph of a NAND netlist is acyclic.
+pub const ACYCLIC: &str = "comp.acyclic";
 
 /// Matrix rows for the computation lab.
 pub fn computation_rows() -> [&'static str; 7] {
@@ -102,9 +106,143 @@ fn comp_claims() -> Vec<Claim> {
     ]
 }
 
-/// A finite, acyclic boolean circuit (combinational logic).
-#[derive(Clone, Debug, Default)]
-pub struct CombinationalCircuit;
+/// A finite NAND netlist. Structure lives on the IR package (gate equations),
+/// not on knobs. A feedback wire is a package mutation, not `set`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CombinationalCircuit {
+    gates: Vec<NandGate>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct NandGate {
+    a: usize,
+    b: usize,
+    out: usize,
+}
+
+impl Default for CombinationalCircuit {
+    fn default() -> Self {
+        Self {
+            gates: vec![NandGate { a: 0, b: 1, out: 2 }],
+        }
+    }
+}
+
+impl CombinationalCircuit {
+    fn is_acyclic(&self) -> bool {
+        use std::collections::BTreeMap;
+        let mut adj: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+        for g in &self.gates {
+            adj.entry(g.out).or_default().push(g.a);
+            adj.entry(g.out).or_default().push(g.b);
+        }
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        enum Color {
+            White,
+            Gray,
+            Black,
+        }
+        let mut color: BTreeMap<usize, Color> = BTreeMap::new();
+        fn dfs(
+            n: usize,
+            adj: &BTreeMap<usize, Vec<usize>>,
+            color: &mut BTreeMap<usize, Color>,
+        ) -> bool {
+            color.insert(n, Color::Gray);
+            if let Some(next) = adj.get(&n) {
+                for &m in next {
+                    match color.get(&m).copied().unwrap_or(Color::White) {
+                        Color::Gray => return false,
+                        Color::White => {
+                            if !dfs(m, adj, color) {
+                                return false;
+                            }
+                        }
+                        Color::Black => {}
+                    }
+                }
+            }
+            color.insert(n, Color::Black);
+            true
+        }
+        for &n in adj.keys() {
+            if color.get(&n).copied().unwrap_or(Color::White) == Color::White
+                && !dfs(n, &adj, &mut color)
+            {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// IR package for this netlist. Equations are `nand a b -> out`.
+    pub fn package(&self) -> TheoryPackage {
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["finite-nand-netlist".into()],
+            equations: self
+                .gates
+                .iter()
+                .map(|g| format!("nand {} {} -> {}", g.a, g.b, g.out))
+                .collect(),
+            claims: vec![physis_ir::ClaimDecl {
+                id: ACYCLIC.into(),
+                statement: "The gate graph is acyclic.".into(),
+                layer: "information".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a NAND netlist from a package. Non-nand equations are ignored.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        let mut gates = Vec::new();
+        for eq in &pkg.equations {
+            if let Some(g) = parse_nand(eq) {
+                gates.push(g);
+            }
+        }
+        if gates.is_empty() {
+            return Err("combinational-circuit package has no nand equations".into());
+        }
+        Ok(Self { gates })
+    }
+
+    fn feedback_equation(&self) -> String {
+        let sink = self.gates.last().map(|g| g.out).unwrap_or(0);
+        let src = self.gates.first().map(|g| g.a).unwrap_or(0);
+        format!("nand {sink} {sink} -> {src}")
+    }
+}
+
+fn parse_nand(eq: &str) -> Option<NandGate> {
+    let rest = eq.trim().strip_prefix("nand ")?;
+    let (ins, out) = rest.split_once("->")?;
+    let mut ws = ins.split_whitespace();
+    let a = ws.next()?.parse().ok()?;
+    let b = ws.next()?.parse().ok()?;
+    if ws.next().is_some() {
+        return None;
+    }
+    let out = out.trim().parse().ok()?;
+    Some(NandGate { a, b, out })
+}
+
+fn nand_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["finite NAND netlist".into()],
+        vec![
+            "cycle detection on the gate graph".into(),
+            "no SAT solver".into(),
+            "no tape or circuit simulator".into(),
+        ],
+        "Acyclicity is a graph property of this netlist. A cyclic encoding \
+         is a new claim, not a silent combinational circuit.",
+    )
+}
 
 impl Knobbed for CombinationalCircuit {
     fn specs(&self) -> &'static [KnobSpec] {
@@ -126,24 +264,52 @@ impl Theory for CombinationalCircuit {
         "Combinational circuit"
     }
     fn summary(&self) -> &'static str {
-        "A finite, acyclic boolean circuit. It always halts and its equivalence \
-         is decidable, but with no memory or feedback it is not Turing complete."
+        "A finite NAND netlist. Acyclicity is a graph property of the IR \
+         package. Feedback is a package mutation, not a knob. No SAT solver \
+         and no tape simulator are run."
     }
     fn world(&self) -> Option<World> {
         None // computation has no spacetime/gauge/spectrum projection
     }
     fn note(&self) -> String {
-        "combinational boolean circuit (acyclic, finite)".to_string()
+        format!(
+            "NAND netlist, {} gate(s), {}",
+            self.gates.len(),
+            if self.is_acyclic() {
+                "acyclic"
+            } else {
+                "cyclic"
+            }
+        )
     }
     fn claims(&self) -> Vec<Claim> {
-        comp_claims()
+        let mut c = comp_claims();
+        c.push(
+            Claim::new(
+                ACYCLIC,
+                "The gate graph of this NAND netlist is acyclic.",
+                LayerId::Information,
+                ClaimClass::ModelInternal,
+            )
+            .with_domain(nand_domain()),
+        );
+        c
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id_str() {
-            HALTS => Verdict::holds(claim, "an acyclic combinational circuit always terminates"),
+            HALTS => {
+                if self.is_acyclic() {
+                    Verdict::holds(claim, "an acyclic NAND netlist always terminates")
+                } else {
+                    Verdict::inapplicable(
+                        claim,
+                        "halts is for acyclic combinational netlists; this encoding has a cycle",
+                    )
+                }
+            }
             TURING_COMPLETE => Verdict::fails(
                 claim,
-                "no memory or feedback: combinational logic is not Turing complete",
+                "no memory or unbounded tape: a NAND netlist is not Turing complete",
             ),
             DETERMINISTIC => Verdict::holds(claim, "boolean functions are deterministic"),
             DECIDABLE_EQUIVALENCE => Verdict::holds(
@@ -164,7 +330,28 @@ impl Theory for CombinationalCircuit {
                 claim,
                 "P vs NP concerns uniform machine models, not a single fixed circuit",
             ),
+            ACYCLIC => {
+                if self.is_acyclic() {
+                    Verdict::holds(claim, "the NAND gate graph has no cycle")
+                } else {
+                    Verdict::fails(claim, "a feedback equation closed a cycle on the gate graph")
+                }
+            }
             _ => Verdict::inapplicable(claim, "claim not made by a computational object"),
+        }
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(self.feedback_equation()),
+        );
+        match Self::from_package(&mutated) {
+            Ok(fork) if fork != *self => vec![("add-feedback".into(), Box::new(fork))],
+            _ => Vec::new(),
         }
     }
 }
@@ -565,7 +752,7 @@ impl Theory for LandauerEngine {
 /// The computation experiment: a combinational circuit vs a Turing machine.
 pub fn computation() -> ExperimentReport {
     let theories: Vec<Box<dyn Theory>> = vec![
-        Box::new(CombinationalCircuit),
+        Box::new(CombinationalCircuit::default()),
         Box::new(TuringMachine::default()),
     ];
     report_from_rows(
@@ -628,17 +815,47 @@ mod tests {
 
     #[test]
     fn combinational_halts_but_is_not_turing_complete() {
-        let c = CombinationalCircuit;
+        let mut c = CombinationalCircuit::default();
         assert_eq!(verdict(&c, HALTS), VerdictKind::Holds);
         assert_eq!(verdict(&c, TURING_COMPLETE), VerdictKind::Fails);
         assert_eq!(verdict(&c, DECIDABLE_EQUIVALENCE), VerdictKind::Holds);
         assert_eq!(verdict(&c, FEASIBLE_DECISION), VerdictKind::Undecidable);
+        assert_eq!(verdict(&c, ACYCLIC), VerdictKind::Holds);
         let claim = c
             .claims()
             .into_iter()
             .find(|cl| cl.id_str() == FEASIBLE_DECISION)
             .unwrap();
         assert!(c.evaluate(&claim).intractable());
+        assert!(
+            c.set("feedback", KnobValue::Bool(true)).is_err(),
+            "feedback is an IR mutation, not a knob"
+        );
+    }
+
+    #[test]
+    fn ir_feedback_mutation_closes_a_cycle() {
+        let c = CombinationalCircuit::default();
+        assert!(c.is_acyclic());
+        let src = render_package(&c.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            CombinationalCircuit::from_package(&pkg).unwrap(),
+            c,
+            "IR round-trip must preserve the netlist"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(c.feedback_equation()),
+        );
+        let fork = CombinationalCircuit::from_package(&mutated).unwrap();
+        assert!(!fork.is_acyclic());
+        assert_eq!(verdict(&fork, ACYCLIC), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, HALTS), VerdictKind::Inapplicable);
+        assert_eq!(verdict(&c, HALTS), VerdictKind::Holds);
+        let probes = c.structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-feedback");
     }
 
     #[test]
@@ -667,7 +884,7 @@ mod tests {
         assert_eq!(v.class, ClaimClass::OpenProblem);
         // It does not apply to a single fixed circuit.
         assert_eq!(
-            verdict(&CombinationalCircuit, P_EQUALS_NP),
+            verdict(&CombinationalCircuit::default(), P_EQUALS_NP),
             VerdictKind::Inapplicable
         );
     }

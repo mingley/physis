@@ -34,7 +34,7 @@ mechanically restores decidability — a clean knob → verdict diff.
 | `landauer-engine` | `bits_erased` | number of logical bits irreversibly erased. |
 | `landauer-engine` | `reversible` | logical reversibility (Bennett): erases nothing, so the process can be free. |
 
-`combinational-circuit` has no knobs (it is structurally fixed).
+`combinational-circuit` has no knobs. Its NAND netlist lives on the IR package.
 
 ## Claims
 
@@ -47,6 +47,7 @@ mechanically restores decidability — a clean knob → verdict diff.
 | `comp.resource-bounded` | the computation runs within an a priori resource bound |
 | `comp.feasible-decision` | a resource-feasible procedure in this lab decides the instance |
 | `comp.p-equals-np` | P = NP — encoded as `undecidable`/`open`, an honest unknown |
+| `comp.acyclic` | NAND gate graph has no cycle (combinational-circuit IR netlist) |
 | `info.landauer-cost` | erasing a bit dissipates at least `k_B·T·ln2` (theorem) |
 | `info.thermodynamically-free` | the process erases nothing and can dissipate no heat |
 
@@ -103,10 +104,13 @@ Setting `tape_bound: 0 → 1000` flips:
   graph is now finite, so the problem is in range, but this lab does not
   enumerate it; `GapReason::ComputationallyIntractable`).
 
-The combinational circuit always halts and has decidable equivalence, but is
-not Turing complete (no memory or feedback). Its `comp.feasible-decision` is
-`undecidable` at default: circuit equivalence is coNP-complete, and no SAT
-solver is run. Decidable is not feasible.
+The combinational circuit is a finite NAND netlist described by an IR
+package (`equation nand a b -> out`). Acyclicity is a graph property of
+that netlist (`comp.acyclic`). `physis hypothesize combinational-circuit`
+forks the package with a feedback equation; that is not a knob
+(`set combinational-circuit feedback` is unknown). A cyclic encoding
+makes `comp.halts` inapplicable (out of the combinational domain). No
+SAT solver and no tape simulator are run.
 
 ## No borrowed spacetime
 
@@ -119,7 +123,8 @@ that rough edge has been removed.
 
 ## Non-goals (this milestone)
 
-- An actual interpreter / simulator of circuits or tape machines.
+- An interpreter / simulator that evaluates NAND gates or tape steps.
+  Cycle detection on the netlist is topology, not simulation.
 - Complexity-class claims (P, NP, …) as `holds` / `fails` verdicts. `comp.p-equals-np`
   stays `open`. `comp.feasible-decision` is the first complexity *gap*:
   coNP-complete / exponential search is `ComputationallyIntractable`, not Rice.

@@ -35,4 +35,10 @@ pub trait Theory: Knobbed + Send + Sync {
             })
             .collect()
     }
+    /// Constrained structural forks of the encoding (IR package / netlist),
+    /// not knob probes. Each pair is `(label, mutant)`. The caller evaluates
+    /// the mutant and must not install it as trusted state. Default: none.
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        Vec::new()
+    }
 }

@@ -17,7 +17,7 @@ Layer: agent
 | `evidence <claim>` | competing encodings (distinct statement hashes of one slug) and competing evaluations; inserts a content-addressed Evidence DAG (not deserialized); confidence is a derived TrustProfile, not a numeric score; never Canonical or P4 |
 | `prove <claim>` | dual-check a catalogued identity; only `physis-verifier` mints |
 | `falsify <claim>` | search knobs for a failing evaluation |
-| `hypothesize [theory]` | constrained structural mutation: probe chosen/fitted knobs for scientific-axis diffs; measured/derived knobs stay frozen; does not persist or mint |
+| `hypothesize [theory]` | constrained structural mutation: chosen/fitted knob probes **and** IR package forks (`Theory::structural_mutations`); measured/derived knobs stay frozen; package mutants are not installed; does not persist or mint |
 | `sweep <theory> <knob> <v,v,…>` | evaluate many values; report changed claims |
 | `branch` / `checkout` | snapshot / restore knob state |
 | `compare` / `design` | discriminating claims; rank theory pairs |
@@ -27,7 +27,7 @@ Layer: agent
 | `formalize <claim>` | emit the catalog encoding as untrusted bytes (not a receipt) |
 | `reproduce <claim>` | remint a stored receipt in-process; **not P4** |
 | `gaps` | rebuild the knowledge-gap graph from live verdicts and lemma edges (not deserialized). Failing evaluations are not listed as missing theorems. Overlap without containment is `insufficient-precision`. coNP-complete search is `computationally-intractable`, not Rice. An empirical prediction with no registered dataset is `missing-dataset`. Super-K `p→e+π0` is a Dataset; `gut.proton-lifetime-sk` is decided (excluded / compatible), not that hole |
-| `loop` | one research cycle: observe → hypothesize (constrained structural mutation of chosen/fitted knobs; measured frozen) → prove → falsify → replicate → design → audit → review |
+| `loop` | one research cycle: observe → hypothesize (chosen/fitted knobs and IR package forks; measured frozen) → prove → falsify → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |
 | `experiment <id>` | canonical experiment (fresh defaults) |

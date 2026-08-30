@@ -1,5 +1,7 @@
 //! A small scientific IR. Not a replacement for Lean. Points at a formal
-//! backend for sophisticated mathematics.
+//! backend for sophisticated mathematics. Packages round-trip through
+//! [`parse_package`] / [`render_package`]; [`apply_mutation`] is a
+//! constrained encoding fork, not a kernel proof.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -125,6 +127,68 @@ pub fn parse_package(src: &str) -> Result<TheoryPackage, String> {
     Ok(pkg)
 }
 
+/// Render a package in the line-oriented dialect [`parse_package`] accepts.
+pub fn render_package(pkg: &TheoryPackage) -> String {
+    let mut out = String::new();
+    out.push_str(&format!("id = {}\n", pkg.id));
+    if !pkg.name.is_empty() {
+        out.push_str(&format!("name = {}\n", pkg.name));
+    }
+    for p in &pkg.parameters {
+        out.push_str(&format!("parameter {} {}\n", p.origin, p.name));
+    }
+    for a in &pkg.assumptions {
+        out.push_str(&format!("assumption {a}\n"));
+    }
+    for e in &pkg.equations {
+        out.push_str(&format!("equation {e}\n"));
+    }
+    for c in &pkg.claims {
+        out.push_str(&format!(
+            "claim {} {} {} : {}\n",
+            c.class, c.layer, c.id, c.statement
+        ));
+    }
+    if let Some(r) = &pkg.lean_ref {
+        out.push_str(&format!("lean_ref {r}\n"));
+    }
+    out
+}
+
+/// Constrained structural edits of a package. These are encoding forks,
+/// not knobs and not a kernel proof.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PackageMutation {
+    /// Append one equation line (a netlist gate, an identity, …).
+    AppendEquation(String),
+    /// Drop the first assumption, if any.
+    DropAssumption,
+    /// Replace the first ` - ` in the first equation with ` + ` (a sign flip).
+    FlipFirstMinus,
+}
+
+/// Apply a constrained mutation. The result is a different package; it is
+/// not automatically a live lab theory and it does not mint.
+pub fn apply_mutation(pkg: &TheoryPackage, mutation: &PackageMutation) -> TheoryPackage {
+    let mut out = pkg.clone();
+    match mutation {
+        PackageMutation::AppendEquation(eq) => out.equations.push(eq.clone()),
+        PackageMutation::DropAssumption => {
+            if !out.assumptions.is_empty() {
+                out.assumptions.remove(0);
+            }
+        }
+        PackageMutation::FlipFirstMinus => {
+            if let Some(eq) = out.equations.first_mut() {
+                if let Some(i) = eq.find(" - ") {
+                    eq.replace_range(i..i + 3, " + ");
+                }
+            }
+        }
+    }
+    out
+}
+
 /// Known layer names (rejects typos rather than inventing a layer).
 pub fn parse_layer(s: &str) -> Result<LayerId, String> {
     LayerId::ALL
@@ -173,5 +237,29 @@ lean_ref Physlib.Exterior.d_squared
         assert!(parse_class(&pkg.claims[0].class).is_ok());
         assert!(parse_layer("spacetime").is_ok());
         assert!(parse_layer("not-a-layer").is_err());
+        let again = parse_package(&render_package(&pkg)).unwrap();
+        assert_eq!(again, pkg);
+    }
+
+    #[test]
+    fn sign_flip_is_a_new_package() {
+        let pkg = parse_package(
+            "id = discrete-d2\nequation (b - a) - (c - a) + (c - b)\nassumption coboundary\n",
+        )
+        .unwrap();
+        let flipped = apply_mutation(&pkg, &PackageMutation::FlipFirstMinus);
+        assert_ne!(flipped.equations[0], pkg.equations[0]);
+        assert!(flipped.equations[0].contains("b + a"));
+        let dropped = apply_mutation(&pkg, &PackageMutation::DropAssumption);
+        assert!(dropped.assumptions.is_empty());
+        let extra = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation("nand 2 2 -> 0".into()),
+        );
+        assert_eq!(extra.equations.len(), 2);
+        assert_eq!(
+            parse_package(&render_package(&extra)).unwrap().equations,
+            extra.equations
+        );
     }
 }

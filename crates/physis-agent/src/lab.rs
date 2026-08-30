@@ -143,7 +143,7 @@ impl Lab {
         lab.insert(Box::new(LinearMedium::default()));
         lab.insert(Box::new(OhmCircuit::default()));
         // Third domain: computation.
-        lab.insert(Box::new(CombinationalCircuit));
+        lab.insert(Box::new(CombinationalCircuit::default()));
         lab.insert(Box::new(TuringMachine::default()));
         // Computation ↔ thermodynamics bridge: Landauer's principle.
         lab.insert(Box::new(LandauerEngine::default()));
@@ -1452,7 +1452,7 @@ impl Lab {
 
         let hypo_resp = self.hypothesize(None);
         text.push_str(
-            "hypothesize  constrained structural mutation (chosen/fitted; measured frozen)\n",
+            "hypothesize  constrained structural mutation (chosen/fitted knobs; IR package forks; measured frozen)\n",
         );
         for line in hypo_resp.text().lines().skip(1).take(20) {
             text.push_str(&format!("{line}\n"));
@@ -1838,9 +1838,10 @@ impl Lab {
         Response::ok(text)
     }
 
-    /// Constrained structural mutation: probe chosen and fitted knobs.
-    /// Measured / derived / fundamental-input / nuisance knobs stay frozen.
-    /// Restores state. Does not journal. Does not mint.
+    /// Constrained structural mutation: probe chosen and fitted knobs, then
+    /// IR package forks (`Theory::structural_mutations`). Measured / derived
+    /// / fundamental-input / nuisance knobs stay frozen. Mutants are not
+    /// installed. Does not journal. Does not mint.
     fn hypothesize(&mut self, theory: Option<&str>) -> Response {
         const SHOW: usize = 12;
         let ids: Vec<String> = match theory {
@@ -1891,8 +1892,24 @@ impl Lab {
                             from: current.display(),
                             to: cand.display(),
                             diffs,
+                            ir: false,
                         });
                     }
+                }
+            }
+            for (label, mutant) in self.theories[id].structural_mutations() {
+                let after = mutant.evaluate_all();
+                let diffs = diff_verdicts(&baseline, &after);
+                if !diffs.is_empty() {
+                    hits.push(HypothesisHit {
+                        theory: id.clone(),
+                        knob: label.clone(),
+                        origin: ParameterOrigin::Chosen,
+                        from: "package".into(),
+                        to: label,
+                        diffs,
+                        ir: true,
+                    });
                 }
             }
         }
@@ -1908,7 +1925,7 @@ impl Lab {
         });
 
         let mut text = String::from(
-            "hypothesize  constrained structural mutation\n  measured/derived/fundamental-input/nuisance knobs are frozen\n",
+            "hypothesize  constrained structural mutation\n  measured/derived/fundamental-input/nuisance knobs are frozen\n  ir package mutations are not knobs and are not persisted\n",
         );
         let shown = if theory.is_some() {
             hits.len()
@@ -1916,9 +1933,13 @@ impl Lab {
             hits.len().min(SHOW)
         };
         for hit in hits.iter().take(shown) {
-            let tag = match hit.origin {
-                ParameterOrigin::Fitted => "fitted accommodate",
-                _ => "chosen structural",
+            let tag = if hit.ir {
+                "ir structural"
+            } else {
+                match hit.origin {
+                    ParameterOrigin::Fitted => "fitted accommodate",
+                    _ => "chosen structural",
+                }
             };
             text.push_str(&format!(
                 "  {}  {}: {} → {}  origin={}  flips={}\n",
@@ -1953,6 +1974,7 @@ struct HypothesisHit {
     from: String,
     to: String,
     diffs: Vec<VerdictDiff>,
+    ir: bool,
 }
 
 struct EvidenceRow {
@@ -3659,6 +3681,55 @@ mod tests {
             theory: Some("no-such-theory".into()),
         });
         assert_eq!(unknown.exit_code(), 1);
+    }
+
+    #[test]
+    fn hypothesize_circuit_feedback_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "combinational-circuit".into(),
+            knob: "feedback".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("feedback"),
+            "{}",
+            blocked.text()
+        );
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("combinational-circuit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-feedback") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("comp.acyclic") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(
+            text.contains("comp.halts") && text.contains("holds → inapplicable"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("combinational-circuit").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "comp.acyclic" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
     }
 
     #[test]
