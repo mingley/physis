@@ -16,17 +16,23 @@
 //! GR light uses `rhs = 3 (GM/c²) u²`. Planets use `GM/h²` with or without
 //! the GR term.
 //!
-//! [`NewtonianGravity`] is the standing theory. [`crate::relativity::GeneralRelativity`]
-//! is the 1915 resolution. `set general-relativity dim 5` makes the 4D solar
-//! tests inapplicable.
+//! The inverse-square rhs lives on the IR package. A Schwarzschild
+//! `3 (GM/c²) u²` term is a package mutation (`add-schwarzschild`), not a
+//! knob: the Newtonian half-angle fails on the mutant, and Eddington /
+//! Mercury hold — still as `newtonian-gravity`, not a silent GR install.
+//! [`crate::relativity::GeneralRelativity`] stays a separate object;
+//! `set general-relativity dim 5` still makes the 4D solar tests
+//! inapplicable.
 
 use std::f64::consts::{FRAC_PI_2, PI};
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobSpec, KnobValue, Knobbed};
 use physis_core::{Length, Qty};
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{
     mercury_eccentricity, mercury_orbits_per_century, mercury_semi_major, solar_gm, solar_radius, C,
 };
@@ -53,6 +59,38 @@ const ARCSEC_PER_RAD: f64 = 180.0 / PI * 3600.0;
 const EDDINGTON_ARCSEC: f64 = 1.75;
 /// Observed GR perihelion remainder for Mercury, arcseconds per century.
 const MERCURY_ARCSEC_PER_CENTURY: f64 = 42.98;
+/// Inverse-square Binet rhs on the live Newton package.
+const BINET_INVERSE_SQUARE: &str = "binet inverse-square";
+/// Schwarzschild Binet term `3 (GM/c²) u²`.
+const BINET_SCHWARZSCHILD: &str = "binet 3GM u^2";
+
+fn parse_newton_binet(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut inverse_square = false;
+    let mut schwarzschild = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            BINET_INVERSE_SQUARE => inverse_square = true,
+            BINET_SCHWARZSCHILD => schwarzschild = true,
+            _ => {}
+        }
+    }
+    if !inverse_square {
+        return Err(format!(
+            "{} package has no inverse-square Binet rhs",
+            pkg.id
+        ));
+    }
+    Ok(schwarzschild)
+}
+
+fn inverse_square_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["inverse-square Binet rhs".into()],
+        vec!["Soldner / 1911 corpuscular light; closed Kepler ellipses".into()],
+        "Solar-system cells here are the inverse-square Binet encoding. \
+         A 3GM u² Schwarzschild term is a new encoding, not a silent GR install.",
+    )
+}
 
 /// One RK4 step of `u'' + u = rhs(u)` with `y = (u, u')`.
 fn rk4_binet(u: f64, v: f64, h: f64, rhs: impl Fn(f64) -> f64) -> (f64, f64) {
@@ -279,8 +317,59 @@ pub(crate) fn solar_claims() -> Vec<Claim> {
 }
 
 /// Inverse-square gravity with corpuscular light (Soldner / Newton).
-#[derive(Clone, Debug, Default)]
-pub struct NewtonianGravity;
+///
+/// The Binet rhs lives on the IR package. A Schwarzschild `3GM u²` term
+/// is a package mutation (`add-schwarzschild`), not a knob: the half-angle
+/// fails on the mutant and Eddington / Mercury hold. That fork is still
+/// this object, not a silent GR install. GR keeps `dim`.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct NewtonianGravity {
+    schwarzschild: bool,
+}
+
+impl NewtonianGravity {
+    /// IR package for this Binet rhs. Equations are `binet inverse-square`
+    /// and, when forked, `binet 3GM u^2`.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![BINET_INVERSE_SQUARE.to_string()];
+        if self.schwarzschild {
+            equations.push(BINET_SCHWARZSCHILD.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["inverse-square-binet".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: NEWTON_HALF.into(),
+                statement:
+                    "Grazing solar light deflection is the Newtonian value 2 GM/(c² R) ≈ 0.87″."
+                        .into(),
+                layer: "spacetime".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a Binet encoding from a package.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "newtonian-gravity" {
+            return Err(format!(
+                "newtonian-gravity package id '{}' is not newtonian-gravity",
+                pkg.id
+            ));
+        }
+        Ok(Self {
+            schwarzschild: parse_newton_binet(pkg)?,
+        })
+    }
+
+    fn schwarzschild_equation() -> String {
+        BINET_SCHWARZSCHILD.to_string()
+    }
+}
 
 impl Knobbed for NewtonianGravity {
     fn specs(&self) -> &'static [KnobSpec] {
@@ -304,8 +393,9 @@ impl Theory for NewtonianGravity {
     fn summary(&self) -> &'static str {
         "Inverse-square gravity and corpuscular light. Grazing solar deflection \
          is 2 GM/(c² R) ≈ 0.87″ (Soldner); bound orbits are closed ellipses. \
-         Eddington's 1.75″ and Mercury's 43″ remainder both fail — the standing \
-         19th-century theory, mechanized."
+         Eddington's 1.75″ and Mercury's 43″ remainder both fail. A \
+         Schwarzschild 3GM u² term is an IR mutation, not a knob, and not a \
+         silent GR install."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -316,14 +406,51 @@ impl Theory for NewtonianGravity {
             supersymmetric: false,
             free_parameter_count: 1, // G
             landscape_log10: 0.0,
-            note: "Newtonian inverse-square gravity, corpuscular light".into(),
+            note: if self.schwarzschild {
+                "Newtonian encoding with Schwarzschild 3GM u² Binet term".into()
+            } else {
+                "Newtonian inverse-square gravity, corpuscular light".into()
+            },
         })
     }
     fn claims(&self) -> Vec<Claim> {
         solar_claims()
+            .into_iter()
+            .map(|c| c.with_domain(inverse_square_domain()))
+            .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_solar(false, 4, claim)
+        eval_solar(self.schwarzschild, 4, claim)
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.schwarzschild = parsed.schwarzschild;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.schwarzschild {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::schwarzschild_equation()),
+        );
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.schwarzschild => {
+                let mut fork = self.clone();
+                fork.schwarzschild = true;
+                vec![("add-schwarzschild".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
+        }
     }
 }
 
@@ -343,12 +470,13 @@ pub fn gravity() -> ExperimentReport {
         vec![
             "`gr.newton-half-deflection` is the standing Soldner/1911 claim: it holds for Newton and fails for GR (spatial curvature doubles the angle).".into(),
             "`gr.eddington-deflection` and `gr.mercury-perihelion` are the observations Newtonian gravity fails.".into(),
+            "`hypothesize newtonian-gravity`: add-schwarzschild is IR, not set. GR stays a separate object.".into(),
             "`set general-relativity dim 5` makes the 4D solar tests inapplicable.".into(),
             "GM_☉ is the IAU standard gravitational parameter, so GM/c² is a typed length.".into(),
         ],
         &gravity_rows(),
         vec![
-            Box::new(NewtonianGravity),
+            Box::new(NewtonianGravity::default()),
             Box::new(GeneralRelativity::default()),
         ],
     )
@@ -421,7 +549,7 @@ mod tests {
 
     #[test]
     fn newton_holds_half_angle_and_fails_the_observations() {
-        let n = NewtonianGravity;
+        let n = NewtonianGravity::default();
         assert_eq!(verdict(&n, NEWTON_HALF), VerdictKind::Holds);
         assert_eq!(verdict(&n, EDDINGTON), VerdictKind::Fails);
         assert_eq!(verdict(&n, MERCURY_PERIHELION), VerdictKind::Fails);
@@ -457,5 +585,85 @@ mod tests {
             cell(NEWTON_HALF, "general-relativity"),
             Some(VerdictKind::Fails)
         );
+    }
+
+    #[test]
+    fn schwarzschild_binet_is_ir_not_a_knob() {
+        let t = NewtonianGravity::default();
+        assert!(
+            NewtonianGravity::default()
+                .set("schwarzschild", KnobValue::Bool(true))
+                .is_err(),
+            "Schwarzschild Binet term is an IR mutation, not a knob"
+        );
+        assert!(
+            NewtonianGravity::default()
+                .set("dim", KnobValue::UInt(5))
+                .is_err(),
+            "Newton must not grow a dim knob; that stays on GR"
+        );
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            NewtonianGravity::from_package(&pkg).unwrap(),
+            t,
+            "IR round-trip must preserve the inverse-square Binet rhs"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(NewtonianGravity::schwarzschild_equation()),
+        );
+        let parsed = NewtonianGravity::from_package(&mutated).unwrap();
+        assert!(parsed.schwarzschild);
+        let mut fork = t.clone();
+        fork.schwarzschild = true;
+        assert_eq!(fork.id(), "newtonian-gravity");
+        assert_eq!(verdict(&fork, NEWTON_HALF), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, EDDINGTON), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, MERCURY_PERIHELION), VerdictKind::Holds);
+        assert_eq!(verdict(&t, NEWTON_HALF), VerdictKind::Holds);
+        assert_eq!(verdict(&t, EDDINGTON), VerdictKind::Fails);
+        assert_eq!(verdict(&t, MERCURY_PERIHELION), VerdictKind::Fails);
+        let probes = NewtonianGravity::default().structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-schwarzschild");
+        assert_eq!(probes[0].1.id(), "newtonian-gravity");
+        assert_eq!(
+            verdict(probes[0].1.as_ref(), NEWTON_HALF),
+            VerdictKind::Fails
+        );
+        assert_eq!(verdict(probes[0].1.as_ref(), EDDINGTON), VerdictKind::Holds);
+        assert!(fork.structural_mutations().is_empty());
+        let live = NewtonianGravity::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(verdict(rebuilt.as_ref(), NEWTON_HALF), VerdictKind::Holds);
+        let half = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == NEWTON_HALF)
+            .unwrap();
+        assert!(
+            !half.domain().is_encoding_wide(),
+            "Newton half-angle must name the inverse-square Binet rhs: {:?}",
+            half.domain()
+        );
+        let gr = GeneralRelativity::default();
+        let gr_half = gr
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == NEWTON_HALF)
+            .unwrap();
+        assert!(
+            gr_half.domain().is_encoding_wide(),
+            "GR solar cells stay encoding-wide: {:?}",
+            gr_half.domain()
+        );
+        let mut high_d = GeneralRelativity::default();
+        high_d.set("dim", KnobValue::UInt(5)).unwrap();
+        assert_eq!(verdict(&high_d, EDDINGTON), VerdictKind::Inapplicable);
+        assert_eq!(verdict(&live, EDDINGTON), VerdictKind::Fails);
     }
 }

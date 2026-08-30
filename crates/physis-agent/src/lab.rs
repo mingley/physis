@@ -142,7 +142,7 @@ impl Lab {
         let mut lab = Self::empty();
         lab.insert(Box::new(StandardModel::default()));
         lab.insert(Box::new(GeneralRelativity::default()));
-        lab.insert(Box::new(NewtonianGravity));
+        lab.insert(Box::new(NewtonianGravity::default()));
         lab.insert(Box::new(SpecialRelativity::default()));
         lab.insert(Box::new(StringTheory::type_iib()));
         lab.insert(Box::new(StringTheory::type_iia()));
@@ -4647,6 +4647,74 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_newtonian_gravity_schwarzschild_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "newtonian-gravity".into(),
+            knob: "schwarzschild".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("schwarzschild"),
+            "{}",
+            blocked.text()
+        );
+        let dim_blocked = lab.exec(Command::Set {
+            theory: "newtonian-gravity".into(),
+            knob: "dim".into(),
+            value: "5".into(),
+        });
+        assert_eq!(dim_blocked.exit_code(), 1, "{}", dim_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("newtonian-gravity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-schwarzschild") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("gr.newton-half-deflection") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(
+            text.contains("gr.eddington-deflection") && text.contains("fails → holds"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("newtonian-gravity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "gr.newton-half-deflection" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(live.id(), "newtonian-gravity");
+        let gr = lab.theory("general-relativity").unwrap();
+        assert_eq!(
+            gr.get("dim").unwrap().display(),
+            "4",
+            "Newton IR must not convert GR dim"
+        );
+        assert!(
+            gr.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "gr.eddington-deflection" && v.kind == VerdictKind::Holds
+            }),
+            "GR must stay the live Schwarzschild object"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5349,6 +5417,14 @@ mod tests {
         assert!(
             text.contains("encode  bell-test"),
             "loop must independently round-trip the singlet ket: {text}"
+        );
+        assert!(
+            text.contains("encode  newtonian-gravity"),
+            "loop must independently round-trip the inverse-square Binet rhs: {text}"
+        );
+        assert!(
+            !text.contains("encode  general-relativity"),
+            "GR is not the Newton IR package: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -6576,7 +6652,31 @@ mod tests {
         assert_ne!(bell_id, ohm_id);
         assert_ne!(bell_id, nand_id);
 
-        for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
+        let newton = lab
+            .exec(Command::Encode {
+                theory: "newtonian-gravity".into(),
+            })
+            .text()
+            .to_string();
+        assert!(newton.contains("equations  1"), "{newton}");
+        assert!(newton.contains("round-trip canonical"), "{newton}");
+        assert!(newton.contains("not P3S"), "{newton}");
+        assert!(!newton.contains("receipt"), "{newton}");
+        let newton_id = encoding_package_id(&newton);
+        assert_eq!(
+            newton_id.to_hex(),
+            "e6e7c4222c571adcf6f526a27ab5e0572fb41d92361c7f3ce393e71e23184078"
+        );
+        assert_ne!(newton_id, bell_id);
+        assert_ne!(newton_id, nand_id);
+
+        for theory in [
+            "standard-model",
+            "type-iib",
+            "de-rham",
+            "turing-machine",
+            "general-relativity",
+        ] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
             });
@@ -6700,6 +6800,25 @@ mod tests {
             encoding_package_id(&bell_again),
             bell_id,
             "hypothesize must not install the product-state mutant"
+        );
+
+        let hypo_newton = lab
+            .exec(Command::Hypothesize {
+                theory: Some("newtonian-gravity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_newton.contains("add-schwarzschild"), "{hypo_newton}");
+        let newton_again = lab
+            .exec(Command::Encode {
+                theory: "newtonian-gravity".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&newton_again),
+            newton_id,
+            "hypothesize must not install the Schwarzschild Binet mutant"
         );
 
         let p3s = lab

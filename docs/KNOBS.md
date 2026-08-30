@@ -27,7 +27,7 @@ lists every fitted knob in the lab.
 - `cosmological_constant` (Planck units, order-of-magnitude)
 
 ### newtonian-gravity
-- (none — inverse-square is a single law; the contrast is the theory identity)
+- (none — inverse-square is a single law; the Schwarzschild 3GM u² term is an IR mutation, not a knob. GR keeps `dim`.)
 
 ### string / M constructions (type-iib, type-iia, type-i, heterotic-e8e8, heterotic-so32, bosonic, m-theory)
 - `kind` — chosen

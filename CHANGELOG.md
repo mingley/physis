@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Newtonian 3GM u² Binet term is an IR mutation**
+  (`newtonian-gravity`, `add-schwarzschild`). Inverse-square light and
+  orbits are the live Binet rhs (`binet inverse-square`); appending
+  `binet 3GM u^2` flips `gr.newton-half-deflection` holds to fails and
+  `gr.eddington-deflection` / `gr.mercury-perihelion` fails to holds.
+  That is not a knob. Mutants stay `newtonian-gravity`; they are not a
+  silent GR install. `general-relativity` keeps `dim`. Mutants are not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: IR
+  round-trip; set schwarzschild is unknown; hypothesize
+  newtonian-gravity; live inverse-square restored; encode pin
+  `e6e7c4222c571adcf6f526a27ab5e0572fb41d92361c7f3ce393e71e23184078`.
+
 - **Bell-test product ket is an IR mutation**
   (`bell-test`, `add-product`). The CHSH lab ket is the two-qubit singlet
   (`state singlet`); appending `state product` flips
@@ -80,7 +93,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   reconstructs live theory IR packages (`combinational-circuit` NAND
   netlist, `klein-gordon` nearest-neighbour stencil, `wilson-u1` /
   `wilson-su2` / `wilson-su3` 1×1 plaquettes, `ohm-circuit` lumped
-  branches, `bell-test` singlet ket). A forged
+  branches, `bell-test` singlet ket, `newtonian-gravity` inverse-square
+  Binet rhs). A forged
   `package_hash` cannot mint. Refuses theories with no package.
   Hypothesize mutants are not installed. Not P3S, not a kernel receipt,
   not Canonical, not P4. Loop encodes after cite. Unique-vacuum graph
@@ -98,6 +112,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `fb14d2c8a8cf2c51fe67c2f334a9307860c6ebb5cfbeca1c35467d61f1387af1`.
   Bell-test package id
   `4a54aa1db88b053ef04a53593732c435331a71dcc0f8ad3749e7cbb6786990dc`.
+  Newtonian-gravity package id
+  `e6e7c4222c571adcf6f526a27ab5e0572fb41d92361c7f3ce393e71e23184078`.
   Verified: role gates; journal restore; hypothesize does not change
   the live package id.
 
