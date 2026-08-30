@@ -15,9 +15,11 @@ pub mod catalog;
 pub mod challenge;
 pub mod expand;
 pub mod expr;
+pub mod parse;
 
 pub use artifact::{scan_lean_source, ScanReport, UntrustedProof};
 pub use catalog::{lookup, IdentitySpec, CATALOG};
 pub use challenge::Challenge;
 pub use expand::{identity_is_zero, Poly};
 pub use expr::Expr;
+pub use parse::parse_expr;
