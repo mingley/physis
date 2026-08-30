@@ -22,6 +22,7 @@
 
 use std::f64::consts::PI;
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -68,6 +69,15 @@ const PLANCK_X_TAIL: f64 = 40.0;
 const UV_MODE_X: f64 = 8.0;
 /// Infrared probe of the Rayleigh–Jeans correspondence, in units of kT/h.
 const IR_MODE_X: f64 = 0.01;
+
+fn rj_ir_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["hν = 0.01 kT infrared probe".into()],
+        vec!["|u − u_RJ|/u_RJ < 1%".into()],
+        "Correspondence is the infrared, not the ultraviolet catastrophe. \
+         Using Planck at hν ≫ kT as if it were Rayleigh–Jeans is a new claim.",
+    )
+}
 
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
@@ -405,7 +415,8 @@ impl Theory for Blackbody {
                 "In the infrared hν ≪ kT the spectrum agrees with Rayleigh–Jeans.",
                 LayerId::Statistical,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(rj_ir_domain()),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -635,6 +646,30 @@ mod tests {
         assert_eq!(verdict(&p, STEFAN_BOLTZMANN), VerdictKind::Holds);
         assert_eq!(verdict(&p, WIEN_DISPLACEMENT), VerdictKind::Holds);
         assert_eq!(verdict(&p, RJ_IR_LIMIT), VerdictKind::Holds);
+        let ir = p
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == RJ_IR_LIMIT)
+            .unwrap();
+        assert!(
+            !ir.domain().is_encoding_wide(),
+            "Rayleigh–Jeans correspondence must name hν ≪ kT: {:?}",
+            ir.domain()
+        );
+        assert!(
+            ir.domain().regimes.iter().any(|r| r.contains("0.01 kT")),
+            "IR regime: {:?}",
+            ir.domain()
+        );
+        let uv = p
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == UV_FINITE)
+            .unwrap();
+        assert!(
+            uv.domain().is_encoding_wide(),
+            "UV finiteness stays encoding-wide (improper integral, not the IR probe)"
+        );
     }
 
     #[test]

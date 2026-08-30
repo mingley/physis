@@ -3356,6 +3356,85 @@ mod tests {
     }
 
     #[test]
+    fn correspondence_cells_name_a_domain() {
+        let mut lab = Lab::standard();
+        let hi = lab
+            .exec(Command::Why {
+                claim: "thermo.high-t-classical".into(),
+            })
+            .text()
+            .to_string();
+        let hb = why_theory_block(&hi, "debye-solid");
+        assert!(hb.contains("T/Θ ≥ 8"), "{hb}");
+        assert!(
+            !hb.contains("not yet a machine-checked regime"),
+            "high-T correspondence must not be encoding-wide: {hb}"
+        );
+
+        let t3 = lab
+            .exec(Command::Why {
+                claim: "thermo.debye-t3".into(),
+            })
+            .text()
+            .to_string();
+        let tb = why_theory_block(&t3, "debye-solid");
+        assert!(tb.contains("Θ/20"), "{tb}");
+        assert!(
+            !tb.contains("not yet a machine-checked regime"),
+            "Debye T³ must name the low-T probe: {tb}"
+        );
+
+        let dp = lab
+            .exec(Command::Why {
+                claim: "thermo.dulong-petit".into(),
+            })
+            .text()
+            .to_string();
+        let dpb = why_theory_block(&dp, "debye-solid");
+        assert!(
+            dpb.contains("not yet a machine-checked regime"),
+            "Dulong–Petit at the current T stays encoding-wide: {dpb}"
+        );
+
+        let rj = lab
+            .exec(Command::Why {
+                claim: "thermo.rj-ir-limit".into(),
+            })
+            .text()
+            .to_string();
+        let rjb = why_theory_block(&rj, "planck");
+        assert!(rjb.contains("0.01 kT") || rjb.contains("hν"), "{rjb}");
+        assert!(
+            !rjb.contains("not yet a machine-checked regime"),
+            "RJ infrared correspondence must not be encoding-wide: {rjb}"
+        );
+
+        let area = lab
+            .exec(Command::Why {
+                claim: "gauge.exact-area-law-2d".into(),
+            })
+            .text()
+            .to_string();
+        let ab = why_theory_block(&area, "wilson-u1");
+        assert!(ab.contains("2D"), "{ab}");
+        assert!(
+            !ab.contains("not yet a machine-checked regime"),
+            "exact area law must name 2D: {ab}"
+        );
+        let poincare = lab
+            .exec(Command::Why {
+                claim: "dec.closed-equals-exact".into(),
+            })
+            .text()
+            .to_string();
+        let pb = why_theory_block(&poincare, "de-rham");
+        assert!(
+            pb.contains("not yet a machine-checked regime"),
+            "Poincaré stays encoding-wide: {pb}"
+        );
+    }
+
+    #[test]
     fn bounding_the_tape_does_not_make_search_feasible() {
         let mut lab = Lab::standard();
         let diffs = lab

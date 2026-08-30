@@ -30,6 +30,7 @@
 
 use std::f64::consts::PI;
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -72,6 +73,24 @@ const T3_RATIO_LO: f64 = 7.0;
 const T3_RATIO_HI: f64 = 9.0;
 /// Relative match of `C_V(Θ/20)` to the analytic `(4π⁴/5)(T/Θ)³`.
 const T3_ANALYTIC_TOL: f64 = 0.08;
+
+fn high_t_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["T/Θ ≥ 8".into()],
+        vec!["C_V recovered to 3 N k within 5%".into()],
+        "Correspondence is the high-T regime (or a classical encoding at every T). \
+         Dulong–Petit at the current temperature is a different cell.",
+    )
+}
+
+fn debye_t3_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["T = Θ/20 phonon probe".into()],
+        vec!["C_V(2T)/C_V(T) ≈ 8".into(), "match to (4π⁴/5)(T/Θ)³".into()],
+        "T³ is this low-T probe, independent of the current temperature knob. \
+         Einstein exponential freeze-out is a different spectrum, not a silent Debye law.",
+    )
+}
 
 const SPECTRUM_OPTIONS: &[&str] = &["einstein", "debye"];
 
@@ -421,7 +440,8 @@ impl Theory for EinsteinSolid {
                 "At T ≫ Θ the heat capacity recovers the classical 3 N k.",
                 LayerId::Statistical,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(high_t_domain()),
             Claim::new(
                 THIRD_LAW,
                 "Heat capacity (and therefore entropy) tends to zero as T → 0.",
@@ -433,7 +453,8 @@ impl Theory for EinsteinSolid {
                 "At T ≪ Θ the heat capacity scales as T³ (Debye phonon continuum).",
                 LayerId::Statistical,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(debye_t3_domain()),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -679,6 +700,40 @@ mod tests {
         assert_eq!(verdict(&d, HIGH_T_CLASSICAL), VerdictKind::Fails);
         assert_eq!(verdict(&d, THIRD_LAW), VerdictKind::Holds);
         assert_eq!(verdict(&d, DEBYE_T3), VerdictKind::Holds);
+        let t3 = d
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == DEBYE_T3)
+            .unwrap();
+        assert!(
+            !t3.domain().is_encoding_wide(),
+            "Debye T³ must name the Θ/20 probe: {:?}",
+            t3.domain()
+        );
+        assert!(
+            t3.domain().regimes.iter().any(|r| r.contains("Θ/20")),
+            "T³ regime: {:?}",
+            t3.domain()
+        );
+        let hi = d
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == HIGH_T_CLASSICAL)
+            .unwrap();
+        assert!(
+            !hi.domain().is_encoding_wide(),
+            "high-T correspondence must name T/Θ: {:?}",
+            hi.domain()
+        );
+        let dp = d
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == DULONG_PETIT)
+            .unwrap();
+        assert!(
+            dp.domain().is_encoding_wide(),
+            "Dulong–Petit at the current T stays encoding-wide"
+        );
         // Einstein over-freezes relative to Debye at the same Θ and T.
         let e = EinsteinSolid::einstein();
         assert!(

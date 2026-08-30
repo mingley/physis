@@ -17,6 +17,7 @@
 //! result (`gauge.exact-area-law-2d`) is a theorem, in honest contrast to the
 //! 4D Yang–Mills mass gap, which stays a `conjecture`.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -39,6 +40,15 @@ pub const ASYMPTOTIC_FREEDOM: &str = "gauge.asymptotic-freedom";
 pub const STRONG_COUPLING_AREA_LAW: &str = "gauge.strong-coupling-area-law";
 /// In 2D the Wilson loop obeys an *exact* area law at all couplings.
 pub const EXACT_AREA_LAW_2D: &str = "gauge.exact-area-law-2d";
+
+fn area_law_2d_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["2D Wilson lattice".into()],
+        vec!["exact plaquette factorization".into()],
+        "The exact area law is two-dimensional. In D > 2 this cell is inapplicable; \
+         4D confinement is gauge.confining, not this identity.",
+    )
+}
 
 /// Ratio `I₁(x)/I₀(x)` of modified Bessel functions, from their convergent
 /// power series. Stable for the `β` range this lab uses (no factorial overflow:
@@ -305,7 +315,8 @@ impl Theory for WilsonU1 {
                 "In 2D the Wilson loop obeys an exact area law at all couplings.",
                 LayerId::Interaction,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(area_law_2d_domain()),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -552,7 +563,8 @@ impl Theory for WilsonSun {
                 "In 2D the Wilson loop obeys an exact area law at all couplings.",
                 LayerId::Interaction,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(area_law_2d_domain()),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -802,6 +814,21 @@ mod tests {
         let mut w3 = WilsonU1::default();
         w3.set("dimension", KnobValue::UInt(3)).unwrap();
         assert_eq!(verdict(&w3, EXACT_AREA_LAW_2D), VerdictKind::Inapplicable);
+        let cell = w
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == EXACT_AREA_LAW_2D)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "exact area law must name 2D, not encoding-wide: {:?}",
+            cell.domain()
+        );
+        assert!(
+            cell.domain().regimes.iter().any(|r| r.contains("2D")),
+            "2D regime: {:?}",
+            cell.domain()
+        );
     }
 
     #[test]

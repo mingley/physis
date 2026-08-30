@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Correspondence cells name a DomainOfValidity**
+  (`thermo.high-t-classical`, `thermo.debye-t3`, `thermo.rj-ir-limit`,
+  `gauge.exact-area-law-2d`). High-T is `T/Θ ≥ 8`; Debye T³ is the
+  `Θ/20` probe; Rayleigh–Jeans correspondence is `hν = 0.01 kT`; the
+  exact area law is 2D plaquette factorization. Dulong–Petit at the
+  current T stays encoding-wide. Poincaré, Maxwell's quasi-static copy,
+  and GUT `Tr Q` stay encoding-wide. Not Canonical, not P4. Catalog d²
+  hash unchanged. Unique-vacuum graph id unchanged. Verified: unit
+  domain tests; why prints the regimes; encoding-wide cells stay wide.
+
 - **Klein–Gordon next-nearest coupling is an IR mutation**
   (`klein-gordon`, `add-next-nearest`). Locality is nearest-neighbour on
   a 1D periodic lattice; appending `laplacian nnn` flips `field.local`

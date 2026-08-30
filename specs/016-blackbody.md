@@ -45,7 +45,7 @@ restores Rayleigh–Jeans *physics* on the Planck object without renaming it.
 | `thermo.uv-finite` | `∫_0^∞ u(ν) dν` converges | **fails** (`u ∝ ν_max³`, ratio 8) | **holds** (`u_∞ = a T⁴`, even if the current cutoff is still infrared) |
 | `thermo.stefan-boltzmann` | `u(2T)/u(T) = 16` at fixed bandwidth | **fails** (`u ∝ T`, ratio 2) | **holds** (`u = a T⁴`) |
 | `thermo.wien-displacement` | finite `λ_max` with `λ_max T` constant | **fails** (`u(λ) ∝ λ⁻⁴`, no peak) | **holds** (computed peak = `hc/(k x)`) |
-| `thermo.rj-ir-limit` | `hν ≪ kT` matches Rayleigh–Jeans | **holds** (identity) | **holds** (correspondence) |
+| `thermo.rj-ir-limit` | `hν ≪ kT` matches Rayleigh–Jeans. Domain: `hν = 0.01 kT` infrared probe | **holds** (identity) | **holds** (correspondence) |
 
 The standing theory holds its own axiom and fails the observations. The
 resolution fails the axiom and holds the observations. That is the challenge.

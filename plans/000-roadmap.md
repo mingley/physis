@@ -37,6 +37,7 @@ Level-3 trust
   L3 P2 cross-check        ✓ Hodge Laplacian nullity vs b1; Euler–Poincaré is rank-cancellation, not P2
   L3 Hodge domain          ✓ dec.hodge-harmonic names discrete Laplacian DomainOfValidity; Euler and Poincaré stay encoding-wide
   L3 long-wavelength domain ✓ dispersion and ohm-circuit quasi-static name DomainOfValidity; Maxwell copy stays encoding-wide
+  L3 correspondence domain ✓ high-T T/Θ ≥ 8, Debye T³ at Θ/20, RJ infrared hν = 0.01 kT, exact 2D area law; Dulong–Petit and Poincaré stay encoding-wide
   L3 judgment seal         ✓ Judgment has no Deserialize; from_lab projects Proved from a receipt; LogicalJudgment has no public Proved constructor; NumericJudgment has no public Certified constructor; EmpiricalJudgment has no public Compatible constructor; HeuristicJudgment has no public Suggestive constructor; StatisticalJudgment has no public Computed constructor; Verdict has no Deserialize; Verdict overlay fields are private
   L3 formal-claim seal     ✓ FormalClaim is from_claim-only; no Deserialize; a forged Claim hash is not copied through
   L3 claim-hash derived    ✓ Claim::statement_hash is a getter; no stored field; id/statement/class/layer/assumptions/domain/commitments are private; mutating the sentence cannot keep a stale receipt; derivation/empirical/semantic fields are private

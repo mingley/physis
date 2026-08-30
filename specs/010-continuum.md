@@ -76,7 +76,7 @@ the Wilson action sums `1 − cos(θ_plaquette)`. Knobs: `dimension` (2–4), `b
 | `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap) |
 | `gauge.asymptotic-freedom` | the coupling runs to zero at high energy | U(1) `fails` (Landau pole); SU(N) `holds` (Gross–Wilczek–Politzer) |
 | `gauge.strong-coupling-area-law` | leading strong-coupling expansion gives an area law | **computed**: `σ = −ln(β/2N²) > 0` (theorem of the convergent expansion); fails at weak coupling |
-| `gauge.exact-area-law-2d` | 2D gauge theory confines at all couplings | **exactly computed**: U(1) via `σ = −ln(I₁(β)/I₀(β))`, SU(N) via `σ = (N²−1)/(2β)` (quadratic Casimir); `> 0` for every β (theorem); `inapplicable` in D > 2 |
+| `gauge.exact-area-law-2d` | 2D gauge theory confines at all couplings | **exactly computed**: U(1) via `σ = −ln(I₁(β)/I₀(β))`, SU(N) via `σ = (N²−1)/(2β)` (quadratic Casimir); `> 0` for every β (theorem); `inapplicable` in D > 2. Domain: 2D Wilson lattice / exact plaquette factorization |
 
 ### Abelian vs non-abelian
 

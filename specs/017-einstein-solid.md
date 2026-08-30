@@ -56,10 +56,10 @@ relative to Debye.
 
 | id | meaning | Dulong–Petit | Einstein (default T) | Debye (default T) |
 |---|---|---|---|---|
-| `thermo.dulong-petit` | `C_V = 3 N k` at the current T | **holds** | **fails** (`C_V/(3Nk) ≈ 0.17`) | **fails** (frozen acoustic modes) |
-| `thermo.high-t-classical` | `T ≫ Θ` recovers `3 N k` | **holds** (always) | **fails** (not yet high-T) | **fails** (not yet high-T) |
-| `thermo.third-law` | `C_V → 0` as T → 0 | **fails** (`C_V` stays `3 N k` at `Θ/40`) | **holds** (exponential freeze-out) | **holds** (`T³ → 0`) |
-| `thermo.debye-t3` | low-T `C_V ∝ T³` | **fails** (doubling = 1) | **fails** (exponential, doubling ≫ 8) | **holds** (doubling ≈ 8 at `Θ/20`) |
+| `thermo.dulong-petit` | `C_V = 3 N k` at the current T (encoding-wide) | **holds** | **fails** (`C_V/(3Nk) ≈ 0.17`) | **fails** (frozen acoustic modes) |
+| `thermo.high-t-classical` | `T ≫ Θ` recovers `3 N k`. Domain: `T/Θ ≥ 8` | **holds** (always) | **fails** (not yet high-T) | **fails** (not yet high-T) |
+| `thermo.third-law` | `C_V → 0` as T → 0 (encoding-wide probe at `Θ/40`) | **fails** (`C_V` stays `3 N k` at `Θ/40`) | **holds** (exponential freeze-out) | **holds** (`T³ → 0`) |
+| `thermo.debye-t3` | low-T `C_V ∝ T³`. Domain: `T = Θ/20` phonon probe | **fails** (doubling = 1) | **fails** (exponential, doubling ≫ 8) | **holds** (doubling ≈ 8 at `Θ/20`) |
 
 Raising `einstein-solid` or `debye-solid` `temperature` to 4000 K
 (`T/Θ ≈ 13`) flips `thermo.dulong-petit` **fails → holds** and

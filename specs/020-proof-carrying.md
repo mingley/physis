@@ -59,6 +59,10 @@ Nothing gains authority merely because an agent wrote code that returns
   they remain `Asserted` (heuristic/conjecture), not a kernel proof.
   `dec.hodge-harmonic` names discrete combinatorial Hodge
   on finite simplicial 1-cochains, not the smooth Hodge theorem.
+  `thermo.high-t-classical` names `T/Θ ≥ 8`; `thermo.debye-t3` names the
+  `Θ/20` phonon probe; `thermo.rj-ir-limit` names `hν = 0.01 kT`;
+  `gauge.exact-area-law-2d` names 2D Wilson plaquette factorization.
+  Dulong–Petit at the current T stays encoding-wide.
   Lean compiler versions live on the receipt, not
   the sentence.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
@@ -204,6 +208,10 @@ identity; a slug-only review line is not P3S.
   and Poincaré stay encoding-wide. `field.dispersion-continuum-limit` names
   the longest lattice mode; ohm-circuit `em.quasi-static-valid` names
   `λ > 100 ×` circuit size. Maxwell's copy of that slug stays encoding-wide.
+  `thermo.high-t-classical` names `T/Θ ≥ 8`; `thermo.debye-t3` names the
+  `Θ/20` phonon probe; `thermo.rj-ir-limit` names `hν = 0.01 kT`;
+  `gauge.exact-area-law-2d` names 2D plaquette factorization.
+  Dulong–Petit at the current T stays encoding-wide.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op. A proof-searcher cannot
