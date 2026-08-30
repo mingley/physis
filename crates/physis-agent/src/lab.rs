@@ -2361,6 +2361,10 @@ mod tests {
         assert!(text.contains("prove  dec.d-squared-zero"), "{text}");
         assert!(text.contains("prove  sr.invariant-interval"), "{text}");
         assert!(text.contains("prove  sr.subluminal-composition"), "{text}");
+        assert!(
+            text.contains("prove  sr.energy-momentum-invariant"),
+            "{text}"
+        );
         assert!(text.contains("counterexample"), "{text}");
         assert!(text.contains("replicate  dec.d-squared-zero  ok"), "{text}");
         assert!(text.contains("audit  red-team corpus caught"), "{text}");
@@ -2904,6 +2908,10 @@ mod tests {
             "{text}"
         );
         assert!(
+            text.contains("review  sr.energy-momentum-invariant  trust P3F required"),
+            "{text}"
+        );
+        assert!(
             !text.contains("adversarially-reviewed"),
             "loop must not raise P3S on an unproved identity: {text}"
         );
@@ -3129,5 +3137,61 @@ mod tests {
 
         lab.set_role(Role::Explorer);
         assert_eq!(lab.exec(Command::Gaps).exit_code(), 0);
+    }
+
+    #[test]
+    fn mass_shell_records_an_interval_lemma_edge() {
+        let mut lab = Lab::standard();
+        let before = lab.exec(Command::Gaps).text().to_string();
+        assert!(
+            before
+                .lines()
+                .any(|l| l.contains("sr.energy-momentum-invariant")
+                    && l.contains("needs receipt")
+                    && !l.contains("lemma")),
+            "{before}"
+        );
+        assert!(
+            before.contains("lemma sr.invariant-interval") && before.contains("needs receipt"),
+            "mass shell must record an unmet interval lemma: {before}"
+        );
+
+        let proved = lab
+            .exec(Command::Prove {
+                claim: "sr.invariant-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            proved.contains("lean-kernel") || proved.contains("expand-recursive"),
+            "{proved}"
+        );
+
+        let after = lab.exec(Command::Gaps).text().to_string();
+        assert!(
+            after
+                .lines()
+                .any(|l| l.contains("sr.energy-momentum-invariant")
+                    && l.contains("needs receipt")
+                    && !l.contains("lemma")),
+            "mass shell is not the interval identity: {after}"
+        );
+        assert!(
+            after
+                .lines()
+                .any(|l| l.contains("lemma sr.invariant-interval") && l.contains("have receipt")),
+            "{after}"
+        );
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "sr.energy-momentum-invariant".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            why.contains("sr.invariant-interval") && why.contains("have receipt"),
+            "{why}"
+        );
     }
 }

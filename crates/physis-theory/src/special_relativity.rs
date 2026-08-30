@@ -157,7 +157,8 @@ impl Theory for SpecialRelativity {
                 "The mass shell E² − (pc)² = (mc²)² is frame-independent.",
                 LayerId::Particle,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_dependencies(&[SR_INVARIANT_INTERVAL]),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -254,6 +255,17 @@ mod tests {
         assert_eq!(kind(&sr, SR_INVARIANT_INTERVAL), VerdictKind::Fails);
         assert_eq!(kind(&sr, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Fails);
         assert_eq!(kind(&sr, SR_ENERGY_MOMENTUM), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn mass_shell_depends_on_the_interval() {
+        let sr = SpecialRelativity::default();
+        let em = sr
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == SR_ENERGY_MOMENTUM)
+            .unwrap();
+        assert_eq!(em.depends_on[0].0, SR_INVARIANT_INTERVAL);
     }
 
     #[test]

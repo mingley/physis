@@ -67,6 +67,27 @@ pub fn einstein_composition() -> Expr {
     sub(left, right)
 }
 
+/// Mass-shell identity (c = 1):
+/// `(E − βp)² − (p − βE)² − (1 − β²)(E² − p²) ≡ 0`.
+///
+/// This is the Minkowski bilinear form on 4-momentum: the same algebraic
+/// obligation as [`lorentz_interval`] with `(t, x) → (E, p)`. It is not a
+/// new physical postulate; the axioms stay `integer-arithmetic` and
+/// `minkowski-interval-signature`. The lab still treats the claims as
+/// distinct (spacetime interval vs particle mass shell). The typed
+/// rest-mass check `E² − (pc)² = (mc²)²` remains the evaluator.
+pub fn energy_momentum() -> Expr {
+    let e = Expr::var("E");
+    let p = Expr::var("p");
+    let b = Expr::var("beta");
+    let boosted = sub(
+        pow(sub(e.clone(), mul(b.clone(), p.clone())), 2),
+        pow(sub(p.clone(), mul(b.clone(), e.clone())), 2),
+    );
+    let orig = mul(sub(Expr::c(1), pow(b, 2)), sub(pow(e, 2), pow(p, 2)));
+    sub(boosted, orig)
+}
+
 /// Known exact identities. A claim not in this list cannot be promoted by
 /// the exact-certificate backend.
 pub const CATALOG: &[IdentitySpec] = &[
@@ -91,6 +112,13 @@ pub const CATALOG: &[IdentitySpec] = &[
         axioms: &["integer-arithmetic", "einstein-velocity-addition"],
         identity: einstein_composition,
     },
+    IdentitySpec {
+        claim_id: "sr.energy-momentum-invariant",
+        lean_theorem: "energy_momentum_invariant",
+        lean_type: "∀ (E p β : Int), (E - β*p)^2 - (p - β*E)^2 = (1 - β^2)*(E^2 - p^2)",
+        axioms: &["integer-arithmetic", "minkowski-interval-signature"],
+        identity: energy_momentum,
+    },
 ];
 
 /// Lookup by claim id.
@@ -107,6 +135,19 @@ mod tests {
         assert!(lookup("dec.d-squared-zero").is_some());
         assert!(lookup("sr.invariant-interval").is_some());
         assert!(lookup("sr.subluminal-composition").is_some());
+        assert!(lookup("sr.energy-momentum-invariant").is_some());
         assert!(lookup("predictivity.unique-vacuum").is_none());
+    }
+
+    #[test]
+    fn mass_shell_is_not_the_interval_challenge() {
+        // Same bilinear form, different indeterminates: a rename is a
+        // different challenge hash, not a silent alias.
+        assert_ne!(
+            energy_momentum().canonical(),
+            lorentz_interval().canonical()
+        );
+        let spec = lookup("sr.energy-momentum-invariant").unwrap();
+        assert_eq!(spec.axioms, lookup("sr.invariant-interval").unwrap().axioms);
     }
 }

@@ -40,6 +40,12 @@ stack) *and* kernel-checked as Physlib theorems (`formal/physlib`):
 - `sr.subluminal-composition`: `(1+uv)² − (u+v)² − (1−u²)(1−v²) ≡ 0`
   (`subluminal_composition`, `grind`). Algebraic content of Einstein
   addition; `|w|<1` over ℝ remains the evaluator.
+- `sr.energy-momentum-invariant`: `(E−βp)² − (p−βE)² − (1−β²)(E²−p²) ≡ 0`
+  (`energy_momentum_invariant`, `grind`). The Minkowski bilinear form
+  on 4-momentum: the same algebraic obligation as the interval with
+  `(t,x) → (E,p)`, not a new postulate. Axioms stay
+  `integer-arithmetic` and `minkowski-interval-signature`. The typed
+  rest-mass check `E² − (pc)² = (mc²)²` remains the evaluator.
 
 A one-byte mutation of the challenge bytes is `ChallengeTampered`.
 A sign flip of the identity fails both expanders. `axiom` / `sorry` /
@@ -89,8 +95,10 @@ dual expanders. `physis prove` uses the same preference.
 - `SemanticAssurance::Canonical` (reserved; not agent-mintable)
 - P4 independent reproduction (in-process `reproduce` remints and
   **refuses** to assign P4; a distinct implementation is still required)
-- Mathlib-scale Physlib; three catalog identities are kernel-checked
-  (`d²`, interval, Einstein composition). That is not Mathlib.
+- Mathlib-scale Physlib; four catalog identities are kernel-checked
+  (`d²`, interval, Einstein composition, mass shell). The mass-shell
+  polynomial is the interval identity on 4-momentum, not a fifth
+  algebraic idea. That is not Mathlib.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op.
@@ -102,6 +110,7 @@ dual expanders. `physis prove` uses the same preference.
 | A. `d² = 0` | Dual-expanded identity **and** Lean kernel + nanoda receipt; `physis review` raises semantic |
 | B. Lorentz interval | Same backends |
 | B2. Einstein composition | Same backends; `|w|<1` over ℝ remains the evaluator |
+| B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |

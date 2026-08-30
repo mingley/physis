@@ -584,4 +584,45 @@ mod tests {
         assert_eq!(v.receipt().primary_checker.checker, "lean-kernel");
         assert_eq!(v.receipt().secondary_checker.checker, "nanoda");
     }
+
+    fn mass_shell_claim() -> Claim {
+        Claim::new(
+            "sr.energy-momentum-invariant",
+            "The mass shell E² − (pc)² = (mc²)² is frame-independent.",
+            LayerId::Particle,
+            ClaimClass::ModelInternal,
+        )
+    }
+
+    #[test]
+    fn mass_shell_catalog_mints() {
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&mass_shell_claim()));
+        verify(&challenge, &UntrustedProof::ExactIdentity).unwrap();
+    }
+
+    #[test]
+    fn physlib_mass_shell_dual_kernel_mints_when_pipeline_is_wired() {
+        if discover_tools().is_none() {
+            if std::env::var("CI").is_ok() {
+                panic!("CI must install Lean 4.34 and lean4export (LEAN4EXPORT)");
+            }
+            return;
+        }
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&mass_shell_claim()));
+        let v = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: physis_proof::PHYSLIB_SOURCE.into(),
+            },
+        )
+        .expect("Lean kernel + nanoda must mint for Physlib mass-shell identity");
+        assert!(matches!(v.receipt().formal_backend, FormalBackend::Lean4));
+        assert_eq!(v.receipt().primary_checker.checker, "lean-kernel");
+        assert_eq!(v.receipt().secondary_checker.checker, "nanoda");
+        assert!(v
+            .receipt()
+            .axioms_used
+            .iter()
+            .any(|a| a.0 == "minkowski-interval-signature"));
+    }
 }

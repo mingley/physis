@@ -23,3 +23,10 @@ still the lab evaluator. -/
 theorem subluminal_composition (u v : Int) :
     (1 + u * v) ^ 2 - (u + v) ^ 2 = (1 - u ^ 2) * (1 - v ^ 2) := by
   grind
+
+/-- Mass shell at `c = 1`: the Minkowski form on 4-momentum. Algebraically
+the interval identity with `(t, x) → (E, p)`; not a new postulate. The
+typed rest-mass check remains the lab evaluator. -/
+theorem energy_momentum_invariant (E p β : Int) :
+    (E - β * p) ^ 2 - (p - β * E) ^ 2 = (1 - β ^ 2) * (E ^ 2 - p ^ 2) := by
+  grind

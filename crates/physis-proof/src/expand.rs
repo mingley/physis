@@ -227,7 +227,7 @@ pub fn identity_is_zero(expr: &Expr) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::catalog::{discrete_d2, einstein_composition, lorentz_interval};
+    use crate::catalog::{discrete_d2, einstein_composition, energy_momentum, lorentz_interval};
     use crate::expr::{add, mul, sub, Expr};
 
     #[test]
@@ -243,6 +243,11 @@ mod tests {
     #[test]
     fn einstein_composition_is_zero() {
         identity_is_zero(&einstein_composition()).unwrap();
+    }
+
+    #[test]
+    fn energy_momentum_is_zero() {
+        identity_is_zero(&energy_momentum()).unwrap();
     }
 
     #[test]
@@ -294,5 +299,19 @@ mod tests {
             ),
         );
         assert!(identity_is_zero(&galilean).is_err());
+    }
+
+    #[test]
+    fn galilean_mass_shell_is_not_identity() {
+        // E² − (p − β E)² − (E² − p²) is not identically zero.
+        let e = Expr::var("E");
+        let p = Expr::var("p");
+        let b = Expr::var("beta");
+        let boosted = sub(
+            crate::expr::pow(e.clone(), 2),
+            crate::expr::pow(sub(p.clone(), mul(b, e.clone())), 2),
+        );
+        let orig = sub(crate::expr::pow(e, 2), crate::expr::pow(p, 2));
+        assert!(identity_is_zero(&sub(boosted, orig)).is_err());
     }
 }

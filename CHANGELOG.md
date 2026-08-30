@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Mass shell is a catalog identity**
+  (`sr.energy-momentum-invariant`, Physlib `energy_momentum_invariant`).
+  The polynomial `(E−βp)² − (p−βE)² − (1−β²)(E²−p²) ≡ 0` is the
+  Minkowski bilinear form on 4-momentum: the interval identity with
+  `(t,x) → (E,p)`, not a new postulate. Dual-expanded and
+  kernel-checked. The typed rest-mass check remains the evaluator.
+  Galilean `E' = E`, `p' = p − βE` is not an identity. The claim
+  depends on `sr.invariant-interval`. Not Mathlib-scale. Not P4.
+  Verified: expander and parse tests, exact mint, Lean+nanoda when
+  wired, loop prove, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Super-K prose is not a dataset**
   (`gut.proton-lifetime-sk`, `super_kamiokande_proton_lifetime`).
   The empirical proton-lifetime cell stays `untested` because no

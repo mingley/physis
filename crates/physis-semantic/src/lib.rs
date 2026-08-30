@@ -128,7 +128,26 @@ lean_ref ∀ (u v : Int), (1 + u*v)^2 - (u + v)^2 = (1 - u^2)*(1 - v^2)
 "#,
 };
 
-const DOSSIERS: &[Dossier] = &[D2, LORENTZ, COMPOSITION];
+/// Minkowski 1908: 4-momentum as a space-time vector of the first kind.
+/// The polynomial is the interval identity on (E, p), not a new postulate.
+const MASS_SHELL: Dossier = Dossier {
+    claim_id: "sr.energy-momentum-invariant",
+    work: "Die Grundgleichungen fuer die elektromagnetischen Vorgaenge in bewegten Koerpern (Minkowski)",
+    edition: "Nachr. Ges. Wiss. Goettingen 1908",
+    version: "1908",
+    section: Some("space-time vectors of the first kind"),
+    equation: Some("rest-mass vector"),
+    ir: r#"
+id = energy-momentum
+name = Mass shell under a boost
+assumption minkowski-signature
+equation (E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)
+claim model-internal particle sr.energy-momentum-invariant : the mass shell is frame-independent
+lean_ref ∀ (E p β : Int), (E - β*p)^2 - (p - β*E)^2 = (1 - β^2)*(E^2 - p^2)
+"#,
+};
+
+const DOSSIERS: &[Dossier] = &[D2, LORENTZ, COMPOSITION, MASS_SHELL];
 
 fn dossier(claim_id: &str) -> Option<&'static Dossier> {
     DOSSIERS.iter().find(|d| d.claim_id == claim_id)

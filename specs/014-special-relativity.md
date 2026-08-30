@@ -43,6 +43,14 @@ The algebraic content of Einstein addition is a catalog identity
 `0.8c ⊕ 0.7c < c`. The claim declares a live lemma edge to
 `sr.invariant-interval`.
 
+The algebraic content of mass-shell invariance is the Minkowski bilinear
+form on 4-momentum (`(E−βp)² − (p−βE)² ≡ (1−β²)(E²−p²)`), kernel-checked
+as `energy_momentum_invariant`. That is the interval identity with
+`(t, x) → (E, p)`, not a new physical postulate (same axioms as the
+interval). The lab evaluator still checks the typed rest-mass equality
+on an electron boosted from rest. The claim declares a live lemma edge
+to `sr.invariant-interval`.
+
 ## How each is computed
 
 Both the spacetime coordinates `(cΔt, Δx)` and the energy–momentum `(E, pc)` are

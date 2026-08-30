@@ -20,7 +20,7 @@ Level-3 trust
   L3-M8 red-team corpus    ✓ physis audit
   L3-M9 experiment rank    ✓ physis design
   L3-M10 research loop     ✓ physis loop (orchestrator)
-  L3 Lean/nanoda kernels   ✓ Physlib d²=0, interval, and Einstein composition; lake + nanoda on export
+  L3 Lean/nanoda kernels   ✓ Physlib d²=0, interval, Einstein composition, and mass shell; lake + nanoda on export
   L3 inspect / origin      ✓ ParameterOrigin; physis inspect
   L3 roles / budget        ✓ Role gates exec; formalize is untrusted; budget caps prove/review/set
   L3 reproduce             ✓ in-process remint of a stored receipt; explicitly not P4
