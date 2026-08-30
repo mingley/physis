@@ -2835,6 +2835,12 @@ mod tests {
                     && l.contains("consistency.anomaly-cancellation")),
             "heterotic Green-Schwarz stays encoded, not P3N: {p3n}"
         );
+        assert!(
+            !p3n.lines()
+                .any(|l| l.contains("heterotic-so32")
+                    && l.contains("consistency.anomaly-cancellation")),
+            "heterotic-so32 Green-Schwarz stays encoded, not P3N: {p3n}"
+        );
         assert!(!p3n.contains("predictivity.unique-vacuum"), "{p3n}");
         assert!(
             !p3n.contains("gut.proton-lifetime-sk"),
@@ -2878,6 +2884,19 @@ mod tests {
         );
         assert!(het_gs.contains("derivation: executed"), "{het_gs}");
         assert!(!het_gs.contains("numeric certified"), "{het_gs}");
+        let so32_gs = why_theory_block(&why, "heterotic-so32");
+        assert!(so32_gs.contains("SO(32)"), "{so32_gs}");
+        assert!(
+            !so32_gs.contains("not yet a machine-checked regime"),
+            "heterotic-so32 Green-Schwarz must not be encoding-wide: {so32_gs}"
+        );
+        assert!(so32_gs.contains("derivation: executed"), "{so32_gs}");
+        assert!(!so32_gs.contains("numeric certified"), "{so32_gs}");
+        let type_i_gs = why_theory_block(&why, "type-i");
+        assert!(
+            type_i_gs.contains("not yet a machine-checked regime"),
+            "Type I Green-Schwarz stays encoding-wide: {type_i_gs}"
+        );
         let why_y = lab
             .exec(Command::Why {
                 claim: "sm.hypercharge-derivation".into(),
@@ -7105,6 +7124,147 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_heterotic_so16_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["so16", "so-16", "add-so16"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "heterotic-so32".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("heterotic-so32".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-so16") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-so16: package → add-so16";
+        let start = text.find(marker).expect("add-so16 hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  heterotic-so32  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let so16_block = &rest[..end];
+        assert!(
+            so16_block.contains("consistency.anomaly-cancellation")
+                && so16_block.contains("holds → fails"),
+            "add-so16 must flip anomaly-cancellation holds to fails: {so16_block}"
+        );
+        assert!(
+            !so16_block.contains("empirical.sm-gauge"),
+            "SO(16) still embeds SM: {so16_block}"
+        );
+        assert!(
+            !so16_block.contains("predictivity.unique-vacuum"),
+            "SO(16) is not the landscape: {so16_block}"
+        );
+        assert!(
+            !so16_block.contains("consistency.critical-dimension"),
+            "SO(16) is not the total_dim knob: {so16_block}"
+        );
+        assert!(
+            text.contains("kind") || text.contains("total_dim"),
+            "chosen knobs must still be probed: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert!(!text.contains("receipt"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("heterotic-so32").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "consistency.anomaly-cancellation" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("kind").unwrap().display(),
+            "heterotic-so32",
+            "hypothesize must restore knobs"
+        );
+        let bosonic = lab.exec(Command::Set {
+            theory: "heterotic-so32".into(),
+            knob: "kind".into(),
+            value: "bosonic".into(),
+        });
+        assert_eq!(bosonic.exit_code(), 0, "{}", bosonic.text());
+        assert!(
+            bosonic.text().contains("empirical.fermions")
+                && bosonic.text().contains("holds → fails"),
+            "kind still flips fermions: {}",
+            bosonic.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "heterotic-so32".into(),
+            knob: "kind".into(),
+            value: "heterotic-so32".into(),
+        });
+        let dim = lab.exec(Command::Set {
+            theory: "heterotic-so32".into(),
+            knob: "total_dim".into(),
+            value: "9".into(),
+        });
+        assert_eq!(dim.exit_code(), 0, "{}", dim.text());
+        assert!(
+            dim.text().contains("consistency.anomaly-cancellation")
+                && dim.text().contains("holds → undecidable"),
+            "total_dim still opens Green-Schwarz: {}",
+            dim.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "heterotic-so32".into(),
+            knob: "total_dim".into(),
+            value: "10".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "consistency.anomaly-cancellation".into(),
+            })
+            .text()
+            .to_string();
+        let het = why_theory_block(&why, "heterotic-so32");
+        assert!(
+            het.contains("SO(32)"),
+            "anomaly must name complete SO(32): {het}"
+        );
+        assert!(
+            !het.contains("not yet a machine-checked regime"),
+            "heterotic-so32 Green-Schwarz must not be encoding-wide: {het}"
+        );
+        assert!(
+            het.contains("encoding:    none"),
+            "hypothesize must not encode: {het}"
+        );
+        let type_i = why_theory_block(&why, "type-i");
+        assert!(
+            type_i.contains("not yet a machine-checked regime"),
+            "Type I Green-Schwarz stays encoding-wide: {type_i}"
+        );
+        let e8e8 = why_theory_block(&why, "heterotic-e8e8");
+        assert!(
+            e8e8.contains("E8 x E8"),
+            "heterotic-e8e8 still names E8 x E8: {e8e8}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -8704,6 +8864,10 @@ mod tests {
             "loop must independently round-trip complete E8 x E8: {text}"
         );
         assert!(
+            text.contains("encode  heterotic-so32"),
+            "loop must independently round-trip complete SO(32): {text}"
+        );
+        assert!(
             !text.contains("encode  olbers-horizon"),
             "olbers-horizon has no IR package: {text}"
         );
@@ -10257,8 +10421,27 @@ mod tests {
         assert_ne!(heterotic_id, dulong_id);
         assert_ne!(heterotic_id, nand_id);
 
+        let so32 = lab
+            .exec(Command::Encode {
+                theory: "heterotic-so32".into(),
+            })
+            .text()
+            .to_string();
+        assert!(so32.contains("equations  1"), "{so32}");
+        assert!(so32.contains("round-trip canonical"), "{so32}");
+        assert!(so32.contains("not P3S"), "{so32}");
+        assert!(!so32.contains("receipt"), "{so32}");
+        let so32_id = encoding_package_id(&so32);
+        assert_eq!(
+            so32_id.to_hex(),
+            "8931d99fcd313e83cc90e75a76c684853912b1c31fffd279aea84a04d274e9c2"
+        );
+        assert_ne!(so32_id, heterotic_id);
+        assert_ne!(so32_id, nand_id);
+
         for theory in [
             "type-iib",
+            "type-i",
             "rayleigh-jeans",
             "olbers-horizon",
             "einstein-solid",
@@ -10760,6 +10943,25 @@ mod tests {
             encoding_package_id(&het_again),
             heterotic_id,
             "hypothesize must not install the missing-e8 mutant"
+        );
+
+        let hypo_so32 = lab
+            .exec(Command::Hypothesize {
+                theory: Some("heterotic-so32".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_so32.contains("add-so16"), "{hypo_so32}");
+        let so32_again = lab
+            .exec(Command::Encode {
+                theory: "heterotic-so32".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&so32_again),
+            so32_id,
+            "hypothesize must not install the so16 mutant"
         );
 
         let p3s = lab

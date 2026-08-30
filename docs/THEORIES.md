@@ -12,7 +12,7 @@ A theory is not a PDF. It is an object that can be wrong *inside the lab*.
 
 ## String constructions
 
-`StringTheory` is parameterized by `StringKind`. Critical dimension is a theorem of the construction. Landscape uniqueness is a heuristic that grows with extra dimensions and `flux_bits`. Complete `E8 x E8` lives on the IR package of `heterotic-e8e8`; `hypothesize heterotic-e8e8` forks a missing E8 as IR (`add-missing-e8`); that is not the `kind` or `total_dim` knob. Other string constructions have no package.
+`StringTheory` is parameterized by `StringKind`. Critical dimension is a theorem of the construction. Landscape uniqueness is a heuristic that grows with extra dimensions and `flux_bits`. Complete `E8 x E8` lives on the IR package of `heterotic-e8e8`; `hypothesize heterotic-e8e8` forks a missing E8 as IR (`add-missing-e8`); that is not the `kind` or `total_dim` knob. Complete `SO(32)` lives on the IR package of `heterotic-so32`; `hypothesize heterotic-so32` forks `SO(16)` as IR (`add-so16`); that is not those knobs. Type I shares SO(32) gauge but has no package. Other string constructions have no package.
 
 The bosonic string is included because it is the cleanest *theorem-level* failure mode we have (tachyon, no fermions). Superstrings are the serious candidates; they should not be confused with it.
 

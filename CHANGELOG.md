@@ -32,6 +32,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Heterotic SO(16) is an IR mutation**
+  (`heterotic-so32`, `add-so16`). Complete `SO(32)` is the live
+  encoding; appending `SO(16)` flips
+  `consistency.anomaly-cancellation` holds to fails (dimension 120 is
+  not a Green-Schwarz solution). SM still embeds via SO(10), so that
+  cell is not a unit flag and not the `kind` or `total_dim` knob.
+  Unique-vacuum still fails. Mutants stay `heterotic-so32`. Type I
+  shares SO(32) gauge but has no package. Mutants are not installed,
+  not journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: IR
+  round-trip; set so16 is unknown; hypothesize heterotic-so32; live
+  SO(32) restored; encode pin `8931d99fcd313e83cc90e75a76c684853912b1c31fffd279aea84a04d274e9c2`.
+
 - **Heterotic missing E8 is an IR mutation**
   (`heterotic-e8e8`, `add-missing-e8`). Complete `E8 x E8` is the live
   encoding; appending `missing E8` flips

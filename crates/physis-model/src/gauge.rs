@@ -204,6 +204,13 @@ impl GaugeGroup {
         }
     }
 
+    /// A single SO(16). Not a 10D Green–Schwarz solution (dimension 120 ≠ 496).
+    pub fn so16() -> Self {
+        Self {
+            factors: vec![SimpleGroup::So(16)],
+        }
+    }
+
     /// Spin(10), a common "geometry yields this" hypothesis.
     pub fn spin10() -> Self {
         Self {
@@ -408,6 +415,7 @@ mod tests {
             GaugeGroup::so10(),
             GaugeGroup::e6(),
             GaugeGroup::e8(),
+            GaugeGroup::so16(),
             GaugeGroup::trivial(),
             GaugeGroup {
                 factors: vec![SimpleGroup::Su(3)],
@@ -422,6 +430,10 @@ mod tests {
         assert!(
             GaugeGroup::e8().sm_embed().contains_sm(),
             "a single E8 still contains SM; GS is the dimension-496 identity"
+        );
+        assert!(
+            GaugeGroup::so16().sm_embed().contains_sm(),
+            "SO(16) still contains SM via SO(10); GS is the dimension-496 identity"
         );
     }
 }
