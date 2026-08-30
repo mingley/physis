@@ -2,12 +2,14 @@
 
 use std::collections::BTreeMap;
 
-use physis_core::assurance::SemanticAssurance;
+use physis_core::assurance::{ClaimClass, SemanticAssurance};
 use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
 use physis_core::formal::FormalClaim;
 use physis_core::id::LayerId;
-use physis_core::judgment::{Judgment, TrustEvidence, TrustProfile, TrustTier};
+use physis_core::judgment::{
+    GapReason, Judgment, ParameterOrigin, TrustEvidence, TrustProfile, TrustTier,
+};
 use physis_core::knob::{KnobDomain, KnobValue};
 use physis_core::AxiomLedger;
 use physis_proof::{Challenge, UntrustedProof, CATALOG};
@@ -647,6 +649,7 @@ impl Lab {
             Command::Sensitivity { theory, knob } => self.sensitivity(&theory, &knob),
             Command::Review { claim } => self.review_claim(&claim),
             Command::Loop => self.research_loop(),
+            Command::Inspect { axis, value } => self.inspect(axis.as_deref(), value.as_deref()),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -740,6 +743,138 @@ impl Lab {
             r.challenge_hash.to_hex().as_bytes(),
         ));
         r
+    }
+
+    fn inspect(&self, axis: Option<&str>, value: Option<&str>) -> Response {
+        match (axis, value) {
+            (None, None) | (Some("help"), _) => Response::ok(
+                "inspect <trust|class|origin|gap> <value>\n\
+                 examples: inspect trust P0 | inspect class conjecture | inspect origin chosen | inspect gap missing-theorem\n",
+            ),
+            (Some("trust"), Some(v)) => {
+                let want = v.to_ascii_uppercase();
+                let Some(tier) = TrustTier::ALL
+                    .iter()
+                    .copied()
+                    .find(|t| t.as_str() == want)
+                else {
+                    return Response::err(format!("unknown trust tier '{v}'"));
+                };
+                let mut text = format!("inspect trust {}\n", tier.as_str());
+                let mut n = 0usize;
+                for (id, t) in &self.theories {
+                    for (c, verdict) in t.evaluate_all() {
+                        let semantic = self.semantic_tag(&c.id.0, verdict.semantic);
+                        let profile = self.profile_for(&c.id.0, verdict.derivation, semantic);
+                        if profile.has(tier) {
+                            n += 1;
+                            text.push_str(&format!(
+                                "  {id:<20} {:<36} {}\n",
+                                c.id.0,
+                                profile.display()
+                            ));
+                        }
+                    }
+                }
+                text.push_str(&format!("count {n}\n"));
+                Response::ok(text)
+            }
+            (Some("class"), Some(v)) => {
+                let want = v.to_ascii_lowercase();
+                let Some(class) = ClaimClass::ALL
+                    .iter()
+                    .copied()
+                    .find(|c| c.as_str() == want)
+                else {
+                    return Response::err(format!("unknown claim class '{v}'"));
+                };
+                let mut text = format!("inspect class {}\n", class.as_str());
+                let mut n = 0usize;
+                for (id, t) in &self.theories {
+                    for (c, verdict) in t.evaluate_all() {
+                        if verdict.class == class {
+                            n += 1;
+                            text.push_str(&format!(
+                                "  {id:<20} {:<36} {}\n",
+                                c.id.0,
+                                verdict.kind.as_str()
+                            ));
+                        }
+                    }
+                }
+                text.push_str(&format!("count {n}\n"));
+                Response::ok(text)
+            }
+            (Some("origin"), Some(v)) => {
+                let want = v.to_ascii_lowercase();
+                let Some(origin) = ParameterOrigin::ALL
+                    .iter()
+                    .copied()
+                    .find(|o| o.as_str() == want)
+                else {
+                    return Response::err(format!("unknown parameter origin '{v}'"));
+                };
+                let mut text = format!("inspect origin {}\n", origin.as_str());
+                let mut n = 0usize;
+                for (id, t) in &self.theories {
+                    for (spec, val) in t.snapshot() {
+                        if spec.origin == origin {
+                            n += 1;
+                            text.push_str(&format!(
+                                "  {id:<20} {:<24} {:<10} {}\n",
+                                spec.name,
+                                val.display(),
+                                spec.origin.as_str()
+                            ));
+                        }
+                    }
+                }
+                text.push_str(&format!("count {n}\n"));
+                Response::ok(text)
+            }
+            (Some("gap"), Some(v)) => {
+                let want = v.to_ascii_lowercase();
+                let Some(gap) = GapReason::ALL
+                    .iter()
+                    .copied()
+                    .find(|g| g.as_str() == want)
+                else {
+                    return Response::err(format!("unknown gap reason '{v}'"));
+                };
+                let mut text = format!("inspect gap {}\n", gap.as_str());
+                let mut n = 0usize;
+                for (id, t) in &self.theories {
+                    for (c, verdict) in t.evaluate_all() {
+                        let dual = self.receipts.by_claim(&c.id.0).is_some();
+                        if let Some(g) = gap_for(
+                            verdict.class,
+                            verdict.derivation,
+                            verdict.kind,
+                            verdict.empirical,
+                            dual,
+                        ) {
+                            if g == gap {
+                                n += 1;
+                                text.push_str(&format!(
+                                    "  {id:<20} {:<36} {}\n",
+                                    c.id.0,
+                                    g.as_str()
+                                ));
+                            }
+                        }
+                    }
+                }
+                text.push_str(&format!("count {n}\n"));
+                Response::ok(text)
+            }
+            (Some(axis), None) => Response::err(format!(
+                "inspect {axis} needs a value (trust P0 | class conjecture | origin chosen | gap missing-theorem)"
+            )),
+            (None, Some(_)) => {
+                Response::err("inspect needs an axis (trust|class|origin|gap) before a value")
+            }
+            (Some(other), _) => Response::err(format!("unknown inspect axis '{other}'")),
+        }
     }
 
     /// Re-run the dual checkers. Never deserializes a `Verified` value.
@@ -1243,13 +1378,42 @@ fn domain_probes(domain: &KnobDomain, current: &KnobValue) -> Vec<KnobValue> {
     }
 }
 
+fn gap_for(
+    class: physis_core::ClaimClass,
+    derivation: physis_core::DerivationAssurance,
+    kind: VerdictKind,
+    empirical: physis_core::EmpiricalStatus,
+    dual_checked: bool,
+) -> Option<GapReason> {
+    if dual_checked {
+        return None;
+    }
+    use physis_core::ClaimClass::*;
+    match class {
+        Conjecture | OpenProblem | Heuristic => Some(GapReason::ScientificOpenProblem),
+        Mathematical | ModelInternal | Phenomenological
+            if derivation != physis_core::DerivationAssurance::Asserted =>
+        {
+            Some(GapReason::MissingTheorem)
+        }
+        EmpiricalPrediction | Measurement
+            if empirical == physis_core::EmpiricalStatus::Untested =>
+        {
+            Some(GapReason::MissingDataset)
+        }
+        _ if kind == VerdictKind::Undecidable => Some(GapReason::LogicallyUndecidable),
+        _ => None,
+    }
+}
+
 fn render_knobs(t: &dyn Theory) -> String {
     let mut text = format!("knobs  {}\n", t.id());
     for (spec, val) in t.snapshot() {
         text.push_str(&format!(
-            "  {:<24} {:<10} {}\n    {}\n",
+            "  {:<24} {:<10} {:<18} {}\n    {}\n",
             spec.name,
             val.display(),
+            spec.origin.as_str(),
             spec.layer.as_str(),
             spec.doc
         ));
@@ -1810,5 +1974,144 @@ mod tests {
             .to_string();
         assert!(why.contains("kernel proof: receipt"), "{why}");
         assert!(why.contains("adversarially-reviewed"), "{why}");
+    }
+
+    #[test]
+    fn knobs_and_inspect_distinguish_chosen_from_derived() {
+        let mut lab = Lab::standard();
+        let knobs = lab
+            .exec(Command::Knobs {
+                theory: Some("type-iib".into()),
+            })
+            .text()
+            .to_string();
+        assert!(knobs.contains("observed_dim"), "{knobs}");
+        assert!(knobs.contains("measured"), "{knobs}");
+        assert!(knobs.contains("compact_radius_planck"), "{knobs}");
+        assert!(knobs.contains("fitted"), "{knobs}");
+        assert!(knobs.contains("euler_number"), "{knobs}");
+        assert!(knobs.contains("chosen"), "{knobs}");
+
+        let fitted = lab
+            .exec(Command::Inspect {
+                axis: Some("origin".into()),
+                value: Some("fitted".into()),
+            })
+            .text()
+            .to_string();
+        assert!(fitted.contains("type-iib"), "{fitted}");
+        assert!(fitted.contains("compact_radius_planck"), "{fitted}");
+        assert!(fitted.contains("dilaton"), "{fitted}");
+        assert!(
+            !fitted.contains("euler_number"),
+            "euler_number is chosen, not fitted: {fitted}"
+        );
+
+        let chosen = lab
+            .exec(Command::Inspect {
+                axis: Some("origin".into()),
+                value: Some("chosen".into()),
+            })
+            .text()
+            .to_string();
+        assert!(chosen.contains("euler_number"), "{chosen}");
+
+        let measured = lab
+            .exec(Command::Inspect {
+                axis: Some("origin".into()),
+                value: Some("measured".into()),
+            })
+            .text()
+            .to_string();
+        assert!(measured.contains("standard-model"), "{measured}");
+        assert!(measured.contains("generations"), "{measured}");
+
+        let conj = lab
+            .exec(Command::Inspect {
+                axis: Some("class".into()),
+                value: Some("conjecture".into()),
+            })
+            .text()
+            .to_string();
+        assert!(conj.contains("predictivity.unique-vacuum"), "{conj}");
+
+        let gap = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("missing-theorem".into()),
+            })
+            .text()
+            .to_string();
+        assert!(gap.contains("dec.d-squared-zero"), "{gap}");
+
+        let p0 = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P0".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p0.contains("predictivity.unique-vacuum"), "{p0}");
+
+        let p3f_before = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p3f_before.contains("count 0"),
+            "P3F must not be earned before prove: {p3f_before}"
+        );
+
+        let proved = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(proved.contains("receipt"), "{proved}");
+
+        let p3f = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3f.contains("dec.d-squared-zero"), "{p3f}");
+
+        let gap_after = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("missing-theorem".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            !gap_after.contains("dec.d-squared-zero"),
+            "proved claim must leave the missing-theorem gap: {gap_after}"
+        );
+
+        let help = lab
+            .exec(Command::Inspect {
+                axis: None,
+                value: None,
+            })
+            .text()
+            .to_string();
+        assert!(help.contains("inspect <trust"), "{help}");
+
+        let bad = lab.exec(Command::Inspect {
+            axis: Some("vibes".into()),
+            value: Some("yes".into()),
+        });
+        assert!(
+            bad.text().contains("unknown inspect axis"),
+            "{}",
+            bad.text()
+        );
+        assert_eq!(bad.exit_code(), 1);
     }
 }

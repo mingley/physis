@@ -21,6 +21,7 @@ Layer: agent
 | `compare` / `design` | discriminating claims; rank theory pairs |
 | `sensitivity` | perturb one knob, count flips |
 | `review <claim>` | raise semantic assurance from a trusted dossier (never Canonical) |
+| `inspect <axis> <value>` | inverse query over `trust`, `class`, knob `origin`, or knowledge `gap` |
 | `loop` | one research cycle: observe → hypothesize → prove → falsify → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |

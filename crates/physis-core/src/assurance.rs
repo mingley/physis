@@ -54,6 +54,18 @@ impl ClaimClass {
         }
     }
 
+    /// Every class, for inverse queries (`physis inspect class …`).
+    pub const ALL: [ClaimClass; 8] = [
+        ClaimClass::Mathematical,
+        ClaimClass::ModelInternal,
+        ClaimClass::Phenomenological,
+        ClaimClass::EmpiricalPrediction,
+        ClaimClass::Measurement,
+        ClaimClass::Conjecture,
+        ClaimClass::Heuristic,
+        ClaimClass::OpenProblem,
+    ];
+
     /// Default derivation tag for a newly encoded claim of this class.
     ///
     /// Model-internal and mathematical claims that the lab *evaluates* are

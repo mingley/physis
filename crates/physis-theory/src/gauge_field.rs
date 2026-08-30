@@ -21,6 +21,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, SimpleGroup, Spectrum, World};
 
 use crate::critique::{report_from_rows, ExperimentReport};
@@ -140,12 +141,14 @@ const SPECS: &[KnobSpec] = &[
         name: "dimension",
         layer: LayerId::Spacetime,
         doc: "Lattice spacetime dimension (2–4). Compact U(1) confines at all β in 2D/3D.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 4 },
     },
     KnobSpec {
         name: "beta",
         layer: LayerId::Interaction,
         doc: "Inverse coupling β = 1/g². In 4D, β below ~1.01 confines; above it is the Coulomb phase.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 0.0,
             max: 100.0,
@@ -155,6 +158,7 @@ const SPECS: &[KnobSpec] = &[
         name: "sites_per_side",
         layer: LayerId::Spacetime,
         doc: "Linear lattice size L (the lattice has L^dimension sites).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 256 },
     },
 ];
@@ -382,12 +386,14 @@ const SUN_SPECS: &[KnobSpec] = &[
         name: "dimension",
         layer: LayerId::Spacetime,
         doc: "Lattice spacetime dimension (2–4).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 4 },
     },
     KnobSpec {
         name: "beta",
         layer: LayerId::Interaction,
         doc: "Inverse coupling β = 2N/g². Non-abelian gauge theories confine at all β in this encoding.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 0.0,
             max: 100.0,
@@ -397,6 +403,7 @@ const SUN_SPECS: &[KnobSpec] = &[
         name: "sites_per_side",
         layer: LayerId::Spacetime,
         doc: "Linear lattice size L.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 256 },
     },
 ];

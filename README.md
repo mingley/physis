@@ -146,6 +146,9 @@ cargo run -p physis -- why consistency.critical-dimension
 cargo run -p physis -- prove dec.d-squared-zero
 cargo run -p physis -- prove sr.invariant-interval
 cargo run -p physis -- review dec.d-squared-zero
+cargo run -p physis -- inspect origin fitted
+cargo run -p physis -- inspect class conjecture
+cargo run -p physis -- inspect gap missing-theorem
 cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension
 cargo run -p physis -- sweep type-iib total_dim 8,9,10,11,12

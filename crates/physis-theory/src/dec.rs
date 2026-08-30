@@ -30,6 +30,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::World;
 
 use crate::framework::Theory;
@@ -525,6 +526,7 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "shape",
     layer: LayerId::Mathematical,
     doc: "The simplicial complex to evaluate on: disk (b₁=0, b₂=0), circle (b₁=1), torus (b₁=2, b₂=1), klein (Klein bottle, b₁=1, b₂=0), or sphere (S², b₁=0, b₂=1, χ=2). Changing it changes the topology.",
+    origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Choice(SHAPE_OPTIONS),
 }];
 

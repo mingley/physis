@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Chosen knobs vs measured ones, and inverse inspect**
+  (`ParameterOrigin` on every `KnobSpec`, `physis inspect`). String
+  `observed_dim` and SM `generations` are measured; compact radius and
+  dilaton are fitted; `euler_number` stays chosen (accommodate, not
+  derive). `physis knobs` prints the origin. `physis inspect
+  trust|class|origin|gap <value>` lists matching claims or knobs. P3F
+  is empty until `prove`. A proved catalog identity leaves the
+  `missing-theorem` gap. CLI `loop` is wired (it was listed in usage
+  but not parsed). Verified: origin unit tests, inspect lab test,
+  `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Derived trust profiles and axiom closure**
   (`physis-core` TrustProfile / Judgment projection, `AxiomLedger`
   defaults, `physis why` / `epistemics`). P3F is earned only by a

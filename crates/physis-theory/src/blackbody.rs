@@ -27,6 +27,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::{hertz, kelvin, Qty};
+use physis_core::ParameterOrigin;
 use physis_core::{Energy, EnergyDensity, Frequency, LengthTemperature, SpectralEnergyDensity};
 use physis_model::constants::{k_boltzmann, planck_energy_density, planck_h, C};
 use physis_model::{GaugeGroup, Manifold, SimpleGroup, Species, Spectrum, World};
@@ -73,12 +74,14 @@ const SPECS: &[KnobSpec] = &[
         name: "quantum",
         layer: LayerId::Quantum,
         doc: "If true, cavity modes are Bose-occupied (Planck). If false, every mode has energy kT (Rayleigh–Jeans). Turning this off is the 19th-century theory, and it produces the ultraviolet catastrophe.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "temperature",
         layer: LayerId::Statistical,
         doc: "Cavity temperature in kelvin.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0,
             max: 1.0e7,
@@ -88,6 +91,7 @@ const SPECS: &[KnobSpec] = &[
         name: "cutoff_hz",
         layer: LayerId::Effective,
         doc: "Ultraviolet frequency cutoff of the cavity, in hertz. Classical energy density grows as ν_max³; Planck saturates once ν_max ≫ kT/h.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0e8,
             max: 1.0e20,

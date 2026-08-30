@@ -4,6 +4,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
 
 use crate::claims;
@@ -15,12 +16,14 @@ const SPECS: &[KnobSpec] = &[
         name: "dim",
         layer: LayerId::Spacetime,
         doc: "Spacetime dimension. Empirical GR is 4. Higher-D GR is a well-defined classical theory.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 26 },
     },
     KnobSpec {
         name: "cosmological_constant",
         layer: LayerId::Spacetime,
         doc: "Λ in Planck units (order-of-magnitude knob, not a precision cosmology fit).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: -1.0,
             max: 1.0,

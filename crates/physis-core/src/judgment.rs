@@ -117,6 +117,16 @@ impl ParameterOrigin {
             ParameterOrigin::Nuisance => "nuisance",
         }
     }
+
+    /// Every origin, for inverse queries (`physis inspect origin …`).
+    pub const ALL: [ParameterOrigin; 6] = [
+        ParameterOrigin::FundamentalInput,
+        ParameterOrigin::Derived,
+        ParameterOrigin::Measured,
+        ParameterOrigin::Fitted,
+        ParameterOrigin::Chosen,
+        ParameterOrigin::Nuisance,
+    ];
 }
 
 /// Why a claim is not yet established. The knowledge-gap graph is these
@@ -153,6 +163,17 @@ impl GapReason {
             GapReason::ScientificOpenProblem => "scientific-open-problem",
         }
     }
+
+    /// Every gap reason, for inverse queries (`physis inspect gap …`).
+    pub const ALL: [GapReason; 7] = [
+        GapReason::MissingTheorem,
+        GapReason::MissingDataset,
+        GapReason::InsufficientPrecision,
+        GapReason::UnsupportedFormalPrimitive,
+        GapReason::ComputationallyIntractable,
+        GapReason::LogicallyUndecidable,
+        GapReason::ScientificOpenProblem,
+    ];
 }
 
 /// Visible global assurance level. A high-value result aims at
@@ -469,5 +490,19 @@ mod tests {
             false,
         );
         assert_eq!(j.label(), "logical undetermined");
+    }
+
+    #[test]
+    fn parameter_origin_names_are_stable_and_unique() {
+        let names: Vec<_> = ParameterOrigin::ALL.iter().map(|o| o.as_str()).collect();
+        assert_eq!(names.len(), 6);
+        for (i, a) in names.iter().enumerate() {
+            for b in names.iter().skip(i + 1) {
+                assert_ne!(a, b);
+            }
+        }
+        assert_eq!(ParameterOrigin::Fitted.as_str(), "fitted");
+        assert_eq!(ParameterOrigin::Chosen.as_str(), "chosen");
+        assert_eq!(ParameterOrigin::Measured.as_str(), "measured");
     }
 }

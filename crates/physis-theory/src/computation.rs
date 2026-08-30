@@ -16,6 +16,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::kelvin;
+use physis_core::ParameterOrigin;
 use physis_core::{Energy, Qty};
 use physis_model::constants::k_boltzmann;
 use physis_model::World;
@@ -152,12 +153,14 @@ const TM_SPECS: &[KnobSpec] = &[
         name: "tape_bound",
         layer: LayerId::Information,
         doc: "Tape length bound in cells; 0 means an unbounded tape. A finite bound makes the machine a finite automaton.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 0, max: 1_000_000 },
     },
     KnobSpec {
         name: "nondeterministic",
         layer: LayerId::Information,
         doc: "Whether the transition relation allows nondeterministic branching.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
 ];
@@ -315,6 +318,7 @@ const LANDAUER_SPECS: &[KnobSpec] = &[
         name: "temperature_k",
         layer: LayerId::Statistical,
         doc: "Bath temperature in kelvin; sets the Landauer energy scale k_B·T·ln2.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 0.0,
             max: 1.0e9,
@@ -324,6 +328,7 @@ const LANDAUER_SPECS: &[KnobSpec] = &[
         name: "bits_erased",
         layer: LayerId::Information,
         doc: "Number of logical bits irreversibly erased by the computation.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt {
             min: 0,
             max: 1_000_000,
@@ -333,6 +338,7 @@ const LANDAUER_SPECS: &[KnobSpec] = &[
         name: "reversible",
         layer: LayerId::Information,
         doc: "Whether the computation is logically reversible (Bennett): no bits are erased.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
 ];

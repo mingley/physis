@@ -19,6 +19,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 
 use crate::critique::{report_from_rows, ExperimentReport};
@@ -57,12 +58,14 @@ const SPECS: &[KnobSpec] = &[
         name: "sites",
         layer: LayerId::Field,
         doc: "Number of lattice sites N (the field's local degrees of freedom).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 4096 },
     },
     KnobSpec {
         name: "mass_squared",
         layer: LayerId::Field,
         doc: "Mass-squared m² in natural units. Negative values make the zero mode tachyonic.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: -100.0,
             max: 100.0,
@@ -72,6 +75,7 @@ const SPECS: &[KnobSpec] = &[
         name: "spacing",
         layer: LayerId::Field,
         doc: "Lattice spacing a in natural units.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0e-3,
             max: 1.0e3,

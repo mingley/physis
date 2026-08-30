@@ -18,6 +18,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::{expectation4, spin_measurement, tensor2, Complex, Ket, World};
 
 use crate::critique::{report_from_rows, ExperimentReport};
@@ -90,6 +91,7 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "visibility",
     layer: LayerId::Quantum,
     doc: "Werner-state visibility V in [0,1]. The CHSH correlator scales as V·2√2; below 1/√2 a local model suffices.",
+    origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Float { min: 0.0, max: 1.0 },
 }];
 

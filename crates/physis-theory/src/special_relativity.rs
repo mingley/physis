@@ -17,6 +17,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_core::{Energy, Momentum, Qty};
 use physis_model::constants::{electron_mass, C};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
@@ -37,6 +38,7 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "absolute_time",
     layer: LayerId::Spacetime,
     doc: "If true, boosts are Galilean (time is absolute) instead of Lorentzian. Turning this on breaks every relativistic invariant — the pre-1905 worldview.",
+    origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Bool,
 }];
 

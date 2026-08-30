@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
 use crate::id::LayerId;
+use crate::judgment::ParameterOrigin;
 
 /// Runtime value of a knob.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -226,6 +227,8 @@ pub struct KnobSpec {
     pub layer: LayerId,
     /// What turning this knob *means*.
     pub doc: &'static str,
+    /// Whether this number is derived, measured, fitted, or chosen.
+    pub origin: ParameterOrigin,
     /// Allowed values.
     pub domain: KnobDomain,
 }

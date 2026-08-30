@@ -114,6 +114,13 @@ pub enum Command {
     /// One scheduled research cycle: observe, hypothesize, prove, falsify,
     /// replicate, design, audit, review.
     Loop,
+    /// Inverse query: list claims or knobs matching a trust/class/origin/gap.
+    Inspect {
+        /// Axis (`trust`, `class`, `origin`, `gap`). None lists the axes.
+        axis: Option<String>,
+        /// Value to match (`P0`, `conjecture`, `chosen`, `missing-theorem`).
+        value: Option<String>,
+    },
 }
 
 /// Lab → agent.

@@ -17,6 +17,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
 
 use crate::claims;
@@ -30,24 +31,28 @@ const SPECS: &[KnobSpec] = &[
         name: "fibre_dim",
         layer: LayerId::Spacetime,
         doc: "Dimension of the internal fibre over observed spacetime. Total dimension is observed_dim + fibre_dim. Default 10 is the minimal fibre that can carry Spin(10).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 0, max: 22 },
     },
     KnobSpec {
         name: "observed_dim",
         layer: LayerId::Spacetime,
         doc: "Observed spacetime dimension. Empirical target: 4.",
+        origin: ParameterOrigin::Measured,
         domain: KnobDomain::UInt { min: 1, max: 26 },
     },
     KnobSpec {
         name: "derive_gauge",
         layer: LayerId::Interaction,
         doc: "If true, pretends the gauge group is an output (assigned Spin(10) as a conjecture, not a proof).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "unique_vacuum",
         layer: LayerId::Mathematical,
         doc: "Program-level demand: the geometry selects one vacuum. This is an axiom of the program, not a theorem.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
 ];
@@ -337,6 +342,20 @@ impl Theory for ObserverGeometry {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
+
+    #[test]
+    fn observed_dim_is_measured_fibre_is_chosen() {
+        let t = ObserverGeometry::default();
+        assert_eq!(
+            t.spec("observed_dim").unwrap().origin,
+            ParameterOrigin::Measured
+        );
+        assert_eq!(t.spec("fibre_dim").unwrap().origin, ParameterOrigin::Chosen);
+        assert_eq!(
+            t.spec("unique_vacuum").unwrap().origin,
+            ParameterOrigin::Chosen
+        );
+    }
 
     #[test]
     fn uniqueness_is_conjectural_hold() {

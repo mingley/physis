@@ -68,6 +68,7 @@ those tools; a local checkout without them still mints
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize → prove → falsify → replicate → design → audit → review |
+| origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
@@ -80,7 +81,9 @@ dual expanders. `physis prove` uses the same preference.
 
 - `SemanticAssurance::Canonical` (reserved; not agent-mintable)
 - Agents other than the lab protocol (Explorer, Formalizer, … as processes)
-- P4 independent reproduction; research budgets; query inversion
+- P4 independent reproduction; research budgets
+- A first-class knowledge-gap *graph store* (inverse query exists as
+  `physis inspect`; it is not yet a persisted graph)
 - Mathlib-scale Physlib; only the two catalog identities are kernel-checked
 - Trust tiers do not yet *gate* which operations run; they label evidence
 

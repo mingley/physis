@@ -18,6 +18,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::kelvin;
+use physis_core::ParameterOrigin;
 use physis_core::{Energy, Qty};
 use physis_model::constants::k_boltzmann;
 use physis_model::World;
@@ -50,6 +51,7 @@ const SPECS: &[KnobSpec] = &[
         name: "temperature",
         layer: LayerId::Statistical,
         doc: "Temperature in kelvin.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0e-6,
             max: 1.0e9,
@@ -59,6 +61,7 @@ const SPECS: &[KnobSpec] = &[
         name: "volume_ratio",
         layer: LayerId::Statistical,
         doc: "Final/initial volume V_f/V_i for an isothermal expansion. > 1 is a spontaneous free expansion.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0e-3,
             max: 1.0e6,
@@ -68,6 +71,7 @@ const SPECS: &[KnobSpec] = &[
         name: "particles",
         layer: LayerId::Statistical,
         doc: "Number of gas particles N.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0,
             max: 1.0e30,

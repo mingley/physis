@@ -35,6 +35,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::kelvin;
+use physis_core::ParameterOrigin;
 use physis_core::{Energy, HeatCapacity, Qty};
 use physis_model::constants::k_boltzmann;
 use physis_model::World;
@@ -79,18 +80,21 @@ const SPECS: &[KnobSpec] = &[
         name: "quantum",
         layer: LayerId::Quantum,
         doc: "If true, oscillators are Bose-occupied (Einstein or Debye). If false, every oscillator has energy kT (Dulong–Petit). Turning this off is the 1819 standing theory.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "spectrum",
         layer: LayerId::Quantum,
         doc: "Phonon spectrum when quantum is true: einstein (single ω, exponential freeze-out) or debye (ω² density of states, T³). Ignored classically.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Choice(SPECTRUM_OPTIONS),
     },
     KnobSpec {
         name: "temperature",
         layer: LayerId::Statistical,
         doc: "Lattice temperature in kelvin.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0e-3,
             max: 1.0e5,
@@ -100,6 +104,7 @@ const SPECS: &[KnobSpec] = &[
         name: "einstein_temp",
         layer: LayerId::Statistical,
         doc: "Characteristic temperature Θ in kelvin: Einstein Θ_E = ħω/k, or Debye Θ_D = ħω_D/k. Classical Dulong–Petit ignores this.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0,
             max: 1.0e5,
@@ -109,6 +114,7 @@ const SPECS: &[KnobSpec] = &[
         name: "oscillators",
         layer: LayerId::Statistical,
         doc: "Number of atoms N (3N oscillators).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0,
             max: 1.0e30,

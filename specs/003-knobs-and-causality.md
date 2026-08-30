@@ -9,6 +9,12 @@ A **knob** is a named, domain-bounded parameter of a `Knobbed` object. Agents se
 
 Kinds: `bool`, `int`, `uint`, `float`, `choice`.
 
+Every spec also carries a [`ParameterOrigin`]: `measured` (taken from
+nature), `fitted` (adjusted to data), `chosen` (encoder/agent),
+`derived`, `fundamental-input`, or `nuisance`. A fitted dilaton is not
+a derived prediction. `physis inspect origin fitted` lists the knobs
+that accommodate rather than derive.
+
 ## Causality contract
 
 ```
@@ -35,7 +41,7 @@ If a load-bearing knob produces an empty diff, that is a failing test.
 ## What knobs are not
 
 - They are not the laws. Laws are the evaluate functions.
-- They are not evidence about nature. They are coordinates on a theory's moduli / parameter space.
+- They are not evidence about nature. They are coordinates on a theory's moduli / parameter space. `ParameterOrigin` records whether a coordinate was measured, fitted, or chosen.
 - They are not free-form JSON. Unknown names are errors.
 
 ## Journal

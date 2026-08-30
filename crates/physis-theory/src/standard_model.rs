@@ -5,6 +5,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 
 use crate::claims;
@@ -208,24 +209,28 @@ const SPECS: &[KnobSpec] = &[
         name: "generations",
         layer: LayerId::Particle,
         doc: "Number of fermion generations. Nature: 3. This knob exists so agents can watch empirical claims flip.",
+        origin: ParameterOrigin::Measured,
         domain: KnobDomain::UInt { min: 1, max: 4 },
     },
     KnobSpec {
         name: "include_higgs",
         layer: LayerId::Particle,
         doc: "Whether the Higgs scalar is in the spectrum.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "include_gravity",
         layer: LayerId::Field,
         doc: "SM as usually taught does not include gravity. Flip this to ask 'SM + graviton'.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "neutrino_masses",
         layer: LayerId::Particle,
         doc: "Whether neutrino masses are included. The minimal SM stores them as 0; oscillation experiments show they are nonzero.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
 ];
@@ -580,6 +585,19 @@ impl Theory for StandardModel {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
+
+    #[test]
+    fn generations_are_measured_not_derived() {
+        let t = StandardModel::default();
+        assert_eq!(
+            t.spec("generations").unwrap().origin,
+            ParameterOrigin::Measured
+        );
+        assert_eq!(
+            t.spec("include_higgs").unwrap().origin,
+            ParameterOrigin::Chosen
+        );
+    }
 
     #[test]
     fn default_sm_has_three_generations_no_gravity() {

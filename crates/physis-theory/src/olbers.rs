@@ -25,6 +25,7 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::qty::{kelvin, seconds, Qty};
+use physis_core::ParameterOrigin;
 use physis_core::{Dimensionless, Irradiance, Length};
 use physis_model::constants::{
     cosmic_luminosity_density, hubble_constant, solar_luminosity, solar_radius,
@@ -66,18 +67,21 @@ const SPECS: &[KnobSpec] = &[
         name: "finite_age",
         layer: LayerId::Spacetime,
         doc: "If true, light has only travelled a distance c t. If false, the static Euclidean integral has no horizon. Turning this on is the finite-age resolution of Olbers' paradox.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "expanding",
         layer: LayerId::Spacetime,
         doc: "If true, shells are Hubble-dimmed: dF = ρ_L dr / (1 + H r/c)² (linear Hubble flow, not a full FLRW integral). An independent resolution: the improper integral saturates at ρ_L c/H.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "age_yr",
         layer: LayerId::Spacetime,
         doc: "Cosmic age in years. Used only when finite_age is true. Making the universe old enough that τ = n σ c t ≳ 1 makes the sky bright again.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0e6,
             max: 1.0e30,
@@ -87,6 +91,7 @@ const SPECS: &[KnobSpec] = &[
         name: "cutoff_m",
         layer: LayerId::Effective,
         doc: "Radial cutoff in metres. Standing-theory verdicts use the improper R → ∞ limit, not this cutoff (a large but finite cutoff can still look dark).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0e18,
             max: 1.0e40,

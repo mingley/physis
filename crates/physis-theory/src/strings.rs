@@ -10,6 +10,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_core::Scale;
 use physis_model::constants::planck_length;
 use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
@@ -133,24 +134,28 @@ const SPECS: &[KnobSpec] = &[
         name: "kind",
         layer: LayerId::Field,
         doc: "Which string/M construction (sets critical dimension and default gauge).",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Choice(&StringKind::ALL),
     },
     KnobSpec {
         name: "total_dim",
         layer: LayerId::Spacetime,
         doc: "Total spacetime dimension D. Superstring theorem: D=10; bosonic D=26; M D=11.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 32 },
     },
     KnobSpec {
         name: "observed_dim",
         layer: LayerId::Spacetime,
         doc: "Non-compact macroscopic dimension. Empirical target: 4.",
+        origin: ParameterOrigin::Measured,
         domain: KnobDomain::UInt { min: 1, max: 32 },
     },
     KnobSpec {
         name: "compact_radius_planck",
         layer: LayerId::Spacetime,
         doc: "Compactification radius in Planck lengths. O(1) hides extra dims; huge radii would be seen.",
+        origin: ParameterOrigin::Fitted,
         domain: KnobDomain::Float {
             min: 1e-6,
             max: 1e40,
@@ -160,18 +165,21 @@ const SPECS: &[KnobSpec] = &[
         name: "supersymmetry",
         layer: LayerId::Field,
         doc: "Whether the construction includes spacetime supersymmetry.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
     KnobSpec {
         name: "flux_bits",
         layer: LayerId::Interaction,
         doc: "Heuristic bits of flux/moduli data contributing to a landscape count.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 0, max: 10_000 },
     },
     KnobSpec {
         name: "dilaton",
         layer: LayerId::Field,
         doc: "Dilaton VEV φ; string coupling is g_s = e^φ. Large g_s inflates the effective size of the compact space.",
+        origin: ParameterOrigin::Fitted,
         domain: KnobDomain::Float {
             min: -30.0,
             max: 30.0,
@@ -181,18 +189,21 @@ const SPECS: &[KnobSpec] = &[
         name: "h11",
         layer: LayerId::Spacetime,
         doc: "Kähler (size) moduli count, a heuristic stand-in for h^{1,1}. Drives the flux landscape.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 0, max: 500 },
     },
     KnobSpec {
         name: "h21",
         layer: LayerId::Spacetime,
         doc: "Complex-structure (shape) moduli count, a heuristic stand-in for h^{2,1}. Drives the flux landscape.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 0, max: 500 },
     },
     KnobSpec {
         name: "euler_number",
         layer: LayerId::Spacetime,
         doc: "Euler characteristic χ of the compactification (0 = unset). Chiral generations = |χ|/2. The value is chosen, not derived — the crux of the predictivity critique.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Int {
             min: -1000,
             max: 1000,
@@ -847,6 +858,25 @@ mod tests {
     fn verdict(t: &StringTheory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
         t.evaluate(&c).kind
+    }
+
+    #[test]
+    fn observed_dim_is_measured_euler_number_is_chosen() {
+        let t = StringTheory::type_iib();
+        assert_eq!(
+            t.spec("observed_dim").unwrap().origin,
+            ParameterOrigin::Measured
+        );
+        assert_eq!(
+            t.spec("compact_radius_planck").unwrap().origin,
+            ParameterOrigin::Fitted
+        );
+        assert_eq!(t.spec("dilaton").unwrap().origin, ParameterOrigin::Fitted);
+        assert_eq!(
+            t.spec("euler_number").unwrap().origin,
+            ParameterOrigin::Chosen
+        );
+        assert_eq!(t.spec("total_dim").unwrap().origin, ParameterOrigin::Chosen);
     }
 
     #[test]

@@ -15,6 +15,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::constants::{epsilon0, mu0, C};
 use physis_model::{GaugeGroup, Manifold, SimpleGroup, Species, Spectrum, World};
 
@@ -350,6 +351,7 @@ const MEDIUM_SPECS: &[KnobSpec] = &[
         name: "epsilon_r",
         layer: LayerId::Effective,
         doc: "Relative permittivity ε_r of the linear medium (vacuum = 1). Raises the refractive index.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0,
             max: 1.0e6,
@@ -359,6 +361,7 @@ const MEDIUM_SPECS: &[KnobSpec] = &[
         name: "mu_r",
         layer: LayerId::Effective,
         doc: "Relative permeability μ_r of the linear medium (vacuum = 1). Raises the refractive index.",
+        origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: 1.0,
             max: 1.0e6,
@@ -450,6 +453,7 @@ const OHM_SPECS: &[KnobSpec] = &[KnobSpec {
     name: "frequency_hz",
     layer: LayerId::Effective,
     doc: "Operating frequency in Hz. The lumped approximation holds while the wavelength c/f dwarfs the circuit; at high frequency it breaks down.",
+    origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Float {
         min: 0.0,
         max: 1.0e18,

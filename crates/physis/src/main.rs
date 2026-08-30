@@ -180,6 +180,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             Ok(Command::Review { claim })
         }
         "loop" => Ok(Command::Loop),
+        "inspect" => Ok(Command::Inspect {
+            axis: args.get(1).cloned(),
+            value: args.get(2).cloned(),
+        }),
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -206,6 +210,7 @@ USAGE:
     physis design <theory> <theory> [...]
     physis sensitivity <theory> <knob>
     physis review <claim-id>
+    physis inspect [trust|class|origin|gap] <value>
     physis loop
     physis audit
     physis experiments

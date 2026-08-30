@@ -5,7 +5,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 ## What you may do
 
 1. Read `specs/`, `plans/`, `docs/`, and crate-level rustdoc.
-2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|falsify|sweep|branch|audit|review|loop`).
+2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|falsify|sweep|branch|audit|review|inspect|loop`).
 3. Turn knobs through `Lab::set_knob` / `physis set`. Illegal values must be rejected by domain checks.
 4. Add tests that demonstrate a knob → verdict diff.
 5. Add a new theory as a `Theory` impl with its own knobs and claims. Do not special-case it in the CLI.
@@ -62,7 +62,10 @@ catalog identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).
 Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
 an agent can set. `physis review` overlays a justified semantic tag from a
 trusted dossier; journal restore re-runs review rather than deserializing
-the tag.
+the tag. `physis inspect trust|class|origin|gap <value>` inverts those
+axes: knobs carry a `ParameterOrigin` so a fitted dilaton is not a derived
+prediction, and `inspect origin fitted` lists the knobs that accommodate
+rather than derive.
 
 ## First lab
 

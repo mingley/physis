@@ -24,6 +24,7 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 
 use crate::framework::Theory;
@@ -47,6 +48,7 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "supersymmetric",
     layer: LayerId::Field,
     doc: "Whether the GUT is supersymmetric (MSSM matter). SUSY revives gauge-coupling unification and raises the proton-decay scale, at the price of unobserved superpartners.",
+    origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Bool,
 }];
 
