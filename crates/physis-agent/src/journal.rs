@@ -100,6 +100,18 @@ pub enum JournalEvent {
         /// Catalog claims reviewed this cycle.
         reviewed: Vec<String>,
     },
+    /// An evidence graph was rebuilt from live evaluations. Restore
+    /// rebuilds the DAG from live state; the recorded graph hash is not
+    /// deserialized as authority and is not Canonical or P4.
+    Evidence {
+        /// Unix millis.
+        t: u64,
+        /// Claim id (lab slug).
+        claim: String,
+        /// Content-addressed Evidence node hex. Restore rebuilds; a
+        /// forged hash cannot mint the graph.
+        graph_hash: String,
+    },
 }
 
 /// Parse JSONL into events, counting non-blank lines that fail to deserialize.
@@ -205,6 +217,15 @@ impl JournalEvent {
             t: now_ms(),
             proved,
             reviewed,
+        }
+    }
+
+    /// An evidence snapshot, stamped with the current time.
+    pub fn evidence(claim: impl Into<String>, graph_hash: impl Into<String>) -> Self {
+        JournalEvent::Evidence {
+            t: now_ms(),
+            claim: claim.into(),
+            graph_hash: graph_hash.into(),
         }
     }
 }
@@ -408,6 +429,24 @@ mod tests {
         let ev: JournalEvent = serde_json::from_str(s).unwrap();
         match ev {
             JournalEvent::Review { statement_hash, .. } => assert!(statement_hash.is_empty()),
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn evidence_event_round_trips_and_is_not_a_graph() {
+        let ev = JournalEvent::evidence("predictivity.unique-vacuum", "deadbeef");
+        let s = serde_json::to_string(&ev).unwrap();
+        assert!(s.contains("\"event\":\"evidence\""));
+        assert!(s.contains("\"graph_hash\":\"deadbeef\""));
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Evidence {
+                claim, graph_hash, ..
+            } => {
+                assert_eq!(claim, "predictivity.unique-vacuum");
+                assert_eq!(graph_hash, "deadbeef");
+            }
             other => panic!("{other:?}"),
         }
     }

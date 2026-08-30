@@ -73,6 +73,10 @@ rather than parsing prose. Example: `physis --json set type-iib total_dim 9`.
 - `review` — claim id, evidence hash, statement hash; restore remints
   only when the statement hash is the live identity
 - `loop` — cycle summary (inner prove/review events are authoritative)
+- `evidence` — claim id, graph hash; restore rebuilds the DAG from live
+  evaluations. The recorded hash is not deserialized as authority and is
+  not Canonical or P4. `replay_journal` ignores this event (it still
+  certifies only `set-knob`)
 
 Append-only. Optional file backend (`Journal::file`).
 
@@ -94,7 +98,10 @@ against the state left by the previous `set`. The one-shot CLI evaluates each
 line against fresh defaults, so to persist a real session across process runs,
 pass `--journal <file.jsonl>`: the lab loads the file and *restores* prior state
 (`Lab::restore_from_journal`) before the new turn, so the accumulated file
-replays faithfully.
+replays faithfully. Restore remints prove/review of recorded identities and
+rebuilds evidence graphs from live evaluations; it does not deserialize a
+`Verified`, a semantic tag, or a `graph_hash` as the artifact. `physis replay`
+still certifies only `set-knob` diffs.
 
 Timestamps (`t`) are Unix milliseconds as `u64` — 128-bit integers do not
 survive serde's internally tagged round-trip, which would silently drop every

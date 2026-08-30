@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Evidence graphs persist across `--journal` restore**
+  (`JournalEvent::Evidence`). Restore rebuilds the DAG from live
+  evaluations. A tampered `graph_hash` cannot mint the snapshot.
+  Restore does not journal again. `replay_journal` still certifies only
+  `set-knob`. Not Canonical, not P4. Catalog d² hash unchanged.
+  Verified: unique-vacuum reconstitutes the live graph id; a forged
+  hash is absent from the store; two-process CLI prints the same id.
+
 - **Inverse query over projected judgments**
   (`physis inspect judgment`). `statistical-computed` lists the PDG
   GQW cell; `empirical-excluded` lists Super-K `p→e+π0`;

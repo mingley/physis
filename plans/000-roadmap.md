@@ -44,6 +44,7 @@ Level-3 trust
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
   L3 hypothesize           ✓ chosen/fitted knob probes and IR package forks; measured knobs frozen; mutants not installed; explorer can observe; does not mint
   L3 evidence graph        ✓ physis evidence groups by statement hash and inserts a content-addressed Evidence DAG (Statement + Evaluation parents); competing encodings vs evaluations; derived TrustProfile, not a numeric score; not Canonical; not P4
+  L3 journal evidence      ✓ Evidence events restore by rebuild from live evaluations; graph_hash is not deserialized; restore does not journal again; not Canonical; not P4
   L3 Super-K dataset       ✓ gut.proton-lifetime-sk compares dim-6 M_GUT^4 scaling to Takenaka et al. PRD 102 112011; not P3N; not dim-5; Tr Q stays encoding-wide
   L3 unique-vacuum domain  ✓ four FormalClaims of predictivity.unique-vacuum name landscape / program axiom / Einstein-Hilbert / Higgs vacuum; still Asserted; not Canonical
   L3 statistical NLL       ✓ PDG sin²θ_W(M_Z) is a Gaussian; from_lab projects statistical computed from an exact Ratio NLL; Super-K stays empirical interval-subset; not P3N

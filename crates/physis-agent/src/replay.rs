@@ -130,7 +130,9 @@ impl ReplayReport {
 
 /// Replay a journal's `set-knob` events onto a fresh [`Lab::standard`].
 ///
-/// Non-`set-knob` events (boot, run, experiment) are ignored. The returned
+/// Non-`set-knob` events (boot, run, experiment, prove, review, loop,
+/// evidence) are ignored. File restore ([`Lab::restore_from_journal`]) is
+/// what reconstitutes receipts, reviews, and evidence graphs. The returned
 /// [`ReplayReport`] pairs each recorded diff with the diff recomputed on a
 /// clean lab so callers can prove — or disprove — reproducibility.
 pub fn replay_journal(journal: &Journal) -> ReplayReport {

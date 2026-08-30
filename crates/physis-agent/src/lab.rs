@@ -262,14 +262,19 @@ impl Lab {
         Ok((old, value, diffs))
     }
 
-    /// Re-apply the `set-knob` events already in the journal to theory state,
-    /// **without** recording them again.
+    /// Re-apply journaled `set-knob` events and remint prove / review /
+    /// evidence from live state, **without** recording them again.
     ///
     /// This resumes a persisted session: after loading a journal from a file,
     /// call this so subsequent turns build on the prior ones instead of on
     /// fresh defaults. It is what makes a multi-process `--journal` session a
     /// single coherent, replayable session rather than a bag of independent
     /// one-shot diffs.
+    ///
+    /// Evidence restore rebuilds the DAG from live evaluations. The recorded
+    /// `graph_hash` is not deserialized as the snapshot: a forged hash cannot
+    /// mint an Evidence node. [`crate::replay::replay_journal`] still certifies
+    /// only `set-knob` diffs.
     pub fn restore_from_journal(&mut self) {
         for ev in self.journal.events().to_vec() {
             match ev {
@@ -297,6 +302,11 @@ impl Lab {
                     ..
                 } => {
                     self.restore_review(&claim, &statement_hash);
+                }
+                JournalEvent::Evidence { claim, .. } => {
+                    // Rebuild from live evaluations. The recorded graph
+                    // hash is not deserialized as the DAG.
+                    let _ = self.build_evidence_graph(&claim);
                 }
                 _ => {}
             }
@@ -845,6 +855,22 @@ impl Lab {
     /// parents). Confidence is the derived TrustProfile, not a numeric
     /// score. The graph is not deserialized as authority and does not mint.
     fn evidence_claim(&mut self, claim_id: &str) -> Response {
+        match self.build_evidence_graph(claim_id) {
+            Ok((out, graph)) => {
+                self.journal
+                    .record(JournalEvent::evidence(claim_id, graph.to_hex()));
+                Response::ok(out)
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Rebuild the Evidence DAG from live evaluations. Does not journal
+    /// and does not deserialize a recorded graph hash as the snapshot.
+    fn build_evidence_graph(
+        &mut self,
+        claim_id: &str,
+    ) -> Result<(String, physis_core::artifact::ArtifactId), String> {
         let mut rows: Vec<EvidenceRow> = Vec::new();
         for t in self.theories.values() {
             for (c, v) in t.evaluate_all() {
@@ -878,7 +904,7 @@ impl Lab {
             }
         }
         if rows.is_empty() {
-            return Response::err(format!("unknown claim '{claim_id}'"));
+            return Err(format!("unknown claim '{claim_id}'"));
         }
 
         let mut by_hash: BTreeMap<String, Vec<EvidenceRow>> = BTreeMap::new();
@@ -1017,7 +1043,7 @@ impl Lab {
         } else {
             out.push_str(&text);
         }
-        Response::ok(out)
+        Ok((out, graph))
     }
 
     /// A dual-checked receipt for this slug counts only when it matches the
@@ -4080,6 +4106,81 @@ mod tests {
         let sk_graph = lab.store.get(evidence_graph_id(&sk)).unwrap();
         assert_eq!(sk_graph.kind, NodeKind::Evidence);
         assert_eq!(sk_graph.parents.len(), 1);
+    }
+
+    #[test]
+    fn evidence_graph_restores_by_rebuild_not_deserialize() {
+        let mut lab1 = Lab::standard();
+        let first = lab1
+            .exec(Command::Evidence {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        let live = evidence_graph_id(&first);
+        let jsonl = lab1.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"evidence\""), "{jsonl}");
+        assert!(
+            jsonl.contains(&format!("\"graph_hash\":\"{}\"", live.to_hex())),
+            "{jsonl}"
+        );
+
+        let mut lab2 = Lab::standard();
+        assert_eq!(
+            lab2.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Evidence)
+                .count(),
+            0
+        );
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        assert_eq!(
+            lab2.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Evidence)
+                .count(),
+            0,
+            "from_jsonl must not insert Evidence"
+        );
+        let journal_len = lab2.journal().len();
+        lab2.restore_from_journal();
+        assert_eq!(
+            lab2.journal().len(),
+            journal_len,
+            "restore must not journal evidence again"
+        );
+        assert_eq!(
+            lab2.store.get(live).map(|n| n.kind),
+            Some(NodeKind::Evidence),
+            "restore rebuilds the live graph"
+        );
+        assert_eq!(
+            lab2.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::Evidence)
+                .count(),
+            1
+        );
+
+        let forged_hex = "0".repeat(64);
+        let tampered = format!(
+            r#"{{"event":"evidence","t":1,"claim":"predictivity.unique-vacuum","graph_hash":"{forged_hex}"}}"#
+        );
+        let mut lab3 = Lab::standard();
+        *lab3.journal_mut() = Journal::from_jsonl(&tampered);
+        lab3.restore_from_journal();
+        assert_eq!(
+            lab3.store.get(live).map(|n| n.kind),
+            Some(NodeKind::Evidence),
+            "tampered graph_hash is not the DAG"
+        );
+        let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
+            .expect("64 hex zeros is an ArtifactId");
+        assert!(
+            lab3.store.get(forged).is_none(),
+            "a forged hash cannot mint the graph"
+        );
+        assert_eq!(lab3.journal().len(), 1, "tampered restore must not append");
     }
 
     #[test]
