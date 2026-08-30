@@ -4782,8 +4782,24 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("em.charge-conservation") && text.contains("holds → fails"),
-            "{text}"
+            text.contains("add-flux"),
+            "flux must still be an IR fork: {text}"
+        );
+        let marker = "add-tline: package → add-tline";
+        let start = text.find(marker).expect("add-tline hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  ohm-circuit  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let tline_block = &rest[..end];
+        assert!(
+            tline_block.contains("em.charge-conservation") && tline_block.contains("holds → fails"),
+            "add-tline must flip charge-conservation holds to fails: {tline_block}"
+        );
+        assert!(
+            !tline_block.contains("em.faraday"),
+            "add-tline is not the mesh-flux fork: {tline_block}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -4798,6 +4814,117 @@ mod tests {
             live.get("frequency_hz").unwrap().display(),
             "1000",
             "hypothesize must restore knobs"
+        );
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "em.faraday" && v.kind == VerdictKind::Holds),
+            "flux mutant must not be installed"
+        );
+    }
+
+    #[test]
+    fn hypothesize_ohm_circuit_flux_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["flux", "dPhi", "dphi"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "ohm-circuit".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("ohm-circuit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-flux") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-flux: package → add-flux";
+        let start = text.find(marker).expect("add-flux hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  ohm-circuit  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let flux_block = &rest[..end];
+        assert!(
+            flux_block.contains("em.faraday") && flux_block.contains("holds → fails"),
+            "add-flux must flip em.faraday holds to fails: {flux_block}"
+        );
+        assert!(
+            !flux_block.contains("em.charge-conservation"),
+            "add-flux is not the tline KCL fork: {flux_block}"
+        );
+        assert!(
+            !flux_block.contains("em.constitutive-linear"),
+            "add-flux is not the Tellegen fork: {flux_block}"
+        );
+        assert!(
+            !flux_block.contains("em.quasi-static-valid"),
+            "add-flux is not the frequency_hz probe: {flux_block}"
+        );
+        assert!(
+            text.contains("add-tline"),
+            "tline must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("ohm-circuit").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "em.faraday" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("frequency_hz").unwrap().display(),
+            "1000",
+            "hypothesize must restore knobs"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "em.faraday".into(),
+            })
+            .text()
+            .to_string();
+        let ohm = why_theory_block(&why, "ohm-circuit");
+        assert!(
+            ohm.contains("lumped Kirchhoff voltage"),
+            "ohm Faraday must name lumped KVL: {ohm}"
+        );
+        assert!(
+            !ohm.contains("not yet a machine-checked regime"),
+            "ohm Faraday must not be encoding-wide: {ohm}"
+        );
+        assert!(
+            !ohm.contains("source-free homogeneous dF=0"),
+            "ohm Faraday is not Maxwell dF=0: {ohm}"
+        );
+        let mx = why_theory_block(&why, "maxwell-vacuum");
+        assert!(
+            mx.contains("source-free homogeneous dF=0"),
+            "Maxwell Faraday must name dF=0: {mx}"
+        );
+        let lm = why_theory_block(&why, "linear-medium");
+        assert!(
+            lm.contains("not yet a machine-checked regime"),
+            "linear-medium Faraday stays encoding-wide: {lm}"
         );
     }
 
@@ -5150,8 +5277,12 @@ mod tests {
         );
         let ohm = why_theory_block(&why, "ohm-circuit");
         assert!(
-            ohm.contains("not yet a machine-checked regime"),
-            "ohm-circuit Faraday stays encoding-wide: {ohm}"
+            ohm.contains("lumped Kirchhoff voltage"),
+            "ohm Faraday must name lumped KVL: {ohm}"
+        );
+        assert!(
+            !ohm.contains("not yet a machine-checked regime"),
+            "ohm Faraday must not be encoding-wide: {ohm}"
         );
     }
 
@@ -7752,6 +7883,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_ohm.contains("add-tline"), "{hypo_ohm}");
+        assert!(hypo_ohm.contains("add-flux"), "{hypo_ohm}");
         let ohm_again = lab
             .exec(Command::Encode {
                 theory: "ohm-circuit".into(),

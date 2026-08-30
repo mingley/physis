@@ -71,7 +71,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | experiment | what it scrutinizes |
 |---|---|
 | `string-critique` | string constructions vs SM/GR/observer-geometry — predictivity and the "accommodate vs derive" critique (a `euler_number` knob makes three generations a *choice*, not a derivation) |
-| `em-vacuum` | electromagnetism — `1/√(ε₀μ₀)=c` and the Maxwell equations as **computed theorems**; `add-monopole` / `add-proca` are IR, not constitutive knobs; a medium and a lumped circuit as effective limits |
+| `em-vacuum` | electromagnetism — `1/√(ε₀μ₀)=c` and the Maxwell equations as **computed theorems**; `add-monopole` / `add-proca` are IR, not constitutive knobs; a medium and a lumped circuit as effective limits (`add-tline` / `add-flux` are IR, not frequency knobs) |
 | `computation` | a combinational circuit vs a Turing machine — the halting problem and P vs NP as honest `undecidable`/`open` |
 | `field-modes` | a Klein–Gordon scalar and a 1D Dirac fermion on a lattice — computed dispersion, a tachyon from `mass² < 0`, unbounded minus-φ⁴ via `add-quartic`, and naive doubling lifted by `add-wilson` |
 | `gauge-lattice` | compact U(1) vs SU(2)/SU(3) — asymptotic freedom, a computed strong-coupling area law, and the 4D mass gap as a `conjecture` |

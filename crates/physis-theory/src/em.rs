@@ -863,21 +863,27 @@ const QUASI_STATIC_MARGIN: f64 = 100.0;
 const BRANCH_EQ: &str = "branch R 0 1";
 /// Distributed delay (transmission line) on the same nodes.
 const TLINE_EQ: &str = "tline 0 1";
+/// Unlumped mesh flux (Faraday dΦ/dt through the resistor loop).
+const FLUX_EQ: &str = "loop dPhi/dt";
+/// Uniform dB/dt through the square mesh of side `CIRCUIT_SIZE_M`.
+const MESH_DB_DT: f64 = 1.0;
 
-fn parse_ohm_netlist(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_ohm_netlist(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut branch = false;
     let mut tline = false;
+    let mut flux = false;
     for eq in &pkg.equations {
         match eq.trim() {
             BRANCH_EQ => branch = true,
             TLINE_EQ => tline = true,
+            FLUX_EQ => flux = true,
             _ => {}
         }
     }
     if !branch {
         return Err(format!("{} package has no lumped branch", pkg.id));
     }
-    Ok(tline)
+    Ok((tline, flux))
 }
 
 fn kcl_domain() -> DomainOfValidity {
@@ -887,6 +893,26 @@ fn kcl_domain() -> DomainOfValidity {
         "KCL is the lumped node encoding. A transmission-line delay is a new \
          encoding, not a silent lumped circuit.",
     )
+}
+
+fn kvl_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["lumped Kirchhoff voltage".into()],
+        vec!["mesh flux localized to inductor branches".into()],
+        "KVL is the lumped branch encoding. An unlumped mesh flux is a new \
+         encoding, not a silent frequency knob.",
+    )
+}
+
+/// Faraday residual of lumped KVL: ∮E·dl + dΦ/dt. The DC resistor loop has
+/// vanishing ohmic drop; the lumped encoding drops mesh flux, so the residual
+/// is dB/dt × L² on the `add-flux` fork.
+fn lumped_faraday_residual(flux: bool) -> f64 {
+    if flux {
+        MESH_DB_DT * CIRCUIT_SIZE_M * CIRCUIT_SIZE_M
+    } else {
+        0.0
+    }
 }
 
 const OHM_SPECS: &[KnobSpec] = &[KnobSpec {
@@ -904,11 +930,15 @@ const OHM_SPECS: &[KnobSpec] = &[KnobSpec {
 ///
 /// The lumped branch lives on the IR package. A transmission-line delay is a
 /// package mutation (`add-tline`), not a knob: Kirchhoff current law fails
-/// on the mutant. `frequency_hz` stays a knob (electrically short vs not).
+/// on the mutant. An unlumped mesh flux is a second mutation (`add-flux`):
+/// the Faraday residual of ∮E·dl + dΦ/dt is dB/dt × L² and `em.faraday`
+/// fails. `frequency_hz` stays a knob (electrically short vs not).
 #[derive(Clone, Debug, PartialEq)]
 pub struct OhmCircuit {
     frequency_hz: f64,
     tline: bool,
+    /// Unlumped mesh flux. Not a knob.
+    flux: bool,
 }
 
 impl Default for OhmCircuit {
@@ -917,17 +947,22 @@ impl Default for OhmCircuit {
         Self {
             frequency_hz: 1.0e3,
             tline: false,
+            flux: false,
         }
     }
 }
 
 impl OhmCircuit {
     /// IR package for this lumped netlist. Equations are `branch R 0 1`
-    /// and, when forked, `tline 0 1`. Frequency stays on the struct.
+    /// and, when forked, `tline 0 1` and/or `loop dPhi/dt`. Frequency stays
+    /// on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![BRANCH_EQ.to_string()];
         if self.tline {
             equations.push(TLINE_EQ.to_string());
+        }
+        if self.flux {
+            equations.push(FLUX_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -954,14 +989,20 @@ impl OhmCircuit {
                 pkg.id
             ));
         }
+        let (tline, flux) = parse_ohm_netlist(pkg)?;
         Ok(Self {
-            tline: parse_ohm_netlist(pkg)?,
+            tline,
+            flux,
             ..Self::default()
         })
     }
 
     fn tline_equation() -> String {
         TLINE_EQ.to_string()
+    }
+
+    fn flux_equation() -> String {
+        FLUX_EQ.to_string()
     }
 
     /// Wavelength c/f as a typed length (infinite at DC).
@@ -1018,8 +1059,10 @@ impl Theory for OhmCircuit {
         "Lumped-element circuit theory: the quasi-static, long-wavelength limit \
          of Maxwell. Kirchhoff's current law is charge conservation on a lumped \
          node graph (a transmission-line delay is an IR mutation, not a knob). \
-         Wave propagation is dropped and there is a preferred rest frame. \
-         Valid only while the wavelength dwarfs the circuit."
+         Kirchhoff's voltage law is Faraday's law on a lumped mesh (unlumped \
+         flux is a second IR mutation, not a frequency knob). Wave propagation \
+         is dropped and there is a preferred rest frame. Valid only while the \
+         wavelength dwarfs the circuit."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -1053,6 +1096,8 @@ impl Theory for OhmCircuit {
                     ))
                 } else if c.id_str() == CHARGE_CONSERVATION {
                     c.with_domain(kcl_domain())
+                } else if c.id_str() == FARADAY {
+                    c.with_domain(kvl_domain())
                 } else {
                     c
                 }
@@ -1069,10 +1114,29 @@ impl Theory for OhmCircuit {
                 claim,
                 "capacitor charge Q = CV is Gauss's law in the lumped limit",
             ),
-            FARADAY => Verdict::holds(
-                claim,
-                "inductor EMF / Kirchhoff's voltage law is Faraday's law",
-            ),
+            FARADAY => {
+                let r = lumped_faraday_residual(self.flux);
+                if r < 1e-9 {
+                    Verdict::holds(
+                        claim,
+                        "inductor EMF / Kirchhoff's voltage law is Faraday's law",
+                    )
+                    .with_class(ClaimClass::ModelInternal)
+                    .with_evidence([format!(
+                        "lumped resistor loop: max |∮E·dl + dΦ/dt| = {r:.1e}"
+                    )])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        "unlumped mesh flux: lumped KVL is not Faraday (∮E·dl + dΦ/dt)",
+                    )
+                    .with_class(ClaimClass::ModelInternal)
+                    .with_evidence([format!(
+                        "square mesh of side {CIRCUIT_SIZE_M} m: \
+                         max |∮E·dl + dΦ/dt| = {r:.3} (dB/dt = {MESH_DB_DT})"
+                    )])
+                }
+            }
             AMPERE => Verdict::holds(claim, "displacement current shows up as capacitor current"),
             CHARGE_CONSERVATION => {
                 if self.tline {
@@ -1123,28 +1187,42 @@ impl Theory for OhmCircuit {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.tline = parsed.tline;
+        fork.flux = parsed.flux;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.tline {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::tline_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.tline => {
-                let mut fork = self.clone();
-                fork.tline = true;
-                vec![("add-tline".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.tline {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::tline_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.tline {
+                    let mut fork = self.clone();
+                    fork.tline = true;
+                    out.push(("add-tline".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.flux {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::flux_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.flux {
+                    let mut fork = self.clone();
+                    fork.flux = true;
+                    out.push(("add-flux".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -1166,7 +1244,8 @@ pub fn em_vacuum() -> ExperimentReport {
          charge conservation are theorems of the encoding. A linear medium is a \
          knob-controlled effective description, not new fundamental physics. \
          Lumped KCL is the ohm-circuit IR netlist (`add-tline` is an IR fork, \
-         not a knob). The linear-medium constitutive law is IR (`add-tellegen` \
+         not a knob). Lumped KVL is Faraday on that netlist (`add-flux` is an \
+         IR fork, not a frequency knob). The linear-medium constitutive law is IR (`add-tellegen` \
          is an IR fork, not an ε_r knob). Homogeneous Faraday is the Maxwell \
          vacuum IR (`add-monopole` and `add-proca` are IR forks, not constitutive knobs).",
         vec![
@@ -1175,6 +1254,7 @@ pub fn em_vacuum() -> ExperimentReport {
             "A medium with n > 1 slows light and selects a rest frame, so wave-speed and Lorentz-invariance fail.".into(),
             "`hypothesize linear-medium`: add-tellegen is IR, not set.".into(),
             "`hypothesize maxwell-vacuum`: add-monopole and add-proca are IR, not set.".into(),
+            "`hypothesize ohm-circuit`: add-tline and add-flux are IR, not set.".into(),
         ],
         &em_rows(),
         theories,
@@ -1368,18 +1448,45 @@ mod tests {
         fork.tline = true;
         assert_eq!(verdict(&fork, CHARGE_CONSERVATION), VerdictKind::Fails);
         assert_eq!(verdict(&c, CHARGE_CONSERVATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, FARADAY), VerdictKind::Holds);
         assert_eq!(verdict(&fork, QUASI_STATIC_VALID), VerdictKind::Holds);
         c.set("frequency_hz", KnobValue::Float(1.0e10)).unwrap();
         assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Fails);
         assert_eq!(verdict(&c, CHARGE_CONSERVATION), VerdictKind::Holds);
         let probes = OhmCircuit::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-tline");
+        assert_eq!(probes.len(), 2);
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-tline"),
+            "live ohm-circuit must offer add-tline: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-flux"),
+            "live ohm-circuit must offer add-flux: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let tline_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-tline")
+            .expect("add-tline");
         assert_eq!(
-            verdict(probes[0].1.as_ref(), CHARGE_CONSERVATION),
+            verdict(tline_probe.1.as_ref(), CHARGE_CONSERVATION),
             VerdictKind::Fails
         );
-        assert!(fork.structural_mutations().is_empty());
+        assert_eq!(verdict(tline_probe.1.as_ref(), FARADAY), VerdictKind::Holds);
+        let tline_fork_probes = fork.structural_mutations();
+        assert!(
+            tline_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-tline"),
+            "tline fork must not re-offer add-tline"
+        );
+        assert!(
+            tline_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-flux"),
+            "tline fork must still offer add-flux"
+        );
         let live = OhmCircuit::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -1638,11 +1745,155 @@ mod tests {
             .find(|c| c.id_str() == FARADAY)
             .unwrap();
         assert!(
-            ofar.domain().is_encoding_wide(),
-            "ohm-circuit Faraday stays encoding-wide: {:?}",
+            !ofar.domain().is_encoding_wide(),
+            "ohm-circuit Faraday must name lumped KVL: {:?}",
+            ofar.domain()
+        );
+        assert!(
+            ofar.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("lumped Kirchhoff voltage")),
+            "ohm Faraday regime must be lumped Kirchhoff voltage: {:?}",
             ofar.domain()
         );
         assert_eq!(verdict(&ohm, FARADAY), VerdictKind::Holds);
+        assert!(
+            ohm.structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-monopole"),
+            "ohm-circuit must not grow add-monopole"
+        );
+    }
+
+    #[test]
+    fn flux_mesh_is_ir_not_a_knob() {
+        let mut c = OhmCircuit::default();
+        assert!(
+            c.set("flux", KnobValue::Bool(true)).is_err(),
+            "unlumped mesh flux is an IR mutation, not a knob"
+        );
+        assert!(
+            c.set("dPhi", KnobValue::Float(1.0)).is_err(),
+            "dΦ/dt is not a knob"
+        );
+        let src = render_package(&c.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay a lumped branch"
+        );
+        assert_eq!(pkg.equations[0], BRANCH_EQ);
+        assert_eq!(
+            OhmCircuit::from_package(&pkg).unwrap(),
+            c,
+            "IR round-trip must preserve the lumped branch"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(OhmCircuit::flux_equation()),
+        );
+        let parsed = OhmCircuit::from_package(&mutated).unwrap();
+        assert!(parsed.flux);
+        assert!(!parsed.tline);
+        let mut fork = c.clone();
+        fork.flux = true;
+        assert_eq!(verdict(&fork, FARADAY), VerdictKind::Fails);
+        assert_eq!(verdict(&c, FARADAY), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CHARGE_CONSERVATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, QUASI_STATIC_VALID), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, GAUSS), VerdictKind::Holds);
+        let r = lumped_faraday_residual(true);
+        assert!(
+            (r - 0.01).abs() < 1e-12,
+            "Faraday residual must be dB/dt × L² = 0.01, got {r}"
+        );
+        assert!(
+            (r - 1.0).abs() > 0.5,
+            "Faraday residual must be the mesh area scale, not a unit flag, got {r}"
+        );
+        assert_eq!(lumped_faraday_residual(false), 0.0);
+        c.set("frequency_hz", KnobValue::Float(1.0e10)).unwrap();
+        assert_eq!(verdict(&c, QUASI_STATIC_VALID), VerdictKind::Fails);
+        assert_eq!(verdict(&c, FARADAY), VerdictKind::Holds);
+        let probes = OhmCircuit::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-flux"),
+            "live ohm-circuit must offer add-flux: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let flux_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-flux")
+            .expect("add-flux");
+        assert_eq!(verdict(flux_probe.1.as_ref(), FARADAY), VerdictKind::Fails);
+        assert_eq!(
+            verdict(flux_probe.1.as_ref(), CHARGE_CONSERVATION),
+            VerdictKind::Holds
+        );
+        let flux_fork_probes = fork.structural_mutations();
+        assert!(
+            flux_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-flux"),
+            "flux fork must not re-offer add-flux"
+        );
+        assert!(
+            flux_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-tline"),
+            "flux fork must still offer add-tline"
+        );
+        let mut live = OhmCircuit::default();
+        live.set("frequency_hz", KnobValue::Float(5.0e3)).unwrap();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("frequency_hz").unwrap(),
+            KnobValue::Float(5.0e3),
+            "reparse must overlay flux IR onto live frequency_hz"
+        );
+        assert_eq!(verdict(rebuilt.as_ref(), FARADAY), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id_str() == FARADAY)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "ohm-circuit Faraday must name lumped KVL: {:?}",
+            cell.domain()
+        );
+        let maxwell = MaxwellVacuum::default();
+        assert!(
+            maxwell
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-flux"),
+            "Maxwell must not grow add-flux"
+        );
+        let glass = LinearMedium::default();
+        let gfar = glass
+            .claims()
+            .into_iter()
+            .find(|cl| cl.id_str() == FARADAY)
+            .unwrap();
+        assert!(
+            gfar.domain().is_encoding_wide(),
+            "linear-medium Faraday stays encoding-wide: {:?}",
+            gfar.domain()
+        );
+        assert!(
+            glass
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-flux"),
+            "linear-medium must not grow add-flux"
+        );
+        assert_eq!(verdict(&glass, FARADAY), VerdictKind::Holds);
     }
 
     #[test]

@@ -10,7 +10,7 @@ New theory `maxwell-vacuum` (and later `linear-medium`):
 - Claims:
   - `1/√(ε₀μ₀) = c` as a **theorem** of the encoding
   - Faraday is a computed theorem on Maxwell vacuum (named domain). `add-monopole` appends `dF = *j_m` and Faraday fails. Gauss is a computed theorem (named domain: source-free massless Maxwell). `add-proca` appends `proca m2 A` and Gauss fails. Ampère stays a computed theorem.
-- Control: ✅ `ohm-circuit` — lumped circuit theory as the quasi-static effective limit of Maxwell. Charge conservation = Kirchhoff's current law on a lumped IR netlist (`add-tline` is an IR fork, not a knob); wave propagation dropped (`wave-speed-c` inapplicable), preferred frame (`lorentz-invariance` fails). The `frequency_hz` knob flips `em.quasi-static-valid` when the wavelength stops dwarfing the circuit.
+- Control: ✅ `ohm-circuit` — lumped circuit theory as the quasi-static effective limit of Maxwell. Charge conservation = Kirchhoff's current law on a lumped IR netlist (`add-tline` is an IR fork, not a knob); Faraday = Kirchhoff's voltage law on a lumped mesh (`add-flux` is an IR fork, not a frequency knob); wave propagation dropped (`wave-speed-c` inapplicable), preferred frame (`lorentz-invariance` fails). The `frequency_hz` knob flips `em.quasi-static-valid` when the wavelength stops dwarfing the circuit.
 
 This domain is chosen because it *needs* `Qty` immediately (cannot add volts to amperes) and produces clean knob diffs (`epsilon_r` changes wave speed).
 

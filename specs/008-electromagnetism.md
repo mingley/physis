@@ -30,7 +30,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|---|
 | `linear-medium` | `epsilon_r` | relative permittivity ε_r ≥ 1; raises the refractive index n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` is an IR mutation |
 | `linear-medium` | `mu_r` | relative permeability μ_r ≥ 1; raises n |
-| `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation |
+| `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation. Lumped KVL is not this knob: `add-flux` is an IR mutation |
 
 `maxwell-vacuum` has no knobs (vacuum is the unit medium). Homogeneous Faraday is not a knob: `add-monopole` is an IR mutation. Massless Gauss is not a knob: `add-proca` is an IR mutation.
 
@@ -40,7 +40,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|---|
 | `em.wave-speed-c` | EM waves travel at c | theorem (vacuum); fails in a medium |
 | `em.gauss` | Gauss's law | theorem on `maxwell-vacuum` (named domain: source-free massless Maxwell). `add-proca` appends `proca m2 A` and the Coulomb residual of `∇·E + m² φ` is the Proca mass term, so this cell fails. That is not a knob. Linear-medium Gauss stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Gauss is lumped Q = CV (encoding-wide Holds) |
-| `em.faraday` | Faraday's law | theorem on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Faraday is KVL (encoding-wide Holds) |
+| `em.faraday` | Faraday's law | theorem on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Faraday is lumped KVL (named domain: lumped Kirchhoff voltage). `add-flux` appends `loop dPhi/dt` and the mesh residual of `∮E·dl + dΦ/dt` is `dB/dt × L²`, so this cell fails. That is not a knob |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
 | `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | theorem on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
@@ -56,6 +56,9 @@ Kirchhoff's voltage law *is* Faraday's law. Wave propagation is dropped
 (`em.lorentz-invariance` fails). The lumped branch lives on the IR package
 (`branch R 0 1`). A transmission-line delay is a package mutation
 (`add-tline`), not a knob: `em.charge-conservation` fails on the mutant.
+Kirchhoff's voltage law is Faraday on that lumped mesh; an unlumped
+mesh flux is a second package mutation (`add-flux`), not a frequency
+knob: `em.faraday` fails on the mutant. The two forks are independent.
 It is valid only while the wavelength `c/f` dwarfs the circuit: raising
 `frequency_hz` past that point flips `em.quasi-static-valid` from `holds`
 to `fails`, using typed `Qty<Length>` wavelengths. That frequency knob is
@@ -101,7 +104,7 @@ physis set linear-medium epsilon_r 1   # n → 1, wave-speed-c and lorentz-invar
 physis hypothesize linear-medium       # add-tellegen is IR, not set
 physis hypothesize maxwell-vacuum      # add-monopole and add-proca are IR, not set
 physis set ohm-circuit frequency_hz 1e10   # electrically short → lumped model fails
-physis hypothesize ohm-circuit             # add-tline is IR, not set
+physis hypothesize ohm-circuit             # add-tline and add-flux are IR, not set
 ```
 
 The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
@@ -118,7 +121,8 @@ neither is a silent linear-medium install.
 - Typed exterior calculus / differential forms (a later milestone may encode
   Faraday/Ampère as `dF = 0`, `d⋆F = ⋆J`).
 - Circuit theory (`ohm-circuit`) as a full SPICE engine or transmission-line
-  PDE. The IR fork is a delay equation, not a simulator.
+  PDE. The IR forks are a delay equation and a lumped Faraday residual,
+  not a simulator.
 
 ## Related
 

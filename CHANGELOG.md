@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Ohm-circuit unlumped mesh flux is an IR mutation**
+  (`ohm-circuit`, `add-flux`). Lumped Kirchhoff voltage is the live
+  encoding (`branch R 0 1`); appending `loop dPhi/dt` makes the Faraday
+  residual of ∮E·dl + dΦ/dt equal dB/dt × L² = 0.01 and flips
+  `em.faraday` holds to fails. That is not a knob. KCL and the
+  quasi-static cell still hold on the mutant. Transmission-line delay
+  remains a separate KCL fork (`add-tline`). `frequency_hz` stays a
+  knob and still flips `em.quasi-static-valid`. Faraday names lumped
+  Kirchhoff voltage; Maxwell Faraday stays source-free homogeneous
+  dF=0; linear-medium Faraday stays encoding-wide. Mutants stay
+  `ohm-circuit`. Mutants are not installed, not journaled, and not
+  Canonical or P4. Catalog d² hash unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Live encode pin unchanged. Verified:
+  IR round-trip; set flux is unknown; hypothesize ohm-circuit; live
+  lumped KVL restored; encode pin
+  `fb14d2c8a8cf2c51fe67c2f334a9307860c6ebb5cfbeca1c35467d61f1387af1`.
+
 - **Bell-test PR-box correlator is an IR mutation**
   (`bell-test`, `add-pr-box`). Hilbert-space CHSH is the live encoding
   (`state singlet`); appending `correlator pr-box` makes the CHSH

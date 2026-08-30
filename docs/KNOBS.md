@@ -40,7 +40,7 @@ lists every fitted knob in the lab.
 - `mu_r` — relative permeability
 
 ### ohm-circuit
-- `frequency_hz` — operating frequency; lumped model holds while c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation
+- `frequency_hz` — operating frequency; lumped model holds while c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation. Lumped KVL is not this knob: `add-flux` is an IR mutation
 
 ### string / M constructions (type-iib, type-iia, type-i, heterotic-e8e8, heterotic-so32, bosonic, m-theory)
 - `kind` — chosen
