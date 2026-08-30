@@ -25,8 +25,12 @@ Nothing gains authority merely because an agent wrote code that returns
   forged hash on `Claim` is not copied through), and has **no
   `Deserialize` impl** (JSON cannot mint a catalog identity).
 - Every claim has assumptions, a domain, and a SHA-256 statement identity
-  that also commits to quantifiers, units, constants, boundary conditions,
-  conventions, theory version, definitions, datasets, and formal-library
+  that is **derived** from the live sentence, class, layer, assumptions,
+  domain, and first-class commitments (quantifiers, units, constants,
+  boundary conditions, conventions, theory version, definitions, datasets,
+  and formal-library identity). There is no stored `Claim.statement_hash`
+  field and no `Deserialize` on `Claim`: mutating the English statement
+  cannot keep a stale kernel receipt, and JSON cannot mint a catalog
   identity. Changing ∀/∃, a sign, a unit, a constant, or a boundary is a
   new hash. The lab slug is unchanged. P3F looks up the live hash, not
   the slug. Catalog identities are `forall` in

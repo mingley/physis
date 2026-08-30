@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Claim statement hash is derived**
+  (`Claim::statement_hash` is a getter; there is no stored field and
+  no Deserialize). Mutating the English statement cannot keep a stale
+  catalog hash attached to a kernel receipt. JSON cannot mint a Claim
+  identity. Catalog d² hash unchanged. Verified: compile-fail against
+  assigning `statement_hash` and Deserialize; mutating the sentence
+  changes the getter; from_claim follows the live sentence. Live prove
+  of catalog d² is still Lean+nanoda. `fmt`, `clippy -D warnings`,
+  full suite, CLI.
+
 - **LogicalJudgment cannot mint proved**
   (`LogicalJudgment` is a transparent wrapper with a private kind).
   JSON still cannot mint `logical proved`; a Rust `Proved` variant

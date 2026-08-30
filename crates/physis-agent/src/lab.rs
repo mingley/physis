@@ -584,7 +584,7 @@ impl Lab {
                             text.push_str(&format!("  empirical:  {}\n", v.empirical.as_str()));
                             let semantic = self.semantic_tag(&c, v.semantic);
                             text.push_str(&format!("  semantic:   {}\n", semantic.as_str()));
-                            let dual = self.receipts.by_statement(c.statement_hash).is_some();
+                            let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                             let profile = self.profile_for(&c, v.derivation, semantic);
                             let judgment = Judgment::from_lab(
                                 v.class,
@@ -605,7 +605,7 @@ impl Lab {
                                     "  trust note: kernel proof with unreviewed encoding is dangerous\n",
                                 );
                             }
-                            text.push_str(&format!("  identity:   {}\n", c.statement_hash));
+                            text.push_str(&format!("  identity:   {}\n", c.statement_hash()));
                             for line in c.commitments.why_lines() {
                                 text.push_str(&line);
                                 text.push('\n');
@@ -639,7 +639,7 @@ impl Lab {
                                 v.kind.as_str(),
                                 v.summary
                             ));
-                            match self.receipts.by_statement(c.statement_hash) {
+                            match self.receipts.by_statement(c.statement_hash()) {
                                 Some(r) => {
                                     text.push_str(&format!(
                                         "  kernel proof: receipt {} / {} + {} (backend {:?})\n",
@@ -814,7 +814,7 @@ impl Lab {
         fallback: SemanticAssurance,
     ) -> SemanticAssurance {
         self.reviews
-            .by_statement(claim.statement_hash)
+            .by_statement(claim.statement_hash())
             .map(|r| r.assurance())
             .unwrap_or(fallback)
     }
@@ -828,7 +828,7 @@ impl Lab {
         TrustProfile::derive(TrustEvidence {
             derivation,
             semantic,
-            dual_checked_receipt: self.receipts.by_statement(claim.statement_hash).is_some(),
+            dual_checked_receipt: self.receipts.by_statement(claim.statement_hash()).is_some(),
             numeric_certificate: derivation == physis_core::DerivationAssurance::CertifiedNumeric,
         })
     }
@@ -838,7 +838,7 @@ impl Lab {
     /// for an older identity is not P3F.
     fn has_live_receipt(&self, claim_id: &str) -> bool {
         self.find_claim(claim_id)
-            .is_some_and(|c| self.receipts.by_statement(c.statement_hash).is_some())
+            .is_some_and(|c| self.receipts.by_statement(c.statement_hash()).is_some())
     }
 
     fn accept_verified<T>(&mut self, v: &Verified<T>) -> physis_verifier::ProofReceipt {
@@ -952,7 +952,7 @@ impl Lab {
                 let mut n = 0usize;
                 for (id, t) in &self.theories {
                     for (c, verdict) in t.evaluate_all() {
-                        let dual = self.receipts.by_statement(c.statement_hash).is_some();
+                        let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                         if let Some(g) = gap_for(
                             verdict.class,
                             verdict.derivation,
@@ -994,7 +994,7 @@ impl Lab {
         let mut n = 0usize;
         for (id, t) in &self.theories {
             for (c, verdict) in t.evaluate_all() {
-                let dual = self.receipts.by_statement(c.statement_hash).is_some();
+                let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                 if let Some(g) = gap_for(
                     verdict.class,
                     verdict.derivation,
@@ -1047,7 +1047,7 @@ impl Lab {
         let Some(live) = self.find_claim(claim_id) else {
             return;
         };
-        if !statement_hash.is_empty() && live.statement_hash.to_hex() != statement_hash {
+        if !statement_hash.is_empty() && live.statement_hash().to_hex() != statement_hash {
             return;
         }
         let expected = Challenge::generate(&FormalClaim::from_claim(&live)).challenge_hash();
@@ -1065,7 +1065,7 @@ impl Lab {
         let Some(live) = self.find_claim(claim_id) else {
             return;
         };
-        if statement_hash.is_empty() || live.statement_hash.to_hex() != statement_hash {
+        if statement_hash.is_empty() || live.statement_hash().to_hex() != statement_hash {
             return;
         }
         let _ = self.remint_review(claim_id);
@@ -1211,7 +1211,7 @@ impl Lab {
         let Some(live) = self.find_claim(claim_id) else {
             return Response::err(format!("reproduce {claim_id}: claim not in this lab"));
         };
-        let Some(prior) = self.receipts.by_statement(live.statement_hash).cloned() else {
+        let Some(prior) = self.receipts.by_statement(live.statement_hash()).cloned() else {
             return Response::err(format!(
                 "reproduce {claim_id}: no prior receipt for this identity; this is not prove and not P4"
             ));
@@ -1315,7 +1315,7 @@ impl Lab {
             }
             let before = self.find_claim(spec.claim_id).and_then(|c| {
                 self.receipts
-                    .by_statement(c.statement_hash)
+                    .by_statement(c.statement_hash())
                     .map(|r| r.challenge_hash)
             });
             match self.remint_preferred(spec.claim_id) {
@@ -2306,14 +2306,15 @@ mod tests {
         );
         let live = lab.find_claim("dec.d-squared-zero").unwrap();
         assert_ne!(
-            stale.statement_hash, live.statement_hash,
+            stale.statement_hash(),
+            live.statement_hash(),
             "physlib forall must not be the unspecified default identity"
         );
         let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
         let err = verify(&challenge, &UntrustedProof::ExactIdentity).unwrap_err();
         assert_eq!(err, physis_verifier::VerifyError::NoExactIdentity);
-        assert!(lab.receipts.by_statement(stale.statement_hash).is_none());
-        assert!(lab.receipts.by_statement(live.statement_hash).is_none());
+        assert!(lab.receipts.by_statement(stale.statement_hash()).is_none());
+        assert!(lab.receipts.by_statement(live.statement_hash()).is_none());
 
         let why = lab
             .exec(Command::Why {
@@ -2358,7 +2359,7 @@ mod tests {
         for spec in CATALOG {
             let live = lab.find_claim(spec.claim_id).unwrap();
             assert_eq!(
-                live.statement_hash,
+                live.statement_hash(),
                 spec.formal_claim().statement_hash(),
                 "{} live hash must be the catalog FormalClaim",
                 spec.claim_id
@@ -2377,7 +2378,8 @@ mod tests {
         );
         let live = lab.find_claim("dec.d-squared-zero").unwrap();
         assert_ne!(
-            stale.statement_hash, live.statement_hash,
+            stale.statement_hash(),
+            live.statement_hash(),
             "physlib forall must not be the unspecified default identity"
         );
         let err = physis_semantic::review(&FormalClaim::from_claim(&stale)).unwrap_err();
@@ -2385,8 +2387,8 @@ mod tests {
             err.to_string().contains("catalog identity does not match"),
             "{err}"
         );
-        assert!(lab.reviews.by_statement(stale.statement_hash).is_none());
-        assert!(lab.reviews.by_statement(live.statement_hash).is_none());
+        assert!(lab.reviews.by_statement(stale.statement_hash()).is_none());
+        assert!(lab.reviews.by_statement(live.statement_hash()).is_none());
 
         let why = lab
             .exec(Command::Why {
@@ -2422,8 +2424,8 @@ mod tests {
         let d2b = why_theory_block(&why2, "de-rham");
         assert!(d2b.contains("semantic:   adversarially-reviewed"), "{d2b}");
         assert!(d2b.contains("P3S"), "{d2b}");
-        assert!(lab.reviews.by_statement(live.statement_hash).is_some());
-        assert!(lab.reviews.by_statement(stale.statement_hash).is_none());
+        assert!(lab.reviews.by_statement(live.statement_hash()).is_some());
+        assert!(lab.reviews.by_statement(stale.statement_hash()).is_none());
     }
 
     #[test]
@@ -3049,7 +3051,7 @@ mod tests {
         let jsonl = lab.journal().to_string();
         assert!(jsonl.contains("\"event\":\"prove\""));
         assert!(
-            jsonl.contains(&format!("\"statement_hash\":\"{}\"", live.statement_hash)),
+            jsonl.contains(&format!("\"statement_hash\":\"{}\"", live.statement_hash())),
             "{jsonl}"
         );
         let mut lab2 = Lab::standard();
@@ -3075,16 +3077,16 @@ mod tests {
             ClaimClass::Mathematical,
         );
         let live = lab.find_claim("dec.d-squared-zero").unwrap();
-        assert_ne!(stale.statement_hash, live.statement_hash);
+        assert_ne!(stale.statement_hash(), live.statement_hash());
         let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
         let jsonl = format!(
             r#"{{"event":"prove","t":1,"claim":"dec.d-squared-zero","challenge_hash":"{}","statement_hash":"{}"}}"#,
             challenge.challenge_hash(),
-            stale.statement_hash,
+            stale.statement_hash(),
         );
         *lab.journal_mut() = Journal::from_jsonl(&jsonl);
         lab.restore_from_journal();
-        assert!(lab.receipts.by_statement(live.statement_hash).is_none());
+        assert!(lab.receipts.by_statement(live.statement_hash()).is_none());
         let why = lab
             .exec(Command::Why {
                 claim: "dec.d-squared-zero".into(),
@@ -3103,11 +3105,11 @@ mod tests {
         let jsonl = format!(
             r#"{{"event":"prove","t":1,"claim":"dec.d-squared-zero","challenge_hash":"{}","statement_hash":"{}"}}"#,
             "0".repeat(64),
-            live.statement_hash,
+            live.statement_hash(),
         );
         *lab.journal_mut() = Journal::from_jsonl(&jsonl);
         lab.restore_from_journal();
-        assert!(lab.receipts.by_statement(live.statement_hash).is_none());
+        assert!(lab.receipts.by_statement(live.statement_hash()).is_none());
         let why = lab
             .exec(Command::Why {
                 claim: "dec.d-squared-zero".into(),
@@ -3261,7 +3263,7 @@ mod tests {
         let jsonl = lab.journal().to_string();
         assert!(jsonl.contains("\"event\":\"review\""));
         assert!(
-            jsonl.contains(&format!("\"statement_hash\":\"{}\"", live.statement_hash)),
+            jsonl.contains(&format!("\"statement_hash\":\"{}\"", live.statement_hash())),
             "{jsonl}"
         );
         let mut lab2 = Lab::standard();
@@ -3287,15 +3289,15 @@ mod tests {
             ClaimClass::Mathematical,
         );
         let live = lab.find_claim("dec.d-squared-zero").unwrap();
-        assert_ne!(stale.statement_hash, live.statement_hash);
+        assert_ne!(stale.statement_hash(), live.statement_hash());
         let jsonl = format!(
             r#"{{"event":"review","t":1,"claim":"dec.d-squared-zero","evidence_hash":"{}","statement_hash":"{}"}}"#,
             "0".repeat(64),
-            stale.statement_hash,
+            stale.statement_hash(),
         );
         *lab.journal_mut() = Journal::from_jsonl(&jsonl);
         lab.restore_from_journal();
-        assert!(lab.reviews.by_statement(live.statement_hash).is_none());
+        assert!(lab.reviews.by_statement(live.statement_hash()).is_none());
         let why = lab
             .exec(Command::Why {
                 claim: "dec.d-squared-zero".into(),
@@ -3314,7 +3316,7 @@ mod tests {
         let jsonl = r#"{"event":"review","t":1,"claim":"dec.d-squared-zero","evidence_hash":"00"}"#;
         *lab.journal_mut() = Journal::from_jsonl(jsonl);
         lab.restore_from_journal();
-        assert!(lab.reviews.by_statement(live.statement_hash).is_none());
+        assert!(lab.reviews.by_statement(live.statement_hash()).is_none());
         let why = lab
             .exec(Command::Why {
                 claim: "dec.d-squared-zero".into(),

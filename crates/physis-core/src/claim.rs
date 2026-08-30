@@ -12,6 +12,26 @@
 //! a kernel proof. There is no `Epistemic::Theorem` tag: that name mixed
 //! “proven in this model” with “a standard theorem encoded as such,” and
 //! it was forgeable by setting an enum.
+//!
+//! [`Claim::statement_hash`] is derived from the live sentence. JSON cannot
+//! mint a stored hash, and a public field cannot rebind a kernel receipt:
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::claim::Claim>();
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! let mut c = physis_core::claim::Claim::new(
+//!     "x",
+//!     "y",
+//!     physis_core::LayerId::Mathematical,
+//!     physis_core::ClaimClass::Mathematical,
+//! );
+//! c.statement_hash = physis_core::ArtifactId::of(b"forged");
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -173,7 +193,12 @@ impl Verdict {
 }
 
 /// A sentence a theory is willing to be judged on.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+///
+/// [`Self::statement_hash`] is derived from the live sentence, class, layer,
+/// assumptions, domain, and commitments. There is no stored hash field and
+/// no [`serde::Deserialize`] impl: JSON cannot mint a catalog identity, and
+/// mutating the English statement cannot keep a stale kernel receipt.
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Claim {
     /// Stable id, `theory.slug`.
     pub id: ClaimId,
@@ -194,13 +219,9 @@ pub struct Claim {
     /// Domain of validity.
     pub domain: DomainOfValidity,
     /// First-class identity fields committed in [`Self::statement_hash`].
-    #[serde(default)]
     pub commitments: ClaimCommitments,
-    /// Content address of the formal identity.
-    pub statement_hash: ArtifactId,
-    /// Lemma ids this claim uses. Not part of [`statement_hash`]: a lab
+    /// Lemma ids this claim uses. Not part of [`Self::statement_hash`]: a lab
     /// encoding of "this uses that" is not a change to the sentence.
-    #[serde(default)]
     pub depends_on: Vec<ClaimId>,
 }
 
@@ -219,15 +240,6 @@ impl Claim {
         let assumptions = AssumptionSet::encoding_internal();
         let domain = DomainOfValidity::encoding_wide();
         let commitments = ClaimCommitments::unspecified();
-        let statement_hash = ArtifactId::of(FormalClaim::canonical_bytes(
-            &id.0,
-            &statement,
-            class,
-            layer,
-            &assumptions,
-            &domain,
-            &commitments,
-        ));
         Self {
             id,
             statement,
@@ -239,13 +251,15 @@ impl Claim {
             assumptions,
             domain,
             commitments,
-            statement_hash,
             depends_on: Vec::new(),
         }
     }
 
-    fn rehash(&mut self) {
-        self.statement_hash = ArtifactId::of(FormalClaim::canonical_bytes(
+    /// Content address of the live formal identity. Always hashed from
+    /// current fields: mutating [`Self::statement`] cannot keep a stale
+    /// catalog hash attached to a kernel receipt.
+    pub fn statement_hash(&self) -> ArtifactId {
+        ArtifactId::of(FormalClaim::canonical_bytes(
             &self.id.0,
             &self.statement,
             self.class,
@@ -253,7 +267,7 @@ impl Claim {
             &self.assumptions,
             &self.domain,
             &self.commitments,
-        ));
+        ))
     }
 
     /// Record lemma ids this claim uses. Does not change [`Self::statement_hash`].
@@ -262,27 +276,24 @@ impl Claim {
         self
     }
 
-    /// Overlay first-class identity fields and recompute the statement hash.
-    /// The slug [`ClaimId`] is unchanged.
+    /// Overlay first-class identity fields. The slug [`ClaimId`] is unchanged;
+    /// [`Self::statement_hash`] follows the new commitments.
     pub fn with_commitments(mut self, commitments: ClaimCommitments) -> Self {
         self.commitments = commitments;
-        self.rehash();
         self
     }
 
-    /// Overlay a domain of validity and recompute the statement hash.
-    /// Extrapolating outside it is a new claim, not a silent reuse.
+    /// Overlay a domain of validity. Extrapolating outside it is a new claim,
+    /// not a silent reuse; [`Self::statement_hash`] follows the new domain.
     pub fn with_domain(mut self, domain: DomainOfValidity) -> Self {
         self.domain = domain;
-        self.rehash();
         self
     }
 
-    /// Overlay the assumption set and recompute the statement hash.
-    /// Hidden hypotheses are a new identity, not a silent annotation.
+    /// Overlay the assumption set. Hidden hypotheses are a new identity;
+    /// [`Self::statement_hash`] follows the new set.
     pub fn with_assumptions(mut self, assumptions: AssumptionSet) -> Self {
         self.assumptions = assumptions;
-        self.rehash();
         self
     }
 }
@@ -321,7 +332,20 @@ mod tests {
             LayerId::Spacetime,
             ClaimClass::ModelInternal,
         );
-        assert_ne!(a.statement_hash, b.statement_hash);
+        assert_ne!(a.statement_hash(), b.statement_hash());
+    }
+
+    #[test]
+    fn mutating_the_sentence_cannot_keep_a_stale_hash() {
+        let mut c = Claim::new(
+            "dec.d-squared-zero",
+            "The exterior derivative is nilpotent: d ∘ d = 0.",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
+        );
+        let honest = c.statement_hash();
+        c.statement.push_str(" forged");
+        assert_ne!(c.statement_hash(), honest);
     }
 
     #[test]
@@ -333,7 +357,7 @@ mod tests {
             ClaimClass::ModelInternal,
         );
         let b = a.clone().with_dependencies(&["dec.d-squared-zero"]);
-        assert_eq!(a.statement_hash, b.statement_hash);
+        assert_eq!(a.statement_hash(), b.statement_hash());
         assert!(a.depends_on.is_empty());
         assert_eq!(b.depends_on[0].0, "dec.d-squared-zero");
     }
@@ -350,7 +374,7 @@ mod tests {
             .clone()
             .with_commitments(ClaimCommitments::physlib_forall());
         assert_eq!(a.id, b.id);
-        assert_ne!(a.statement_hash, b.statement_hash);
+        assert_ne!(a.statement_hash(), b.statement_hash());
         assert_eq!(b.commitments.quantifier, crate::formal::Quantifier::ForAll);
     }
 
@@ -368,7 +392,7 @@ mod tests {
             "Outside |k a| < 1 the Richardson order is not a stencil verdict.",
         ));
         assert_eq!(a.id, b.id);
-        assert_ne!(a.statement_hash, b.statement_hash);
+        assert_ne!(a.statement_hash(), b.statement_hash());
         assert!(b.domain.regimes.iter().any(|r| r.contains("|k a| < 1")));
     }
 
@@ -388,7 +412,7 @@ mod tests {
         });
         let b = a.clone().with_assumptions(AssumptionSet::new(items));
         assert_eq!(a.id, b.id);
-        assert_ne!(a.statement_hash, b.statement_hash);
+        assert_ne!(a.statement_hash(), b.statement_hash());
         assert!(b
             .assumptions
             .items

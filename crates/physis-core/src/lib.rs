@@ -106,6 +106,16 @@
 //! let _ = LogicalJudgment::Proved;
 //! ```
 //!
+//! JSON cannot mint a [`claim::Claim`] identity hash either (the hash is
+//! derived from the live sentence; there is no stored field to forge):
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::claim::Claim>();
+//! }
+//! ```
+//!
 //! JSON cannot mint a [`formal::FormalClaim`] identity hash either
 //! (`from_claim` recomputes the hash; there is no struct-literal constructor):
 //!

@@ -270,7 +270,7 @@ impl SemanticStore {
 }
 
 /// Dual-check encodings and provenance, then (if independent) run the
-/// red-team corpus. The minted record is bound to `claim.statement_hash`.
+/// red-team corpus. The minted record is bound to [`FormalClaim::statement_hash`].
 /// Never returns [`SemanticAssurance::Canonical`].
 pub fn review(claim: &FormalClaim) -> Result<SemanticRecord, SemanticError> {
     let d = dossier(&claim.id().0).ok_or(SemanticError::NoDossier)?;

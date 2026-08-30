@@ -305,7 +305,8 @@ impl FormalClaim {
 
     /// Identity of an executable lab claim. Recomputes the statement hash
     /// from the live sentence, class, layer, assumptions, domain, and
-    /// commitments. A forged [`Claim::statement_hash`] is not copied through.
+    /// commitments. The live [`Claim::statement_hash`] is always derived;
+    /// there is no stored hash to copy through.
     pub fn from_claim(claim: &Claim) -> Self {
         let statement_hash = ArtifactId::of(Self::canonical_bytes(
             &claim.id.0,
@@ -423,22 +424,19 @@ mod tests {
     }
 
     #[test]
-    fn from_claim_recomputes_a_forged_hash() {
+    fn from_claim_follows_a_mutated_sentence() {
         let mut claim = Claim::new(
             "math.example",
             "P holds",
             LayerId::Mathematical,
             ClaimClass::Mathematical,
         );
-        let honest = claim.statement_hash;
-        claim.statement_hash = ArtifactId::of(b"forged-catalog-hash");
-        assert_ne!(claim.statement_hash, honest);
+        let honest = claim.statement_hash();
+        claim.statement.push_str(" forged");
         let formal = FormalClaim::from_claim(&claim);
-        assert_eq!(formal.statement_hash(), honest);
+        assert_ne!(formal.statement_hash(), honest);
+        assert_eq!(formal.statement_hash(), claim.statement_hash());
         assert!(formal.hash_is_consistent());
-        assert_eq!(formal.id().0, "math.example");
-        assert_eq!(formal.statement(), "P holds");
-        assert_eq!(formal.class(), ClaimClass::Mathematical);
-        assert_eq!(formal.layer(), LayerId::Mathematical);
+        assert_eq!(formal.statement(), "P holds forged");
     }
 }
