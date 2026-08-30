@@ -142,7 +142,7 @@ impl Verdict {
     ) -> Self {
         Self {
             kind,
-            class: claim.class,
+            class: claim.class(),
             derivation: claim.derivation(),
             empirical: claim.empirical(),
             semantic: claim.semantic(),
@@ -259,6 +259,10 @@ impl Verdict {
 /// no [`serde::Deserialize`] impl: JSON cannot mint a catalog identity.
 /// The English statement is private: a public assignment cannot rebind a
 /// kernel receipt, and same-module mutation still cannot keep a stale hash.
+/// Class, layer, assumptions, domain, and commitments are private too:
+/// overlays are [`Self::with_commitments`], [`Self::with_domain`], and
+/// [`Self::with_assumptions`]. The slug [`ClaimId`] and lemma edges stay
+/// public.
 ///
 /// Derivation, empirical, and semantic axes are private: a public field
 /// cannot mint [`DerivationAssurance::CertifiedNumeric`] or an
@@ -293,27 +297,32 @@ impl Verdict {
 /// );
 /// c.statement.push_str(" forged");
 /// ```
+///
+/// ```compile_fail
+/// let mut c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// c.class = physis_core::ClaimClass::Conjecture;
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Claim {
     /// Stable id, `theory.slug`.
     pub id: ClaimId,
     statement: String,
-    /// Layer the statement is about.
-    pub layer: LayerId,
-    /// What kind of sentence this is.
-    pub class: ClaimClass,
+    layer: LayerId,
+    class: ClaimClass,
     /// Derivation assurance. Constructors never produce a kernel proof.
     derivation: DerivationAssurance,
     /// Empirical axis.
     empirical: EmpiricalStatus,
     /// Encoding-review axis. Defaults to [`SemanticAssurance::Unreviewed`].
     semantic: SemanticAssurance,
-    /// Explicit assumptions (never empty: the encoding-internal default).
-    pub assumptions: AssumptionSet,
-    /// Domain of validity.
-    pub domain: DomainOfValidity,
-    /// First-class identity fields committed in [`Self::statement_hash`].
-    pub commitments: ClaimCommitments,
+    assumptions: AssumptionSet,
+    domain: DomainOfValidity,
+    commitments: ClaimCommitments,
     /// Lemma ids this claim uses. Not part of [`Self::statement_hash`]: a lab
     /// encoding of "this uses that" is not a change to the sentence.
     pub depends_on: Vec<ClaimId>,
@@ -356,11 +365,11 @@ impl Claim {
         ArtifactId::of(FormalClaim::canonical_bytes(
             &self.id.0,
             self.statement(),
-            self.class,
-            self.layer,
-            &self.assumptions,
-            &self.domain,
-            &self.commitments,
+            self.class(),
+            self.layer(),
+            self.assumptions(),
+            self.domain(),
+            self.commitments(),
         ))
     }
 
@@ -368,6 +377,31 @@ impl Claim {
     /// rebind a kernel receipt to different English.
     pub fn statement(&self) -> &str {
         &self.statement
+    }
+
+    /// Layer the statement is about.
+    pub const fn layer(&self) -> LayerId {
+        self.layer
+    }
+
+    /// What kind of sentence this is.
+    pub const fn class(&self) -> ClaimClass {
+        self.class
+    }
+
+    /// Explicit assumptions (never empty: the encoding-internal default).
+    pub fn assumptions(&self) -> &AssumptionSet {
+        &self.assumptions
+    }
+
+    /// Domain of validity. Extrapolating outside it is a new claim.
+    pub fn domain(&self) -> &DomainOfValidity {
+        &self.domain
+    }
+
+    /// First-class identity fields committed in [`Self::statement_hash`].
+    pub fn commitments(&self) -> &ClaimCommitments {
+        &self.commitments
     }
 
     /// How the deduction was tagged at construction. Never a kernel proof.
@@ -429,7 +463,7 @@ mod tests {
         );
         assert_eq!(c.derivation(), DerivationAssurance::Executed);
         assert_eq!(c.semantic(), SemanticAssurance::Unreviewed);
-        assert!(!c.assumptions.items.is_empty());
+        assert!(!c.assumptions().items.is_empty());
         let v = Verdict::holds(&c, "evaluator ran");
         assert_eq!(v.derivation(), DerivationAssurance::Executed);
         assert_eq!(v.class, ClaimClass::Mathematical);
@@ -499,7 +533,10 @@ mod tests {
             .with_commitments(ClaimCommitments::physlib_forall());
         assert_eq!(a.id, b.id);
         assert_ne!(a.statement_hash(), b.statement_hash());
-        assert_eq!(b.commitments.quantifier, crate::formal::Quantifier::ForAll);
+        assert_eq!(
+            b.commitments().quantifier,
+            crate::formal::Quantifier::ForAll
+        );
     }
 
     #[test]
@@ -517,7 +554,7 @@ mod tests {
         ));
         assert_eq!(a.id, b.id);
         assert_ne!(a.statement_hash(), b.statement_hash());
-        assert!(b.domain.regimes.iter().any(|r| r.contains("|k a| < 1")));
+        assert!(b.domain().regimes.iter().any(|r| r.contains("|k a| < 1")));
     }
 
     #[test]
@@ -528,7 +565,7 @@ mod tests {
             LayerId::Mathematical,
             ClaimClass::Mathematical,
         );
-        let mut items = a.assumptions.items.clone();
+        let mut items = a.assumptions().items.clone();
         items.push(crate::assumption::Assumption {
             id: "discrete-coboundary".into(),
             statement: "Oriented simplex coboundary".into(),
@@ -538,7 +575,7 @@ mod tests {
         assert_eq!(a.id, b.id);
         assert_ne!(a.statement_hash(), b.statement_hash());
         assert!(b
-            .assumptions
+            .assumptions()
             .items
             .iter()
             .any(|x| x.id == "discrete-coboundary"));

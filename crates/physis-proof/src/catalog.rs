@@ -318,14 +318,14 @@ mod tests {
         for spec in CATALOG {
             let live = spec.lab_claim();
             assert!(
-                !live.domain.is_encoding_wide(),
+                !live.domain().is_encoding_wide(),
                 "{} must name a regime, not encoding-wide",
                 spec.claim_id
             );
-            assert!(!live.domain.regimes.is_empty(), "{}", spec.claim_id);
+            assert!(!live.domain().regimes.is_empty(), "{}", spec.claim_id);
             let wide = Claim::new(spec.claim_id, spec.statement, spec.layer, spec.class)
                 .with_commitments((spec.commitments)());
-            assert!(wide.domain.is_encoding_wide());
+            assert!(wide.domain().is_encoding_wide());
             assert!(
                 !spec.matches(&FormalClaim::from_claim(&wide)),
                 "physlib forall with the encoding-wide placeholder is not {}",
@@ -339,7 +339,7 @@ mod tests {
         for spec in CATALOG {
             let live = spec.lab_claim();
             assert!(
-                live.assumptions
+                live.assumptions()
                     .items
                     .iter()
                     .any(|a| a.id == "encoding-is-the-model"),
@@ -348,7 +348,7 @@ mod tests {
             );
             for ax in spec.axioms {
                 assert!(
-                    live.assumptions.items.iter().any(|a| a.id == *ax),
+                    live.assumptions().items.iter().any(|a| a.id == *ax),
                     "{} missing assumption {ax}",
                     spec.claim_id
                 );

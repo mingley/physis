@@ -759,9 +759,9 @@ mod tests {
             .find(|cl| cl.id.0 == QUASI_STATIC_VALID)
             .unwrap();
         assert!(
-            !qs.domain.is_encoding_wide(),
+            !qs.domain().is_encoding_wide(),
             "lumped validity must name λ >> circuit size: {:?}",
-            qs.domain
+            qs.domain()
         );
         let maxwell = MaxwellVacuum;
         let mqs = maxwell
@@ -770,9 +770,9 @@ mod tests {
             .find(|cl| cl.id.0 == QUASI_STATIC_VALID)
             .unwrap();
         assert!(
-            mqs.domain.is_encoding_wide(),
+            mqs.domain().is_encoding_wide(),
             "Maxwell's inapplicable copy stays encoding-wide: {:?}",
-            mqs.domain
+            mqs.domain()
         );
     }
 

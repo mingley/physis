@@ -151,7 +151,7 @@ fn report_of(t: &dyn Theory) -> TheoryReport {
         .map(|(c, v)| ClaimVerdict {
             id: c.id.0.clone(),
             statement: c.statement().to_string(),
-            layer: c.layer.as_str().into(),
+            layer: c.layer().as_str().into(),
             kind: v.kind,
             class: v.class,
             derivation: v.derivation(),

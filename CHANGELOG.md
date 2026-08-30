@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Claim cannot assign class or rebind commitments**
+  (`Claim` class, layer, assumptions, domain, and commitments are
+  private). Overlays remain `with_commitments`, `with_domain`, and
+  `with_assumptions`. The slug and lemma edges stay public. Catalog d²
+  hash unchanged. Verified: compile-fail against assigning
+  `Claim.class`. Live prove of catalog d² is still Lean+nanoda. `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Claim cannot rebind the hashed sentence**
   (`Claim.statement` is private; `statement()` is the getter).
   Same-module mutation still cannot keep a stale hash; a public

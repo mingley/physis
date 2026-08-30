@@ -606,11 +606,11 @@ impl Lab {
                                 );
                             }
                             text.push_str(&format!("  identity:   {}\n", c.statement_hash()));
-                            for line in c.commitments.why_lines() {
+                            for line in c.commitments().why_lines() {
                                 text.push_str(&line);
                                 text.push('\n');
                             }
-                            for line in c.domain.why_lines() {
+                            for line in c.domain().why_lines() {
                                 text.push_str(&line);
                                 text.push('\n');
                             }
@@ -626,7 +626,7 @@ impl Lab {
                                 }
                             }
                             text.push_str("  assumptions:\n");
-                            for a in &c.assumptions.items {
+                            for a in &c.assumptions().items {
                                 text.push_str(&format!(
                                     "    - {} [{}]: {}\n",
                                     a.id,
@@ -957,7 +957,7 @@ impl Lab {
                             verdict.kind,
                             verdict.empirical(),
                             dual,
-                            c.layer,
+                            c.layer(),
                             verdict.intractable(),
                         ) {
                             if g == gap {
@@ -999,7 +999,7 @@ impl Lab {
                     verdict.kind,
                     verdict.empirical(),
                     dual,
-                    c.layer,
+                    c.layer(),
                     verdict.intractable(),
                 ) {
                     n += 1;
@@ -2446,7 +2446,7 @@ mod tests {
                     v.derivation()
                 );
                 assert_eq!(v.semantic(), physis_core::SemanticAssurance::Unreviewed);
-                assert!(!c.assumptions.items.is_empty());
+                assert!(!c.assumptions().items.is_empty());
             }
         }
     }

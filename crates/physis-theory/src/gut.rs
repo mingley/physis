@@ -491,45 +491,45 @@ mod tests {
         ] {
             let c = claim(id);
             assert!(
-                !c.domain.is_encoding_wide(),
+                !c.domain().is_encoding_wide(),
                 "{id} must name a regime, not encoding-wide: {:?}",
-                c.domain
+                c.domain()
             );
         }
         let scale = claim(GUT_WEINBERG_ANGLE);
         assert!(
             scale
-                .domain
+                .domain()
                 .regimes
                 .iter()
                 .any(|r| r.contains("unification-scale")),
             "GUT-scale 3/8 regime: {:?}",
-            scale.domain
+            scale.domain()
         );
         let mz = claim(GUT_WEINBERG_ANGLE_MZ);
         assert!(
-            mz.domain.regimes.iter().any(|r| r == "M_Z"),
+            mz.domain().regimes.iter().any(|r| r == "M_Z"),
             "GQW regime: {:?}",
-            mz.domain
+            mz.domain()
         );
         let interval = claim(GUT_WEINBERG_ANGLE_MZ_INTERVAL);
         assert!(
-            interval.domain.regimes.iter().any(|r| r == "M_Z"),
+            interval.domain().regimes.iter().any(|r| r == "M_Z"),
             "PDG interval regime: {:?}",
-            interval.domain
+            interval.domain()
         );
         // Super-K is not a Dataset; inventing a lifetime number would be a lie.
         let sk = claim(GUT_PROTON_LIFETIME_SK);
         assert!(
-            sk.domain.is_encoding_wide(),
+            sk.domain().is_encoding_wide(),
             "Super-K prose is not a named regime: {:?}",
-            sk.domain
+            sk.domain()
         );
         let trq = claim(GUT_CHARGE_QUANTIZATION);
         assert!(
-            trq.domain.is_encoding_wide(),
+            trq.domain().is_encoding_wide(),
             "Tr Q is executed ΣY, not a named mixing-angle regime: {:?}",
-            trq.domain
+            trq.domain()
         );
     }
 

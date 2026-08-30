@@ -455,21 +455,21 @@ mod tests {
             .find(|c| c.id.0 == DISPERSION)
             .unwrap();
         assert!(
-            !disp.domain.is_encoding_wide(),
+            !disp.domain().is_encoding_wide(),
             "long-wavelength dispersion must name a regime: {:?}",
-            disp.domain
+            disp.domain()
         );
         assert!(
-            disp.domain
+            disp.domain()
                 .regimes
                 .iter()
                 .any(|r| r.contains("longest non-zero")),
             "dispersion regime: {:?}",
-            disp.domain
+            disp.domain()
         );
         let stable = f.claims().into_iter().find(|c| c.id.0 == STABLE).unwrap();
         assert!(
-            stable.domain.is_encoding_wide(),
+            stable.domain().is_encoding_wide(),
             "stability is the current lattice encoding, not a hidden continuum regime"
         );
     }
@@ -534,12 +534,12 @@ mod tests {
             .unwrap();
         assert!(
             order_claim
-                .domain
+                .domain()
                 .regimes
                 .iter()
                 .any(|r| r.contains("|k a| < 1")),
             "second-order is a long-wavelength claim, not encoding-wide: {:?}",
-            order_claim.domain
+            order_claim.domain()
         );
         assert!((f.convergence_order() - 2.0).abs() < 0.1);
         // An absurdly coarse lattice is a resolution gap, not a failed stencil.

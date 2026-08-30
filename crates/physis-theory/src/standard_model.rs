@@ -886,48 +886,51 @@ mod tests {
         let claim = |id: &str| t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
         let anom = claim(claims::ANOMALY_CANCELLATION);
         assert!(
-            !anom.domain.is_encoding_wide(),
+            !anom.domain().is_encoding_wide(),
             "anomaly cancellation must name one generation: {:?}",
-            anom.domain
+            anom.domain()
         );
         assert!(
-            anom.domain
+            anom.domain()
                 .regimes
                 .iter()
                 .any(|r| r.contains("one SM generation")),
             "anomaly regime: {:?}",
-            anom.domain
+            anom.domain()
         );
         let y = claim(SM_HYPERCHARGE_DERIVED);
         assert!(
-            !y.domain.is_encoding_wide(),
+            !y.domain().is_encoding_wide(),
             "hypercharge solve must name one generation: {:?}",
-            y.domain
+            y.domain()
         );
         assert!(
-            y.domain
+            y.domain()
                 .regimes
                 .iter()
                 .any(|r| r.contains("one SM generation")),
             "hypercharge regime: {:?}",
-            y.domain
+            y.domain()
         );
         let h = claim(claims::CHARGE_QUANTIZATION);
         assert!(
-            !h.domain.is_encoding_wide(),
+            !h.domain().is_encoding_wide(),
             "hydrogen neutrality must name hydrogen: {:?}",
-            h.domain
+            h.domain()
         );
         assert!(
-            h.domain.regimes.iter().any(|r| r.contains("hydrogen atom")),
+            h.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("hydrogen atom")),
             "hydrogen regime: {:?}",
-            h.domain
+            h.domain()
         );
         let gens = claim(claims::THREE_GENERATIONS);
         assert!(
-            gens.domain.is_encoding_wide(),
+            gens.domain().is_encoding_wide(),
             "phenomenological generation count stays encoding-wide: {:?}",
-            gens.domain
+            gens.domain()
         );
     }
 

@@ -156,6 +156,18 @@
 //! c.statement.push_str(" forged");
 //! ```
 //!
+//! Class, layer, assumptions, domain, and commitments are private too:
+//!
+//! ```compile_fail
+//! let mut c = physis_core::claim::Claim::new(
+//!     "x",
+//!     "y",
+//!     physis_core::LayerId::Mathematical,
+//!     physis_core::ClaimClass::Mathematical,
+//! );
+//! c.class = physis_core::ClaimClass::Conjecture;
+//! ```
+//!
 //! JSON cannot mint a [`claim::Verdict`] overlay either (`certified-numeric`
 //! Holds is not a deserializable tag):
 //!

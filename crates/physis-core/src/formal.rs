@@ -311,21 +311,21 @@ impl FormalClaim {
         let statement_hash = ArtifactId::of(Self::canonical_bytes(
             &claim.id.0,
             claim.statement(),
-            claim.class,
-            claim.layer,
-            &claim.assumptions,
-            &claim.domain,
-            &claim.commitments,
+            claim.class(),
+            claim.layer(),
+            claim.assumptions(),
+            claim.domain(),
+            claim.commitments(),
         ));
         Self {
             id: claim.id.clone(),
             statement: claim.statement().to_string(),
             statement_hash,
-            assumptions: claim.assumptions.id.clone(),
-            domain: claim.domain.clone(),
-            class: claim.class,
-            layer: claim.layer,
-            commitments: claim.commitments.clone(),
+            assumptions: claim.assumptions().id.clone(),
+            domain: claim.domain().clone(),
+            class: claim.class(),
+            layer: claim.layer(),
+            commitments: claim.commitments().clone(),
         }
     }
 }

@@ -976,29 +976,29 @@ mod tests {
         let claim = |id: &str| t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
         let hodge = claim(HODGE_HARMONIC);
         assert!(
-            !hodge.domain.is_encoding_wide(),
+            !hodge.domain().is_encoding_wide(),
             "Hodge P2 must name the discrete Laplacian: {:?}",
-            hodge.domain
+            hodge.domain()
         );
         assert!(
             hodge
-                .domain
+                .domain()
                 .regimes
                 .iter()
                 .any(|r| r.contains("finite simplicial")),
             "Hodge regime: {:?}",
-            hodge.domain
+            hodge.domain()
         );
         assert!(
-            claim(EULER_POINCARE).domain.is_encoding_wide(),
+            claim(EULER_POINCARE).domain().is_encoding_wide(),
             "Euler–Poincaré is rank-cancellation, not a named Hodge regime"
         );
         assert!(
-            claim(CLOSED_EQUALS_EXACT).domain.is_encoding_wide(),
+            claim(CLOSED_EQUALS_EXACT).domain().is_encoding_wide(),
             "Poincaré stays encoding-wide"
         );
         assert!(
-            !claim(D_SQUARED_ZERO).domain.is_encoding_wide(),
+            !claim(D_SQUARED_ZERO).domain().is_encoding_wide(),
             "catalog d² already names a coboundary regime"
         );
     }
@@ -1064,18 +1064,18 @@ mod tests {
             .find(|c| c.id.0 == HODGE_HARMONIC)
             .unwrap();
         assert!(
-            !hodge.domain.is_encoding_wide(),
+            !hodge.domain().is_encoding_wide(),
             "Hodge P2 must name the discrete Laplacian regime: {:?}",
-            hodge.domain
+            hodge.domain()
         );
         assert!(
             hodge
-                .domain
+                .domain()
                 .regimes
                 .iter()
                 .any(|r| r.contains("finite simplicial")),
             "Hodge regime: {:?}",
-            hodge.domain
+            hodge.domain()
         );
         let euler = t
             .claims()
@@ -1083,9 +1083,9 @@ mod tests {
             .find(|c| c.id.0 == EULER_POINCARE)
             .unwrap();
         assert!(
-            euler.domain.is_encoding_wide(),
+            euler.domain().is_encoding_wide(),
             "Euler–Poincaré stays encoding-wide rank-cancellation: {:?}",
-            euler.domain
+            euler.domain()
         );
         assert_eq!(
             derivation(&t, D_SQUARED_ZERO),
@@ -1097,9 +1097,9 @@ mod tests {
             .into_iter()
             .find(|c| c.id.0 == D_SQUARED_ZERO)
             .unwrap();
-        assert_eq!(d2.commitments.quantifier, Quantifier::ForAll);
+        assert_eq!(d2.commitments().quantifier, Quantifier::ForAll);
         assert!(d2
-            .commitments
+            .commitments()
             .formal_libraries
             .iter()
             .any(|l| l == "physlib:unversioned"));
@@ -1108,15 +1108,15 @@ mod tests {
             .into_iter()
             .find(|c| c.id.0 == CLOSED_EQUALS_EXACT)
             .unwrap();
-        assert_eq!(poincare.commitments.quantifier, Quantifier::Unspecified);
+        assert_eq!(poincare.commitments().quantifier, Quantifier::Unspecified);
         assert!(
-            poincare.commitments.formal_libraries.is_empty(),
+            poincare.commitments().formal_libraries.is_empty(),
             "Poincaré is not a catalog polynomial"
         );
         assert!(
-            poincare.domain.is_encoding_wide(),
+            poincare.domain().is_encoding_wide(),
             "Poincaré stays encoding-wide; it is not discrete Hodge: {:?}",
-            poincare.domain
+            poincare.domain()
         );
         assert_eq!(
             derivation(&t, CLOSED_EQUALS_EXACT),
