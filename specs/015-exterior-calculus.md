@@ -28,13 +28,13 @@ computes topology: the first Betti number counts holes, and whether every closed
 
 | knob | effect |
 |---|---|
-| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`, `b₂ = 0`), `circle` (`b₁ = 1`), `torus` (`b₁ = 2`, `b₂ = 1`), `klein` (Klein bottle: `b₁ = 1`, `b₂ = 0`), or `sphere` (`S²`: `b₁ = 0`, `b₂ = 1`, `χ = 2`). Changing it changes the topology and flips `dec.closed-equals-exact` and/or `dec.fundamental-class`. |
+| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`, `b₂ = 0`), `circle` (`b₁ = 1`), `torus` (`b₁ = 2`, `b₂ = 1`), `klein` (Klein bottle: `b₁ = 1`, `b₂ = 0`), or `sphere` (`S²`: `b₁ = 0`, `b₂ = 1`, `χ = 2`). Changing it changes the topology and flips `dec.closed-equals-exact` and/or `dec.fundamental-class`. The coboundary identity is not this knob: `add-sign-flip` is an IR mutation. |
 
 ## Claims (all computed theorems)
 
 | id | meaning | how it is decided |
 |---|---|---|
-| `dec.d-squared-zero` | `d ∘ d = 0` | `d₁(d₀ f) = 0` for every basis 0-form, exactly |
+| `dec.d-squared-zero` | `d ∘ d = 0` | live IR equation is the catalog polynomial `(b−a)−(c−a)+(c−b)`; the evaluator also checks `d₁(d₀ f) = 0` on the complex. `add-sign-flip` fails this cell. Not a kernel proof by itself |
 | `dec.first-betti-number` | the number of holes `b₁` | `b₁ = n_edges − rank(d₁) − rank(d₀)`, ranks by Gaussian elimination |
 | `dec.closed-equals-exact` | every closed 1-form is exact (Poincaré) | holds iff `b₁ = 0` |
 | `dec.euler-poincare` | `V−E+F = b₀−b₁+b₂` | rank-cancellation of these Betti formulas, not a second path. Domain stays encoding-wide |
@@ -78,6 +78,8 @@ physis run de-rham                # disk: b₁ = 0, closed = exact (Poincaré ho
 physis set de-rham shape circle   # circle: b₁ = 1, closed ≠ exact
 physis set de-rham shape torus    # torus: b₁ = 2, χ = 0, harmonic dim 2
 physis set de-rham shape sphere   # S²: b₁ = 0, b₂ = 1, χ = 2; Poincaré still holds
+physis hypothesize de-rham        # add-sign-flip is IR, not set
+physis encode de-rham             # coboundary identity; not P3S, not a kernel proof
 ```
 
 Changing the `shape` changes the topology. The first Betti number, computed from

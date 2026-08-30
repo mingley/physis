@@ -32,6 +32,21 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **De Rham coboundary identity is an IR package**
+  (`de-rham`, `add-sign-flip`). The catalog polynomial
+  `(b − a) − (c − a) + (c − b)` is the live encoding, with
+  `lean_ref` pointing at Physlib `d_squared_zero`. Flipping the
+  first minus fails `dec.d-squared-zero` from that encoding. The
+  residual is 2 at `(a,b,c)=(1,0,0)` and is evidence, not the
+  encoding. That is not a knob. Poincaré, Betti, and Hodge still
+  follow the `shape` knob. Mutants stay `de-rham`; they are not a
+  silent Maxwell install. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  IR round-trip; set sign_flip is unknown; hypothesize de-rham;
+  live coboundary restored; encode pin
+  `187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6`.
+
 - **Planck Wien occupation is an IR mutation**
   (`planck`, `add-wien`). Planck–Bose is the live encoding
   (`mode planck-bose`); appending `mode wien` uses ⟨E⟩ = hν e^{−x}

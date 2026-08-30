@@ -13,6 +13,9 @@
 //! that is *not* exact. A `filled` knob flips this — topology as a knob → verdict
 //! diff.
 //!
+//! The coboundary identity lives on the IR package. Flipping the first
+//! minus (`add-sign-flip`) is a package mutation, not the `shape` knob.
+//!
 //! Grade is a type error to mix:
 //!
 //! ```compile_fail
@@ -32,10 +35,16 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
+use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::World;
-use physis_proof::lookup;
+use physis_proof::catalog::discrete_d2;
+use physis_proof::{lookup, parse_expr};
 
 use crate::framework::Theory;
+
+/// Catalog coboundary identity on an oriented 2-simplex, as an IR equation.
+/// This is `d₁(d₀ f)` for vertex values `a,b,c`. Not a kernel proof.
+const COBOUNDARY_EQ: &str = "(b - a) - (c - a) + (c - b)";
 
 /// A type-level differential-form grade.
 pub trait Grade {
@@ -490,22 +499,99 @@ impl Shape {
 /// - `dec.fundamental-class`: `b₂ = 1` (an orientable closed surface over ℝ).
 ///
 /// The `shape` knob (`disk`, `circle`, `torus`, `klein`, `sphere`) selects the complex.
-#[derive(Clone, Debug)]
+///
+/// The coboundary identity lives on the IR package. Flipping the first
+/// minus (`add-sign-flip`) is a package mutation, not a knob: `d² = 0`
+/// fails. `shape` still selects topology.
+#[derive(Clone, Debug, PartialEq)]
 pub struct DeRham {
     /// Which simplicial complex to evaluate on.
     shape: Shape,
+    /// Whether the coboundary identity has the first minus flipped.
+    sign_flip: bool,
 }
 
 impl Default for DeRham {
     fn default() -> Self {
         // The disk is the contractible default.
-        Self { shape: Shape::Disk }
+        Self {
+            shape: Shape::Disk,
+            sign_flip: false,
+        }
     }
 }
 
 impl DeRham {
     fn complex(&self) -> Complex {
         self.shape.complex()
+    }
+
+    fn flipped_coboundary_eq() -> String {
+        COBOUNDARY_EQ.replacen(" - ", " + ", 1)
+    }
+
+    /// IR package for this coboundary encoding. Equations are the catalog
+    /// identity tree, or the first-minus flip. `shape` stays on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let spec = lookup(D_SQUARED_ZERO).expect("d² is a catalog identity");
+        let equation = if self.sign_flip {
+            Self::flipped_coboundary_eq()
+        } else {
+            COBOUNDARY_EQ.to_string()
+        };
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["discrete-coboundary".into()],
+            equations: vec![equation],
+            claims: vec![physis_ir::ClaimDecl {
+                id: D_SQUARED_ZERO.into(),
+                statement: spec.statement.into(),
+                layer: "mathematical".into(),
+                class: "mathematical".into(),
+            }],
+            lean_ref: if self.sign_flip {
+                None
+            } else {
+                Some(spec.lean_type.into())
+            },
+        }
+    }
+
+    /// Load a coboundary encoding from a package. Knobs default; overlay
+    /// them from a live de-rham object when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "de-rham" {
+            return Err(format!("de-rham package id '{}' is not de-rham", pkg.id));
+        }
+        if pkg.equations.len() != 1 {
+            return Err(format!(
+                "de-rham package must have one coboundary equation, got {}",
+                pkg.equations.len()
+            ));
+        }
+        let tree = parse_expr(&pkg.equations[0])
+            .map_err(|e| format!("de-rham coboundary equation: {e}"))?
+            .canonical();
+        let live = discrete_d2().canonical();
+        let flipped = parse_expr(&Self::flipped_coboundary_eq())
+            .map_err(|e| format!("de-rham flipped coboundary: {e}"))?
+            .canonical();
+        let sign_flip = if tree == live {
+            false
+        } else if tree == flipped {
+            true
+        } else {
+            return Err(format!(
+                "de-rham equation is not the coboundary identity or its first-minus flip: {}",
+                pkg.equations[0]
+            ));
+        };
+        Ok(Self {
+            sign_flip,
+            ..Self::default()
+        })
     }
 }
 
@@ -574,9 +660,11 @@ impl Theory for DeRham {
     }
     fn summary(&self) -> &'static str {
         "Discrete exterior calculus on a simplicial complex. d²=0 is an exact \
-         theorem of the coboundary; Betti numbers, computed from incidence ranks, \
-         count holes and voids; Poincaré (closed = exact) and the fundamental \
-         class (b₂ = 1) detect topology — flipped by the `shape` knob."
+         identity of the coboundary encoding on the IR package; flipping the \
+         first minus is an IR mutation, not the shape knob. Betti numbers, \
+         computed from incidence ranks, count holes and voids; Poincaré \
+         (closed = exact) and the fundamental class (b₂ = 1) detect topology \
+         — flipped by the `shape` knob."
     }
     fn world(&self) -> Option<World> {
         None // pure mathematics: no spacetime/gauge/spectrum projection
@@ -645,22 +733,45 @@ impl Theory for DeRham {
         let c = self.complex();
         match claim.id_str() {
             D_SQUARED_ZERO => {
-                // d₁(d₀ f) = 0 for a basis of 0-cochains ⇒ d∘d = 0 exactly.
-                let mut worst = 0.0_f64;
-                for i in 0..c.n_vertices {
-                    let mut f = Cochain::<G0>::zero(c.n_vertices);
-                    f.values[i] = 1.0;
-                    let ddf = c.d1(&c.d0(&f));
-                    worst = worst.max(ddf.values.iter().fold(0.0, |m, v| m.max(v.abs())));
-                }
-                if worst < 1e-12 {
-                    Verdict::holds(claim, "d₁∘d₀ = 0 on every basis 0-form (curl grad = 0)")
-                        .with_evidence([format!(
-                            "max |d(d f)| = {worst:.2e} over all {} basis functions",
-                            c.n_vertices
-                        )])
+                if self.sign_flip {
+                    // Flipped identity (b+a)-(c-a)+(c-b) at (1,0,0) is 2.
+                    // Restoring the minus at the same point is 0 and the
+                    // cell still fails: that residual is evidence, not the
+                    // encoding. The simplicial coboundary ranks are not this
+                    // cell. shape stays a knob.
+                    let (a, b, c) = (1i128, 0i128, 0i128);
+                    let residual = (b + a) - (c - a) + (c - b);
+                    let restored = (b - a) - (c - a) + (c - b);
+                    Verdict::fails(
+                        claim,
+                        "sign-flipped coboundary identity is not identically zero",
+                    )
+                    .with_evidence([
+                        format!(
+                            "(b+a)-(c-a)+(c-b) at (a,b,c)=(1,0,0) = {residual}"
+                        ),
+                        format!(
+                            "restoring the first minus at that point is {restored}; the cell still fails"
+                        ),
+                    ])
                 } else {
-                    Verdict::fails(claim, format!("d∘d ≠ 0: max = {worst:.2e}"))
+                    // d₁(d₀ f) = 0 for a basis of 0-cochains ⇒ d∘d = 0 exactly.
+                    let mut worst = 0.0_f64;
+                    for i in 0..c.n_vertices {
+                        let mut f = Cochain::<G0>::zero(c.n_vertices);
+                        f.values[i] = 1.0;
+                        let ddf = c.d1(&c.d0(&f));
+                        worst = worst.max(ddf.values.iter().fold(0.0, |m, v| m.max(v.abs())));
+                    }
+                    if worst < 1e-12 {
+                        Verdict::holds(claim, "d₁∘d₀ = 0 on every basis 0-form (curl grad = 0)")
+                            .with_evidence([format!(
+                                "max |d(d f)| = {worst:.2e} over all {} basis functions",
+                                c.n_vertices
+                            )])
+                    } else {
+                        Verdict::fails(claim, format!("d∘d ≠ 0: max = {worst:.2e}"))
+                    }
                 }
             }
             FIRST_BETTI => {
@@ -784,6 +895,33 @@ impl Theory for DeRham {
             }
             _ => Verdict::inapplicable(claim, "claim not made by the de Rham object"),
         }
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.sign_flip = parsed.sign_flip;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.sign_flip {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(&pkg, &PackageMutation::FlipFirstMinus);
+        if let Ok(parsed) = Self::from_package(&mutated) {
+            if parsed.sign_flip {
+                let mut fork = self.clone();
+                fork.sign_flip = true;
+                return vec![("add-sign-flip".into(), Box::new(fork))];
+            }
+        }
+        Vec::new()
     }
 }
 
@@ -1162,5 +1300,144 @@ mod tests {
         assert_eq!(matrix_rank(vec![vec![1.0, 0.0], vec![0.0, 1.0]]), 2);
         assert_eq!(matrix_rank(vec![vec![1.0, 1.0], vec![2.0, 2.0]]), 1);
         assert_eq!(matrix_rank(vec![vec![0.0, 0.0], vec![0.0, 0.0]]), 0);
+    }
+
+    #[test]
+    fn coboundary_sign_flip_is_ir_not_a_knob() {
+        let t = DeRham::default();
+        assert!(!t.sign_flip);
+        assert_eq!(kind(&t, D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
+        let live_hash = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == D_SQUARED_ZERO)
+            .unwrap()
+            .statement_hash();
+        assert_eq!(
+            live_hash,
+            lookup(D_SQUARED_ZERO).unwrap().lab_claim().statement_hash(),
+            "IR must not change the catalog FormalClaim identity"
+        );
+        assert_eq!(
+            parse_expr(COBOUNDARY_EQ).unwrap().canonical(),
+            discrete_d2().canonical()
+        );
+
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(DeRham::from_package(&pkg).unwrap(), t);
+        let mutated = apply_mutation(&pkg, &PackageMutation::FlipFirstMinus);
+        let parsed = DeRham::from_package(&mutated).unwrap();
+        assert!(parsed.sign_flip);
+        let mut fork = t.clone();
+        fork.sign_flip = true;
+        assert_eq!(fork.id(), "de-rham");
+        assert_eq!(kind(&fork, D_SQUARED_ZERO), VerdictKind::Fails);
+        assert_eq!(kind(&fork, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
+        assert_eq!(kind(&fork, FIRST_BETTI), VerdictKind::Holds);
+        assert_eq!(kind(&fork, HODGE_HARMONIC), VerdictKind::Holds);
+        assert_eq!(
+            kind(&t, D_SQUARED_ZERO),
+            VerdictKind::Holds,
+            "live coboundary is still nilpotent"
+        );
+        assert_eq!(
+            derivation(&fork, D_SQUARED_ZERO),
+            DerivationAssurance::Executed
+        );
+        assert_ne!(
+            derivation(&fork, D_SQUARED_ZERO),
+            DerivationAssurance::CertifiedNumeric
+        );
+        let cell = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == D_SQUARED_ZERO)
+            .unwrap();
+        let v = fork.evaluate(&cell);
+        assert!(
+            !v.summary.contains("shape") && !v.summary.contains("Poincaré"),
+            "sign flip is not the shape knob: {}",
+            v.summary
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("(1,0,0)") && e.contains("2")),
+            "got {:?}",
+            v.evidence
+        );
+        assert!(
+            fork.set("sign_flip", physis_core::knob::KnobValue::Bool(true))
+                .is_err(),
+            "sign_flip must not be a knob"
+        );
+        let mut circled = fork.clone();
+        circled
+            .set("shape", KnobValue::Choice("circle".into()))
+            .unwrap();
+        assert_eq!(kind(&circled, CLOSED_EQUALS_EXACT), VerdictKind::Fails);
+        assert_eq!(kind(&circled, D_SQUARED_ZERO), VerdictKind::Fails);
+
+        let probes = DeRham::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-sign-flip"),
+            "live de-rham must offer add-sign-flip: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-sign-flip")
+            .expect("add-sign-flip");
+        assert_eq!(kind(probe.1.as_ref(), D_SQUARED_ZERO), VerdictKind::Fails);
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-sign-flip"),
+            "sign-flip fork must not re-offer add-sign-flip"
+        );
+        let live = DeRham::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut disk = DeRham::default();
+        disk.set("shape", KnobValue::Choice("torus".into()))
+            .unwrap();
+        let rebuilt = disk.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("shape").unwrap().display(),
+            "torus",
+            "reparse must keep the shape knob"
+        );
+        assert_eq!(kind(rebuilt.as_ref(), D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(
+            kind(rebuilt.as_ref(), CLOSED_EQUALS_EXACT),
+            VerdictKind::Fails
+        );
+        let d2 = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == D_SQUARED_ZERO)
+            .unwrap();
+        assert!(
+            !d2.domain().is_encoding_wide(),
+            "catalog d² must keep the coboundary domain: {:?}",
+            d2.domain()
+        );
+        assert!(
+            crate::computation::TuringMachine::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-sign-flip"),
+            "turing-machine must not grow add-sign-flip"
+        );
+        assert!(
+            crate::blackbody::Blackbody::planck()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-sign-flip"),
+            "planck must not grow add-sign-flip"
+        );
     }
 }
