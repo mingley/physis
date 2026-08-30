@@ -5820,6 +5820,111 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_special_relativity_binomial_gamma_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["binomial_gamma", "gamma", "truncated"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "special-relativity".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("special-relativity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-binomial-gamma") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-binomial-gamma: package → add-binomial-gamma";
+        let start = text.find(marker).expect("add-binomial-gamma hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  special-relativity  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let bin_block = &rest[..end];
+        assert!(
+            bin_block.contains("sr.invariant-interval") && bin_block.contains("holds → fails"),
+            "add-binomial-gamma must flip interval holds to fails: {bin_block}"
+        );
+        assert!(
+            bin_block.contains("sr.energy-momentum-invariant")
+                && bin_block.contains("holds → fails"),
+            "add-binomial-gamma must flip mass-shell holds to fails: {bin_block}"
+        );
+        assert!(
+            !bin_block.contains("sr.subluminal-composition"),
+            "add-binomial-gamma is not the Galilean composition fork: {bin_block}"
+        );
+        assert!(
+            text.contains("absolute_time"),
+            "absolute_time must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("special-relativity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "sr.invariant-interval" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("absolute_time").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let gal = lab.exec(Command::Set {
+            theory: "special-relativity".into(),
+            knob: "absolute_time".into(),
+            value: "true".into(),
+        });
+        assert_eq!(gal.exit_code(), 0, "{}", gal.text());
+        assert!(
+            gal.text().contains("sr.subluminal-composition")
+                && gal.text().contains("holds → fails"),
+            "absolute_time still flips composition: {}",
+            gal.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "special-relativity".into(),
+            knob: "absolute_time".into(),
+            value: "false".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "sr.invariant-interval".into(),
+            })
+            .text()
+            .to_string();
+        let sr = why_theory_block(&why, "special-relativity");
+        assert!(
+            sr.contains("1+1 Minkowski"),
+            "interval must keep the catalog domain: {sr}"
+        );
+        assert!(
+            !sr.contains("not yet a machine-checked regime"),
+            "interval must not be encoding-wide: {sr}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -7371,6 +7476,10 @@ mod tests {
             "loop must independently round-trip the Einstein-Hilbert action: {text}"
         );
         assert!(
+            text.contains("encode  special-relativity"),
+            "loop must independently round-trip the Lorentz boost: {text}"
+        );
+        assert!(
             !text.contains("encode  standard-model"),
             "the Standard Model has no IR package: {text}"
         );
@@ -8722,6 +8831,24 @@ mod tests {
         assert_ne!(gr_id, dirac_id);
         assert_ne!(gr_id, newton_id);
 
+        let sr = lab
+            .exec(Command::Encode {
+                theory: "special-relativity".into(),
+            })
+            .text()
+            .to_string();
+        assert!(sr.contains("equations  1"), "{sr}");
+        assert!(sr.contains("round-trip canonical"), "{sr}");
+        assert!(sr.contains("not P3S"), "{sr}");
+        assert!(!sr.contains("receipt"), "{sr}");
+        let sr_id = encoding_package_id(&sr);
+        assert_eq!(
+            sr_id.to_hex(),
+            "4e8c15ecdfc2a60f3bf481898c7cb3e852d22ab9884f377b7728662c3f830c1e"
+        );
+        assert_ne!(sr_id, gr_id);
+        assert_ne!(sr_id, nand_id);
+
         for theory in ["standard-model", "type-iib", "de-rham", "turing-machine"] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
@@ -9011,6 +9138,25 @@ mod tests {
             encoding_package_id(&gr_again),
             gr_id,
             "hypothesize must not install the R-squared mutant"
+        );
+
+        let hypo_sr = lab
+            .exec(Command::Hypothesize {
+                theory: Some("special-relativity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_sr.contains("add-binomial-gamma"), "{hypo_sr}");
+        let sr_again = lab
+            .exec(Command::Encode {
+                theory: "special-relativity".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&sr_again),
+            sr_id,
+            "hypothesize must not install the binomial-gamma mutant"
         );
 
         let p3s = lab

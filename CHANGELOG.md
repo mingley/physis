@@ -12,6 +12,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **SR truncated binomial γ is an IR mutation**
+  (`special-relativity`, `add-binomial-gamma`). Exact Lorentz is the
+  live encoding (`boost lorentz`); appending `boost binomial-gamma`
+  uses γ = 1 + β²/2 and flips `sr.invariant-interval` and
+  `sr.energy-momentum-invariant` holds to fails. The residual is
+  γ_L − γ_bin ≈ 0.07 at β = 0.6 and is evidence, not the encoding:
+  β → 0 recovers Lorentz and the interval cell still fails. That is
+  not a knob. Velocity composition still holds (Einstein addition).
+  `absolute_time` stays a knob and still flips all three claims.
+  Interval keeps the catalog Minkowski domain. Mutants stay
+  `special-relativity`; they are not a silent Galilean install.
+  Mutants are not installed, not journaled, and not Canonical or P4.
+  Catalog d² hash unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: IR round-trip; set binomial_gamma is
+  unknown; hypothesize special-relativity; live Lorentz restored;
+  encode pin
+  `4e8c15ecdfc2a60f3bf481898c7cb3e852d22ab9884f377b7728662c3f830c1e`.
+
 - **GR quadratic curvature is an IR mutation**
   (`general-relativity`, `add-r-squared`). Einstein-Hilbert is the live
   encoding (`action einstein-hilbert`); appending `action r-squared`

@@ -148,6 +148,7 @@ cargo run -p physis -- set olbers-static finite_age true   # catastrophe fails �
 cargo run -p physis -- experiment bell
 cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus/klein/sphere
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
+cargo run -p physis -- hypothesize special-relativity  # add-binomial-gamma is IR, not set
 cargo run -p physis -- set special-relativity absolute_time true
 cargo run -p physis -- run su5-gut          # SU(5): 3/8 at M_GUT; GQW misses 0.231 at M_Z
 cargo run -p physis -- set su5-gut supersymmetric true   # GQW + unification fail → hold

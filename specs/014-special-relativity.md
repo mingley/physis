@@ -23,11 +23,19 @@ expression would not compile.
 |---|---|
 | `special-relativity` | flat Minkowski kinematics with a Galilean-toggle knob |
 
+The Lorentz boost lives on the IR package (`boost lorentz`).
+`add-binomial-gamma` appends `boost binomial-gamma` and is an IR
+mutation: truncated γ = 1 + β²/2 fails interval and mass-shell
+invariance. That is still `special-relativity`, not a silent
+`absolute_time` turn. Velocity composition stays Einstein on that
+fork. `absolute_time` still switches exact Lorentz to Galilean and
+flips all three claims.
+
 ## Knob
 
 | knob | effect |
 |---|---|
-| `absolute_time` | If `true`, boosts are Galilean (time is absolute) instead of Lorentzian. Flips all three claims `holds → fails`. |
+| `absolute_time` | If `true`, boosts are Galilean (time is absolute) instead of Lorentzian. Flips all three claims `holds → fails`. Boost topology is not this knob: `add-binomial-gamma` is an IR mutation. |
 
 ## Claims (all computed theorems)
 
@@ -71,6 +79,7 @@ Lorentz by default, Galilean under the knob:
 
 ```
 physis run special-relativity            # all three: holds
+physis hypothesize special-relativity    # add-binomial-gamma is IR, not set
 physis set special-relativity absolute_time true
 ```
 
