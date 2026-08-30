@@ -852,6 +852,7 @@ impl Lab {
                             verdict.kind,
                             verdict.empirical,
                             dual,
+                            c.layer,
                         ) {
                             if g == gap {
                                 n += 1;
@@ -1384,17 +1385,25 @@ fn gap_for(
     kind: VerdictKind,
     empirical: physis_core::EmpiricalStatus,
     dual_checked: bool,
+    layer: LayerId,
 ) -> Option<GapReason> {
     if dual_checked {
         return None;
     }
     use physis_core::ClaimClass::*;
     // Open / conjectural / heuristic stay scientific gaps even when the
-    // evaluator reports Undecidable (P vs NP). A computed Undecidable
-    // (halting) is not a missing lemma.
+    // evaluator reports Undecidable (P vs NP). Information-layer
+    // Undecidable is computability (halting, Rice). Other undecidable
+    // evaluations are encoding gaps, not logical undecidability.
     match class {
         Conjecture | OpenProblem | Heuristic => Some(GapReason::ScientificOpenProblem),
-        _ if kind == VerdictKind::Undecidable => Some(GapReason::LogicallyUndecidable),
+        _ if kind == VerdictKind::Undecidable => {
+            if layer == LayerId::Information {
+                Some(GapReason::LogicallyUndecidable)
+            } else {
+                Some(GapReason::UnsupportedFormalPrimitive)
+            }
+        }
         Mathematical | ModelInternal | Phenomenological
             if derivation != physis_core::DerivationAssurance::Asserted =>
         {
@@ -2065,6 +2074,24 @@ mod tests {
                 .any(|l| l.contains("turing-machine") && l.contains("comp.halts")),
             "{undec}"
         );
+        assert!(
+            !undec.lines().any(|l| l.contains("empirical.sm-gauge")),
+            "Type II SM gauge is an encoding gap, not Rice/halting: {undec}"
+        );
+
+        let encoding = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("unsupported-formal-primitive".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            encoding
+                .lines()
+                .any(|l| l.contains("type-iia") && l.contains("empirical.sm-gauge")),
+            "{encoding}"
+        );
 
         let p0 = lab
             .exec(Command::Inspect {
@@ -2148,8 +2175,29 @@ mod tests {
             VerdictKind::Undecidable,
             physis_core::EmpiricalStatus::NotApplicable,
             false,
+            LayerId::Information,
         );
         assert_eq!(halt, Some(GapReason::LogicallyUndecidable));
+
+        let rice = gap_for(
+            physis_core::ClaimClass::Phenomenological,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Undecidable,
+            physis_core::EmpiricalStatus::NotApplicable,
+            false,
+            LayerId::Information,
+        );
+        assert_eq!(rice, Some(GapReason::LogicallyUndecidable));
+
+        let sm_gauge = gap_for(
+            physis_core::ClaimClass::Phenomenological,
+            physis_core::DerivationAssurance::Executed,
+            VerdictKind::Undecidable,
+            physis_core::EmpiricalStatus::NotApplicable,
+            false,
+            LayerId::Interaction,
+        );
+        assert_eq!(sm_gauge, Some(GapReason::UnsupportedFormalPrimitive));
 
         let p_vs_np = gap_for(
             physis_core::ClaimClass::OpenProblem,
@@ -2157,6 +2205,7 @@ mod tests {
             VerdictKind::Undecidable,
             physis_core::EmpiricalStatus::Untested,
             false,
+            LayerId::Mathematical,
         );
         assert_eq!(p_vs_np, Some(GapReason::ScientificOpenProblem));
 
@@ -2166,6 +2215,7 @@ mod tests {
             VerdictKind::Holds,
             physis_core::EmpiricalStatus::NotApplicable,
             false,
+            LayerId::Mathematical,
         );
         assert_eq!(d2, Some(GapReason::MissingTheorem));
 
@@ -2175,6 +2225,7 @@ mod tests {
             VerdictKind::Holds,
             physis_core::EmpiricalStatus::NotApplicable,
             true,
+            LayerId::Mathematical,
         );
         assert_eq!(proved, None);
     }
