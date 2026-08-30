@@ -144,6 +144,44 @@ fn derive_hypercharges() -> Option<DerivedHypercharges> {
     })
 }
 
+/// Electric charges `Q = T₃ + Y` from derived hypercharges (units of `e`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct DerivedCharges {
+    q_u: Ratio,
+    q_d: Ratio,
+    q_e: Ratio,
+}
+
+/// Map hypercharges to electric charges. `None` if left-handed `T₃+Y` disagrees
+/// with `−Y` of the conjugate singlets, or if the neutrino is charged.
+fn charges_from_hypercharges(d: DerivedHypercharges) -> Option<DerivedCharges> {
+    let half = Ratio::new(1, 2);
+    let q_u_l = half + d.y_q;
+    let q_d_l = -half + d.y_q;
+    let q_e_l = -half + d.y_l;
+    let q_nu = half + d.y_l;
+    // y_ud is sorted: anti-up Y = −2/3, anti-down Y = 1/3. Q(f_R) = −Y(f_R^c).
+    let q_u_r = -d.y_ud[0];
+    let q_d_r = -d.y_ud[1];
+    let q_e_r = -d.y_e;
+    if q_u_l != q_u_r || q_d_l != q_d_r || q_e_l != q_e_r || !q_nu.is_zero() {
+        return None;
+    }
+    Some(DerivedCharges {
+        q_u: q_u_l,
+        q_d: q_d_l,
+        q_e: q_e_l,
+    })
+}
+
+fn derived_charges() -> Option<DerivedCharges> {
+    charges_from_hypercharges(derive_hypercharges()?)
+}
+
+fn hydrogen_charge_exact(q: DerivedCharges) -> Ratio {
+    Ratio::int(2) * q.q_u + q.q_d + q.q_e
+}
+
 /// Σ T₃² over an SU(2) irrep of dimension `d`: `j(j+1)(2j+1)/3` with
 /// `j = (d−1)/2`. A doublet gives `1/2`, a singlet `0`, a triplet `2`.
 fn weak_t3_sq(weak_dim: f64) -> f64 {
@@ -580,21 +618,42 @@ impl Theory for StandardModel {
                     )
                 }
             }
-            claims::CHARGE_QUANTIZATION => {
-                let h = hydrogen_charge_thirds();
-                if h == 0 {
-                    Verdict::holds(claim,
-                        "a hydrogen atom (uud + e⁻) is exactly neutral",
-                    )
-                    .with_evidence([
-                        "computed from the catalog: 2·Q(u) + Q(d) + Q(e⁻) = 0 (units of e/3)".to_string(),
-                    ])
-                } else {
-                    Verdict::fails(claim,
-                        format!("hydrogen net charge = {h}/3 ≠ 0"),
-                    )
+            claims::CHARGE_QUANTIZATION => match derived_charges() {
+                Some(q) => {
+                    let h = hydrogen_charge_exact(q);
+                    if h.is_zero() {
+                        if hydrogen_charge_thirds() != 0 {
+                            Verdict::fails(
+                                claim,
+                                "catalog charge-thirds disagree with T₃ + Y hydrogen neutrality",
+                            )
+                        } else {
+                            Verdict::holds(
+                                claim,
+                                "a hydrogen atom (uud + e⁻) is exactly neutral from Q = T₃ + Y",
+                            )
+                            .with_evidence([
+                                format!(
+                                    "derived Q_u = {}, Q_d = {}, Q_e = {} (exact Ratio, T₃ + Y)",
+                                    q.q_u, q.q_d, q.q_e
+                                ),
+                                "2 Q_u + Q_d + Q_e = 0; left-handed T₃+Y matches −Y of conjugate singlets; ν is neutral"
+                                    .to_string(),
+                            ])
+                            .with_certified_numeric()
+                        }
+                    } else {
+                        Verdict::fails(
+                            claim,
+                            format!("hydrogen net charge = {h} ≠ 0 from T₃ + Y"),
+                        )
+                    }
                 }
-            }
+                None => Verdict::fails(
+                    claim,
+                    "could not derive consistent electric charges from T₃ + Y",
+                ),
+            },
             claims::GRAVITY => {
                 if self.include_gravity {
                     Verdict::holds(claim,
@@ -694,6 +753,11 @@ mod tests {
     #[test]
     fn hydrogen_is_neutral_by_computation() {
         assert_eq!(hydrogen_charge_thirds(), 0);
+        let q = derived_charges().expect("SM hypercharges determine Q");
+        assert_eq!(q.q_u, Ratio::new(2, 3));
+        assert_eq!(q.q_d, Ratio::new(-1, 3));
+        assert_eq!(q.q_e, Ratio::int(-1));
+        assert!(hydrogen_charge_exact(q).is_zero());
         let t = StandardModel::default();
         let c = t
             .claims()
@@ -703,6 +767,15 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
+        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert!(v.evidence.iter().any(|e| e.contains("Q_u = 2/3")));
+    }
+
+    #[test]
+    fn left_right_charge_mismatch_is_not_a_certificate() {
+        let mut d = derive_hypercharges().expect("SM discriminant is a square");
+        d.y_e = Ratio::int(0);
+        assert!(charges_from_hypercharges(d).is_none());
     }
 
     #[test]

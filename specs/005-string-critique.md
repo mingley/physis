@@ -62,6 +62,8 @@ a Ratio certificate.
 
 The Standard Model also carries `sm.hypercharge-derivation`, which goes one step further than checking cancellation: it **solves** the anomaly conditions for the hypercharges themselves in exact `Ratio` arithmetic. Fixing only the normalization `Y_Q = 1/6`, the linear anomalies give `Y_L = −1/2` and `Y_e = 1`, and the `[U(1)]³` cubic then forces `{Y_u, Y_d} = {−2/3, 1/3}` as roots of a quadratic whose discriminant is the square `1` in Q (`Ratio::checked_sqrt`). The measured assignments come out as a *consequence* of consistency, not an input (`derive_hypercharges`). If the discriminant is not a square, the cell Fails and does not mint P3N. This is the mechanized form of "accommodate vs derive": here the SM genuinely *derives* its charges. That overlay is also `CertifiedNumeric` / P3N, not a Lean receipt.
 
+`empirical.charge-quantization` then sets `Q = T₃ + Y` from those derived hypercharges. Left-handed doublet charges must match `−Y` of the conjugate singlets, the neutrino is neutral, and a hydrogen atom `2 Q_u + Q_d + Q_e` vanishes exactly. That overlay is a third P3N cell, not a catalog lookup of charge-thirds, not GUT `Tr Q`, and not Lean. A left/right mismatch Fails without P3N.
+
 ## Distinctive critique facts encoded as heuristics / conjectures
 
 - Landscape cardinality grows with extra dimensions and flux bits

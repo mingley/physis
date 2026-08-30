@@ -24,7 +24,7 @@ Nothing gains authority merely because an agent wrote code that returns
   earned when an evaluator overlays `CertifiedNumeric` after an exact
   `Ratio` cancellation or an exact `Ratio` solve (Standard Model chiral
   anomalies, and the hypercharge quadratic whose discriminant is a
-  square in Q). `CrossChecked` / P2 is earned when two independent
+  square in Q, and hydrogen neutrality from `Q = T₃ + Y`). `CrossChecked` / P2 is earned when two independent
   executable paths agree (`dec.hodge-harmonic`: Laplacian nullity vs
   coboundary `b₁`). Euler–Poincaré stays `executed`: with these Betti
   formulas, `b₀−b₁+b₂ ≡ V−E+F` is rank-cancellation, not a second path.
@@ -120,7 +120,7 @@ dual expanders. `physis prove` uses the same preference.
 | B2. Einstein composition | Same backends; `|w|<1` over ℝ remains the evaluator |
 | B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
-| C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); `CertifiedNumeric` / P3N, not Lean |
+| C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; `CertifiedNumeric` / P3N, not Lean |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |
 

@@ -1746,8 +1746,18 @@ mod tests {
             "exact Ratio hypercharge roots must mint P3N: {p3n}"
         );
         assert!(
-            p3n.lines().any(|l| l.trim() == "count 2"),
-            "P3N is the two SM exact-Ratio cells, not more: {p3n}"
+            p3n.lines().any(
+                |l| l.contains("standard-model") && l.contains("empirical.charge-quantization")
+            ),
+            "hydrogen neutrality from T3+Y must mint P3N: {p3n}"
+        );
+        assert!(
+            p3n.lines().any(|l| l.trim() == "count 3"),
+            "P3N is the three SM exact-Ratio cells, not more: {p3n}"
+        );
+        assert!(
+            !p3n.contains("gut.charge-quantization"),
+            "GUT Tr Q stays f64, not P3N: {p3n}"
         );
         assert!(
             !p3n.lines()
@@ -1780,6 +1790,16 @@ mod tests {
         assert!(why_y.contains("P3N"), "{why_y}");
         assert!(!why_y.contains("P3F"), "{why_y}");
         assert!(why_y.contains("kernel proof: none"), "{why_y}");
+        let why_q = lab
+            .exec(Command::Why {
+                claim: "empirical.charge-quantization".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_q.contains("derivation: certified-numeric"), "{why_q}");
+        assert!(why_q.contains("P3N"), "{why_q}");
+        assert!(!why_q.contains("P3F"), "{why_q}");
+        assert!(why_q.contains("kernel proof: none"), "{why_q}");
         let run = lab
             .exec(Command::Run {
                 theory: "standard-model".into(),
@@ -1792,6 +1812,12 @@ mod tests {
             run.lines().any(|l| l.contains("sm.hypercharge-derivation")
                 && l.contains("certified-numeric")),
             "hypercharge derivation must not stay executed: {run}"
+        );
+        assert!(
+            run.lines()
+                .any(|l| l.contains("empirical.charge-quantization")
+                    && l.contains("certified-numeric")),
+            "hydrogen neutrality must not stay executed: {run}"
         );
         // Heterotic GS remains executed in the same why dump.
         assert!(

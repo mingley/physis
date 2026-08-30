@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Hydrogen neutrality from T3+Y earns P3N**
+  (`empirical.charge-quantization`, `Q = T₃ + Y`). Derived hypercharges
+  give `Q_u = 2/3`, `Q_d = −1/3`, `Q_e = −1`; left-handed `T₃+Y` matches
+  `−Y` of conjugate singlets; `2 Q_u + Q_d + Q_e = 0`. That overlay is
+  `CertifiedNumeric` / P3N, not a catalog lookup of charge-thirds, not
+  GUT `Tr Q`, not Lean, not P3F, not P4. A left/right mismatch Fails
+  without P3N. `inspect trust P3N` lists three SM cells. Verified: unit
+  tests, inspect/why P3N, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Hodge earns P2; Euler–Poincaré does not**
   (`dec.hodge-harmonic`, `Verdict::with_cross_checked`). Laplacian
   nullity versus coboundary `b₁` is a second matrix: forgetting the up
