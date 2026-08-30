@@ -928,11 +928,7 @@ impl Lab {
             let after = self.theories[theory].evaluate_all();
             let diffs = diff_verdicts(&baseline, &after);
             max_flips = max_flips.max(diffs.len());
-            text.push_str(&format!(
-                "  → {}  flips={}\n",
-                cand.display(),
-                diffs.len()
-            ));
+            text.push_str(&format!("  → {}  flips={}\n", cand.display(), diffs.len()));
             let _ = self
                 .theories
                 .get_mut(theory)
