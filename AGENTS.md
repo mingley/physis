@@ -5,7 +5,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 ## What you may do
 
 1. Read `specs/`, `plans/`, `docs/`, and crate-level rustdoc.
-2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|formalize|reproduce|gaps|falsify|sweep|branch|audit|review|inspect|loop`). `--role explorer` (and the other named roles) can observe but cannot mint. `--budget prove=N,review=N,set=N` is a research cap, not a proof. `physis reproduce` remints a stored receipt in-process and is **not** P4. `physis gaps` rebuilds the knowledge-gap graph from live verdicts and declared lemma edges. A failing evaluation is not a missing theorem.
+2. Run the CLI (`physis layers|theories|knobs|run|set|experiment|journal|epistemics|why|prove|formalize|reproduce|gaps|falsify|sweep|branch|audit|review|inspect|loop`). `--role explorer` (and the other named roles) can observe but cannot mint. `--budget prove=N,review=N,set=N` is a research cap, not a proof. `physis reproduce` remints a stored receipt in-process and is **not** P4; it requires P3F. `physis gaps` rebuilds the knowledge-gap graph from live verdicts and declared lemma edges. A failing evaluation is not a missing theorem. The research loop will not raise P3S on an unproved identity; standalone `review` is still encoding-axis.
 3. Turn knobs through `Lab::set_knob` / `physis set`. Illegal values must be rejected by domain checks.
 4. Add tests that demonstrate a knob → verdict diff.
 5. Add a new theory as a `Theory` impl with its own knobs and claims. Do not special-case it in the CLI.
@@ -65,7 +65,9 @@ trusted dossier; journal restore re-runs review rather than deserializing
 the tag. `physis inspect trust|class|origin|gap <value>` inverts those
 axes: knobs carry a `ParameterOrigin` so a fitted dilaton is not a derived
 prediction, and `inspect origin fitted` lists the knobs that accommodate
-rather than derive.
+rather than derive. `exec` checks role, then trust, then budget:
+`reproduce` and the loop's review step require P3F. Standalone encoding
+review does not.
 
 ## First lab
 

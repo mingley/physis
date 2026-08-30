@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Trust gates reproduce and loop-review**
+  (`Lab::exec` trust check). Role, then trust, then budget.
+  `reproduce` requires P3F and does not spend prove budget on a
+  refusal. The research loop will not raise P3S on an unproved catalog
+  identity. Standalone `physis review` stays encoding-axis (orthogonal
+  to kernel proof). Not P4. Verified: loop-review-requires-P3F,
+  reproduce-does-not-spend-budget, `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **Live lemma edges in the gap graph**
   (`Claim::depends_on`, `physis gaps`, `physis why`). Poincaré
   (`dec.closed-equals-exact`) records a live edge to `dec.d-squared-zero`.

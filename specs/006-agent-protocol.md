@@ -43,6 +43,10 @@ lab-only. `--budget prove=N,review=N,set=N` is a research cap on the
 lab, not a proof. Journal restore reconstitutes as the lab, then the
 live command is role-gated.
 
+`exec` then checks trust: `reproduce` and the loop's review step require
+a dual-checked receipt (P3F). Standalone `review` is encoding-axis and
+does not. Observation is free. A trust refusal does not spend budget.
+
 ## Responses
 
 `Response::Ok { text, report, diffs }` or `Response::Err { message }`.

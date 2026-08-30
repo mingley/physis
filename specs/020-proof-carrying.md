@@ -71,6 +71,7 @@ those tools; a local checkout without them still mints
 | origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap |
 | gaps | `physis gaps`, `NodeKind::KnowledgeGap` | Live gap graph, content-addressed; rebuilt, not deserialized. `MissingTheorem` only for evaluator-Holds claims without a receipt; Fails is decided, not a missing lemma |
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
+| trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
 | roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove. Budget is a cap, not a proof |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
@@ -86,8 +87,9 @@ dual expanders. `physis prove` uses the same preference.
 - P4 independent reproduction (in-process `reproduce` remints and
   **refuses** to assign P4; a distinct implementation is still required)
 - Mathlib-scale Physlib; only the two catalog identities are kernel-checked
-- Trust tiers do not yet *gate* which operations run; they label evidence.
-  Named *roles* now gate ops (`--role explorer` cannot `prove`).
+- Trust tiers do not gate observation or standalone encoding-review.
+  They now refuse `reproduce` and the loop's review step without P3F.
+  Named *roles* still gate who may issue an op.
 
 ## Vertical slice
 

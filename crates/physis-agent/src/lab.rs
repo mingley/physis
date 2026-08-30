@@ -361,8 +361,10 @@ impl Lab {
 
     /// Dispatch a protocol command.
     ///
-    /// The active [`Role`] may refuse the op. A refusal is not a mint:
-    /// explorers cannot `prove`, and a spent prove budget cannot either.
+    /// Three independent gates, in order: [`Role`] (who), trust (what
+    /// evidence the op *consumes*), then [`ResearchBudget`] (how many).
+    /// A refusal is not a mint. `reproduce` and the loop's review step
+    /// require P3F. Standalone `review` is encoding-axis and does not.
     pub fn exec(&mut self, cmd: Command) -> Response {
         if !self.role.permits(&cmd) {
             return Response::err(format!(
@@ -370,6 +372,9 @@ impl Lab {
                 self.role.as_str(),
                 cmd.verb()
             ));
+        }
+        if let Err(e) = self.trust_permits(&cmd) {
+            return Response::err(e);
         }
         if let Err(e) = self.budget.try_consume(&cmd) {
             return Response::err(e);
@@ -722,6 +727,24 @@ impl Lab {
                 }
                 Err(e) => Response::err(format!("cannot read journal '{path}': {e}")),
             },
+        }
+    }
+
+    /// Evidence an op *consumes*. Observation is free. Standalone encoding
+    /// review does not require P3F (the semantic axis is orthogonal).
+    /// `reproduce` does: it is a remint, not a first proof and not P4.
+    fn trust_permits(&self, cmd: &Command) -> Result<(), String> {
+        match cmd {
+            Command::Reproduce { claim } => {
+                if self.receipts.by_claim(claim).is_none() {
+                    Err(format!(
+                        "reproduce {claim}: trust P3F required (no dual-checked receipt); not prove and not P4"
+                    ))
+                } else {
+                    Ok(())
+                }
+            }
+            _ => Ok(()),
         }
     }
 
@@ -1237,6 +1260,13 @@ impl Lab {
 
         let mut reviewed = Vec::new();
         for spec in CATALOG {
+            if self.receipts.by_claim(spec.claim_id).is_none() {
+                text.push_str(&format!(
+                    "review  {}  trust P3F required (no receipt)\n",
+                    spec.claim_id
+                ));
+                continue;
+            }
             let spend = Command::Review {
                 claim: spec.claim_id.to_string(),
             };
@@ -2579,7 +2609,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("review  dec.d-squared-zero  research budget exhausted"),
+            text.contains("review  dec.d-squared-zero  trust P3F required"),
             "{text}"
         );
         let p3f = lab
@@ -2596,6 +2626,72 @@ mod tests {
     }
 
     #[test]
+    fn loop_review_requires_p3f_and_does_not_spend_review_budget() {
+        let mut lab = Lab::standard();
+        lab.set_budget(ResearchBudget::limited(0, 2, 0));
+        let text = lab.exec(Command::Loop).text().to_string();
+        assert!(
+            text.contains("review  dec.d-squared-zero  trust P3F required"),
+            "{text}"
+        );
+        assert!(
+            text.contains("review  sr.invariant-interval  trust P3F required"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("adversarially-reviewed"),
+            "loop must not raise P3S on an unproved identity: {text}"
+        );
+        let p3s = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3S".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3s.contains("count 0"), "{p3s}");
+        let p3f = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3f.contains("count 0"), "{p3f}");
+
+        // Review budget was not spent on the skipped loop step.
+        lab.set_role(Role::Reviewer);
+        let encoding = lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert_eq!(encoding.exit_code(), 0, "{}", encoding.text());
+        assert!(
+            encoding.text().contains("adversarially-reviewed"),
+            "{}",
+            encoding.text()
+        );
+    }
+
+    #[test]
+    fn reproduce_without_receipt_does_not_spend_prove_budget() {
+        let mut lab = Lab::standard();
+        lab.set_budget(ResearchBudget::limited(1, 0, 0));
+        let missing = lab.exec(Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert_eq!(missing.exit_code(), 1, "{}", missing.text());
+        let proved = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert_eq!(proved.exit_code(), 0, "{}", proved.text());
+        assert!(
+            proved.text().contains("lean-kernel") || proved.text().contains("expand-recursive"),
+            "{}",
+            proved.text()
+        );
+    }
+
+    #[test]
     fn reproduce_matches_in_process_and_is_not_p4() {
         let mut lab = Lab::standard();
         let missing = lab.exec(Command::Reproduce {
@@ -2603,7 +2699,7 @@ mod tests {
         });
         assert_eq!(missing.exit_code(), 1, "{}", missing.text());
         assert!(
-            missing.text().contains("no prior receipt"),
+            missing.text().contains("trust P3F required"),
             "{}",
             missing.text()
         );
