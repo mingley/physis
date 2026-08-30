@@ -1752,13 +1752,12 @@ mod tests {
             "hydrogen neutrality from T3+Y must mint P3N: {p3n}"
         );
         assert!(
-            p3n.lines().any(|l| l.trim() == "count 5"),
-            "P3N is three SM cells plus GUT Tr Q and GUT-scale 3/8: {p3n}"
+            p3n.lines().any(|l| l.trim() == "count 4"),
+            "P3N is three SM cells plus GUT-scale 3/8, not Tr Q: {p3n}"
         );
         assert!(
-            p3n.lines()
-                .any(|l| l.contains("su5-gut") && l.contains("gut.charge-quantization")),
-            "{p3n}"
+            !p3n.contains("gut.charge-quantization"),
+            "Tr Q is ΣY, already certified as the grav anomaly: {p3n}"
         );
         assert!(
             p3n.lines().any(|l| l.contains("su5-gut")
@@ -1817,6 +1816,17 @@ mod tests {
         assert!(why_s2.contains("P3N"), "{why_s2}");
         assert!(!why_s2.contains("P3F"), "{why_s2}");
         assert!(why_s2.contains("kernel proof: none"), "{why_s2}");
+        let why_trq = lab
+            .exec(Command::Why {
+                claim: "gut.charge-quantization".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why_trq.contains("derivation: executed"), "{why_trq}");
+        assert!(
+            !why_trq.contains("derivation: certified-numeric"),
+            "Tr Q is the grav anomaly, not a second P3N: {why_trq}"
+        );
         let why_mz = lab
             .exec(Command::Why {
                 claim: "gut.weinberg-angle-mz".into(),
@@ -1843,8 +1853,10 @@ mod tests {
         assert!(
             gut_run
                 .lines()
-                .any(|l| l.contains("gut.charge-quantization") && l.contains("certified-numeric")),
-            "GUT Tr Q must not stay executed: {gut_run}"
+                .any(|l| l.contains("gut.charge-quantization")
+                    && l.contains("executed")
+                    && !l.contains("certified-numeric")),
+            "Tr Q is ΣY, not a second P3N: {gut_run}"
         );
         assert!(
             gut_run.lines().any(|l| l.contains("gut.weinberg-angle-mz")
@@ -2123,8 +2135,8 @@ mod tests {
             "SUSY GQW Holds must not mint P3N: {p3n}"
         );
         assert!(
-            p3n.lines().any(|l| l.trim() == "count 5"),
-            "P3N stays the five exact-Ratio cells: {p3n}"
+            p3n.lines().any(|l| l.trim() == "count 4"),
+            "P3N stays three SM cells plus GUT-scale 3/8: {p3n}"
         );
     }
 

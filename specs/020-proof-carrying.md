@@ -24,8 +24,9 @@ Nothing gains authority merely because an agent wrote code that returns
   earned when an evaluator overlays `CertifiedNumeric` after an exact
   `Ratio` cancellation or an exact `Ratio` solve (Standard Model chiral
   anomalies, and the hypercharge quadratic whose discriminant is a
-  square in Q, hydrogen neutrality from `Q = T₃ + Y`, GUT-scale
-  `sin²θ_W = Tr(T₃²)/Tr(Q²) = 3/8`, and GUT `Tr Q = 0`). Georgi–Quinn–Weinberg
+  square in Q, hydrogen neutrality from `Q = T₃ + Y`, and GUT-scale
+  `sin²θ_W = Tr(T₃²)/Tr(Q²) = 3/8`). GUT `Tr Q = ΣY` is the gravitational
+  anomaly already certified, not a second P3N. Georgi–Quinn–Weinberg
   running at `M_Z` and the 3% band are not P3N. `CrossChecked` / P2 is earned when two independent
   executable paths agree (`dec.hodge-harmonic`: Laplacian nullity vs
   coboundary `b₁`). Euler–Poincaré stays `executed`: with these Betti
@@ -122,7 +123,7 @@ dual expanders. `physis prove` uses the same preference.
 | B2. Einstein composition | Same backends; `|w|<1` over ℝ remains the evaluator |
 | B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
-| C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; GUT-scale `3/8` and `Tr Q = 0` are `Ratio`; `CertifiedNumeric` / P3N, not Lean. GQW at `M_Z` is not P3N |
+| C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; GUT-scale `3/8` is `Ratio` / P3N, not Lean. GUT `Tr Q` is `ΣY` already certified, not a second P3N. GQW at `M_Z` is not P3N |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |
 

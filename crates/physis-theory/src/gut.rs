@@ -6,10 +6,11 @@
 //! numbers that the SM merely accommodates:
 //!
 //! - **charge quantization**: `Q` is a traceless SU(5) generator, so
-//!   `Tr Q = 0` over the multiplet — electric charge is forced onto a discrete
-//!   lattice (`gut.charge-quantization`, a computed theorem), and
+//!   `Tr Q = 0` over the multiplet (`gut.charge-quantization`). That sum is
+//!   `ΣY`, the gravitational anomaly already certified as P3N on the SM;
+//!   the GUT cell stays `executed`, not a second certificate, and
 //! - **the weak mixing angle**: `sin²θ_W = Tr(T₃²)/Tr(Q²) = 3/8` at the
-//!   unification scale (`gut.weinberg-angle`, a computed theorem). Georgi–Quinn–
+//!   unification scale (`gut.weinberg-angle`, exact `Ratio` / P3N). Georgi–Quinn–
 //!   Weinberg running of that boundary condition down to `M_Z` is a separate
 //!   claim (`gut.weinberg-angle-mz`): minimal SU(5) predicts ≈0.21 and **fails**;
 //!   the MSSM predicts ≈0.231 and holds as a heuristic. The companion
@@ -200,12 +201,13 @@ impl Theory for Su5Gut {
                 if tr_q.is_zero() {
                     Verdict::holds(
                         claim,
-                        "Tr Q = 0 over a complete SU(5) multiplet as an exact Ratio (ΣY)",
+                        "Tr Q = 0 over a complete SU(5) multiplet (ΣY, already the grav anomaly)",
                     )
-                    .with_evidence([format!(
-                        "computed Tr Q over one generation = {tr_q} (= ΣY, the traceless condition)"
-                    )])
-                    .with_certified_numeric()
+                    .with_evidence([
+                        format!("computed Tr Q over one generation = {tr_q} (= ΣY)"),
+                        "Q = T₃ + Y and Σ T₃ = 0, so Tr Q is the gravitational [grav]²U(1) sum already certified as P3N on consistency.anomaly-cancellation; not a second certificate"
+                            .to_string(),
+                    ])
                 } else {
                     Verdict::fails(
                         claim,
@@ -525,8 +527,16 @@ mod tests {
         let v = verdict(&g, GUT_CHARGE_QUANTIZATION);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
-        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.derivation, DerivationAssurance::Executed);
+        assert_ne!(v.derivation, DerivationAssurance::CertifiedNumeric);
         assert!(gut_trace_charge_exact().is_zero());
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("consistency.anomaly-cancellation")),
+            "Tr Q must admit it is the grav anomaly, not a second P3N: {:?}",
+            v.evidence
+        );
     }
 
     #[test]

@@ -34,7 +34,7 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | id | meaning | status |
 |---|---|---|
 | `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10` | `encoded-fact`, holds (verified chain) |
-| `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **exact Ratio** / P3N |
+| `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **executed** (`ΣY`, already the grav anomaly; not a second P3N) |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **exact Ratio** / P3N, not GQW at `M_Z` |
 | `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive, `heuristic` |
 | `gut.weinberg-angle-mz-interval` | the same one-loop centre, ± the heuristic 3% band, vs the PDG hull | **empirical receipt** (interval-subset). Minimal SU(5) excluded; MSSM inconclusive (too coarse). Not GUT-scale `3/8`. |
@@ -50,8 +50,11 @@ fermion truth:
 
 - **Charge quantization** (`gut_trace_charge_exact`): `Q` is a traceless generator of
   SU(5), so `Tr Q = Σ colour·weak·Y = ΣY = 0` over one generation as an exact
-  `Ratio`. Charge is forced onto a discrete lattice — quantization is a
-  *consequence* of the embedding, not a postulate. Overlay `CertifiedNumeric` / P3N.
+  `Ratio`. That sum is the gravitational `[grav]²U(1)` anomaly already
+  certified as P3N on `consistency.anomaly-cancellation`. The GUT cell
+  stays `executed`: `Q = T₃ + Y` and `Σ T₃ = 0` do not mint a second
+  certificate. Charge is still a *consequence* of the embedding, not a
+  postulate — but the overlay is not `CertifiedNumeric`.
 - **Weak mixing angle** (`gut_weinberg_traces_exact`): because the SU(5) generators are
   equally normalized at unification, `sin²θ_W = Tr(T₃²)/Tr(Q²)` over a complete
   multiplet. Using `Q = T₃ + Y` and `Σ T₃ = 0` per weak multiplet, the sums give

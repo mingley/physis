@@ -26,7 +26,7 @@ Level-3 trust
   L3 reproduce             ✓ in-process remint of a stored receipt; explicitly not P4
   L3 gap graph             ✓ physis gaps rebuilds a content-addressed snapshot; MissingTheorem is Holds-only; lemma edges are live
   L3 trust gate            ✓ reproduce and loop-review require P3F; standalone review stays encoding-axis
-  L3 P3N numeric           ✓ SM anomalies, hypercharge solve, hydrogen Q=T3+Y; GUT Tr Q and GUT-scale 3/8; not GQW at M_Z
+  L3 P3N numeric           ✓ SM anomalies, hypercharge solve, hydrogen Q=T3+Y, GUT-scale 3/8; Tr Q is ΣY already certified, not a second P3N; not GQW at M_Z
   L3 P2 cross-check        ✓ Hodge Laplacian nullity vs b1; Euler–Poincaré is rank-cancellation, not P2
 ```
 

@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **GUT Tr Q does not earn P3N**
+  (`gut.charge-quantization`). `Tr Q = ΣY` is the gravitational
+  `[grav]²U(1)` sum already certified on
+  `consistency.anomaly-cancellation`. `Q = T₃ + Y` and `Σ T₃ = 0` make
+  that an interpretation, not a second identity. The cell stays
+  `executed`. GUT-scale `3/8` stays `CertifiedNumeric` / P3N.
+  `inspect trust P3N` lists four cells. Verified: unit tests,
+  inspect/why, `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **GUT-scale 3/8 and Tr Q earn P3N**
   (`gut.weinberg-angle`, `gut.charge-quantization`). Weyl colour and weak
   dimensions are integers. `Tr(T₃²)/Tr(Q²) = 2 / (16/3) = 3/8` in Q, and
