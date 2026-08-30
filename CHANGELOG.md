@@ -10,6 +10,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Validated numerics
+
+- **GQW mixing-angle centre is an exact π-free Ratio.**
+  One-loop `sin²θ_W(M_Z)` is a rational function of recorded PDG
+  `α_em⁻¹ = 127.951` and `α_s = 0.1179` and the SM/MSSM betas;
+  `2π` cancels. The interval cell encloses that algebraic centre by
+  the heuristic 3% band (not a remainder certificate, not P3N).
+  Gaussian NLL still snaps to the PDG `10^{-5}` scale so the
+  likelihood lives at the dataset σ. `enclose` still refuses the
+  GQW cell. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: exact SM centre `12588941801/60643400058`; MSSM
+  `522562687/2262813435`; interval still excludes minimal SU(5)
+  and is too coarse for the MSSM.
+
 ### Computed theorems
 
 - **SR truncated binomial γ is an IR mutation**

@@ -101,7 +101,9 @@ MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
 registered Super-K `p→e+π0` Dataset (Takenaka et al. 2020): minimal SU(5)
 is **excluded**; MSSM dim-6 is **compatible**. That is not P3N. The PDG
 mixing-angle cell `gut.weinberg-angle-mz-interval` is a Gaussian NLL
-(`statistical computed`) of the GQW centre versus `σ = 10^{-5}`, still
+(`statistical computed`) of the algebraic GQW `Ratio` centre versus
+`σ = 10^{-5}` (the centre is rounded to that PDG scale for the
+likelihood), still
 not P3N; Super-K is not that Gaussian.
 
 `physis epistemics` tallies the whole lab by class, derivation, and semantic

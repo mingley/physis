@@ -16,7 +16,8 @@
 //!   the MSSM predicts ≈0.231 and holds as a heuristic. The companion
 //!   `gut.weinberg-angle-mz-interval` asks two questions of that centre:
 //!   interval-subset of the 3% band against the PDG hull, and the exact
-//!   Gaussian NLL of the five-decimal centre versus the PDG σ. Super-K
+//!   Gaussian NLL of the algebraic centre rounded to the PDG `10^{-5}`
+//!   scale versus the PDG σ. Super-K
 //!   is a one-sided limit and is not that Gaussian. Overlap is not
 //!   containment.
 //!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: the
@@ -341,25 +342,25 @@ impl Theory for Su5Gut {
                 }
             }
             GUT_WEINBERG_ANGLE_MZ_INTERVAL => {
-                // Same one-loop centre as the heuristic cell, enclosed by that
-                // cell's 3% hit threshold. The band is not a remainder
-                // certificate. 3/8 at M_GUT is a different claim. The
-                // Gaussian NLL uses the centre at the PDG's 10^{-5} scale,
-                // not the heuristic band and not a profile likelihood.
+                // Same one-loop algebraic centre as the heuristic cell,
+                // enclosed by that cell's 3% hit threshold. The band is
+                // not a remainder certificate. 3/8 at M_GUT is a
+                // different claim. The Gaussian NLL snaps the exact
+                // Ratio to the PDG's 10^{-5} scale, not the heuristic
+                // band and not a profile likelihood.
                 let run = if self.supersymmetric {
                     GaugeRunning::mssm()
                 } else {
                     GaugeRunning::standard_model()
                 };
-                let pred = run.predicted_sin2_mz();
-                let centre = Ratio::nearest(pred, 100_000);
-                let envelope =
-                    Interval::from_f64_approx(pred).relative_envelope(Ratio::new(3, 100));
+                let centre = run.predicted_sin2_mz_exact();
+                let envelope = centre.enclosure().relative_envelope(Ratio::new(3, 100));
+                let nll_x = centre.round_to(100_000);
                 let dataset = pdg_2024_sin2theta();
-                let rec = EmpiricalReceipt::compare_gaussian(envelope, &dataset, Some(centre));
+                let rec = EmpiricalReceipt::compare_gaussian(envelope, &dataset, Some(nll_x));
                 let mut evidence = vec![
                     format!(
-                        "one-loop GQW centre {pred:.5} → {centre} ± 3% heuristic band vs {} hull",
+                        "one-loop GQW algebraic centre {centre} ± 3% heuristic band vs {} hull",
                         dataset.id
                     ),
                     format!(
@@ -370,23 +371,25 @@ impl Theory for Su5Gut {
                 ];
                 if let Some(nll) = rec.nll {
                     evidence.push(format!(
-                        "gaussian NLL of the five-decimal centre vs PDG σ = {nll} (not P3N)"
+                        "gaussian NLL of the PDG-scale rounding {nll_x} vs PDG σ = {nll} (not P3N)"
                     ));
                 }
                 let v = if rec.excluded {
                     Verdict::fails(
                         claim,
-                        "GQW truncation envelope is disjoint from the PDG hull",
+                        format!("GQW algebraic centre {centre} ± 3% is disjoint from the PDG hull"),
                     )
                 } else if rec.compatible {
                     Verdict::holds(
                         claim,
-                        "GQW truncation envelope is contained in the PDG hull",
+                        format!("GQW algebraic centre {centre} ± 3% is contained in the PDG hull"),
                     )
                 } else {
                     Verdict::undecidable(
                         claim,
-                        "GQW truncation envelope overlaps the PDG hull but is not contained in it",
+                        format!(
+                            "GQW algebraic centre {centre} ± 3% overlaps the PDG hull but is not contained in it"
+                        ),
                     )
                 };
                 let v = v.with_empirical(rec.status()).with_evidence(evidence);
@@ -662,7 +665,15 @@ mod tests {
         assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
         assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
         assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
         let min_nll = v.statistical_nll().expect("PDG Gaussian NLL");
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("algebraic centre") && e.contains("12588941801/60643400058")),
+            "evidence: {:?}",
+            v.evidence
+        );
         assert!(
             v.evidence.iter().any(|e| e.contains("pdg-2024-sin2theta")),
             "evidence: {:?}",
@@ -684,6 +695,13 @@ mod tests {
         let u = verdict(&g, GUT_WEINBERG_ANGLE_MZ_INTERVAL);
         assert_eq!(u.kind, VerdictKind::Undecidable);
         assert_eq!(u.empirical(), EmpiricalStatus::Inconclusive);
+        assert!(
+            u.evidence
+                .iter()
+                .any(|e| e.contains("algebraic centre") && e.contains("522562687/2262813435")),
+            "evidence: {:?}",
+            u.evidence
+        );
         let susy_nll = u.statistical_nll().expect("PDG Gaussian NLL under MSSM");
         fn parse_ratio(s: &str) -> physis_numeric::Ratio {
             if let Some((n, d)) = s.split_once('/') {

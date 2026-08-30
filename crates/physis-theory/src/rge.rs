@@ -17,6 +17,9 @@
 //! The same one-loop betas give the Georgi–Quinn–Weinberg prediction of
 //! `sin²θ_W(M_Z)` from `α_em` and `α_s` alone (no measured mixing angle):
 //! minimal SU(5) lands near 0.21 and misses; the MSSM lands on 0.231.
+//! The GQW *centre* is an exact `Ratio`: `2π` cancels, so the prediction
+//! is a rational function of recorded PDG decimals and the one-loop
+//! betas. `M_U` still uses `ln`/`exp` and is approximate evidence.
 //!
 //! One loop is an approximation: two-loop terms and SUSY thresholds shift the
 //! numbers at the percent level. The verdicts that consume this are therefore
@@ -27,6 +30,23 @@ use std::f64::consts::PI;
 use physis_model::constants::{
     inverse_alpha_em_mz, strong_coupling_mz, weak_mixing_angle_sin2_mz, z_mass_gev,
 };
+use physis_numeric::Ratio;
+
+/// SM one-loop betas `(41/10, −19/6, −7)`, GUT-normalized U(1).
+const SM_ONE_LOOP_B: [Ratio; 3] = [Ratio::new(41, 10), Ratio::new(-19, 6), Ratio::int(-7)];
+/// MSSM one-loop betas `(33/5, 1, −3)`, GUT-normalized U(1).
+const MSSM_ONE_LOOP_B: [Ratio; 3] = [Ratio::new(33, 5), Ratio::int(1), Ratio::int(-3)];
+
+/// Recorded PDG `α_em⁻¹(M_Z) = 127.951` as a Ratio. This is the decimal
+/// written in physis-model, not a certificate of the `f64` bits.
+fn inverse_alpha_em_mz_ratio() -> Ratio {
+    Ratio::new(127951, 1000)
+}
+
+/// Recorded PDG `α_s(M_Z) = 0.1179` as a Ratio.
+fn strong_coupling_mz_ratio() -> Ratio {
+    Ratio::new(1179, 10000)
+}
 
 /// A running of the three SM gauge couplings from `M_Z` (one- and two-loop).
 #[derive(Clone, Copy, Debug)]
@@ -58,7 +78,11 @@ impl GaugeRunning {
     /// standard two-loop gauge matrix (GUT-normalized).
     pub fn standard_model() -> Self {
         Self {
-            b: [41.0 / 10.0, -19.0 / 6.0, -7.0],
+            b: [
+                SM_ONE_LOOP_B[0].to_f64(),
+                SM_ONE_LOOP_B[1].to_f64(),
+                SM_ONE_LOOP_B[2].to_f64(),
+            ],
             b2: [
                 [199.0 / 50.0, 27.0 / 10.0, 44.0 / 5.0],
                 [9.0 / 10.0, 35.0 / 6.0, 12.0],
@@ -72,7 +96,11 @@ impl GaugeRunning {
     /// standard two-loop gauge matrix (GUT-normalized).
     pub fn mssm() -> Self {
         Self {
-            b: [33.0 / 5.0, 1.0, -3.0],
+            b: [
+                MSSM_ONE_LOOP_B[0].to_f64(),
+                MSSM_ONE_LOOP_B[1].to_f64(),
+                MSSM_ONE_LOOP_B[2].to_f64(),
+            ],
             b2: [
                 [199.0 / 25.0, 27.0 / 5.0, 88.0 / 5.0],
                 [9.0 / 5.0, 25.0, 24.0],
@@ -139,6 +167,19 @@ impl GaugeRunning {
         weak_mixing_angle_sin2_mz().value()
     }
 
+    fn one_loop_betas_ratio(&self) -> [Ratio; 3] {
+        if (self.b[2] - SM_ONE_LOOP_B[2].to_f64()).abs() < 1e-12 {
+            SM_ONE_LOOP_B
+        } else if (self.b[2] - MSSM_ONE_LOOP_B[2].to_f64()).abs() < 1e-12 {
+            MSSM_ONE_LOOP_B
+        } else {
+            panic!(
+                "GQW exact centre needs SM or MSSM one-loop betas, got b3={}",
+                self.b[2]
+            )
+        }
+    }
+
     /// `t = ln(M_U/M_Z)` implied by `α_em` + `α_s` under one-loop unification.
     fn gqw_log(&self) -> f64 {
         let inv_em = inverse_alpha_em_mz().value();
@@ -148,19 +189,30 @@ impl GaugeRunning {
         2.0 * PI * (inv_em - (8.0 / 3.0) * inv_s) / denom
     }
 
-    /// Georgi–Quinn–Weinberg prediction of `sin²θ_W(M_Z)` from `α_em` and `α_s`,
-    /// assuming one-loop unification `α_1 = α_2 = α_3` at a single `M_U`.
+    /// Georgi–Quinn–Weinberg `sin²θ_W(M_Z)` as an exact Ratio.
     ///
-    /// This does **not** use the measured mixing angle. `α_em` and `α_s` fix
-    /// `t = ln(M_U/M_Z)` and `α_U`, then `sin²θ_W = α_2⁻¹(M_Z) / α_em⁻¹`.
-    /// At unification that formula is identically `3/8`; here it is the
-    /// *low-energy* value after running.
+    /// `2π` cancels: `α_i⁻¹(M_Z) = α_U⁻¹ + (b_i/2π) t` with
+    /// `t ∝ 2π`, so the mixing angle is a rational function of
+    /// recorded `α_em⁻¹`, `α_s`, and the one-loop betas. This does
+    /// **not** use the measured mixing angle. At unification the
+    /// same algebra is identically `3/8`; here it is the low-energy
+    /// value after running. Not P3N: the inputs are recorded PDG
+    /// decimals, not a remainder certificate.
+    pub fn predicted_sin2_mz_exact(&self) -> Ratio {
+        let [b1, b2, b3] = self.one_loop_betas_ratio();
+        let inv_em = inverse_alpha_em_mz_ratio();
+        let inv_s = Ratio::int(1) / strong_coupling_mz_ratio();
+        let five_thirds = Ratio::new(5, 3);
+        let eight_thirds = Ratio::new(8, 3);
+        let denom = five_thirds * (b1 - b3) + (b2 - b3);
+        let num = denom * inv_s + (b2 - b3) * (inv_em - eight_thirds * inv_s);
+        num / (denom * inv_em)
+    }
+
+    /// IEEE-754 view of [`Self::predicted_sin2_mz_exact`]. Not a
+    /// certificate of the float; use the Ratio for threshold cells.
     pub fn predicted_sin2_mz(&self) -> f64 {
-        let inv_em = inverse_alpha_em_mz().value();
-        let inv_s = self.inv_alpha_mz[2];
-        let t = self.gqw_log();
-        let inv_a2 = inv_s + (self.b[1] - self.b[2]) / (2.0 * PI) * t;
-        inv_a2 / inv_em
+        self.predicted_sin2_mz_exact().to_f64()
     }
 
     /// Unification scale implied by `α_em` + `α_s` (GQW), in GeV.
@@ -354,5 +406,33 @@ mod tests {
         // And it is *not* the tautological 3/8: that is the GUT-scale value.
         assert!((sm_pred - 0.375).abs() > 0.1);
         assert!((mssm_pred - 0.375).abs() > 0.1);
+    }
+
+    #[test]
+    fn gqw_sin2_is_an_exact_pi_free_ratio() {
+        assert!(
+            (inverse_alpha_em_mz_ratio().to_f64() - inverse_alpha_em_mz().value()).abs() < 1e-12
+        );
+        assert!((strong_coupling_mz_ratio().to_f64() - strong_coupling_mz().value()).abs() < 1e-12);
+        let sm = GaugeRunning::standard_model();
+        let mssm = GaugeRunning::mssm();
+        let sm_exact = sm.predicted_sin2_mz_exact();
+        let mssm_exact = mssm.predicted_sin2_mz_exact();
+        assert_eq!(sm_exact, Ratio::new(12588941801, 60643400058));
+        assert_eq!(mssm_exact, Ratio::new(522562687, 2262813435));
+        assert_ne!(sm_exact, Ratio::new(3, 8));
+        assert_ne!(mssm_exact, Ratio::new(3, 8));
+        assert_eq!(sm_exact.round_to(100_000), Ratio::new(20759, 100000));
+        assert_eq!(mssm_exact.round_to(100_000), Ratio::new(23093, 100000));
+        // The closed form must not need 2π: rebuild it here from the same
+        // recorded decimals and betas.
+        let inv_em = inverse_alpha_em_mz_ratio();
+        let inv_s = Ratio::int(1) / strong_coupling_mz_ratio();
+        let [b1, b2, b3] = SM_ONE_LOOP_B;
+        let denom = Ratio::new(5, 3) * (b1 - b3) + (b2 - b3);
+        let rebuilt =
+            (denom * inv_s + (b2 - b3) * (inv_em - Ratio::new(8, 3) * inv_s)) / (denom * inv_em);
+        assert_eq!(rebuilt, sm_exact);
+        assert!((sm_exact.to_f64() - sm.predicted_sin2_mz()).abs() < 1e-15);
     }
 }

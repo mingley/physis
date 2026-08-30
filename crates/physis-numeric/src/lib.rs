@@ -82,8 +82,8 @@ impl Ratio {
     }
 
     /// Round `x` to the nearest multiple of `1/den`. Not a certificate of
-    /// the float; use when a computed centre must share the dataset's
-    /// rational scale before an exact NLL.
+    /// the float; use [`Self::round_to`] when the value is already a
+    /// Ratio. Ties from the float path follow IEEE `round`.
     pub fn nearest(x: f64, den: i128) -> Self {
         assert!(den > 0, "nearest-denominator must be positive");
         if !x.is_finite() {
@@ -91,6 +91,21 @@ impl Ratio {
         }
         let n = (x * (den as f64)).round() as i128;
         Self::new(n, den)
+    }
+
+    /// Round this Ratio to the nearest multiple of `1/den` in `Q`.
+    /// Ties round away from zero. This is the dataset-scale snap for an
+    /// exact Gaussian NLL (`σ = 1/den`), not a certificate of a float.
+    pub fn round_to(self, den: i128) -> Self {
+        assert!(den > 0, "round-to denominator must be positive");
+        let prod = self.num.checked_mul(den).expect("round_to overflow");
+        let d = self.den;
+        let adj = if prod >= 0 {
+            prod.checked_add(d / 2).expect("round_to overflow")
+        } else {
+            prod.checked_sub(d / 2).expect("round_to overflow")
+        };
+        Self::new(adj / d, den)
     }
 
     /// Gaussian negative log-likelihood `(x − μ)² / (2σ²)` as an exact
@@ -518,5 +533,20 @@ mod tests {
         assert_eq!((mu + sigma + sigma).gaussian_nll(mu, sigma), Ratio::int(2));
         assert_eq!(Ratio::nearest(0.23122, 100_000), mu);
         assert_eq!(Ratio::nearest(0.207, 100_000), Ratio::new(20700, 100000));
+        assert_eq!(Ratio::new(1, 2).round_to(1), Ratio::int(1));
+        assert_eq!(Ratio::new(1, 3).round_to(10), Ratio::new(3, 10));
+        assert_eq!(
+            Ratio::new(12588941801, 60643400058).round_to(100_000),
+            Ratio::new(20759, 100000)
+        );
+        assert_eq!(
+            Ratio::new(522562687, 2262813435).round_to(100_000),
+            Ratio::new(23093, 100000)
+        );
+        assert_eq!(
+            Ratio::new(-1, 3).round_to(10),
+            Ratio::new(-3, 10),
+            "ties and halves round away from zero"
+        );
     }
 }
