@@ -14,9 +14,11 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 - **Dirac next-nearest hopping is an IR mutation**
   (`dirac-fermion`, `add-next-nearest`). Nearest-neighbour naive hopping
-  is the live encoding (`dirac naive`); appending `dirac nnn` makes the
-  kinetic piece `c sin(2ka)/a` nonzero at the longest mode and flips
-  `field.local` holds to fails. That is not a knob. Doubling still fails
+  is the live encoding (`dirac naive`); appending `dirac nnn` includes
+  distance-2 hopping and flips `field.local` holds to fails. The sampled
+  residual max |c sin(2ka)/a| is 0.5 on the default lattice and is
+  evidence, not the encoding: on N = 4 every lattice mode has sin(2ka) = 0
+  and the cell still fails. That is not a knob. Doubling still fails
   (sin(ka) and sin(2ka) share the Brillouin-edge zero). Wilson r remains
   a separate doubling fork (`add-wilson`). `sites` / `mass` / `spacing`
   stay knobs. Locality names nearest-neighbour 1D lattice Dirac;

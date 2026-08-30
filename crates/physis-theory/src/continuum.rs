@@ -774,6 +774,15 @@ impl DiracFermion {
         NNN_HOP * (2.0 * ka).sin() / a
     }
 
+    /// Max sampled |c sin(2ka)/a| over the Brillouin zone. On N = 2 or 4
+    /// this vanishes at every lattice momentum; the nnn encoding still
+    /// fails locality because the operator includes distance-2 hopping.
+    fn max_nnn_kinetic(&self) -> f64 {
+        (0..self.sites)
+            .map(|j| self.nnn_kinetic(j).abs())
+            .fold(0.0_f64, f64::max)
+    }
+
     fn energy(&self, j: u32) -> f64 {
         let kin = self.kinetic(j);
         let m = self.dirac_mass(j);
@@ -998,16 +1007,14 @@ impl Theory for DiracFermion {
                 }
             }
             LOCAL => {
-                let r = self.nnn_kinetic(1).abs();
-                if r < 1e-12 {
+                let r = self.max_nnn_kinetic();
+                if !self.next_nearest {
                     Verdict::holds(
                         claim,
                         "naive hopping and the Wilson r term are both nearest-neighbour",
                     )
                     .with_class(ClaimClass::ModelInternal)
-                    .with_evidence([format!(
-                        "longest non-zero mode: max |c sin(2ka)/a| = {r:.1e}"
-                    )])
+                    .with_evidence([format!("Brillouin zone: max |c sin(2ka)/a| = {r:.1e}")])
                 } else {
                     Verdict::fails(
                         claim,
@@ -1015,7 +1022,7 @@ impl Theory for DiracFermion {
                     )
                     .with_class(ClaimClass::ModelInternal)
                     .with_evidence([format!(
-                        "longest non-zero mode: |c sin(2ka)/a| = {r:.3} (c = {NNN_HOP})"
+                        "Brillouin zone: max |c sin(2ka)/a| = {r:.3} (c = {NNN_HOP})"
                     )])
                 }
             }
@@ -1672,16 +1679,30 @@ mod tests {
         assert_eq!(verdict(&fork, DISPERSION), VerdictKind::Fails);
         assert_eq!(d.light_copies(), 2);
         assert_eq!(fork.light_copies(), 2);
-        let r = fork.nnn_kinetic(1).abs();
+        let r = fork.max_nnn_kinetic();
         assert!(
-            (r - 0.5 * (2.0 * fork.k(1) * fork.spacing).sin() / fork.spacing).abs() < 1e-12,
-            "nnn kinetic must be c sin(2ka)/a at the longest mode, got {r}"
+            (r - 0.5).abs() < 1e-12,
+            "nnn kinetic max must be c = 0.5 at sin(2ka)=1, got {r}"
         );
         assert!(
             (r - 1.0).abs() > 0.3,
             "nnn residual must be the hopping scale, not a unit flag, got {r}"
         );
-        assert_eq!(d.nnn_kinetic(1), 0.0);
+        assert_eq!(d.max_nnn_kinetic(), 0.0);
+        let mut tiny = DiracFermion::default();
+        tiny.set("sites", KnobValue::UInt(4)).unwrap();
+        assert_eq!(verdict(&tiny, LOCAL), VerdictKind::Holds);
+        tiny.next_nearest = true;
+        assert!(
+            tiny.max_nnn_kinetic() < 1e-12,
+            "sin(2ka) vanishes on N=4; residual is not the encoding, got {}",
+            tiny.max_nnn_kinetic()
+        );
+        assert_eq!(
+            verdict(&tiny, LOCAL),
+            VerdictKind::Fails,
+            "nnn encoding must fail locality even when every lattice mode samples sin(2ka)=0"
+        );
         d.set("mass", KnobValue::Float(-1.0)).unwrap();
         assert_eq!(verdict(&d, NO_DOUBLERS), VerdictKind::Fails);
         assert_eq!(verdict(&d, LOCAL), VerdictKind::Holds);
