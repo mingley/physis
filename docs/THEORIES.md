@@ -32,7 +32,7 @@ This object exists so uniqueness can sit on the same matrix as the string landsc
 
 ## Olbers' paradox
 
-**Static Euclidean starlight** is inverse-square cancellation applied to an infinite, eternal, uniformly filled sky — a standing 19th-century theory. It holds its axiom (`astro.shell-cancellation`: `dF/dr` independent of `r`) and fails the observations (finite integrated brightness, a dark night sky). A **finite-age horizon** keeps the axiom and holds those observations: `F = ρ_L c t`, `τ ~ 10⁻¹⁵` at a Hubble time. **Hubble dimming** is an independent knob: `dF = ρ_L dr / (1+z)²` saturates at `ρ_L c/H`, so cancellation *fails* and the sky stays dark. `set olbers-static finite_age true` is the finite-age resolution. `set olbers-horizon age_yr 1e26` is the reminder that a merely finite universe is not automatically dark.
+**Static Euclidean starlight** is inverse-square cancellation applied to an infinite, eternal, uniformly filled sky — a standing 19th-century theory. It holds its axiom (`astro.shell-cancellation`: `dF/dr` independent of `r`) and fails the observations (finite integrated brightness, a dark night sky). A **finite-age horizon** keeps the axiom and holds those observations: `F = ρ_L c t`, `τ ~ 10⁻¹⁵` at a Hubble time. **Hubble dimming** is an independent knob: `dF = ρ_L dr / (1+z)²` saturates at `ρ_L c/H`, so cancellation *fails* and the sky stays dark. **Tired light** is an IR mutation on `olbers-static`, not those knobs: `dF ∝ e^{-Hr/c} dr` fails cancellation and caps energy, while covering `τ = n σ R` still diverges. `set olbers-static finite_age true` is the finite-age resolution. `set olbers-horizon age_yr 1e26` is the reminder that a merely finite universe is not automatically dark.
 
 ## Adding one
 

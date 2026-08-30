@@ -6271,6 +6271,130 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_olbers_tired_light_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["tired", "tired_light", "add-tired-light"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "olbers-static".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("olbers-static".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-tired-light") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-tired-light: package → add-tired-light";
+        let start = text.find(marker).expect("add-tired-light hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  olbers-static  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let tired_block = &rest[..end];
+        assert!(
+            tired_block.contains("astro.shell-cancellation")
+                && tired_block.contains("holds → fails"),
+            "add-tired-light must flip cancellation holds to fails: {tired_block}"
+        );
+        assert!(
+            tired_block.contains("astro.sky-finite") && tired_block.contains("fails → holds"),
+            "add-tired-light must cap the energy integral: {tired_block}"
+        );
+        assert!(
+            !tired_block.contains("astro.night-sky-dark"),
+            "tired light is not Hubble dimming or finite_age: covering still diverges: {tired_block}"
+        );
+        assert!(
+            text.contains("finite_age"),
+            "finite_age must still be a knob probe: {text}"
+        );
+        assert!(
+            text.contains("expanding"),
+            "expanding must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("olbers-static").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "astro.shell-cancellation" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("finite_age").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("expanding").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let expanding = lab.exec(Command::Set {
+            theory: "olbers-static".into(),
+            knob: "expanding".into(),
+            value: "true".into(),
+        });
+        assert_eq!(expanding.exit_code(), 0, "{}", expanding.text());
+        assert!(
+            expanding.text().contains("astro.shell-cancellation")
+                && expanding.text().contains("holds → fails"),
+            "expanding still flips cancellation: {}",
+            expanding.text()
+        );
+        assert!(
+            expanding.text().contains("astro.night-sky-dark")
+                && expanding.text().contains("fails → holds"),
+            "expanding still darkens the sky: {}",
+            expanding.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "olbers-static".into(),
+            knob: "expanding".into(),
+            value: "false".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "astro.shell-cancellation".into(),
+            })
+            .text()
+            .to_string();
+        let ob = why_theory_block(&why, "olbers-static");
+        assert!(
+            ob.contains("inverse-square Euclidean shells"),
+            "shell cancellation must name inverse-square Euclidean shells: {ob}"
+        );
+        assert!(
+            !ob.contains("not yet a machine-checked regime"),
+            "shell cancellation must not be encoding-wide: {ob}"
+        );
+        assert!(
+            ob.contains("encoding:    none"),
+            "hypothesize must not encode: {ob}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -7838,6 +7962,14 @@ mod tests {
             "loop must independently round-trip the unrelativized TM: {text}"
         );
         assert!(
+            text.contains("encode  olbers-static"),
+            "loop must independently round-trip inverse-square Euclidean shells: {text}"
+        );
+        assert!(
+            !text.contains("encode  olbers-horizon"),
+            "olbers-horizon has no IR package: {text}"
+        );
+        assert!(
             !text.contains("encode  rayleigh-jeans"),
             "Rayleigh–Jeans has no IR package: {text}"
         );
@@ -9265,7 +9397,30 @@ mod tests {
         assert_ne!(tm_id, derham_id);
         assert_ne!(tm_id, nand_id);
 
-        for theory in ["standard-model", "type-iib", "rayleigh-jeans"] {
+        let olbers = lab
+            .exec(Command::Encode {
+                theory: "olbers-static".into(),
+            })
+            .text()
+            .to_string();
+        assert!(olbers.contains("equations  1"), "{olbers}");
+        assert!(olbers.contains("round-trip canonical"), "{olbers}");
+        assert!(olbers.contains("not P3S"), "{olbers}");
+        assert!(!olbers.contains("receipt"), "{olbers}");
+        let olbers_id = encoding_package_id(&olbers);
+        assert_eq!(
+            olbers_id.to_hex(),
+            "dc1ea0aa82ee79cda7ab53071e43ccb40b56c77a609fc948a8b194864994ffd2"
+        );
+        assert_ne!(olbers_id, tm_id);
+        assert_ne!(olbers_id, nand_id);
+
+        for theory in [
+            "standard-model",
+            "type-iib",
+            "rayleigh-jeans",
+            "olbers-horizon",
+        ] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
             });
@@ -9630,6 +9785,25 @@ mod tests {
             encoding_package_id(&tm_again),
             tm_id,
             "hypothesize must not install the oracle mutant"
+        );
+
+        let hypo_olbers = lab
+            .exec(Command::Hypothesize {
+                theory: Some("olbers-static".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_olbers.contains("add-tired-light"), "{hypo_olbers}");
+        let olbers_again = lab
+            .exec(Command::Encode {
+                theory: "olbers-static".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&olbers_again),
+            olbers_id,
+            "hypothesize must not install the tired-light mutant"
         );
 
         let p3s = lab

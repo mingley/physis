@@ -120,9 +120,11 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 ### olbers (`olbers-static`, `olbers-horizon`)
 - `finite_age` — light-travel horizon at `c t`. `set olbers-static finite_age true`
   flips `astro.sky-finite` and `astro.night-sky-dark` fails → holds without
-  touching shell cancellation.
+  touching shell cancellation. Tired light is not this knob: `add-tired-light`
+  is an IR mutation on `olbers-static`.
 - `expanding` — linear Hubble dimming. `set olbers-static expanding true` flips
   cancellation holds → fails *and* the two catastrophe cells fails → holds.
+  Tired light is not this knob: covering still diverges under `add-tired-light`.
 - `age_yr` — cosmic age (years). `set olbers-horizon age_yr 1e26` makes `τ ≳ 1`:
   a finite but ancient sky is photosphere-bright.
 - `cutoff_m` — radial cutoff (metres). Standing-theory verdicts and notes use

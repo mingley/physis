@@ -32,6 +32,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Olbers tired light is an IR mutation**
+  (`olbers-static`, `add-tired-light`). Inverse-square Euclidean
+  shells are the live encoding (`dF = rho dr`); appending
+  `tired light` uses `dF ∝ e^{-Hr/c} dr` and flips
+  `astro.shell-cancellation` holds to fails. The energy integral
+  converges so `astro.sky-finite` fails to holds, while covering
+  `τ = n σ R` still diverges so `astro.night-sky-dark` stays fails.
+  The residual is `dF/dr(2r)/dF/dr(r) = e^{-0.1}` at `r = 0.1 c/H`
+  and is evidence, not a unit flag and not Hubble dimming. That is
+  not a knob. `finite_age` and `expanding` stay knobs.
+  `olbers-horizon` has no package. Mutants stay `olbers-static`.
+  Mutants are not installed, not journaled, and not Canonical or P4.
+  Catalog d² hash unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: IR round-trip; set tired is unknown;
+  hypothesize olbers-static; live Euclidean shells restored; encode
+  pin
+  `dc1ea0aa82ee79cda7ab53071e43ccb40b56c77a609fc948a8b194864994ffd2`.
+
 - **Turing-machine halt oracle is an IR mutation**
   (`turing-machine`, `add-oracle`). The unrelativized machine is the
   live encoding (`tm`); appending `oracle halt` decides the RE halt

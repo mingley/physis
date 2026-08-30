@@ -20,39 +20,49 @@ Two independent resolutions sit on the same knobs:
 
 This is Olbers' paradox as a knob → verdict diff, not a textbook paragraph.
 
+Inverse-square Euclidean shells live on the IR package of `olbers-static`
+(`equation dF = rho dr`). Tired light (`add-tired-light`) appends
+`tired light` and is not a `finite_age` or `expanding` knob.
+`olbers-horizon` has no package.
+
 ## Objects
 
 | id | object | default knobs |
 |---|---|---|
-| `olbers-static` | infinite static Euclidean starlight (standing theory) | `finite_age=false`, `expanding=false` |
-| `olbers-horizon` | finite-age Euclidean sky | `finite_age=true`, `expanding=false` |
+| `olbers-static` | infinite static Euclidean starlight (standing theory). Inverse-square shells live on the IR package; `add-tired-light` is not a knob | `finite_age=false`, `expanding=false` |
+| `olbers-horizon` | finite-age Euclidean sky. No IR package | `finite_age=true`, `expanding=false` |
 
 Both objects share knobs. The id is fixed at construction: `set olbers-static finite_age true`
 is the finite-age resolution on the standing object without renaming it.
 `set olbers-static expanding true` is Hubble dimming, an independent flip.
+Tired light stays `olbers-static`; it is not a silent horizon install.
 
 ## Knobs
 
 | knob | layer | effect |
 |---|---|---|
-| `finite_age` | spacetime | true: light-travel horizon at `c t`. Turning this on is the finite-age resolution. |
-| `expanding` | spacetime | true: linear Hubble flow, `z = H r/c`. Independent of finite age. |
+| `finite_age` | spacetime | true: light-travel horizon at `c t`. Turning this on is the finite-age resolution. Tired light is not this knob: `add-tired-light` is an IR mutation. |
+| `expanding` | spacetime | true: linear Hubble flow, `z = H r/c`. Independent of finite age. Tired light is not this knob: covering still diverges. |
 | `age_yr` | spacetime | cosmic age in years. Used when `finite_age` is true. Making the universe old enough that `τ = n σ c t ≳ 1` makes the sky photosphere-bright again. |
 | `cutoff_m` | effective | radial cutoff in metres. Standing-theory verdicts and the world note use the improper `R → ∞` limit or `c t` / `c/H` (`verdict_radius`), not this cutoff. Weakly live: named in the unbounded-static note as what the verdict is *not*. |
 
 ## Claims
 
-| id | meaning | static Euclidean | finite-age horizon |
-|---|---|---|---|
-| `astro.shell-cancellation` | `dF/dr` independent of `r` | **holds** (axiom) | **holds** (same Euclidean shells; expansion is the knob that breaks this) |
-| `astro.sky-finite` | integrated brightness stays finite as the radial cutoff is removed | **fails** (`F ∝ R`, `F(2R)/F(R) = 2` at `R = c t`, independent of cutoff) | **holds** (`F = ρ_L c t`) |
-| `astro.night-sky-dark` | night sky far dimmer than a stellar photosphere (`τ ≪ 1`) | **fails** (`τ = n σ R → ∞`) | **holds** (`τ ~ 10⁻¹⁵` at a Hubble time) |
+| id | meaning | static Euclidean | finite-age horizon | tired light (IR) |
+|---|---|---|---|---|
+| `astro.shell-cancellation` | `dF/dr` independent of `r`. On `olbers-static` this names inverse-square Euclidean shells | **holds** (axiom) | **holds** (same Euclidean shells; expansion is the knob that breaks this) | **fails** (`dF ∝ e^{-Hr/c} dr`). That is not a knob |
+| `astro.sky-finite` | integrated brightness stays finite as the radial cutoff is removed | **fails** (`F ∝ R`, `F(2R)/F(R) = 2` at `R = c t`, independent of cutoff) | **holds** (`F = ρ_L c t`) | **holds** (`F = (ρ_L c/H)[1 − e^{−Hr/c}]`) |
+| `astro.night-sky-dark` | night sky far dimmer than a stellar photosphere (`τ ≪ 1`) | **fails** (`τ = n σ R → ∞`) | **holds** (`τ ~ 10⁻¹⁵` at a Hubble time) | **fails** (covering still diverges) |
 
 The standing theory holds its own axiom and fails the observations. A finite
 age keeps the axiom and holds the observations. Hubble dimming **fails** the
-axiom (`dF/dr` falls as `1/(1+z)²`) and holds the observations. That is the
-challenge: two independent resolutions, one of which keeps the 19th-century
-shell theorem.
+axiom (`dF/dr` falls as `1/(1+z)²`) and holds the observations. Tired light
+**fails** cancellation (`dF ∝ e^{-Hr/c} dr`) and **holds** `astro.sky-finite`
+(the energy integral converges) while `astro.night-sky-dark` **stays fails**
+(`τ = n σ R` still diverges). That last split is the honesty versus the knobs:
+finite age keeps cancellation and darkens the sky; expanding fails
+cancellation *and* darkens the sky; tired light fails cancellation and caps
+energy but does not save covering. Mutants stay `olbers-static`.
 
 ## What is computed (theorems, not tables)
 
@@ -77,6 +87,8 @@ assigning either to the other is a compile-fail contract in `physis-core`.
 ```
 physis experiment olbers
 physis run olbers-static
+physis hypothesize olbers-static           # add-tired-light is IR, not set
+physis encode olbers-static                # inverse-square Euclidean shells; not P3S, not a kernel proof
 physis set olbers-static finite_age true   # finite-age resolution
 physis set olbers-static expanding true    # Hubble dimming (fresh lab: both catastrophes flip, and cancellation fails)
 physis set olbers-horizon age_yr 1e26      # finite but ancient: τ ≳ 1, sky photosphere-bright
@@ -89,11 +101,21 @@ physis set olbers-horizon age_yr 1e26      # finite but ancient: τ ≳ 1, sky p
 `set olbers-static expanding true` flips cancellation holds → fails *and*
 the two catastrophe cells fails → holds.
 
+`physis hypothesize olbers-static` forks the package with tired light
+(`equation tired light`); that is not a knob (`set olbers-static tired`
+is unknown). The tired encoding fails cancellation and holds sky-finite
+while night-sky-dark stays fails. `finite_age` and `expanding` stay knobs.
+Mutants are not installed. `olbers-horizon` has no package.
+
 ## Honesty
 
 - Linear Hubble `z = H r/c` is not a full FLRW integral (no scale-factor
   history, no cosmological redshift of the source spectrum beyond the
   `1/(1+z)²` energy-and-rate dimming of the Euclidean shells).
+- Tired light uses `μ = H/c` as the energy-loss scale, not a new knob.
+  Residual `dF/dr(2r)/dF/dr(r) = e^{-0.1}` at `r = 0.1 c/H` is evidence,
+  not a unit flag and not Hubble dimming (`(1.1/1.2)²`). Covering still
+  diverges. Expanding is checked first; tired is not stacked with Hubble.
 - `ρ_L` is a cosmic-mean luminosity density (~10⁸ L_☉/Mpc³), not the solar
   neighbourhood packed out to infinity. Optical depth therefore uses a
   mean stellar-disk covering, not a galaxy-survey luminosity function.

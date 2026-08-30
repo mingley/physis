@@ -145,6 +145,7 @@ cargo run -p physis -- set einstein-solid spectrum debye   # T³ fails → holds
 cargo run -p physis -- experiment gravity
 cargo run -p physis -- set general-relativity dim 5
 cargo run -p physis -- experiment olbers
+cargo run -p physis -- hypothesize olbers-static  # add-tired-light is IR, not set
 cargo run -p physis -- set olbers-static finite_age true   # catastrophe fails → holds
 cargo run -p physis -- experiment bell
 cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus/klein/sphere
@@ -185,6 +186,7 @@ cargo run -p physis -- falsify consistency.critical-dimension
 cargo run -p physis -- hypothesize type-iib
 cargo run -p physis -- hypothesize combinational-circuit
 cargo run -p physis -- hypothesize turing-machine  # add-oracle is IR, not set
+cargo run -p physis -- hypothesize olbers-static   # add-tired-light is IR, not set
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- enclose gut.weinberg-angle
 cargo run -p physis -- cite gut.proton-lifetime-sk
