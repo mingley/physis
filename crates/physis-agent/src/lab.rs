@@ -2075,6 +2075,12 @@ mod tests {
             "{undec}"
         );
         assert!(
+            undec
+                .lines()
+                .any(|l| l.contains("turing-machine") && l.contains("comp.decidable-equivalence")),
+            "Rice's theorem must sit with halting: {undec}"
+        );
+        assert!(
             !undec.lines().any(|l| l.contains("empirical.sm-gauge")),
             "Type II SM gauge is an encoding gap, not Rice/halting: {undec}"
         );

@@ -21,7 +21,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   is empty until `prove`. A proved catalog identity leaves the
   `missing-theorem` gap. Information-layer Undecidable (halting, Rice)
   is `logically-undecidable`; other undecidable evaluations are
-  `unsupported-formal-primitive`. P vs NP stays a scientific open
+  `unsupported-formal-primitive`. The TM equivalence claim lives on the
+  information layer with halting (Rice). P vs NP stays a scientific open
   problem. CLI `loop` is wired (it was listed in usage but not parsed).
   Verified: origin unit tests, inspect lab test, `fmt`,
   `clippy -D warnings`, full suite, CLI.

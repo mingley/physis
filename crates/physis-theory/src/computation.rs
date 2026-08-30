@@ -72,7 +72,7 @@ fn comp_claims() -> Vec<Claim> {
         Claim::new(
             DECIDABLE_EQUIVALENCE,
             "Equivalence of two instances is decidable.",
-            LayerId::Mathematical,
+            LayerId::Information,
             ClaimClass::Phenomenological,
         ),
         Claim::new(
