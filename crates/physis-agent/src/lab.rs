@@ -14,6 +14,7 @@ use physis_theory::dec::DeRham;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
 use physis_theory::gauge_field::{WilsonSun, WilsonU1};
 use physis_theory::gravity::NewtonianGravity;
+use physis_theory::olbers::OlbersSky;
 use physis_theory::quantum::BellTest;
 use physis_theory::solid::EinsteinSolid;
 use physis_theory::thermo::IdealGas;
@@ -63,6 +64,10 @@ pub const EXPERIMENTS: &[(&str, &str)] = &[
     (
         "gravity",
         "solar-system gravity: Newton vs GR (Eddington 1.75″, Mercury 43″)",
+    ),
+    (
+        "olbers",
+        "night sky: infinite static Euclidean vs a finite-age horizon",
     ),
     (
         "bell",
@@ -125,6 +130,9 @@ impl Lab {
         lab.insert(Box::new(EinsteinSolid::dulong_petit()));
         lab.insert(Box::new(EinsteinSolid::einstein()));
         lab.insert(Box::new(EinsteinSolid::debye()));
+        // Standing 19th-c cosmology: Olbers' paradox vs a finite-age horizon.
+        lab.insert(Box::new(OlbersSky::static_euclidean()));
+        lab.insert(Box::new(OlbersSky::finite_age()));
         // Fifth domain: quantum foundations (a CHSH Bell test).
         lab.insert(Box::new(BellTest::default()));
         // Pure mathematics: discrete exterior calculus / de Rham cohomology.
@@ -274,6 +282,11 @@ impl Lab {
             }
             "gravity" => {
                 let report = physis_theory::gravity();
+                self.journal.record(JournalEvent::experiment(id));
+                Ok(report)
+            }
+            "olbers" => {
+                let report = physis_theory::olbers();
                 self.journal.record(JournalEvent::experiment(id));
                 Ok(report)
             }
@@ -600,6 +613,58 @@ mod tests {
                 && d.from == VerdictKind::Fails
                 && d.to == VerdictKind::Holds),
             "expected weinberg-angle-mz Fails→Holds, got {diffs:?}"
+        );
+    }
+
+    #[test]
+    fn finite_age_flips_olbers_catastrophe() {
+        let mut lab = Lab::standard();
+        let diffs = lab
+            .set_knob("olbers-static", "finite_age", "true")
+            .unwrap()
+            .2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "astro.sky-finite"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected sky-finite Fails→Holds, got {diffs:?}"
+        );
+        assert!(
+            diffs.iter().any(|d| d.claim == "astro.night-sky-dark"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected night-sky-dark Fails→Holds, got {diffs:?}"
+        );
+        assert!(
+            !diffs.iter().any(|d| d.claim == "astro.shell-cancellation"),
+            "finite age must not touch shell cancellation, got {diffs:?}"
+        );
+    }
+
+    #[test]
+    fn expanding_flips_olbers_cancellation_and_saves_the_sky() {
+        let mut lab = Lab::standard();
+        let diffs = lab
+            .set_knob("olbers-static", "expanding", "true")
+            .unwrap()
+            .2;
+        assert!(
+            diffs.iter().any(|d| d.claim == "astro.shell-cancellation"
+                && d.from == VerdictKind::Holds
+                && d.to == VerdictKind::Fails),
+            "expected shell-cancellation Holds→Fails, got {diffs:?}"
+        );
+        assert!(
+            diffs.iter().any(|d| d.claim == "astro.sky-finite"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected sky-finite Fails→Holds, got {diffs:?}"
+        );
+        assert!(
+            diffs.iter().any(|d| d.claim == "astro.night-sky-dark"
+                && d.from == VerdictKind::Fails
+                && d.to == VerdictKind::Holds),
+            "expected night-sky-dark Fails→Holds, got {diffs:?}"
         );
     }
 

@@ -69,6 +69,17 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
   `set de-rham shape sphere` flips `dec.fundamental-class` fails → holds
   without flipping Poincaré (`b₁` stays 0).
 
+### olbers (`olbers-static`, `olbers-horizon`)
+- `finite_age` — light-travel horizon at `c t`. `set olbers-static finite_age true`
+  flips `astro.sky-finite` and `astro.night-sky-dark` fails → holds without
+  touching shell cancellation.
+- `expanding` — linear Hubble dimming. `set olbers-static expanding true` flips
+  cancellation holds → fails *and* the two catastrophe cells fails → holds.
+- `age_yr` — cosmic age (years). `set olbers-horizon age_yr 1e26` makes `τ ≳ 1`:
+  a finite but ancient sky is photosphere-bright.
+- `cutoff_m` — radial cutoff (metres). Standing-theory verdicts use the improper
+  `R → ∞` limit, not this cutoff (weakly live in the world note).
+
 ### su5-gut
 - `supersymmetric` — MSSM matter. Flips `gut.coupling-unification`,
   `gut.proton-decay-viable`, and `gut.weinberg-angle-mz` fails → holds

@@ -10,13 +10,13 @@ Finest to coarsest:
 | Layer | What lives here | v0 encoding |
 |---|---|---|
 | mathematical | groups, algebras, type-level proofs | `typenum` SI, `SimpleGroup` |
-| spacetime | dimension, signature, extras, topology hint | `Manifold`; solar-system Newton vs GR (`gravity` lab, `specs/018`) |
+| spacetime | dimension, signature, extras, topology hint | `Manifold`; solar-system Newton vs GR (`gravity` lab, `specs/018`); Olbers' paradox (`olbers` lab, `specs/019`) |
 | quantum | amplitudes, operators | finite `Ket`, Pauli, CHSH Bell test (`bell` lab, `specs/012`) |
 | field | local DoF, Lagrangians | string kind, SUSY flag (placeholder) |
 | particle | spectrum | SM catalog + graviton |
 | interaction | gauge groups, couplings | `GaugeGroup`, SM embed table |
 | effective | cutoffs, compactification radii | hidden-extra-dims claim |
-| statistical | temperature, ensembles | ideal gas (`thermo` lab, `specs/011`); cavity radiation (`blackbody` lab, `specs/016`); Einstein/Debye solid (`solid` lab, `specs/017`) |
+| statistical | temperature, ensembles | ideal gas (`thermo` lab, `specs/011`); cavity radiation (`blackbody` lab, `specs/016`); Einstein/Debye solid (`solid` lab, `specs/017`); Olbers optical depth / night-sky brightness (`olbers` lab, `specs/019`) |
 | information | records, computation | journal is the seed |
 | agent | observers who turn knobs | `Lab`, protocol |
 

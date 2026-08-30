@@ -175,6 +175,10 @@ pub type RadiationConstant = SI<P1, N1, N2, Z0, N4>;
 pub type LengthTemperature = SI<Z0, P1, Z0, Z0, P1>;
 /// Heat capacity (and entropy), `M L² T⁻² Θ⁻¹` (J/K).
 pub type HeatCapacity = SI<P1, P2, N2, Z0, N1>;
+/// Irradiance / heat flux, `M T⁻³` (W/m²). Stefan–Boltzmann `σ T⁴` has this dimension.
+pub type Irradiance = SI<P1, Z0, N3>;
+/// Luminosity density, `M L⁻¹ T⁻³` (W/m³). Times a length, an irradiance.
+pub type LuminosityDensity = SI<P1, N1, N3>;
 
 #[cfg(test)]
 mod tests {
@@ -197,6 +201,24 @@ mod tests {
         assert_eq!(c.time, -2);
         assert_eq!(c.temperature, -1);
         assert_eq!(format!("{c}"), "kg·m^2·s^-2·K^-1");
+    }
+
+    #[test]
+    fn irradiance_exponents() {
+        let i = <Irradiance as HasDim>::exponents();
+        assert_eq!(i.mass, 1);
+        assert_eq!(i.length, 0);
+        assert_eq!(i.time, -3);
+        assert_eq!(format!("{i}"), "kg·s^-3");
+    }
+
+    #[test]
+    fn luminosity_density_exponents() {
+        let l = <LuminosityDensity as HasDim>::exponents();
+        assert_eq!(l.mass, 1);
+        assert_eq!(l.length, -1);
+        assert_eq!(l.time, -3);
+        assert_eq!(format!("{l}"), "kg·m^-1·s^-3");
     }
 
     #[test]

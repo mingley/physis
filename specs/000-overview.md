@@ -47,4 +47,5 @@ The workspace is reusable across scientific domains. The first domain is fundame
 - `specs/016-blackbody.md`
 - `specs/017-einstein-solid.md`
 - `specs/018-light-deflection.md`
+- `specs/019-olbers.md`
 - `plans/000-roadmap.md`

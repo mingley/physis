@@ -5,8 +5,8 @@
 //! so that theories can be compared against the same measuring sticks.
 
 use physis_core::dim::{
-    Action, Dimensionless, Energy, EnergyDensity, HeatCapacity, Length, Mass, RadiationConstant,
-    StefanBoltzmann, Time, Velocity,
+    Action, Dimensionless, Energy, EnergyDensity, Frequency, HeatCapacity, Length,
+    LuminosityDensity, Mass, Power, RadiationConstant, StefanBoltzmann, Time, Velocity,
 };
 use physis_core::qty::{kg, meters, seconds, Qty};
 
@@ -54,6 +54,34 @@ pub fn solar_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>>
 /// Nominal solar radius (IAU 2015), metres.
 pub fn solar_radius() -> Qty<Length> {
     meters(6.957e8)
+}
+
+/// Nominal solar luminosity (IAU 2015), watts.
+pub fn solar_luminosity() -> Qty<Power> {
+    Qty::new(3.828e26)
+}
+
+/// Parsec, metres. IAU 2015: `(648 000 / π)` astronomical units, with the AU exact.
+pub fn parsec() -> Qty<Length> {
+    use std::f64::consts::PI;
+    const AU_M: f64 = 149_597_870_700.0;
+    meters((648_000.0 / PI) * AU_M)
+}
+
+/// Hubble constant H₀ ≈ 70 km s⁻¹ Mpc⁻¹, as a frequency (s⁻¹).
+///
+/// Order-of-magnitude cosmology, not a precision H₀ fit.
+pub fn hubble_constant() -> Qty<Frequency> {
+    let v = Qty::<Velocity>::new(70_000.0); // 70 km/s
+    v / (parsec() * 1.0e6)
+}
+
+/// Mean cosmic starlight luminosity density, ~10⁸ L_☉ / Mpc³.
+///
+/// An order-of-magnitude extragalactic average, not a galaxy-survey fit.
+pub fn cosmic_luminosity_density() -> Qty<LuminosityDensity> {
+    let mpc = parsec() * 1.0e6;
+    solar_luminosity() / (mpc * mpc * mpc) * 1.0e8
 }
 
 /// Mercury's semi-major axis, metres (JPL DE).
@@ -275,5 +303,15 @@ mod tests {
             "GM/c² = {}",
             m.value()
         );
+    }
+
+    #[test]
+    fn cosmic_luminosity_density_times_length_is_irradiance() {
+        use physis_core::dim::Irradiance;
+        use physis_core::qty::meters;
+        let f: Qty<Irradiance> = cosmic_luminosity_density() * meters(1.0);
+        assert!(f.value() > 0.0 && f.value().is_finite());
+        let h = hubble_constant().value();
+        assert!((h - 2.27e-18).abs() / 2.27e-18 < 0.05, "H₀ = {h} /s");
     }
 }

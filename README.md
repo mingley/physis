@@ -68,6 +68,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `blackbody` | cavity radiation — **Rayleigh–Jeans fails** finite energy, T⁴, and Wien's peak; Planck holds them; `set planck quantum false` restores the ultraviolet catastrophe |
 | `solid` | lattice oscillators — **Dulong–Petit fails** the third law; Einstein holds it but **fails T³** (exponential freeze-out); Debye holds both the third law and `C_V ∝ T³` |
 | `gravity` | solar-system gravity — **Newton fails** Eddington's 1.75″ and Mercury's 43″; GR holds them; Soldner's half-angle is the standing claim GR doubles |
+| `olbers` | night sky — **static Euclidean fails** finite brightness and a dark sky (`F ∝ R`, `τ → ∞`); a finite-age horizon holds both; Hubble dimming is an independent flip |
 | `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2` |
 
 Domains also compose: `run landauer-engine` bridges computation and
@@ -86,7 +87,7 @@ MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
 `supersymmetric` knob revives as heuristics.
 
 `physis epistemics` tallies the whole lab's knowledge state by epistemic tag
-(currently ~104 theorems alongside encoded-facts, conjectures, heuristics, and
+(currently ~110 theorems alongside encoded-facts, conjectures, heuristics, and
 honestly-`open` problems). `physis --json <command>` emits the typed matrices and
 verdict diffs for agents.
 
@@ -117,6 +118,8 @@ cargo run -p physis -- set einstein-solid temperature 4000
 cargo run -p physis -- set einstein-solid spectrum debye   # T³ fails → holds
 cargo run -p physis -- experiment gravity
 cargo run -p physis -- set general-relativity dim 5
+cargo run -p physis -- experiment olbers
+cargo run -p physis -- set olbers-static finite_age true   # catastrophe fails → holds
 cargo run -p physis -- experiment bell
 cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus/klein/sphere
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time

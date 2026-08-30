@@ -19,9 +19,10 @@ SI<M, L, T, I, Θ, N, J>
 Named derived dimensions used by the lab include `Action` (`h`, `ħ`),
 `EnergyDensity` (same exponents as `Pressure`: J/m³ = Pa),
 `SpectralEnergyDensity` (J m⁻³ Hz⁻¹), `StefanBoltzmann` (W m⁻² K⁻⁴),
-`RadiationConstant` (`a` in `u = a T⁴`), and `HeatCapacity` (`k_B`, `C_V`:
-J/K). Energy density is *not* energy, and heat capacity is *not* energy:
-assigning either to `Qty<Energy>` is a compile-fail contract.
+`RadiationConstant` (`a` in `u = a T⁴`), `HeatCapacity` (`k_B`, `C_V`:
+J/K), `Irradiance` (W/m²), and `LuminosityDensity` (W/m³). Energy density
+is *not* energy, heat capacity is *not* energy, and luminosity density is
+*not* irradiance: those assignments are compile-fail contracts.
 
 Numeric payload is `f64` in SI base units. Uncertainty is not in `Qty`; it belongs on claims.
 

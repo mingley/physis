@@ -10,7 +10,7 @@ A claim names a layer. A knob names a layer. Worlds are slices across layers. Wh
 
 **mathematical.** Type-level SI; Lie groups as enums.
 
-**spacetime.** `Manifold { dim, signature, compact_extra, compact_radius_planck, topology }`. Observed 4D is a claim, not an assumption of the substrate (the substrate *allows* `dim=26`). Solar-system gravity: Newton vs GR (`gravity` lab, `specs/018`).
+**spacetime.** `Manifold { dim, signature, compact_extra, compact_radius_planck, topology }`. Observed 4D is a claim, not an assumption of the substrate (the substrate *allows* `dim=26`). Solar-system gravity: Newton vs GR (`gravity` lab, `specs/018`). Cosmology: Olbers' paradox vs a finite-age horizon (`olbers` lab, `specs/019`).
 
 **quantum.** Finite kets, Born rule, Pauli. Enough to prove the layer is real. Not QFT.
 
@@ -22,7 +22,7 @@ A claim names a layer. A knob names a layer. Worlds are slices across layers. Wh
 
 **effective.** Compactification radius vs collider scales (heuristic).
 
-**statistical.** Ideal gas (`thermo`), cavity radiation (`blackbody`), and Einstein/Debye solid (`solid`): temperature, ensembles, the ultraviolet catastrophe, Dulong–Petit vs the third law, and Debye `T³` vs Einstein freeze-out. Energy density and heat capacity are distinct types from energy.
+**statistical.** Ideal gas (`thermo`), cavity radiation (`blackbody`), Einstein/Debye solid (`solid`), and Olbers night-sky covering (`olbers`): temperature, ensembles, the ultraviolet catastrophe, Dulong–Petit vs the third law, Debye `T³` vs Einstein freeze-out, and `τ = n σ R` vs a stellar photosphere. Energy density, heat capacity, and irradiance are distinct types from energy.
 
 **information.** The journal is the embryo.
 

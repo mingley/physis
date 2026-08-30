@@ -42,6 +42,22 @@
 //! let _: Qty<Energy> = Qty::<HeatCapacity>::new(1.0);
 //! ```
 //!
+//! Irradiance (W/m²) is not energy (J):
+//!
+//! ```compile_fail
+//! use physis_core::dim::{Energy, Irradiance};
+//! use physis_core::qty::Qty;
+//! let _: Qty<Energy> = Qty::<Irradiance>::new(1.0);
+//! ```
+//!
+//! Luminosity density (W/m³) is not irradiance (W/m²):
+//!
+//! ```compile_fail
+//! use physis_core::dim::{Irradiance, LuminosityDensity};
+//! use physis_core::qty::Qty;
+//! let _: Qty<Irradiance> = Qty::<LuminosityDensity>::new(1.0);
+//! ```
+//!
 //! Energy from mass and velocity is a type success:
 //!
 //! ```
@@ -67,8 +83,9 @@ pub mod scale;
 pub use claim::{Claim, Epistemic, Verdict, VerdictKind};
 pub use dim::{
     Acceleration, Action, Amount, Charge, Current, Dimensionless, Energy, EnergyDensity, Force,
-    Frequency, HeatCapacity, Length, LengthTemperature, Luminous, Mass, Momentum, Power, Pressure,
-    RadiationConstant, SpectralEnergyDensity, StefanBoltzmann, Temperature, Time, Velocity, SI,
+    Frequency, HeatCapacity, Irradiance, Length, LengthTemperature, LuminosityDensity, Luminous,
+    Mass, Momentum, Power, Pressure, RadiationConstant, SpectralEnergyDensity, StefanBoltzmann,
+    Temperature, Time, Velocity, SI,
 };
 pub use error::CoreError;
 pub use id::{ClaimId, KnobId, LayerId, TheoryId};

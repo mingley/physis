@@ -12,6 +12,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Olbers' paradox: infinite static Euclidean starlight on trial**
+  (`crates/physis-theory/src/olbers.rs`, `specs/019-olbers.md`, typed
+  `Irradiance` / `LuminosityDensity` in `physis-core`). A standing
+  19th-century cosmology (`olbers-static`) holds inverse-square shell
+  cancellation (`dF = ρ_L dr`) and **fails** a finite sky and a dark night:
+  the improper integral is `F ∝ R` (`F(2R)/F(R) = 2` at a Hubble-time probe,
+  independent of cutoff) and `τ = n σ R → ∞`. A finite-age horizon
+  (`olbers-horizon`) keeps cancellation and holds both observations
+  (`F = ρ_L c t`, `τ ~ 10⁻¹⁵`). Hubble dimming is an independent knob:
+  `dF = ρ_L dr / (1+z)²` saturates at `ρ_L c/H`, so cancellation fails and
+  the sky stays dark. `set olbers-static finite_age true` flips the two
+  catastrophe cells; `set olbers-horizon age_yr 1e26` makes `τ ≳ 1` (a
+  merely finite universe is not automatically dark). Flux is
+  `Qty<Irradiance>`, not energy. Linear Hubble `z = H r/c` is not a full
+  FLRW integral; `ρ_L` is a cosmic mean, not the solar neighbourhood packed
+  to infinity. Verified: shell ratio 1 vs Hubble fall-off, flux doubling,
+  expanding saturation ≈ 2 (static 100), Hubble-time `τ ~ 10⁻¹⁵`, ancient
+  `τ ≳ 1`, cutoff independence, typed `ρ_L × length`, lab knob-diffs,
+  `fmt`, `clippy -D warnings`, full suite, and the CLI experiment.
+
 - **Rayleigh–Jeans vs Planck: the ultraviolet catastrophe as a computed theorem**
   (`crates/physis-theory/src/blackbody.rs`, `specs/016-blackbody.md`, typed
   `EnergyDensity` / `StefanBoltzmann` in `physis-core`). Classical equipartition
@@ -38,6 +58,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   MSSM lands on 0.231 at `M_U ≈ 2×10¹⁶ GeV` and holds as a heuristic.
   `set su5-gut supersymmetric true` flips that cell with unification and
   proton decay. The 3/8 hold evidence no longer quotes the M_Z measurement.
+  Verified: SM GQW ≈0.207 vs 0.231, MSSM match, lab knob-diff, `fmt`,
+  `clippy -D warnings`, full suite, and `run su5-gut`.
 
 - **2-sphere: χ = 2, b₂ = 1, Poincaré still holds**
   (`crates/physis-theory/src/dec.rs`, `specs/015-exterior-calculus.md`). The
