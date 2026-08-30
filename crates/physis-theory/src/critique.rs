@@ -9,6 +9,7 @@
 use std::collections::BTreeMap;
 
 use physis_core::claim::{Claim, Verdict, VerdictKind};
+use physis_core::Judgment;
 use serde::{Deserialize, Serialize};
 
 use crate::claims;
@@ -79,15 +80,144 @@ pub struct ExperimentReport {
     pub matrix: BTreeMap<String, BTreeMap<String, VerdictKind>>,
 }
 
-/// A before/after verdict change after a knob turn.
+/// A before/after scientific change after a knob turn.
+///
+/// `from` / `to` remain the Level-2 evaluator kinds so a pre-axis JSONL
+/// journal still deserializes. Orthogonal axes (derivation, empirical,
+/// projected judgment) are optional strings: absent on legacy records,
+/// always present on diffs this lab now emits. Replay compares kind for
+/// every record and compares extra axes only when the record carries them.
+/// Judgment labels are kebab phrases from [`Judgment::from_lab`] with
+/// `dual_checked = false` — a knob turn does not mint a kernel proof.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerdictDiff {
-    /// Claim id.
+    /// Claim slug (lab id). Not the statement hash.
     pub claim: String,
     /// Previous kind.
     pub from: VerdictKind,
     /// New kind.
     pub to: VerdictKind,
+    /// Content-addressed identity of the sentence that moved.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub statement_hash: Option<String>,
+    /// Previous derivation assurance (`executed`, `certified-numeric`, …).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from_derivation: Option<String>,
+    /// New derivation assurance.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to_derivation: Option<String>,
+    /// Previous empirical status.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from_empirical: Option<String>,
+    /// New empirical status.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to_empirical: Option<String>,
+    /// Previous projected judgment label (`logical undetermined`, …).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from_judgment: Option<String>,
+    /// New projected judgment label.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to_judgment: Option<String>,
+}
+
+impl VerdictDiff {
+    /// Diff of one claim that moved on a scientific axis.
+    pub fn from_pair(claim: &Claim, before: &Verdict, after: &Verdict) -> Self {
+        Self {
+            claim: claim.id_str().to_string(),
+            from: before.kind,
+            to: after.kind,
+            statement_hash: Some(claim.statement_hash().to_hex()),
+            from_derivation: Some(before.derivation().as_str().into()),
+            to_derivation: Some(after.derivation().as_str().into()),
+            from_empirical: Some(before.empirical().as_str().into()),
+            to_empirical: Some(after.empirical().as_str().into()),
+            from_judgment: Some(evaluator_judgment(before)),
+            to_judgment: Some(evaluator_judgment(after)),
+        }
+    }
+
+    /// True when `live` reproduces this recorded diff.
+    ///
+    /// Kind and slug always compare. Axis fields compare only when this
+    /// record carries them, so a pre-axis journal remains faithful.
+    pub fn replay_matches(&self, live: &Self) -> bool {
+        self.claim == live.claim
+            && self.from == live.from
+            && self.to == live.to
+            && axis_replay_ok(&self.statement_hash, &live.statement_hash)
+            && axis_replay_ok(&self.from_derivation, &live.from_derivation)
+            && axis_replay_ok(&self.to_derivation, &live.to_derivation)
+            && axis_replay_ok(&self.from_empirical, &live.from_empirical)
+            && axis_replay_ok(&self.to_empirical, &live.to_empirical)
+            && axis_replay_ok(&self.from_judgment, &live.from_judgment)
+            && axis_replay_ok(&self.to_judgment, &live.to_judgment)
+    }
+
+    /// CLI lines: kind always, other axes only when they moved.
+    pub fn render(&self) -> String {
+        let mut out = format!(
+            "  {:<32} {} → {}\n",
+            self.claim,
+            self.from.as_str(),
+            self.to.as_str()
+        );
+        push_axis_line(
+            &mut out,
+            "derivation:",
+            &self.from_derivation,
+            &self.to_derivation,
+        );
+        push_axis_line(
+            &mut out,
+            "empirical:",
+            &self.from_empirical,
+            &self.to_empirical,
+        );
+        push_axis_line(
+            &mut out,
+            "judgment:",
+            &self.from_judgment,
+            &self.to_judgment,
+        );
+        out
+    }
+}
+
+fn axis_replay_ok(recorded: &Option<String>, live: &Option<String>) -> bool {
+    match recorded {
+        None => true,
+        Some(v) => live.as_deref() == Some(v.as_str()),
+    }
+}
+
+fn push_axis_line(out: &mut String, name: &str, from: &Option<String>, to: &Option<String>) {
+    if let (Some(a), Some(b)) = (from, to) {
+        if a != b {
+            out.push_str(&format!("    {name:<12} {a} → {b}\n"));
+        }
+    }
+}
+
+/// Project a set-time judgment. Knobs do not mint a dual-checked receipt.
+fn evaluator_judgment(v: &Verdict) -> String {
+    Judgment::from_lab(
+        v.class,
+        v.kind,
+        v.empirical(),
+        v.derivation(),
+        false,
+        v.numeric_lo(),
+        v.numeric_hi(),
+    )
+    .label()
+}
+
+fn scientific_axes_changed(before: &Verdict, after: &Verdict) -> bool {
+    before.kind != after.kind
+        || before.derivation() != after.derivation()
+        || before.empirical() != after.empirical()
+        || evaluator_judgment(before) != evaluator_judgment(after)
 }
 
 impl ExperimentReport {
@@ -259,16 +389,17 @@ pub fn report_from_rows(
 }
 
 /// Diff two evaluations of the same theory (after a knob turn).
+///
+/// A row is emitted when the evaluator kind **or** derivation **or**
+/// empirical status **or** projected judgment label changes. Kind-only
+/// silence used to hide a coarse lattice leaving `|k a| < 1` (Holds stays
+/// off the page while empirical/judgment move).
 pub fn diff_verdicts(before: &[(Claim, Verdict)], after: &[(Claim, Verdict)]) -> Vec<VerdictDiff> {
     let mut diffs = Vec::new();
     for (c, vb) in before {
         if let Some((_, va)) = after.iter().find(|(ca, _)| ca.id() == c.id()) {
-            if va.kind != vb.kind {
-                diffs.push(VerdictDiff {
-                    claim: c.id_str().to_string(),
-                    from: vb.kind,
-                    to: va.kind,
-                });
+            if scientific_axes_changed(vb, va) {
+                diffs.push(VerdictDiff::from_pair(c, vb, va));
             }
         }
     }
@@ -278,6 +409,7 @@ pub fn diff_verdicts(before: &[(Claim, Verdict)], after: &[(Claim, Verdict)]) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use physis_core::knob::Knobbed;
 
     #[test]
     fn matrix_has_all_theories() {
@@ -298,6 +430,115 @@ mod tests {
         assert_eq!(
             crit.get("standard-model").copied(),
             Some(VerdictKind::Inapplicable)
+        );
+    }
+
+    #[test]
+    fn coarse_lattice_diffs_empirical_and_judgment_not_just_kind() {
+        use crate::continuum::{KleinGordonField, SECOND_ORDER};
+        use physis_core::knob::KnobValue;
+
+        let mut f = KleinGordonField::default();
+        let before = f.evaluate_all();
+        f.set("spacing", KnobValue::Float(100.0)).unwrap();
+        let after = f.evaluate_all();
+        let diffs = diff_verdicts(&before, &after);
+        let d = diffs
+            .iter()
+            .find(|d| d.claim == SECOND_ORDER)
+            .expect("second-order row");
+        assert_eq!(d.from, VerdictKind::Holds);
+        assert_eq!(d.to, VerdictKind::Undecidable);
+        assert_eq!(d.from_empirical.as_deref(), Some("not-applicable"));
+        assert_eq!(d.to_empirical.as_deref(), Some("inconclusive"));
+        assert_eq!(d.from_judgment.as_deref(), Some("logical undetermined"));
+        assert_eq!(d.to_judgment.as_deref(), Some("numeric unresolved"));
+        assert_eq!(d.from_derivation.as_deref(), Some("executed"));
+        assert_eq!(d.to_derivation.as_deref(), Some("executed"));
+        assert!(
+            d.statement_hash.as_ref().is_some_and(|h| h.len() == 64),
+            "identity must be content-addressed: {:?}",
+            d.statement_hash
+        );
+        let rendered = d.render();
+        assert!(rendered.contains("holds → undecidable"), "{rendered}");
+        assert!(
+            rendered.contains("empirical:") && rendered.contains("not-applicable → inconclusive"),
+            "{rendered}"
+        );
+        assert!(
+            rendered.contains("judgment:")
+                && rendered.contains("logical undetermined → numeric unresolved"),
+            "{rendered}"
+        );
+        assert!(
+            !rendered.contains("derivation:"),
+            "executed → executed is not a causal axis: {rendered}"
+        );
+    }
+
+    #[test]
+    fn gut_interval_diffs_empirical_excluded_to_inconclusive() {
+        use crate::gut::{Su5Gut, GUT_WEINBERG_ANGLE_MZ_INTERVAL};
+        use physis_core::knob::KnobValue;
+
+        let mut g = Su5Gut::default();
+        let before = g.evaluate_all();
+        g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
+        let after = g.evaluate_all();
+        let diffs = diff_verdicts(&before, &after);
+        let d = diffs
+            .iter()
+            .find(|d| d.claim == GUT_WEINBERG_ANGLE_MZ_INTERVAL)
+            .expect("interval row");
+        assert_eq!(d.from, VerdictKind::Fails);
+        assert_eq!(d.to, VerdictKind::Undecidable);
+        assert_eq!(d.from_empirical.as_deref(), Some("excluded"));
+        assert_eq!(d.to_empirical.as_deref(), Some("inconclusive"));
+        assert_eq!(d.from_judgment.as_deref(), Some("empirical excluded"));
+        assert_eq!(d.to_judgment.as_deref(), Some("empirical inconclusive"));
+    }
+
+    #[test]
+    fn legacy_kind_only_record_matches_live_axes() {
+        use crate::strings::StringTheory;
+        use physis_core::knob::KnobValue;
+
+        let mut t = StringTheory::type_iib();
+        let before = t.evaluate_all();
+        t.set("total_dim", KnobValue::UInt(9)).unwrap();
+        let after = t.evaluate_all();
+        let live = diff_verdicts(&before, &after);
+        let crit = live
+            .iter()
+            .find(|d| d.claim == "consistency.critical-dimension")
+            .expect("critical dimension");
+        let legacy = VerdictDiff {
+            claim: "consistency.critical-dimension".into(),
+            from: VerdictKind::Holds,
+            to: VerdictKind::Fails,
+            statement_hash: None,
+            from_derivation: None,
+            to_derivation: None,
+            from_empirical: None,
+            to_empirical: None,
+            from_judgment: None,
+            to_judgment: None,
+        };
+        assert!(
+            legacy.replay_matches(crit),
+            "pre-axis journals must still certify: live={crit:?}"
+        );
+        assert_ne!(
+            legacy, *crit,
+            "live diffs carry axes the legacy record lacks"
+        );
+        assert_eq!(crit.from_judgment.as_deref(), Some("logical undetermined"));
+        assert_eq!(crit.to_judgment.as_deref(), Some("logical disproved"));
+        let rendered = crit.render();
+        assert!(
+            rendered.contains("logical undetermined → logical disproved"),
+            "{rendered}"
         );
     }
 }

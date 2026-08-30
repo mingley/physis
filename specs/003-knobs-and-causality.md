@@ -21,7 +21,23 @@ that accommodate rather than derive.
 set(knob, value) → (old, new, Δverdicts)
 ```
 
-`Δverdicts` is the list of claims whose `VerdictKind` changed. Epistemic-only changes (holds+heuristic → holds+theorem) are *not* currently diffed; promoting epistemic status is a code change, not a knob turn.
+`Δverdicts` is the list of claims whose *scientific axes* changed: evaluator
+`VerdictKind`, `DerivationAssurance`, `EmpiricalStatus`, or the projected
+`Judgment` label (`Judgment::from_lab` with `dual_checked = false` — a knob
+turn does not mint a kernel proof). Each row also carries the claim's
+`statement_hash`. `physis set` prints kind always and the other axes only
+when they moved.
+
+A coarse lattice (`set klein-gordon spacing 100`) is the load-bearing
+example: `field.second-order-accurate` is `holds → undecidable`, empirical
+`not-applicable → inconclusive`, judgment `logical undetermined → numeric
+unresolved`. That is not a failed theorem.
+
+Pre-axis journals stored only `{claim, from, to}`. Replay still certifies
+those records against a live recompute that now emits the extra fields.
+A journal that *does* carry axes is not faithful if those strings were
+tampered. Promoting an encoding in source (Asserted → Executed by rewriting
+`evaluate`) is still a code change, not a knob turn.
 
 If a load-bearing knob produces an empty diff, that is a failing test.
 

@@ -454,16 +454,11 @@ impl Lab {
                     let mut text =
                         format!("{theory}  {knob}: {} → {}\n", from.display(), to.display());
                     if diffs.is_empty() {
-                        text.push_str("no verdict kinds changed\n");
+                        text.push_str("no scientific axes changed\n");
                     } else {
                         text.push_str("verdict changes:\n");
                         for d in &diffs {
-                            text.push_str(&format!(
-                                "  {:<32} {} → {}\n",
-                                d.claim,
-                                d.from.as_str(),
-                                d.to.as_str()
-                            ));
+                            text.push_str(&d.render());
                         }
                     }
                     Response::Ok {
@@ -1554,27 +1549,33 @@ impl Lab {
             Err(e) => return Response::err(e.to_string()),
         };
         let ea = ta.evaluate_all();
-        let eb: BTreeMap<_, _> = tb
-            .evaluate_all()
-            .into_iter()
-            .map(|(c, v)| (c.id_str().to_string(), v))
-            .collect();
+        let eb = tb.evaluate_all();
+        let diffs = diff_verdicts(&ea, &eb);
         let mut text = format!("compare {a} vs {b}\n");
-        let mut n = 0usize;
-        for (c, va) in ea {
-            if let Some(vb) = eb.get(c.id_str()) {
-                if va.kind != vb.kind {
-                    n += 1;
-                    text.push_str(&format!(
-                        "  {:<32} {} vs {}\n",
-                        c.id_str(),
-                        va.kind.as_str(),
-                        vb.kind.as_str()
-                    ));
+        for d in &diffs {
+            text.push_str(&format!(
+                "  {:<32} {} vs {}\n",
+                d.claim,
+                d.from.as_str(),
+                d.to.as_str()
+            ));
+            if let (Some(fa), Some(ta_)) = (&d.from_empirical, &d.to_empirical) {
+                if fa != ta_ {
+                    text.push_str(&format!("    empirical:  {fa} → {ta_}\n"));
+                }
+            }
+            if let (Some(fa), Some(ta_)) = (&d.from_judgment, &d.to_judgment) {
+                if fa != ta_ {
+                    text.push_str(&format!("    judgment:   {fa} → {ta_}\n"));
+                }
+            }
+            if let (Some(fa), Some(ta_)) = (&d.from_derivation, &d.to_derivation) {
+                if fa != ta_ {
+                    text.push_str(&format!("    derivation: {fa} → {ta_}\n"));
                 }
             }
         }
-        text.push_str(&format!("discriminating_claims={n}\n"));
+        text.push_str(&format!("discriminating_claims={}\n", diffs.len()));
         Response::ok(text)
     }
 
@@ -1780,13 +1781,34 @@ mod tests {
     fn turning_iib_dimension_flips_critical_claim() {
         let mut lab = Lab::standard();
         let diffs = lab.set_knob("type-iib", "total_dim", "9").unwrap().2;
+        let crit = diffs
+            .iter()
+            .find(|d| d.claim == "consistency.critical-dimension")
+            .expect("critical-dimension");
+        assert_eq!(crit.from, VerdictKind::Holds);
+        assert_eq!(crit.to, VerdictKind::Fails);
+        assert_eq!(crit.from_judgment.as_deref(), Some("logical undetermined"));
+        assert_eq!(crit.to_judgment.as_deref(), Some("logical disproved"));
+        let text = lab
+            .exec(Command::Set {
+                theory: "klein-gordon".into(),
+                knob: "spacing".into(),
+                value: "100".into(),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("holds → undecidable"), "{text}");
         assert!(
-            diffs
-                .iter()
-                .any(|d| d.claim == "consistency.critical-dimension"
-                    && d.from == VerdictKind::Holds
-                    && d.to == VerdictKind::Fails),
-            "expected critical-dimension Holds→Fails, got {diffs:?}"
+            text.contains("not-applicable → inconclusive"),
+            "empirical axis must be in the causal diff: {text}"
+        );
+        assert!(
+            text.contains("logical undetermined → numeric unresolved"),
+            "judgment axis must be in the causal diff: {text}"
+        );
+        assert!(
+            !text.contains("theorem"),
+            "a coarse lattice is not a failed theorem: {text}"
         );
     }
 
@@ -2765,14 +2787,16 @@ mod tests {
         );
 
         let diffs = lab.set_knob("klein-gordon", "spacing", "100").unwrap().2;
-        assert!(
-            diffs
-                .iter()
-                .any(|d| d.claim == "field.second-order-accurate"
-                    && d.from == VerdictKind::Holds
-                    && d.to == VerdictKind::Undecidable),
-            "expected second-order Holds→Undecidable, got {diffs:?}"
-        );
+        let order = diffs
+            .iter()
+            .find(|d| d.claim == "field.second-order-accurate")
+            .expect("second-order row");
+        assert_eq!(order.from, VerdictKind::Holds);
+        assert_eq!(order.to, VerdictKind::Undecidable);
+        assert_eq!(order.from_empirical.as_deref(), Some("not-applicable"));
+        assert_eq!(order.to_empirical.as_deref(), Some("inconclusive"));
+        assert_eq!(order.from_judgment.as_deref(), Some("logical undetermined"));
+        assert_eq!(order.to_judgment.as_deref(), Some("numeric unresolved"));
         assert!(
             !diffs
                 .iter()

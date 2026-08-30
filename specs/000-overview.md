@@ -11,7 +11,7 @@ Layer: all
 - every theory is a bundle of knobs, a world projection, and a list of claims
 - every claim evaluates to a verdict with orthogonal assurance axes (`class`, `derivation`, `empirical`, `semantic`)
 - every claim has an explicit assumption set and a content-addressed statement hash
-- every knob turn that matters produces a verdict diff, recorded in a journal
+- every knob turn that matters produces a scientific-axis verdict diff, recorded in a journal
 
 The workspace is reusable across scientific domains. The first domain is fundamental physics. The first experiment is a typed comparison of string constructions against empirical controls (Standard Model, GR) and against a unique-geometry scaffold.
 

@@ -9,7 +9,7 @@ cargo run -p physis -- experiment string-critique
 cargo run -p physis -- set type-iib total_dim 9
 ```
 
-The second command flips `consistency.critical-dimension` from **holds** to **fails**. That is the point.
+The second command flips `consistency.critical-dimension` from **holds** to **fails**, and prints the judgment axis (`logical undetermined → logical disproved`). That is the point.
 
 ## Why this exists
 

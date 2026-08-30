@@ -45,8 +45,10 @@ runs (restoring prior state each run so the session stays coherent).
 
 `physis replay <file.jsonl>` re-applies the recorded `set` events onto a fresh
 `Lab::standard()`, recomputes the verdict diffs, and verifies they match what
-was recorded — a mechanical reproducibility check that exits non-zero on any
-mismatch. See `physis_agent::replay::replay_journal`.
+was recorded. Kind triples always compare; derivation / empirical / judgment
+strings compare only when the journal record carries them (pre-axis JSONL
+still certifies). The check exits non-zero on any mismatch. See
+`physis_agent::replay::replay_journal`.
 
 ## Long time horizons
 

@@ -40,7 +40,7 @@ Level-3 trust
   L3 judgment seal         ✓ Judgment has no Deserialize; from_lab projects Proved from a receipt; LogicalJudgment has no public Proved constructor; NumericJudgment has no public Certified constructor; EmpiricalJudgment has no public Compatible constructor; HeuristicJudgment has no public Suggestive constructor; StatisticalJudgment has no public Computed constructor; Verdict has no Deserialize; Verdict overlay fields are private
   L3 formal-claim seal     ✓ FormalClaim is from_claim-only; no Deserialize; a forged Claim hash is not copied through
   L3 claim-hash derived    ✓ Claim::statement_hash is a getter; no stored field; id/statement/class/layer/assumptions/domain/commitments are private; mutating the sentence cannot keep a stale receipt; derivation/empirical/semantic fields are private
-  L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
+  L3 causal diffs          ✓ set/sweep/compare/replay carry derivation, empirical, and judgment axes; legacy kind-only journals still replay
 ```
 
 Each milestone must:

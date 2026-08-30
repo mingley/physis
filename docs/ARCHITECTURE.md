@@ -37,7 +37,7 @@
 4. All claims are evaluated **before**.
 5. `Knobbed::set` mutates the theory.
 6. All claims are evaluated **after**.
-7. Diff of `VerdictKind` is the result.
+7. Diff of scientific axes (kind, derivation, empirical, projected judgment) is the result.
 8. Journal appends `SetKnob`.
 
 No PDE is solved. The “simulation” is the evaluate functions. That is enough to host long-horizon conceptual work and is the right complexity for v0.

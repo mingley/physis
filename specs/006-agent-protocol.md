@@ -11,7 +11,7 @@ Layer: agent
 | `theories` | list lab theories |
 | `knobs [theory]` | snapshot knobs |
 | `run <theory>` | evaluate all claims |
-| `set <theory> <knob> <value>` | turn a knob, print Δverdicts |
+| `set <theory> <knob> <value>` | turn a knob, print Δverdicts (kind plus derivation / empirical / judgment when those axes move) |
 | `epistemics` | tally every verdict by class, derivation, and semantic axes (no theorem row) |
 | `why <claim>` | assumptions, typed judgment, derived trust, axiom closure, kernel receipt or none |
 | `prove <claim>` | dual-check a catalogued identity; only `physis-verifier` mints |
@@ -60,7 +60,7 @@ rather than parsing prose. Example: `physis --json set type-iib total_dim 9`.
 ## Journal events
 
 - `boot` — theory ids at lab creation
-- `set-knob` — from, to, diffs
+- `set-knob` — from, to, diffs (kind plus optional scientific axes)
 - `run` — holds/fails/other counts
 - `experiment` — experiment id
 - `prove` — claim id, challenge hash, statement hash; restore remints
@@ -77,7 +77,10 @@ Agents should persist the journal, not the vibes. A later agent must be able to 
 
 Replay of `set` events onto a fresh `Lab::standard()` is implemented (M1.1).
 `replay_journal` re-applies every recorded `set-knob`, recomputes the verdict
-diffs, and checks them against the recorded diffs. A faithful replay is a
+diffs, and checks them against the recorded diffs. Kind triples always
+compare. Derivation / empirical / judgment strings compare only when the
+journal record carries them, so a pre-axis JSONL remains faithful. A
+faithful replay is a
 mechanical proof that the session reproduces; a mismatch (or a failed turn)
 proves the journal or the encoding drifted, and the CLI exits non-zero.
 

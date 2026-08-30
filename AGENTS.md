@@ -33,10 +33,10 @@ Every interesting action is:
 
 1. observe (`run`, `knobs`, `layers`, `why`)
 2. set a knob
-3. read the verdict diff
+3. read the verdict diff (kind **and** derivation / empirical / judgment when those axes move)
 4. record (the lab journals this)
 
-If a change produces **no** verdict diff and you expected one, either the claim is missing or the mapping is a bug. Add a test.
+If a change produces **no** scientific-axis diff and you expected one, either the claim is missing or the mapping is a bug. Add a test. `set klein-gordon spacing 100` must show `holds → undecidable` **and** `not-applicable → inconclusive` / `logical undetermined → numeric unresolved`, not a failed theorem.
 
 ## Assurance axes
 

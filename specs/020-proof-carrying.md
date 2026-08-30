@@ -150,7 +150,7 @@ those tools; a local checkout without them still mints
 | 3 | `physis-provenance` | Rejects `source: textbook`; requires a page/equation/… locator |
 | 4 | `physis-numeric`, `physis-data` | Exact `Ratio` / `Interval`; SU(5) `3/8` disjoint from PDG `sin²θ_W(M_Z)` |
 | 5 | `physis-store` | Content-addressed DAG; descendants only are invalidated |
-| 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops |
+| 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops. Knob diffs are scientific-axis (`VerdictKind` plus derivation / empirical / projected judgment); legacy kind-only journals still replay |
 | 7 | `physis-ir` | Line-oriented theory package (not a Lean replacement) |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |

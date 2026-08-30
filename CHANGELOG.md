@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Knob diffs are scientific-axis, not kind-only**
+  (`VerdictDiff` records derivation, empirical, and projected judgment
+  labels plus the statement hash; `diff_verdicts` emits a row when any
+  of those axes move). `set klein-gordon spacing 100` is
+  `holds → undecidable` **and** `not-applicable → inconclusive` /
+  `logical undetermined → numeric unresolved`, not a failed theorem.
+  `set su5-gut supersymmetric true` moves the PDG interval from empirical
+  excluded to inconclusive. Pre-axis journals still replay: extra fields
+  compare only when the record carries them; a forged empirical string
+  does not certify. Set-time judgment uses `from_lab` without a receipt.
+  Catalog d² hash unchanged. Verified: unit tests on Klein–Gordon and
+  SU(5); legacy JSONL strip; tampered empirical axis; CLI `set`.
+
 - **Claim cannot rebind the lab slug**
   (`Claim.id` is private; `id()` / `id_str()` are the getters).
   A public assignment cannot attach a kernel receipt to a different

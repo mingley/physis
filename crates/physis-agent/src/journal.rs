@@ -34,7 +34,8 @@ pub enum JournalEvent {
         from: KnobValue,
         /// New value.
         to: KnobValue,
-        /// Claims whose verdict kind changed.
+        /// Claims whose scientific axes changed (kind, derivation,
+        /// empirical, or projected judgment).
         diffs: Vec<VerdictDiff>,
     },
     /// An experiment was run.

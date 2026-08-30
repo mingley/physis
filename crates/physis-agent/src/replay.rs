@@ -30,6 +30,14 @@ use physis_theory::VerdictDiff;
 use crate::journal::{Journal, JournalEvent};
 use crate::lab::Lab;
 
+fn diffs_replay_match(recorded: &[VerdictDiff], recomputed: &[VerdictDiff]) -> bool {
+    recorded.len() == recomputed.len()
+        && recorded
+            .iter()
+            .zip(recomputed)
+            .all(|(r, c)| r.replay_matches(c))
+}
+
 /// Result of replaying one recorded `set-knob` event.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReplayStep {
@@ -49,8 +57,12 @@ pub struct ReplayStep {
 
 impl ReplayStep {
     /// True when replay reproduced the recorded diffs with no error.
+    ///
+    /// Kind triples always compare. Extra scientific axes compare only
+    /// when the journal record carries them, so a pre-axis JSONL still
+    /// certifies against a live recompute that now emits those fields.
     pub fn faithful(&self) -> bool {
-        self.error.is_none() && self.recorded == self.recomputed
+        self.error.is_none() && diffs_replay_match(&self.recorded, &self.recomputed)
     }
 }
 
@@ -177,7 +189,11 @@ mod tests {
         assert_eq!(report.len(), 4, "one step per recorded set-knob");
         assert!(report.faithful(), "{}", report.render());
         for step in &report.steps {
-            assert_eq!(step.recorded, step.recomputed);
+            assert!(
+                diffs_replay_match(&step.recorded, &step.recomputed),
+                "{:?}",
+                step
+            );
         }
 
         // The flagship theorem flip survives the round-trip.
@@ -241,5 +257,81 @@ mod tests {
         let report = replay_journal(&Journal::memory());
         assert!(report.is_empty());
         assert!(report.faithful());
+    }
+
+    fn strip_axis_fields(jsonl: &str) -> String {
+        jsonl
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .map(|line| {
+                let mut v: serde_json::Value = serde_json::from_str(line).unwrap();
+                if let Some(diffs) = v.get_mut("diffs").and_then(|d| d.as_array_mut()) {
+                    for d in diffs {
+                        if let Some(obj) = d.as_object_mut() {
+                            for k in [
+                                "statement_hash",
+                                "from_derivation",
+                                "to_derivation",
+                                "from_empirical",
+                                "to_empirical",
+                                "from_judgment",
+                                "to_judgment",
+                            ] {
+                                obj.remove(k);
+                            }
+                        }
+                    }
+                }
+                serde_json::to_string(&v).unwrap()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n"
+    }
+
+    #[test]
+    fn legacy_kind_only_journal_replays_faithfully() {
+        let mut lab = Lab::standard();
+        lab.set_knob("type-iib", "total_dim", "9").unwrap();
+        lab.set_knob("klein-gordon", "spacing", "100").unwrap();
+        let jsonl = lab.journal().to_string();
+        let stripped = strip_axis_fields(&jsonl);
+        assert!(
+            !stripped.contains("from_judgment"),
+            "strip must drop axis fields: {stripped}"
+        );
+        let report = replay_journal(&Journal::from_jsonl(&stripped));
+        assert!(report.faithful(), "{}", report.render());
+        assert_eq!(report.len(), 2);
+        assert_ne!(
+            report.steps[0].recorded, report.steps[0].recomputed,
+            "live recompute must still carry scientific axes"
+        );
+        assert!(report.steps[1]
+            .recomputed
+            .iter()
+            .any(|d| d.claim == "field.second-order-accurate"
+                && d.to_judgment.as_deref() == Some("numeric unresolved")));
+    }
+
+    #[test]
+    fn tampered_empirical_axis_is_not_faithful() {
+        let mut lab = Lab::standard();
+        lab.set_knob("klein-gordon", "spacing", "100").unwrap();
+        let jsonl = lab.journal().to_string();
+        assert!(
+            jsonl.contains("\"to_empirical\":\"inconclusive\""),
+            "journal must record the empirical axis: {jsonl}"
+        );
+        let tampered = jsonl.replace(
+            "\"to_empirical\":\"inconclusive\"",
+            "\"to_empirical\":\"compatible\"",
+        );
+        let report = replay_journal(&Journal::from_jsonl(&tampered));
+        assert!(
+            !report.faithful(),
+            "forged empirical axis must not certify: {}",
+            report.render()
+        );
     }
 }
