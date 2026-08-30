@@ -46,14 +46,14 @@ pub struct Ratio {
 
 impl Ratio {
     /// Construct and reduce. Panics if den == 0 (a programming error).
-    pub fn new(num: i128, den: i128) -> Self {
+    pub const fn new(num: i128, den: i128) -> Self {
         assert!(den != 0, "ratio denominator must be nonzero");
         let (n, d) = reduce(num, den);
         Self { num: n, den: d }
     }
 
     /// Integer.
-    pub fn int(n: i128) -> Self {
+    pub const fn int(n: i128) -> Self {
         Self { num: n, den: 1 }
     }
 
@@ -61,9 +61,59 @@ impl Ratio {
     pub fn enclosure(self) -> Interval {
         Interval { lo: self, hi: self }
     }
+
+    /// Non-negative integer power.
+    pub fn pow(self, n: u32) -> Self {
+        let mut acc = Ratio::int(1);
+        for _ in 0..n {
+            acc = acc * self;
+        }
+        acc
+    }
+
+    /// True when the numerator is zero.
+    pub fn is_zero(self) -> bool {
+        self.num == 0
+    }
+
+    /// IEEE-754 approximation. Not a certificate.
+    pub fn to_f64(self) -> f64 {
+        (self.num as f64) / (self.den as f64)
+    }
 }
 
-fn gcd(mut a: i128, mut b: i128) -> i128 {
+impl std::ops::Add for Ratio {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        add_ratio(self, rhs)
+    }
+}
+
+impl std::ops::Sub for Ratio {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        sub_ratio(self, rhs)
+    }
+}
+
+impl std::ops::Mul for Ratio {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        mul_ratio(self, rhs)
+    }
+}
+
+impl std::fmt::Display for Ratio {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.den == 1 {
+            write!(f, "{}", self.num)
+        } else {
+            write!(f, "{}/{}", self.num, self.den)
+        }
+    }
+}
+
+const fn gcd(mut a: i128, mut b: i128) -> i128 {
     a = a.abs();
     b = b.abs();
     while b != 0 {
@@ -74,7 +124,7 @@ fn gcd(mut a: i128, mut b: i128) -> i128 {
     a
 }
 
-fn reduce(num: i128, den: i128) -> (i128, i128) {
+const fn reduce(num: i128, den: i128) -> (i128, i128) {
     let s = if den < 0 { -1 } else { 1 };
     let n = num * s;
     let d = den.abs();
@@ -258,5 +308,24 @@ mod tests {
         assert!(band.contains(mz));
         assert!(!mz.contains(band));
         assert!(!band.disjoint(mz));
+    }
+
+    #[test]
+    fn sm_hypercharge_cube_cancels_exactly() {
+        // One generation, integer colour × weak multiplicities, Y as Ratio.
+        let fields: [(i128, i128, Ratio); 5] = [
+            (3, 2, Ratio::new(1, 6)),
+            (3, 1, Ratio::new(-2, 3)),
+            (3, 1, Ratio::new(1, 3)),
+            (1, 2, Ratio::new(-1, 2)),
+            (1, 1, Ratio::int(1)),
+        ];
+        let mut cubic = Ratio::int(0);
+        for (color, weak, y) in fields {
+            cubic = cubic + Ratio::int(color) * Ratio::int(weak) * y.pow(3);
+        }
+        assert!(cubic.is_zero(), "Σ colour·weak·Y³ = {cubic}");
+        let flipped = cubic + Ratio::int(1);
+        assert!(!flipped.is_zero());
     }
 }

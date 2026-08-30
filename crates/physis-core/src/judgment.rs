@@ -494,6 +494,20 @@ mod tests {
     }
 
     #[test]
+    fn certified_numeric_earns_p3n_not_p3f() {
+        let p = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::CertifiedNumeric,
+            semantic: SemanticAssurance::Unreviewed,
+            dual_checked_receipt: false,
+            numeric_certificate: true,
+        });
+        assert!(p.has(TrustTier::P1));
+        assert!(p.has(TrustTier::P3N));
+        assert!(!p.has(TrustTier::P3F));
+        assert!(!p.has(TrustTier::P4));
+    }
+
+    #[test]
     fn parameter_origin_names_are_stable_and_unique() {
         let names: Vec<_> = ParameterOrigin::ALL.iter().map(|o| o.as_str()).collect();
         assert_eq!(names.len(), 6);

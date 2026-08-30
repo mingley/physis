@@ -65,7 +65,9 @@ trusted dossier; journal restore re-runs review rather than deserializing
 the tag. `physis inspect trust|class|origin|gap <value>` inverts those
 axes: knobs carry a `ParameterOrigin` so a fitted dilaton is not a derived
 prediction, and `inspect origin fitted` lists the knobs that accommodate
-rather than derive. `exec` checks role, then trust, then budget:
+rather than derive. `inspect trust P3N` lists exact-`Ratio` cancellations
+(Standard Model chiral anomalies), not the heuristic 3% GQW band and not a
+kernel proof. `exec` checks role, then trust, then budget:
 `reproduce` and the loop's review step require P3F. Standalone encoding
 review does not.
 

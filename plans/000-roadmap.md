@@ -26,6 +26,7 @@ Level-3 trust
   L3 reproduce             ✓ in-process remint of a stored receipt; explicitly not P4
   L3 gap graph             ✓ physis gaps rebuilds a content-addressed snapshot; MissingTheorem is Holds-only; lemma edges are live
   L3 trust gate            ✓ reproduce and loop-review require P3F; standalone review stays encoding-axis
+  L3 P3N numeric           ✓ SM chiral anomalies vanish as exact Ratio; not Lean, not GQW 3%
 ```
 
 Each milestone must:

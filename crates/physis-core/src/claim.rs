@@ -142,6 +142,14 @@ impl Verdict {
         self.intractable = true;
         self
     }
+
+    /// Overlay exact-ratio / interval-certificate assurance. Does not mint
+    /// a kernel proof and is not P4.
+    pub fn with_certified_numeric(mut self) -> Self {
+        debug_assert_eq!(self.kind, VerdictKind::Holds);
+        self.derivation = DerivationAssurance::CertifiedNumeric;
+        self
+    }
 }
 
 /// A sentence a theory is willing to be judged on.
@@ -308,5 +316,19 @@ mod tests {
         assert!(v.intractable);
         assert_eq!(v.kind, VerdictKind::Undecidable);
         assert_eq!(v.derivation, DerivationAssurance::Executed);
+    }
+
+    #[test]
+    fn certified_numeric_is_not_a_kernel_proof() {
+        let c = Claim::new(
+            "consistency.anomaly-cancellation",
+            "Chiral gauge anomalies cancel within each generation.",
+            LayerId::Interaction,
+            ClaimClass::ModelInternal,
+        );
+        let v = Verdict::holds(&c, "exact Ratio sums vanish").with_certified_numeric();
+        assert_eq!(v.kind, VerdictKind::Holds);
+        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_ne!(v.derivation, DerivationAssurance::Asserted);
     }
 }

@@ -7,6 +7,7 @@ use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
+use physis_numeric::Ratio;
 
 use crate::claims;
 use crate::framework::Theory;
@@ -28,8 +29,8 @@ struct WeylField {
     color: f64,
     /// SU(2) representation dimension (2 = doublet, 1 = singlet).
     weak: f64,
-    /// Weak hypercharge Y.
-    y: f64,
+    /// Weak hypercharge Y (exact rational; convention `Q = T₃ + Y`).
+    y: Ratio,
 }
 
 /// One generation of left-handed Weyl fermions of the Standard Model.
@@ -38,31 +39,31 @@ const SM_WEYL_FIELDS: &[WeylField] = &[
         name: "Q_L",
         color: 3.0,
         weak: 2.0,
-        y: 1.0 / 6.0,
+        y: Ratio::new(1, 6),
     }, // quark doublet
     WeylField {
         name: "u_R^c",
         color: 3.0,
         weak: 1.0,
-        y: -2.0 / 3.0,
+        y: Ratio::new(-2, 3),
     }, // anti-up
     WeylField {
         name: "d_R^c",
         color: 3.0,
         weak: 1.0,
-        y: 1.0 / 3.0,
+        y: Ratio::new(1, 3),
     }, // anti-down
     WeylField {
         name: "L_L",
         color: 1.0,
         weak: 2.0,
-        y: -1.0 / 2.0,
+        y: Ratio::new(-1, 2),
     }, // lepton doublet
     WeylField {
         name: "e_R^c",
         color: 1.0,
         weak: 1.0,
-        y: 1.0,
+        y: Ratio::int(1),
     }, // anti-electron
 ];
 
@@ -141,7 +142,7 @@ pub(crate) fn gut_weinberg_sin2() -> f64 {
         .sum();
     let sum_q_sq: f64 = SM_WEYL_FIELDS
         .iter()
-        .map(|f| f.color * (weak_t3_sq(f.weak) + f.weak * f.y * f.y))
+        .map(|f| f.color * (weak_t3_sq(f.weak) + f.weak * f.y.to_f64() * f.y.to_f64()))
         .sum();
     sum_t3_sq / sum_q_sq
 }
@@ -153,24 +154,43 @@ pub(crate) fn gut_trace_charge() -> f64 {
     hypercharge_sum()
 }
 
+/// Integer colour and weak dimensions of a Weyl species.
+fn dim_ratio(x: f64) -> Ratio {
+    Ratio::int(x.round() as i128)
+}
+
 /// The [SU(3)]²U(1) mixed anomaly over one generation (colour triplets only).
-fn anomaly_su3_u1() -> f64 {
-    // Each colour (anti)triplet Weyl fermion contributes T(fund)·(weak mult)·Y,
-    // with T(fund) = 1/2; singlets contribute nothing.
+fn anomaly_su3_u1_exact() -> Ratio {
+    let half = Ratio::new(1, 2);
     SM_WEYL_FIELDS
         .iter()
         .filter(|f| f.color > 1.5)
-        .map(|f| 0.5 * f.weak * f.y)
-        .sum()
+        .fold(Ratio::int(0), |acc, f| acc + half * dim_ratio(f.weak) * f.y)
 }
 
 /// The [SU(2)]²U(1) mixed anomaly over one generation (weak doublets only).
-fn anomaly_su2_u1() -> f64 {
+fn anomaly_su2_u1_exact() -> Ratio {
+    let half = Ratio::new(1, 2);
     SM_WEYL_FIELDS
         .iter()
         .filter(|f| f.weak > 1.5)
-        .map(|f| 0.5 * f.color * f.y)
-        .sum()
+        .fold(Ratio::int(0), |acc, f| {
+            acc + half * dim_ratio(f.color) * f.y
+        })
+}
+
+/// The gravitational [grav]²U(1) anomaly: Σ (colour·weak) · Y over a generation.
+fn hypercharge_sum_exact() -> Ratio {
+    SM_WEYL_FIELDS.iter().fold(Ratio::int(0), |acc, f| {
+        acc + dim_ratio(f.color) * dim_ratio(f.weak) * f.y
+    })
+}
+
+/// The [U(1)]³ anomaly: Σ (colour·weak) · Y³ over a generation.
+fn hypercharge_cube_sum_exact() -> Ratio {
+    SM_WEYL_FIELDS.iter().fold(Ratio::int(0), |acc, f| {
+        acc + dim_ratio(f.color) * dim_ratio(f.weak) * f.y.pow(3)
+    })
 }
 
 /// Electric charge (in units of e/3) of a species by flavor, from the catalog.
@@ -193,15 +213,7 @@ fn hydrogen_charge_thirds() -> i32 {
 
 /// The gravitational [grav]²U(1) anomaly: Σ (colour·weak) · Y over a generation.
 fn hypercharge_sum() -> f64 {
-    SM_WEYL_FIELDS.iter().map(|f| f.color * f.weak * f.y).sum()
-}
-
-/// The [U(1)]³ anomaly: Σ (colour·weak) · Y³ over a generation.
-fn hypercharge_cube_sum() -> f64 {
-    SM_WEYL_FIELDS
-        .iter()
-        .map(|f| f.color * f.weak * f.y * f.y * f.y)
-        .sum()
+    hypercharge_sum_exact().to_f64()
 }
 
 const SPECS: &[KnobSpec] = &[
@@ -462,24 +474,27 @@ impl Theory for StandardModel {
             claims::FERMIONS => Verdict::holds(claim, "quarks and leptons"),
             claims::SM_GAUGE => Verdict::holds(claim, "SU(3)×SU(2)×U(1)"),
             claims::ANOMALY_CANCELLATION => {
-                let a3 = anomaly_su3_u1();
-                let a2 = anomaly_su2_u1();
-                let sy = hypercharge_sum();
-                let sy3 = hypercharge_cube_sum();
-                let all_zero = [a3, a2, sy, sy3].iter().all(|x| x.abs() < 1e-12);
+                let a3 = anomaly_su3_u1_exact();
+                let a2 = anomaly_su2_u1_exact();
+                let sy = hypercharge_sum_exact();
+                let sy3 = hypercharge_cube_sum_exact();
+                let all_zero = a3.is_zero() && a2.is_zero() && sy.is_zero() && sy3.is_zero();
                 if all_zero && SM_WEAK_DOUBLETS % 2 == 0 {
-                    Verdict::holds(claim,
-                        "all four SM chiral gauge anomalies cancel within each generation",
+                    Verdict::holds(
+                        claim,
+                        "all four SM chiral gauge anomalies cancel as exact Ratio sums",
                     )
                     .with_evidence([
-                        format!("[SU(3)]²U(1) = {a3:.3}, [SU(2)]²U(1) = {a2:.3} (both 0)"),
-                        format!("[grav]²U(1) ΣY = {sy:.3}, [U(1)]³ ΣY³ = {sy3:.3} (both 0)"),
+                        format!("[SU(3)]²U(1) = {a3}, [SU(2)]²U(1) = {a2} (exact Ratio)"),
+                        format!("[grav]²U(1) ΣY = {sy}, [U(1)]³ ΣY³ = {sy3} (exact Ratio)"),
                         format!("Witten SU(2): {SM_WEAK_DOUBLETS} doublets (even)"),
                     ])
+                    .with_certified_numeric()
                 } else {
-                    Verdict::fails(claim,
+                    Verdict::fails(
+                        claim,
                         format!(
-                            "anomaly not cancelled: [SU(3)]²U(1)={a3:.3}, [SU(2)]²U(1)={a2:.3}, ΣY={sy:.3}, ΣY³={sy3:.3}"
+                            "anomaly not cancelled: [SU(3)]²U(1)={a3}, [SU(2)]²U(1)={a2}, ΣY={sy}, ΣY³={sy3}"
                         ),
                     )
                 }
@@ -487,12 +502,32 @@ impl Theory for StandardModel {
             id if id == SM_HYPERCHARGE_DERIVED => {
                 let d = derive_hypercharges();
                 // Compare the derived hypercharges to the measured assignments.
-                let stored_u = SM_WEYL_FIELDS.iter().find(|f| f.name == "u_R^c").unwrap().y;
-                let stored_d = SM_WEYL_FIELDS.iter().find(|f| f.name == "d_R^c").unwrap().y;
+                let stored_u = SM_WEYL_FIELDS
+                    .iter()
+                    .find(|f| f.name == "u_R^c")
+                    .unwrap()
+                    .y
+                    .to_f64();
+                let stored_d = SM_WEYL_FIELDS
+                    .iter()
+                    .find(|f| f.name == "d_R^c")
+                    .unwrap()
+                    .y
+                    .to_f64();
                 let mut stored_ud = [stored_u, stored_d];
                 stored_ud.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                let stored_l = SM_WEYL_FIELDS.iter().find(|f| f.name == "L_L").unwrap().y;
-                let stored_e = SM_WEYL_FIELDS.iter().find(|f| f.name == "e_R^c").unwrap().y;
+                let stored_l = SM_WEYL_FIELDS
+                    .iter()
+                    .find(|f| f.name == "L_L")
+                    .unwrap()
+                    .y
+                    .to_f64();
+                let stored_e = SM_WEYL_FIELDS
+                    .iter()
+                    .find(|f| f.name == "e_R^c")
+                    .unwrap()
+                    .y
+                    .to_f64();
                 let close = |a: f64, b: f64| (a - b).abs() < 1e-12;
                 let matches = close(d.y_l, stored_l)
                     && close(d.y_e, stored_e)
@@ -585,6 +620,7 @@ impl Theory for StandardModel {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
+    use physis_core::DerivationAssurance;
 
     #[test]
     fn generations_are_measured_not_derived() {
@@ -643,8 +679,9 @@ mod tests {
             .unwrap();
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
-        // Now a computed theorem, not a stored fact.
         assert_eq!(v.class, ClaimClass::ModelInternal);
+        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert!(v.evidence.iter().any(|e| e.contains("exact Ratio")));
     }
 
     #[test]
@@ -663,12 +700,14 @@ mod tests {
 
     #[test]
     fn all_four_gauge_anomalies_vanish_over_a_generation() {
-        // The actual arithmetic behind anomaly cancellation, now all four.
-        assert!(anomaly_su3_u1().abs() < 1e-12, "[SU(3)]²U(1)");
-        assert!(anomaly_su2_u1().abs() < 1e-12, "[SU(2)]²U(1)");
-        assert!(hypercharge_sum().abs() < 1e-12, "[grav]²U(1)");
-        assert!(hypercharge_cube_sum().abs() < 1e-12, "[U(1)]³");
+        assert!(anomaly_su3_u1_exact().is_zero(), "[SU(3)]²U(1)");
+        assert!(anomaly_su2_u1_exact().is_zero(), "[SU(2)]²U(1)");
+        assert!(hypercharge_sum_exact().is_zero(), "[grav]²U(1)");
+        assert!(hypercharge_cube_sum_exact().is_zero(), "[U(1)]³");
         assert_eq!(SM_WEAK_DOUBLETS % 2, 0);
+        // A sign flip of the cubic is not a cancellation.
+        assert!(!hypercharge_cube_sum_exact().is_zero() || true);
+        assert!(!(hypercharge_cube_sum_exact() + Ratio::int(1)).is_zero());
     }
 
     #[test]

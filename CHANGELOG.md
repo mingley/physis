@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Exact SM anomalies earn P3N**
+  (`consistency.anomaly-cancellation`, `Ratio`, `Verdict::with_certified_numeric`).
+  The four chiral gauge sums over one generation are exact rationals
+  that vanish, plus an even Witten doublet count. That overlay is
+  `CertifiedNumeric` / P3N, not a Lean receipt, not P3F, not P4, and
+  not the heuristic 3% GQW band. Green-Schwarz stays encoded. Verified:
+  Ratio cubic identity, SM unit tests, inspect/why P3N, `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Mass shell is a catalog identity**
   (`sr.energy-momentum-invariant`, Physlib `energy_momentum_invariant`).
   The polynomial `(E−βp)² − (p−βE)² − (1−β²)(E²−p²) ≡ 0` is the

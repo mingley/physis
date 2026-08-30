@@ -19,8 +19,10 @@ Nothing gains authority merely because an agent wrote code that returns
   `Deserialize` impl** (JSON cannot mint a kernel proof).
 - Every claim has assumptions, a domain, and a SHA-256 statement identity.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
-- `TrustProfile` is derived from receipts and reviews. P3F cannot be set
-  as an enum; P4 is not assigned from an in-process remint. A P3F
+-   `TrustProfile` is derived from receipts and reviews. P3F cannot be set
+  as an enum; P4 is not assigned from an in-process remint. P3N is
+  earned when an evaluator overlays `CertifiedNumeric` after an exact
+  `Ratio` cancellation (Standard Model chiral anomalies). A P3F
   `Unreviewed` result is labelled dangerous. `physis why` prints a typed
   `Judgment` (evaluator `holds` is `logical undetermined`) and the
   transitive axiom closure from `AxiomLedger`.
@@ -112,6 +114,7 @@ dual expanders. `physis prove` uses the same preference.
 | B2. Einstein composition | Same backends; `|w|<1` over ℝ remains the evaluator |
 | B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
+| C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; `CertifiedNumeric` / P3N, not Lean |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible |
 | E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |
 

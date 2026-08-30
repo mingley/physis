@@ -1714,6 +1714,62 @@ mod tests {
         assert!(text.contains("P4 is not assigned"));
         assert!(text.contains("total claim-evaluations:"));
         assert!(text.contains("open-problem") || text.contains("conjecture"));
+        assert!(
+            text.contains("certified-numeric"),
+            "P3N must appear as a derivation row once SM anomalies are exact: {text}"
+        );
+    }
+
+    #[test]
+    fn sm_anomaly_cancellation_earns_p3n_not_p3f() {
+        let mut lab = Lab::standard();
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p3n.lines()
+                .any(|l| l.contains("standard-model")
+                    && l.contains("consistency.anomaly-cancellation")),
+            "{p3n}"
+        );
+        assert!(
+            !p3n.lines()
+                .any(|l| l.contains("type-iib") && l.contains("consistency.anomaly-cancellation")),
+            "Green-Schwarz stays encoded, not a Ratio certificate: {p3n}"
+        );
+        assert!(
+            !p3n.contains("gut.weinberg"),
+            "the 3% GQW band is not P3N: {p3n}"
+        );
+        assert!(!p3n.contains("predictivity.unique-vacuum"), "{p3n}");
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "consistency.anomaly-cancellation".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("derivation: certified-numeric"), "{why}");
+        assert!(why.contains("P3N"), "{why}");
+        assert!(!why.contains("P3F"), "{why}");
+        assert!(why.contains("kernel proof: none"), "{why}");
+        let run = lab
+            .exec(Command::Run {
+                theory: "standard-model".into(),
+            })
+            .text()
+            .to_string();
+        assert!(run.contains("certified-numeric"), "{run}");
+        assert!(run.contains("exact Ratio"), "{run}");
+        // Heterotic GS remains executed in the same why dump.
+        assert!(
+            why.contains("derivation: executed"),
+            "string GS must not inherit P3N: {why}"
+        );
     }
 
     #[test]
