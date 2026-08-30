@@ -6,3 +6,5 @@
 *.swp
 journal.jsonl
 /tmp
+**/.lake/
+.tools/

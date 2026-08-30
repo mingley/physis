@@ -40,12 +40,16 @@ use physis_core::axiom::AxiomId;
 use physis_proof::{identity_is_zero, scan_lean_source, Challenge, UntrustedProof};
 use serde::Serialize;
 
+mod lean;
+
+pub use lean::discover_tools;
+
 /// Formal backend that produced a proof artifact.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FormalBackend {
-    /// Lean 4 + Physlib. Dual kernel replay is required to mint. Not wired
-    /// until an export is independently checked (nanoda + Lean kernel).
+    /// Lean 4 kernel compile plus nanoda replay of the `lean4export`.
+    /// Both checkers must run or `verify` refuses to mint.
     Lean4,
     /// Dual-expanded exact polynomial identity. Not a Lean kernel proof.
     /// The receipt says so.
@@ -66,7 +70,7 @@ pub struct CheckerReceipt {
 }
 
 impl CheckerReceipt {
-    fn ran(name: &str, version: &str, accepted: bool) -> Self {
+    pub(crate) fn ran(name: &str, version: &str, accepted: bool) -> Self {
         Self {
             checker: name.into(),
             version: version.into(),
@@ -144,6 +148,12 @@ pub enum VerifyError {
     LeanPipelineNotWired,
     /// Challenge hash did not match a recomputation of the canonical bytes.
     ChallengeTampered,
+    /// Lean source compiled, but no theorem matched the challenge type.
+    StatementMismatch,
+    /// The Lean compiler / lake / exporter rejected the source.
+    LeanKernelRejected(String),
+    /// nanoda refused the export (panic, axiom, or type error).
+    NanodaRejected(String),
 }
 
 impl std::fmt::Display for VerifyError {
@@ -161,6 +171,11 @@ impl std::fmt::Display for VerifyError {
             VerifyError::ChallengeTampered => {
                 write!(f, "challenge hash does not match canonical bytes")
             }
+            VerifyError::StatementMismatch => {
+                write!(f, "Lean source has no theorem matching the challenge type")
+            }
+            VerifyError::LeanKernelRejected(s) => write!(f, "Lean kernel rejected source: {s}"),
+            VerifyError::NanodaRejected(s) => write!(f, "nanoda rejected export: {s}"),
         }
     }
 }
@@ -195,7 +210,7 @@ pub fn verify(
                 parts.extend(scan.holes);
                 return Err(VerifyError::UnauthorizedAxiom(parts.join("; ")));
             }
-            Err(VerifyError::LeanPipelineNotWired)
+            verify_lean(challenge, source)
         }
         UntrustedProof::LeanExport { .. } => Err(VerifyError::LeanPipelineNotWired),
     }
@@ -233,6 +248,40 @@ fn verify_exact(challenge: &Challenge) -> Result<Verified<CheckedProof>, VerifyE
         CheckedProof {
             challenge_hash: challenge.challenge_hash,
             backend: FormalBackend::ExactCertificate,
+        },
+        receipt,
+    ))
+}
+
+fn verify_lean(challenge: &Challenge, source: &str) -> Result<Verified<CheckedProof>, VerifyError> {
+    let (primary, secondary) = lean::check_source(challenge, source)?;
+    if !primary.accepted || !secondary.accepted {
+        return Err(VerifyError::LeanKernelRejected(
+            "a checker refused the Lean artifact".into(),
+        ));
+    }
+    let mut axioms: Vec<AxiomId> = ["propext", "Quot.sound", "Classical.choice"]
+        .into_iter()
+        .map(AxiomId::new)
+        .collect();
+    axioms.extend(challenge.axioms.iter().cloned().map(AxiomId::new));
+    let receipt = ProofReceipt {
+        claim_id: challenge.claim_id.clone(),
+        statement_hash: challenge.statement_hash,
+        assumption_hash: challenge.assumption_hash,
+        challenge_hash: challenge.challenge_hash,
+        proof_artifact_hash: ArtifactId::of(source.as_bytes()),
+        formal_backend: FormalBackend::Lean4,
+        formal_backend_version: "lean-4.34.0-rc2+nanoda-0.4.16".into(),
+        library_lock_hash: ArtifactId::of(b"physlib+lean-kernel+nanoda"),
+        primary_checker: primary,
+        secondary_checker: secondary,
+        axioms_used: axioms,
+    };
+    Ok(Verified::mint(
+        CheckedProof {
+            challenge_hash: challenge.challenge_hash,
+            backend: FormalBackend::Lean4,
         },
         receipt,
     ))
@@ -385,7 +434,7 @@ mod tests {
     }
 
     #[test]
-    fn clean_lean_without_dual_kernel_does_not_mint() {
+    fn clean_lean_true_is_not_the_d2_challenge() {
         let claim = d2_claim();
         let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
         let err = verify(
@@ -395,7 +444,71 @@ mod tests {
             },
         )
         .unwrap_err();
+        assert_eq!(err, VerifyError::StatementMismatch);
+    }
+
+    #[test]
+    fn lean_export_bytes_alone_do_not_mint() {
+        let claim = d2_claim();
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let err = verify(
+            &challenge,
+            &UntrustedProof::LeanExport {
+                bytes: b"not a kernel export".to_vec(),
+            },
+        )
+        .unwrap_err();
         assert_eq!(err, VerifyError::LeanPipelineNotWired);
+    }
+
+    #[test]
+    fn physlib_dual_kernel_mints_when_pipeline_is_wired() {
+        if discover_tools().is_none() {
+            if std::env::var("CI").is_ok() {
+                panic!("CI must install Lean 4.34 and lean4export (LEAN4EXPORT)");
+            }
+            return;
+        }
+        let claim = d2_claim();
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let v = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: physis_proof::PHYSLIB_SOURCE.into(),
+            },
+        )
+        .expect("Lean kernel + nanoda must mint for Physlib d² = 0");
+        assert!(matches!(v.receipt().formal_backend, FormalBackend::Lean4));
+        assert_eq!(v.receipt().primary_checker.checker, "lean-kernel");
+        assert_eq!(v.receipt().secondary_checker.checker, "nanoda");
+        assert!(v.receipt().axioms_used.iter().any(|a| a.0 == "propext"));
+    }
+
+    #[test]
+    fn physlib_lorentz_dual_kernel_mints_when_pipeline_is_wired() {
+        if discover_tools().is_none() {
+            if std::env::var("CI").is_ok() {
+                panic!("CI must install Lean 4.34 and lean4export (LEAN4EXPORT)");
+            }
+            return;
+        }
+        let claim = Claim::new(
+            "sr.invariant-interval",
+            "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost.",
+            LayerId::Spacetime,
+            ClaimClass::ModelInternal,
+        );
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let v = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: physis_proof::PHYSLIB_SOURCE.into(),
+            },
+        )
+        .expect("Lean kernel + nanoda must mint for Physlib interval identity");
+        assert!(matches!(v.receipt().formal_backend, FormalBackend::Lean4));
+        assert_eq!(v.receipt().primary_checker.checker, "lean-kernel");
+        assert_eq!(v.receipt().secondary_checker.checker, "nanoda");
     }
 
     #[test]

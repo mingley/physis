@@ -1,0 +1,5 @@
+name = "physlib"
+defaultTargets = ["Physlib"]
+
+[[lean_lib]]
+name = "Physlib"

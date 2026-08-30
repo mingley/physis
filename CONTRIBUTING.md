@@ -5,7 +5,7 @@
 ## Setup
 
 ```bash
-rustc --version   # 1.83+
+rustc --version   # 1.85+
 cargo test --workspace
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings

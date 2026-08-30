@@ -31,7 +31,7 @@ use physis_theory::{
 use crate::journal::{Journal, JournalEvent};
 use crate::protocol::{Command, Response};
 use crate::replay::replay_journal;
-use physis_verifier::{verify, ReceiptStore};
+use physis_verifier::{discover_tools, verify, ReceiptStore, Verified, VerifyError};
 
 /// Named snapshot of every theory's knobs.
 #[derive(Clone, Debug)]
@@ -255,7 +255,7 @@ impl Lab {
                     }
                 }
                 JournalEvent::Prove { claim, .. } => {
-                    let _ = self.remint_exact(&claim);
+                    let _ = self.remint_preferred(&claim);
                 }
                 JournalEvent::Review { claim, .. } => {
                     let _ = self.remint_review(&claim);
@@ -673,6 +673,17 @@ impl Lab {
             .unwrap_or(fallback)
     }
 
+    fn accept_verified<T>(&mut self, v: &Verified<T>) -> physis_verifier::ProofReceipt {
+        let r = v.receipt().clone();
+        self.receipts.record(v);
+        self.store.insert(Node::new(
+            NodeKind::VerificationReceipt,
+            vec![r.statement_hash],
+            r.challenge_hash.to_hex().as_bytes(),
+        ));
+        r
+    }
+
     /// Re-run the dual checkers. Never deserializes a `Verified` value.
     fn remint_exact(&mut self, claim_id: &str) -> Result<physis_verifier::ProofReceipt, String> {
         let claim = self
@@ -680,14 +691,25 @@ impl Lab {
             .ok_or_else(|| format!("unknown claim '{claim_id}'"))?;
         let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
         let v = verify(&challenge, &UntrustedProof::ExactIdentity).map_err(|e| e.to_string())?;
-        let r = v.receipt().clone();
-        self.receipts.record(&v);
-        self.store.insert(Node::new(
-            NodeKind::VerificationReceipt,
-            vec![r.statement_hash],
-            r.challenge_hash.to_hex().as_bytes(),
-        ));
-        Ok(r)
+        Ok(self.accept_verified(&v))
+    }
+
+    /// Lean kernel + nanoda on in-tree Physlib. Missing tools is not a mint.
+    fn remint_lean(
+        &mut self,
+        claim_id: &str,
+    ) -> Result<physis_verifier::ProofReceipt, VerifyError> {
+        let claim = self
+            .find_claim(claim_id)
+            .ok_or(VerifyError::NoExactIdentity)?;
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&claim));
+        let v = verify(
+            &challenge,
+            &UntrustedProof::LeanSource {
+                source: physis_proof::PHYSLIB_SOURCE.to_string(),
+            },
+        )?;
+        Ok(self.accept_verified(&v))
     }
 
     /// Re-run semantic review. Never deserializes a `SemanticAssurance` tag.
@@ -717,8 +739,25 @@ impl Lab {
         }
     }
 
+    /// Prefer Lean kernel + nanoda when the pipeline is wired; otherwise
+    /// the exact dual expanders. Never deserializes a `Verified` value.
+    fn remint_preferred(
+        &mut self,
+        claim_id: &str,
+    ) -> Result<physis_verifier::ProofReceipt, String> {
+        if physis_proof::lookup(claim_id).is_some() && discover_tools().is_some() {
+            match self.remint_lean(claim_id) {
+                Err(VerifyError::LeanPipelineNotWired) => self.remint_exact(claim_id),
+                Ok(r) => Ok(r),
+                Err(e) => Err(e.to_string()),
+            }
+        } else {
+            self.remint_exact(claim_id)
+        }
+    }
+
     fn prove_claim(&mut self, claim_id: &str) -> Response {
-        match self.remint_exact(claim_id) {
+        match self.remint_preferred(claim_id) {
             Ok(r) => {
                 self.journal
                     .record(JournalEvent::prove(claim_id, r.challenge_hash.to_hex()));
@@ -775,7 +814,7 @@ impl Lab {
 
         let mut proved = Vec::new();
         for spec in CATALOG {
-            match self.remint_exact(spec.claim_id) {
+            match self.remint_preferred(spec.claim_id) {
                 Ok(r) => {
                     self.journal.record(JournalEvent::prove(
                         spec.claim_id,
@@ -800,7 +839,7 @@ impl Lab {
                 .receipts
                 .by_claim(spec.claim_id)
                 .map(|r| r.challenge_hash);
-            match self.remint_exact(spec.claim_id) {
+            match self.remint_preferred(spec.claim_id) {
                 Ok(r) if Some(r.challenge_hash) == before => {
                     text.push_str(&format!("replicate  {}  ok\n", spec.claim_id));
                 }
@@ -1469,8 +1508,13 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(text.contains("expand-recursive"), "{text}");
-        assert!(text.contains("expand-postfix"), "{text}");
+        if physis_verifier::discover_tools().is_some() {
+            assert!(text.contains("lean-kernel"), "{text}");
+            assert!(text.contains("nanoda"), "{text}");
+        } else {
+            assert!(text.contains("expand-recursive"), "{text}");
+            assert!(text.contains("expand-postfix"), "{text}");
+        }
         let why = lab
             .exec(Command::Why {
                 claim: "dec.d-squared-zero".into(),

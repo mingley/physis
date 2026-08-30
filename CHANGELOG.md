@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Level-3 Lean kernel + nanoda dual replay**
+  (`formal/physlib`, `physis-proof` Physlib type matching, `physis-verifier`
+  lake sandbox). `verify` on clean Lean source whose theorem type matches
+  the trusted challenge compiles with Lean 4.34, exports that declaration
+  with lean4export 3.1.0, and typechecks the export with nanoda 0.4.16.
+  Vacuous `True` is `StatementMismatch`. Export bytes alone stay
+  `LeanPipelineNotWired`. Receipts list `propext`, `Quot.sound`, and
+  `Classical.choice`. `physis prove` prefers this backend when the tools
+  are present; otherwise it still mints `ExactCertificate`. CI installs
+  elan and lean4export. MSRV is 1.85 (nanoda / edition 2024). Verified:
+  Physlib type match, dual-kernel mint for d² and the Lorentz interval,
+  CLI `prove`, `fmt`, `clippy -D warnings`, full suite.
+
 - **Level-3 semantic review and research loop**
   (`physis-semantic`, `physis-agent`, `physis-proof` infix parser).
   `physis review` raises `SemanticAssurance` only from a trusted dossier:

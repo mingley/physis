@@ -24,7 +24,7 @@ edition = "2021"
 license = "MIT"
 repository = "https://github.com/mingley/physis"
 authors = ["Michael Ingley"]
-rust-version = "1.83"
+rust-version = "1.85"
 description = "Mechanically verifiable models of reality in pure Rust."
 
 [workspace.dependencies]

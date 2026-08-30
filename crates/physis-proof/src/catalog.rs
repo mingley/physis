@@ -12,6 +12,8 @@ use crate::expr::{add, mul, pow, sub, Expr};
 pub struct IdentitySpec {
     /// Lab claim id.
     pub claim_id: &'static str,
+    /// Lean theorem name in [`PHYSLIB_SOURCE`].
+    pub lean_theorem: &'static str,
     /// Lean-shaped theorem type the obligation corresponds to.
     pub lean_type: &'static str,
     /// Axiom ids listed on the receipt.
@@ -54,12 +56,14 @@ pub fn lorentz_interval() -> Expr {
 pub const CATALOG: &[IdentitySpec] = &[
     IdentitySpec {
         claim_id: "dec.d-squared-zero",
+        lean_theorem: "d_squared_zero",
         lean_type: "∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0",
         axioms: &["integer-arithmetic", "discrete-coboundary"],
         identity: discrete_d2,
     },
     IdentitySpec {
         claim_id: "sr.invariant-interval",
+        lean_theorem: "invariant_interval",
         lean_type: "∀ (t x β : Int), (t - β*x)^2 - (x - β*t)^2 = (1 - β^2)*(t^2 - x^2)",
         axioms: &["integer-arithmetic", "minkowski-interval-signature"],
         identity: lorentz_interval,

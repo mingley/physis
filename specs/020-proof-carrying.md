@@ -1,6 +1,6 @@
 # 020 — Proof-carrying Physis (Level 3)
 
-Status: active (Milestones 1–10 sliced; Lean/nanoda dual kernel still open)
+Status: active (Milestones 1–10 sliced; Lean/nanoda dual kernel wired for the catalog)
 Layer: all
 Id: `proof-carrying`
 
@@ -20,27 +20,36 @@ Nothing gains authority merely because an agent wrote code that returns
 - Every claim has assumptions, a domain, and a SHA-256 statement identity.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
 
-### Milestone 2 — exact dual-check (Lean still open)
+### Milestone 2 — dual-check receipts (exact + Lean)
 
 Trusted side: `physis-proof::Challenge::generate` from a `FormalClaim`.
 Untrusted side: `UntrustedProof`. The only public mint is
 `physis_verifier::verify`, which *runs* two checkers.
 
 Catalogued polynomial identities, dual-expanded (recursive AST vs postfix
-stack):
+stack) *and* kernel-checked as Physlib theorems (`formal/physlib`):
 
-- `dec.d-squared-zero`: `(b−a)−(c−a)+(c−b) ≡ 0`
+- `dec.d-squared-zero`: `(b−a)−(c−a)+(c−b) ≡ 0` (`d_squared_zero`, `omega`)
 - `sr.invariant-interval`: `(t−βx)² − (x−βt)² − (1−β²)(t²−x²) ≡ 0`
+  (`invariant_interval`, `grind`)
 
 A one-byte mutation of the challenge bytes is `ChallengeTampered`.
 A sign flip of the identity fails both expanders. `axiom` / `sorry` /
-`admit` in Lean source is `UnauthorizedAxiom`. Clean Lean without two
-kernels is `LeanPipelineNotWired` — **refuses to mint**.
+`admit` in Lean source is `UnauthorizedAxiom`. A compiled `True` theorem
+is `StatementMismatch` against the d² challenge. `LeanExport` bytes
+without a second kernel, or missing `lean`/`lake`/`lean4export`, is
+`LeanPipelineNotWired` — **refuses to mint**.
 
-`physis prove dec.d-squared-zero` records a `FormalBackend::ExactCertificate`
-receipt. That is not a Lean kernel proof; the receipt says so.
+When Lean 4.34.0-rc2 and `lean4export` 3.1.0 (replayed by nanoda 0.4.16)
+are present, `verify(LeanSource)` compiles Physlib with the Lean kernel,
+exports the theorem whose compacted type matches the challenge, and
+replays that export with nanoda. The receipt is `FormalBackend::Lean4`
+and lists Lean's standard axioms (`propext`, `Quot.sound`,
+`Classical.choice`) plus the catalog's physical postulates. CI installs
+those tools; a local checkout without them still mints
+`ExactCertificate` from `physis prove`.
 
-Still open: Lean 4 + Physlib + Lean kernel + nanoda on the same export.
+`ExactCertificate` is not a Lean kernel proof; the receipt says so.
 
 ### Milestones 3–10 — first slices
 
@@ -57,19 +66,23 @@ Still open: Lean 4 + Physlib + Lean kernel + nanoda on the same export.
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus; never `Canonical` |
 | constants | `physis-constants` | Versioned `c` (SI 2019 exact) |
 
-Journal events are hash-linked in memory (`Journal::tip`).
+Journal events are hash-linked in memory (`Journal::tip`). Journal
+restore of a `prove` event remints through `verify` (never Deserialize):
+Lean kernel + nanoda when the pipeline is wired, otherwise the exact
+dual expanders. `physis prove` uses the same preference.
 
 ## What is not yet true
 
-- Lean kernel replay + nanoda on a `lean4export` file
 - `SemanticAssurance::Canonical` (reserved; not agent-mintable)
 - Agents other than the lab protocol (Explorer, Formalizer, … as processes)
+- Trust tiers P0–P4 driving promotion; query projection; research budgets
+- Mathlib-scale Physlib; only the two catalog identities are kernel-checked
 
 ## Vertical slice
 
 | Item | Status |
 |---|---|
-| A. `d² = 0` | Dual-expanded exact identity; `physis prove` mints a receipt; `physis review` raises semantic |
+| A. `d² = 0` | Dual-expanded identity **and** Lean kernel + nanoda receipt; `physis review` raises semantic |
 | B. Lorentz interval | Same backends |
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset |
@@ -80,8 +93,8 @@ Journal events are hash-linked in memory (`Journal::tip`).
 Runtime and unverified physics computation remain unsafe-free Rust.
 Unverified external computation is never authoritative. External formal
 systems may produce proof artifacts only through isolated
-certificate-checking boundaries. That Lean/nanoda boundary is typed but
-not wired.
+certificate-checking boundaries. Lean kernel compile plus nanoda replay
+of `lean4export` is that boundary for catalog identities.
 
 ## Related
 

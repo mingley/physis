@@ -98,10 +98,12 @@ MSSM. Minimal SU(5) is honestly **falsified** — it `fails`
 `supersymmetric` knob revives as heuristics.
 
 `physis epistemics` tallies the whole lab by class, derivation, and semantic
-assurance (currently hundreds of `executed` model-internal evaluations and
-zero kernel proofs). `physis why <claim>` prints assumptions and the
-statement hash. `physis --json <command>` emits the typed matrices and
-verdict diffs for agents.
+assurance (currently hundreds of `executed` model-internal evaluations).
+`physis prove dec.d-squared-zero` mints a dual-checked receipt (Lean kernel
++ nanoda when those tools are installed, otherwise the exact expanders).
+`physis why <claim>` prints assumptions, the statement hash, and the
+receipt or `kernel proof: none`. `physis --json <command>` emits the typed
+matrices and verdict diffs for agents.
 
 ## Smallest level of modern physics
 

@@ -21,7 +21,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 - Do not implement Geometric Unity, or claim to. `observer-geometry` is a scaffold.
 - Do not declare string theory false because `predictivity.unique-vacuum` fails. That cell *is* the landscape objection, labelled heuristic.
 - Do not add `unsafe`. The workspace is `#![forbid(unsafe_code)]`.
-- Do not add FFI or non-Rust **physics engines**. Unverified external computation is never authoritative. External formal systems may later produce proof *artifacts* only through isolated certificate-checking boundaries (`specs/020-proof-carrying.md`). Lean kernel + nanoda dual replay is not wired; `verify` on Lean source/export returns `LeanPipelineNotWired` rather than minting.
+- Do not add FFI or non-Rust **physics engines**. Unverified external computation is never authoritative. External formal systems may produce proof *artifacts* only through isolated certificate-checking boundaries (`specs/020-proof-carrying.md`). `physis_verifier::verify` on `LeanSource` runs the Lean kernel and nanoda on a `lean4export`; missing tools or export-only bytes are `LeanPipelineNotWired` (no mint). `ExactCertificate` is a dual-expanded identity, not a kernel proof.
 - Do not paper over type errors with `f64` bags. If two quantities should not add, they must not share a type.
 - Do not invent particles, groups, or critical dimensions. Cite, or mark `OpenProblem`.
 - Do not rewrite history in the journal. Append only.
@@ -51,7 +51,7 @@ Every claim answers four questions. They are different Rust types.
 
 A theory can `Executed`-derive a prediction that nature `Excluded`. That is a feature.
 
-`physis why <claim>` prints assumptions, the statement hash, and `kernel proof: none` until `physis prove` (or `verify`) records a receipt. `ExactCertificate` is not a Lean kernel proof. `physis review` overlays a justified semantic tag from a trusted dossier; journal restore re-runs review rather than deserializing the tag.
+`physis why <claim>` prints assumptions, the statement hash, and `kernel proof: none` until `physis prove` (or `verify`) records a receipt. When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a catalog identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`). Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum an agent can set. `physis review` overlays a justified semantic tag from a trusted dossier; journal restore re-runs review rather than deserializing the tag.
 
 ## First lab
 
@@ -60,7 +60,7 @@ The current flagship is `string-critique`. Before proposing that “we were fund
 1. Produce a knob path that flips an **executed model-internal** claim (not a heuristic) to `fails` for every viable string construction, **or**
 2. Produce a unique-geometry construction whose empirical-contact claims are `executed` model-internal or phenomenological, not `conjecture`/`open-problem`.
 
-Until then, report the matrix and the diffs. That *is* the work. A kernel proof of any of this is Milestone 2, not an enum.
+Until then, report the matrix and the diffs. That *is* the work. A kernel proof of a catalog identity is `physis prove` when the Lean pipeline is wired, not an enum.
 
 ## Style
 

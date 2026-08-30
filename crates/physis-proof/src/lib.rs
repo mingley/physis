@@ -16,6 +16,7 @@ pub mod challenge;
 pub mod expand;
 pub mod expr;
 pub mod parse;
+pub mod physlib;
 
 pub use artifact::{scan_lean_source, ScanReport, UntrustedProof};
 pub use catalog::{lookup, IdentitySpec, CATALOG};
@@ -23,3 +24,6 @@ pub use challenge::Challenge;
 pub use expand::{identity_is_zero, Poly};
 pub use expr::Expr;
 pub use parse::parse_expr;
+pub use physlib::{
+    compact_lean_type, extract_theorems, source_matches_challenge, ExtractedTheorem, PHYSLIB_SOURCE,
+};

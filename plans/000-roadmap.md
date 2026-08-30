@@ -11,7 +11,7 @@ M4 continuum      ◑ fields as actual local objects (klein-gordon lattice seed)
 
 Level-3 trust
   L3-M1 trust model        ✓ MachineProved unforgeable; FormalClaim; assumptions; why
-  L3-M2 exact dual-check   ✓ catalog identities + dual expanders; Lean/nanoda still open
+  L3-M2 exact dual-check   ✓ catalog identities + dual expanders
   L3-M3 provenance         ✓ SourceRecord rejects slogan locators
   L3-M4 numerics           ✓ Ratio / Interval; empirical receipts
   L3-M5 artifact DAG       ✓ content-addressed store + descendant invalidation
@@ -20,7 +20,7 @@ Level-3 trust
   L3-M8 red-team corpus    ✓ physis audit
   L3-M9 experiment rank    ✓ physis design
   L3-M10 research loop     ✓ physis loop (orchestrator)
-  L3 Lean/nanoda kernels   planned
+  L3 Lean/nanoda kernels   ✓ Physlib d²=0 and interval; lake + nanoda on export
 ```
 
 Each milestone must:

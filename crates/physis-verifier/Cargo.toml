@@ -12,3 +12,5 @@ description = "Trusted minting of verification receipts. The only crate that can
 physis-core.workspace = true
 physis-proof.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+nanoda_lib = { git = "https://github.com/ammkrn/nanoda_lib", rev = "05055695879dfebb6628a67da88ceca6cd6b0421" }
