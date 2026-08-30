@@ -3669,6 +3669,22 @@ mod tests {
             "confidence is not a invented number: {uniq}"
         );
         assert!(!uniq.contains("theorem"), "{uniq}");
+        assert!(
+            uniq.contains("flux/moduli landscape"),
+            "string unique-vacuum must name the landscape: {uniq}"
+        );
+        assert!(
+            uniq.contains("unique_vacuum program axiom"),
+            "observer-geometry unique-vacuum must name the axiom: {uniq}"
+        );
+        assert!(
+            uniq.contains("Einstein-Hilbert") && uniq.contains("Higgs vacuum"),
+            "GR and SM unique-vacuum must name their regimes: {uniq}"
+        );
+        assert!(
+            !uniq.contains("encoding-wide"),
+            "unique-vacuum encodings name regimes, not the placeholder: {uniq}"
+        );
 
         let qs = lab
             .exec(Command::Evidence {

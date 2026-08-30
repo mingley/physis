@@ -53,7 +53,11 @@ Nothing gains authority merely because an agent wrote code that returns
   hypercharge solve, and hydrogen neutrality name one generation /
   hydrogen. Super-K `p→e+π0` names the dim-6 / 90% CL regime
   (Takenaka et al., Phys. Rev. D 102, 112011). GUT `Tr Q` stays
-  encoding-wide. `dec.hodge-harmonic` names discrete combinatorial Hodge
+  encoding-wide. `predictivity.unique-vacuum` encodings name the
+  flux/moduli landscape, the observer-geometry program axiom,
+  classical Einstein–Hilbert plus Λ, and the SM Higgs vacuum;
+  they remain `Asserted` (heuristic/conjecture), not a kernel proof.
+  `dec.hodge-harmonic` names discrete combinatorial Hodge
   on finite simplicial 1-cochains, not the smooth Hodge theorem.
   Lean compiler versions live on the receipt, not
   the sentence.
@@ -190,7 +194,9 @@ identity; a slug-only review line is not P3S.
   catalog axioms. `field.second-order-accurate` names `|k a| < 1`.
   GUT mixing-angle and SM P3N cells name unification-scale / `M_Z` /
   one generation / hydrogen. Super-K `p→e+π0` names dim-6 / Super-K 90% CL;
-  GUT `Tr Q` stays encoding-wide.
+  GUT `Tr Q` stays encoding-wide. `predictivity.unique-vacuum` encodings
+  name landscape / program axiom / Einstein–Hilbert / Higgs vacuum and
+  stay `Asserted`.
   `dec.hodge-harmonic` names discrete combinatorial Hodge; Euler–Poincaré
   and Poincaré stay encoding-wide. `field.dispersion-continuum-limit` names
   the longest lattice mode; ohm-circuit `em.quasi-static-valid` names
@@ -210,7 +216,7 @@ identity; a slug-only review line is not P3S.
 | C. Interval-certified numeric | `3/8` as `Ratio`; disjoint from `0.23122` enclosure |
 | C2. Exact SM anomalies | Four chiral sums vanish as `Ratio`; hypercharges solved in Q (`checked_sqrt`); hydrogen `Q = T₃+Y` is exactly 0; GUT-scale `3/8` is `Ratio` / P3N, not Lean. Those cells name a `DomainOfValidity`. GUT `Tr Q` is `ΣY` already certified, not a second P3N. GQW at `M_Z` is not P3N |
 | D. Empirical comparison | `EmpiricalReceipt` against a versioned PDG-style dataset **and** Super-K `p→e+π0`. Compatible is prediction ⊆ data; overlap without containment is inconclusive (`InsufficientPrecision`), not compatible. Super-K is a lower-limit hull, not P3N |
-| E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; `prove` and `review` refuse it |
+| E. Open/conjectural | `predictivity.unique-vacuum` stays `Asserted`; the four encodings name distinct regimes; `prove` and `review` refuse it |
 
 ## Pure-Rust rule (revised)
 

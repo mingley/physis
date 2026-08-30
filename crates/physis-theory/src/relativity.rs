@@ -1,5 +1,6 @@
 //! General relativity as a classical spacetime theory.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -167,7 +168,16 @@ impl Theory for GeneralRelativity {
                 "Einstein gravity plus Λ is a unique classical theory (not a landscape).",
                 LayerId::Spacetime,
                 ClaimClass::Heuristic,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["classical Einstein-Hilbert plus Λ".into()],
+                vec![
+                    "uniqueness of the classical action given D and Λ, not a quantum vacuum count"
+                        .into(),
+                ],
+                "A unique classical Lagrangian is not a unique quantum vacuum. Using \
+                 this as a string-landscape theorem is a new claim.",
+            )),
         ];
         c.extend(solar_claims());
         c

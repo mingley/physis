@@ -434,6 +434,66 @@ mod tests {
     }
 
     #[test]
+    fn unique_vacuum_encodings_name_distinct_regimes() {
+        use crate::geometry::ObserverGeometry;
+        use crate::relativity::GeneralRelativity;
+        use crate::standard_model::StandardModel;
+        use crate::strings::StringTheory;
+
+        let iib_t = StringTheory::type_iib();
+        let het_t = StringTheory::heterotic_e8();
+        let og_t = ObserverGeometry::default();
+        let gr_t = GeneralRelativity::default();
+        let sm_t = StandardModel::default();
+        let claim = |t: &dyn Theory| {
+            t.claims()
+                .into_iter()
+                .find(|c| c.id_str() == claims::UNIQUE_VACUUM)
+                .unwrap()
+        };
+        let iib = claim(&iib_t);
+        let het = claim(&het_t);
+        let og = claim(&og_t);
+        let gr = claim(&gr_t);
+        let sm = claim(&sm_t);
+        for c in [&iib, &het, &og, &gr, &sm] {
+            assert!(
+                !c.domain().is_encoding_wide(),
+                "{} stays encoding-wide: {:?}",
+                c.statement(),
+                c.domain()
+            );
+        }
+        assert_eq!(iib.statement_hash(), het.statement_hash());
+        assert_ne!(iib.statement_hash(), og.statement_hash());
+        assert_ne!(iib.statement_hash(), gr.statement_hash());
+        assert_ne!(iib.statement_hash(), sm.statement_hash());
+        assert_ne!(og.statement_hash(), gr.statement_hash());
+        assert_ne!(og.statement_hash(), sm.statement_hash());
+        assert_ne!(gr.statement_hash(), sm.statement_hash());
+        assert!(iib
+            .domain()
+            .regimes
+            .iter()
+            .any(|r| r.contains("flux/moduli landscape")));
+        assert!(og
+            .domain()
+            .regimes
+            .iter()
+            .any(|r| r.contains("unique_vacuum program axiom")));
+        assert!(gr
+            .domain()
+            .regimes
+            .iter()
+            .any(|r| r.contains("Einstein-Hilbert")));
+        assert!(sm
+            .domain()
+            .regimes
+            .iter()
+            .any(|r| r.contains("Higgs vacuum")));
+    }
+
+    #[test]
     fn coarse_lattice_diffs_empirical_and_judgment_not_just_kind() {
         use crate::continuum::{KleinGordonField, SECOND_ORDER};
         use physis_core::knob::KnobValue;

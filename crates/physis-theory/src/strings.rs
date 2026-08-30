@@ -6,6 +6,7 @@
 //!
 //! This is a laboratory object, not a compactification engine.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -566,7 +567,15 @@ impl Theory for StringTheory {
                 "The theory selects a unique vacuum (no landscape).",
                 LayerId::Effective,
                 ClaimClass::Heuristic,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["flux/moduli landscape".into()],
+                vec!["landscape_log10 is a heuristic count, not a vacuum enumeration".into()],
+                "This is the string compactification landscape (flux_bits, h11, h21), \
+                 not a theorem that string theory is false. Observer-geometry, GR, and \
+                 the SM are different FormalClaims of this slug. Using it outside those \
+                 knobs is a new claim.",
+            )),
             claims::c(
                 claims::UV_COMPLETION,
                 "The theory is a candidate UV completion of gravity plus matter.",
@@ -886,6 +895,38 @@ mod tests {
         assert_eq!(verdict(&t, claims::OBSERVED_4D), VerdictKind::Holds);
         assert_eq!(verdict(&t, claims::FERMIONS), VerdictKind::Holds);
         assert_eq!(verdict(&t, claims::UNIQUE_VACUUM), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn unique_vacuum_names_the_landscape_regime() {
+        let iib = StringTheory::type_iib();
+        let het = StringTheory::heterotic_e8();
+        let claim = |t: &StringTheory| {
+            t.claims()
+                .into_iter()
+                .find(|c| c.id_str() == claims::UNIQUE_VACUUM)
+                .unwrap()
+        };
+        let a = claim(&iib);
+        let b = claim(&het);
+        assert!(
+            !a.domain().is_encoding_wide(),
+            "string unique-vacuum must name the landscape, not encoding-wide: {:?}",
+            a.domain()
+        );
+        assert!(
+            a.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("flux/moduli landscape")),
+            "string regime: {:?}",
+            a.domain()
+        );
+        assert_eq!(
+            a.statement_hash(),
+            b.statement_hash(),
+            "string constructions share one FormalClaim of unique-vacuum"
+        );
     }
 
     #[test]

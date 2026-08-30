@@ -13,6 +13,7 @@
 //! room for the assignment — rather than an unexplained choice. It is still a
 //! scaffold, not a derivation of Geometric Unity.
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -227,7 +228,13 @@ impl Theory for ObserverGeometry {
                 "The construction selects a unique vacuum.",
                 LayerId::Mathematical,
                 ClaimClass::Conjecture,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["unique_vacuum program axiom".into()],
+                vec!["uniqueness is demanded by a knob, not derived from a theorem".into()],
+                "This is the contrast class for the string landscape, not evidence \
+                 that geometry has succeeded. Not Geometric Unity. Not a kernel proof.",
+            )),
             claims::c(
                 claims::UV_COMPLETION,
                 "The construction is a UV completion of gravity plus matter.",
@@ -368,6 +375,19 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::Conjecture);
+        assert!(
+            !c.domain().is_encoding_wide(),
+            "observer-geometry unique-vacuum must name the program axiom: {:?}",
+            c.domain()
+        );
+        assert!(
+            c.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("unique_vacuum program axiom")),
+            "observer-geometry regime: {:?}",
+            c.domain()
+        );
     }
 
     #[test]

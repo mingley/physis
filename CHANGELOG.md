@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Unique-vacuum encodings name a DomainOfValidity**
+  (`predictivity.unique-vacuum`). String constructions share the
+  flux/moduli landscape regime; observer-geometry names the
+  unique_vacuum program axiom; GR names classical Einstein-Hilbert
+  plus Λ; the SM names the Higgs vacuum given its parameters. They
+  remain Asserted (heuristic/conjecture). Not Canonical, not P3N,
+  not a kernel proof. Catalog d² hash unchanged. Verified: the four
+  hashes stay distinct; string kinds share one hash; evidence prints
+  named regimes and not encoding-wide.
+
 - **Super-K p→e+π0 is a Dataset**
   (`sk-2020-p-e-pi0`, Takenaka et al., Phys. Rev. D 102, 112011).
   `gut.proton-lifetime-sk` compares the dim-6 M_GUT^4 lifetime scaling

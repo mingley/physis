@@ -68,6 +68,10 @@ The Standard Model also carries `sm.hypercharge-derivation`, which goes one step
 
 - Landscape cardinality grows with extra dimensions and flux bits
 - Uniqueness therefore fails for default superstring knobs
+- Those four encodings of `predictivity.unique-vacuum` name distinct
+  `DomainOfValidity` regimes (flux/moduli landscape, program axiom,
+  classical Einstein–Hilbert plus Λ, SM Higgs vacuum). They remain
+  heuristic/conjecture. Not Canonical, not a kernel proof.
 - Observer-geometry uniqueness *holds* as a conjectural axiom of the program
 - Observer-geometry SM gauge “derivation” is a Spin(10) assignment, `conjecture`
 

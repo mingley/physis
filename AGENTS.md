@@ -19,7 +19,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 - Do not invent a `theorem` tag or a `MachineProved` enum variant. Only `physis-verifier` can mint `Verified<T>`, and that mint is crate-private.
 - Do not silently upgrade `Asserted` (conjecture/heuristic/open) to `Executed`, or `Unreviewed` to a stronger semantic tag, without encoding an actual check. `physis review` is allowed only because it *runs* provenance, a second encoding, and the red-team corpus. There is no `SemanticAssurance::Canonical` variant.
 - Do not implement Geometric Unity, or claim to. `observer-geometry` is a scaffold.
-- Do not declare string theory false because `predictivity.unique-vacuum` fails. That cell *is* the landscape objection, labelled heuristic.
+- Do not declare string theory false because `predictivity.unique-vacuum` fails. That cell *is* the landscape objection, labelled heuristic. The four encodings name distinct regimes (flux/moduli landscape, observer-geometry program axiom, classical Einstein–Hilbert plus Λ, SM Higgs vacuum); they are not one FormalClaim and not Canonical.
 - Do not add `unsafe`. The workspace is `#![forbid(unsafe_code)]`.
 - Do not add FFI or non-Rust **physics engines**. Unverified external computation is never authoritative. External formal systems may produce proof *artifacts* only through isolated certificate-checking boundaries (`specs/020-proof-carrying.md`). `physis_verifier::verify` on `LeanSource` runs the Lean kernel and nanoda on a `lean4export`; missing tools or export-only bytes are `LeanPipelineNotWired` (no mint). `ExactCertificate` is a dual-expanded identity, not a kernel proof.
 - Do not paper over type errors with `f64` bags. If two quantities should not add, they must not share a type.

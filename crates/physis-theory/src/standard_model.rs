@@ -545,7 +545,13 @@ impl Theory for StandardModel {
                 "The SM vacuum (given its parameters) is the one we use; no string landscape.",
                 LayerId::Effective,
                 ClaimClass::Heuristic,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["Higgs vacuum given SM parameters".into()],
+                vec!["parameters are inputs, not scanned vacua".into()],
+                "The SM accommodates a vacuum; it does not derive uniqueness. \
+                 Not a landscape theorem, not P3N, not a kernel proof.",
+            )),
             claims::c(
                 claims::FEW_PARAMETERS,
                 "The theory has few free parameters.",
@@ -931,6 +937,20 @@ mod tests {
             gens.domain().is_encoding_wide(),
             "phenomenological generation count stays encoding-wide: {:?}",
             gens.domain()
+        );
+        let uniq = claim(claims::UNIQUE_VACUUM);
+        assert!(
+            !uniq.domain().is_encoding_wide(),
+            "SM unique-vacuum must name the Higgs vacuum, not encoding-wide: {:?}",
+            uniq.domain()
+        );
+        assert!(
+            uniq.domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("Higgs vacuum")),
+            "SM unique-vacuum regime: {:?}",
+            uniq.domain()
         );
     }
 
