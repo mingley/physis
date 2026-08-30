@@ -47,7 +47,7 @@ Every claim answers four questions. They are different Rust types.
 | `ClaimClass` | mathematical / model-internal / phenomenological / empirical-prediction / measurement / conjecture / heuristic / open-problem |
 | `DerivationAssurance` | asserted / executed / cross-checked / certified-numeric. **No MachineProved variant.** |
 | `EmpiricalStatus` | not-applicable / untested / compatible / supported / tension / excluded / inconclusive |
-| `SemanticAssurance` | unreviewed / source-anchored / independently-encoded / adversarially-reviewed / canonical |
+| `SemanticAssurance` | unreviewed / source-anchored / independently-encoded / adversarially-reviewed |
 
 A theory can `Executed`-derive a prediction that nature `Excluded`. That is a feature.
 
@@ -64,7 +64,9 @@ has no `Deserialize`, so JSON cannot mint `logical proved`;
 there is no `SemanticAssurance::Canonical` variant; P3S is a review-store
 tag, not an evaluator field; `Verdict` has no `Deserialize`, so JSON
 cannot mint a `certified-numeric` overlay; `Claim` derivation / empirical /
-semantic fields are private),
+semantic fields are private; `Verdict` derivation / empirical / semantic /
+enclosure fields are private, so a public assignment cannot mint
+`CertifiedNumeric`),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
 encoding review of the live `statement_hash`, not the slug; P4 is not assigned from an in-process remint), the
 statement hash (which commits to quantifiers, units, constants, boundary

@@ -526,7 +526,7 @@ mod tests {
             f.evaluate(&c)
         };
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.empirical, EmpiricalStatus::NotApplicable);
+        assert_eq!(v.empirical(), EmpiricalStatus::NotApplicable);
         let order_claim = f
             .claims()
             .into_iter()
@@ -552,10 +552,10 @@ mod tests {
             .unwrap();
         let u = coarse.evaluate(&c);
         assert_eq!(u.kind, VerdictKind::Undecidable);
-        assert_eq!(u.empirical, EmpiricalStatus::Inconclusive);
+        assert_eq!(u.empirical(), EmpiricalStatus::Inconclusive);
         assert_ne!(u.kind, VerdictKind::Fails);
         assert_ne!(
-            u.derivation,
+            u.derivation(),
             physis_core::DerivationAssurance::CertifiedNumeric
         );
     }

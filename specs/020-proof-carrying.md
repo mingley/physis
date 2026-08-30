@@ -70,7 +70,9 @@ Nothing gains authority merely because an agent wrote code that returns
   cannot mint a `certified-numeric` overlay or an encoding-review tag.
   `Claim` derivation, empirical, and semantic fields are private: a
   theory cannot assign `CertifiedNumeric` on the claim. Overlays live on
-  `Verdict`.
+  `Verdict`, whose derivation / empirical / semantic / enclosure fields
+  are also private: a public assignment cannot mint `CertifiedNumeric`.
+  The overlay path is `Verdict::with_certified_numeric`.
   The lab projects `Judgment` from evaluator
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.

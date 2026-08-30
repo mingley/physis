@@ -167,6 +167,20 @@
 //! c.derivation = physis_core::DerivationAssurance::CertifiedNumeric;
 //! ```
 //!
+//! A public field cannot mint that overlay on a [`claim::Verdict`] either
+//! (`with_certified_numeric` is the only assignment path):
+//!
+//! ```compile_fail
+//! let c = physis_core::claim::Claim::new(
+//!     "x",
+//!     "y",
+//!     physis_core::LayerId::Mathematical,
+//!     physis_core::ClaimClass::Mathematical,
+//! );
+//! let mut v = physis_core::claim::Verdict::holds(&c, "ran");
+//! v.derivation = physis_core::DerivationAssurance::CertifiedNumeric;
+//! ```
+//!
 //! JSON cannot mint a [`formal::FormalClaim`] identity hash either
 //! (`from_claim` recomputes the hash; there is no struct-literal constructor):
 //!

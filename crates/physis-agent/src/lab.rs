@@ -436,7 +436,7 @@ impl Lab {
                         "  {:<32} {:<13} {:<16} {}\n",
                         c.id.0,
                         v.kind.as_str(),
-                        v.derivation.as_str(),
+                        v.derivation().as_str(),
                         v.summary
                     ));
                 }
@@ -492,10 +492,10 @@ impl Lab {
                             VerdictKind::Inapplicable => 3,
                         };
                         let semantic = self.semantic_tag(&c);
-                        by_derivation.entry(v.derivation.as_str()).or_default()[idx] += 1;
+                        by_derivation.entry(v.derivation().as_str()).or_default()[idx] += 1;
                         by_class.entry(v.class.as_str()).or_default()[idx] += 1;
                         by_semantic.entry(semantic.as_str()).or_default()[idx] += 1;
-                        let profile = self.profile_for(&c, v.derivation, semantic);
+                        let profile = self.profile_for(&c, v.derivation(), semantic);
                         for tier in TrustTier::ALL {
                             if profile.has(tier) {
                                 *by_trust.entry(tier.as_str()).or_default() += 1;
@@ -580,23 +580,23 @@ impl Lab {
                             text.push_str(&format!("theory {}\n", t.id()));
                             text.push_str(&format!("  statement:  {}\n", c.statement));
                             text.push_str(&format!("  class:      {}\n", v.class.as_str()));
-                            text.push_str(&format!("  derivation: {}\n", v.derivation.as_str()));
-                            text.push_str(&format!("  empirical:  {}\n", v.empirical.as_str()));
+                            text.push_str(&format!("  derivation: {}\n", v.derivation().as_str()));
+                            text.push_str(&format!("  empirical:  {}\n", v.empirical().as_str()));
                             let semantic = self.semantic_tag(&c);
                             text.push_str(&format!("  semantic:   {}\n", semantic.as_str()));
                             let dual = self.receipts.by_statement(c.statement_hash()).is_some();
-                            let profile = self.profile_for(&c, v.derivation, semantic);
+                            let profile = self.profile_for(&c, v.derivation(), semantic);
                             let judgment = Judgment::from_lab(
                                 v.class,
                                 v.kind,
-                                v.empirical,
-                                v.derivation,
+                                v.empirical(),
+                                v.derivation(),
                                 dual,
-                                v.numeric_lo.as_deref(),
-                                v.numeric_hi.as_deref(),
+                                v.numeric_lo(),
+                                v.numeric_hi(),
                             );
                             text.push_str(&format!("  judgment:   {}\n", judgment.label()));
-                            if let (Some(lo), Some(hi)) = (&v.numeric_lo, &v.numeric_hi) {
+                            if let (Some(lo), Some(hi)) = (v.numeric_lo(), v.numeric_hi()) {
                                 text.push_str(&format!("  enclosure:  [{lo}, {hi}]\n"));
                             }
                             text.push_str(&format!("  trust:      {}\n", profile.display()));
@@ -870,7 +870,7 @@ impl Lab {
                 for (id, t) in &self.theories {
                     for (c, verdict) in t.evaluate_all() {
                         let semantic = self.semantic_tag(&c);
-                        let profile = self.profile_for(&c, verdict.derivation, semantic);
+                        let profile = self.profile_for(&c, verdict.derivation(), semantic);
                         if profile.has(tier) {
                             n += 1;
                             text.push_str(&format!(
@@ -953,12 +953,12 @@ impl Lab {
                         let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                         if let Some(g) = gap_for(
                             verdict.class,
-                            verdict.derivation,
+                            verdict.derivation(),
                             verdict.kind,
-                            verdict.empirical,
+                            verdict.empirical(),
                             dual,
                             c.layer,
-                            verdict.intractable,
+                            verdict.intractable(),
                         ) {
                             if g == gap {
                                 n += 1;
@@ -995,12 +995,12 @@ impl Lab {
                 let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                 if let Some(g) = gap_for(
                     verdict.class,
-                    verdict.derivation,
+                    verdict.derivation(),
                     verdict.kind,
-                    verdict.empirical,
+                    verdict.empirical(),
                     dual,
                     c.layer,
-                    verdict.intractable,
+                    verdict.intractable(),
                 ) {
                     n += 1;
                     let mut row = format!("  {id:<20} {:<36} needs {}\n", c.id.0, need_for(g));
@@ -1254,7 +1254,7 @@ impl Lab {
                     VerdictKind::Fails => fails += 1,
                     _ => {}
                 }
-                if v.derivation == physis_core::DerivationAssurance::Asserted {
+                if v.derivation() == physis_core::DerivationAssurance::Asserted {
                     asserted += 1;
                 }
             }
@@ -2434,7 +2434,7 @@ mod tests {
             for (c, v) in t.evaluate_all() {
                 assert!(
                     matches!(
-                        v.derivation,
+                        v.derivation(),
                         physis_core::DerivationAssurance::Asserted
                             | physis_core::DerivationAssurance::Executed
                             | physis_core::DerivationAssurance::CrossChecked
@@ -2443,9 +2443,9 @@ mod tests {
                     "{} / {} derivation {:?}",
                     id,
                     c.id.0,
-                    v.derivation
+                    v.derivation()
                 );
-                assert_eq!(v.semantic, physis_core::SemanticAssurance::Unreviewed);
+                assert_eq!(v.semantic(), physis_core::SemanticAssurance::Unreviewed);
                 assert!(!c.assumptions.items.is_empty());
             }
         }

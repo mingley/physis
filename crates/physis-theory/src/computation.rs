@@ -623,7 +623,7 @@ mod tests {
             .into_iter()
             .find(|c| c.id.0 == FEASIBLE_DECISION)
             .unwrap();
-        assert!(tm.evaluate(&claim).intractable);
+        assert!(tm.evaluate(&claim).intractable());
     }
 
     #[test]
@@ -638,7 +638,7 @@ mod tests {
             .into_iter()
             .find(|cl| cl.id.0 == FEASIBLE_DECISION)
             .unwrap();
-        assert!(c.evaluate(&claim).intractable);
+        assert!(c.evaluate(&claim).intractable());
     }
 
     #[test]
@@ -650,7 +650,7 @@ mod tests {
             .into_iter()
             .find(|c| c.id.0 == FEASIBLE_DECISION)
             .unwrap();
-        assert!(!tm.evaluate(&claim).intractable);
+        assert!(!tm.evaluate(&claim).intractable());
     }
 
     #[test]

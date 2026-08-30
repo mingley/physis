@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Verdict cannot assign CertifiedNumeric**
+  (`Verdict` derivation, empirical, semantic, and enclosure fields are
+  private). Overlay builders (`with_certified_numeric`,
+  `with_cross_checked`, `with_empirical`, `with_intractable`) remain the
+  only assignment path. Catalog d² hash unchanged. Verified: compile-fail
+  against assigning `Verdict.derivation`. Live prove of catalog d² is
+  still Lean+nanoda; `why` of GUT-scale 3/8 is still `numeric certified`
+  with enclosure `[3/8, 3/8]`. `fmt`, `clippy -D warnings`, full suite,
+  CLI.
+
 - **Claim cannot assign CertifiedNumeric**
   (`Claim` derivation, empirical, and semantic fields are private).
   Constructors tag derivation from class; `CertifiedNumeric` and

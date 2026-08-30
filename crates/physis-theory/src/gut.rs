@@ -460,9 +460,9 @@ mod tests {
         let v = verdict(&g, GUT_WEINBERG_ANGLE);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
-        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
-        assert_eq!(v.numeric_lo.as_deref(), Some("3/8"));
-        assert_eq!(v.numeric_hi.as_deref(), Some("3/8"));
+        assert_eq!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo(), Some("3/8"));
+        assert_eq!(v.numeric_hi(), Some("3/8"));
         assert!(
             v.evidence
                 .iter()
@@ -574,7 +574,7 @@ mod tests {
         let v = verdict(&g, GUT_WEINBERG_ANGLE_MZ_INTERVAL);
         assert_eq!(v.kind, VerdictKind::Fails);
         assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
-        assert_eq!(v.empirical, EmpiricalStatus::Excluded);
+        assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
         assert!(
             v.evidence.iter().any(|e| e.contains("pdg-2024-sin2theta")),
             "evidence: {:?}",
@@ -590,7 +590,7 @@ mod tests {
         g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
         let u = verdict(&g, GUT_WEINBERG_ANGLE_MZ_INTERVAL);
         assert_eq!(u.kind, VerdictKind::Undecidable);
-        assert_eq!(u.empirical, EmpiricalStatus::Inconclusive);
+        assert_eq!(u.empirical(), EmpiricalStatus::Inconclusive);
         // Heuristic folklore can still hold while the interval receipt cannot.
         assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Holds);
     }
@@ -602,11 +602,11 @@ mod tests {
         let v = verdict(&g, GUT_PROTON_LIFETIME_SK);
         assert_eq!(v.kind, VerdictKind::Undecidable);
         assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
-        assert_eq!(v.empirical, EmpiricalStatus::Untested);
+        assert_eq!(v.empirical(), EmpiricalStatus::Untested);
         g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
         let u = verdict(&g, GUT_PROTON_LIFETIME_SK);
         assert_eq!(u.kind, VerdictKind::Undecidable);
-        assert_eq!(u.empirical, EmpiricalStatus::Untested);
+        assert_eq!(u.empirical(), EmpiricalStatus::Untested);
         assert_eq!(
             verdict(&g, GUT_PROTON_DECAY_VIABLE).kind,
             VerdictKind::Holds
@@ -619,8 +619,8 @@ mod tests {
         let v = verdict(&g, GUT_CHARGE_QUANTIZATION);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
-        assert_eq!(v.derivation, DerivationAssurance::Executed);
-        assert_ne!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
         assert!(gut_trace_charge_exact().is_zero());
         assert!(
             v.evidence

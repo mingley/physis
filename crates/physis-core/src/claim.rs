@@ -88,35 +88,38 @@ impl VerdictKind {
 /// `certified-numeric` overlay or an `adversarially-reviewed` tag.
 /// Theories construct verdicts with [`Verdict::from_claim`] and the
 /// overlay builders (`with_certified_numeric`, `with_cross_checked`,
-/// `with_empirical`).
+/// `with_empirical`). Derivation, empirical, semantic, and enclosure
+/// fields are private: a public assignment cannot mint those overlays.
+///
+/// ```compile_fail
+/// let c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// let mut v = physis_core::claim::Verdict::holds(&c, "ran");
+/// v.derivation = physis_core::DerivationAssurance::CertifiedNumeric;
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Verdict {
     /// Holds / fails / …
     pub kind: VerdictKind,
     /// What kind of sentence this was.
     pub class: ClaimClass,
-    /// How the deduction was checked. Never a kernel proof.
-    pub derivation: DerivationAssurance,
-    /// What observation says (usually `NotApplicable` / `Untested` in M1).
-    pub empirical: EmpiricalStatus,
-    /// Whether the encoding has been reviewed.
-    pub semantic: SemanticAssurance,
+    derivation: DerivationAssurance,
+    empirical: EmpiricalStatus,
+    semantic: SemanticAssurance,
     /// One-line reason.
     pub summary: String,
     /// Structured notes (numbers, mismatched knobs, citations).
     pub evidence: Vec<String>,
-    /// True when a [`VerdictKind::Undecidable`] evaluation is a resource
-    /// bound, not a missing algorithm. Default false; never a kernel proof.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub intractable: bool,
-    /// Inclusive lower bound of a numeric certificate, as a display string
-    /// (`0`, `3/8`). Authority is the evaluator's `Ratio` / `Interval`, not
-    /// this string. Present only with [`DerivationAssurance::CertifiedNumeric`].
+    intractable: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub numeric_lo: Option<String>,
-    /// Inclusive upper bound of a numeric certificate, as a display string.
+    numeric_lo: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub numeric_hi: Option<String>,
+    numeric_hi: Option<String>,
 }
 
 impl Verdict {
@@ -130,9 +133,9 @@ impl Verdict {
         Self {
             kind,
             class: claim.class,
-            derivation: claim.derivation,
-            empirical: claim.empirical,
-            semantic: claim.semantic,
+            derivation: claim.derivation(),
+            empirical: claim.empirical(),
+            semantic: claim.semantic(),
             summary: summary.into(),
             evidence,
             intractable: false,
@@ -159,6 +162,37 @@ impl Verdict {
     /// Cannot decide.
     pub fn undecidable(claim: &Claim, summary: impl Into<String>) -> Self {
         Self::from_claim(VerdictKind::Undecidable, claim, summary, Vec::new())
+    }
+
+    /// How the deduction was checked. Never a kernel proof.
+    pub const fn derivation(&self) -> DerivationAssurance {
+        self.derivation
+    }
+
+    /// Empirical axis after any dataset overlay.
+    pub const fn empirical(&self) -> EmpiricalStatus {
+        self.empirical
+    }
+
+    /// Encoding-review tag copied from the claim at construction. P3S is a
+    /// review-store tag, not this field.
+    pub const fn semantic(&self) -> SemanticAssurance {
+        self.semantic
+    }
+
+    /// True when an undecidable evaluation is a resource bound.
+    pub const fn intractable(&self) -> bool {
+        self.intractable
+    }
+
+    /// Display lower bound of a numeric certificate, when present.
+    pub fn numeric_lo(&self) -> Option<&str> {
+        self.numeric_lo.as_deref()
+    }
+
+    /// Display upper bound of a numeric certificate, when present.
+    pub fn numeric_hi(&self) -> Option<&str> {
+        self.numeric_hi.as_deref()
     }
 
     /// Attach evidence lines.
@@ -371,7 +405,7 @@ mod tests {
         assert_eq!(c.semantic(), SemanticAssurance::Unreviewed);
         assert!(!c.assumptions.items.is_empty());
         let v = Verdict::holds(&c, "evaluator ran");
-        assert_eq!(v.derivation, DerivationAssurance::Executed);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
         assert_eq!(v.class, ClaimClass::Mathematical);
     }
 
@@ -500,8 +534,8 @@ mod tests {
         let v = Verdict::undecidable(&c, "overlap is not containment")
             .with_empirical(EmpiricalStatus::Inconclusive);
         assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
-        assert_eq!(v.derivation, DerivationAssurance::Executed);
-        assert_eq!(v.empirical, EmpiricalStatus::Inconclusive);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_eq!(v.empirical(), EmpiricalStatus::Inconclusive);
         assert_eq!(v.kind, VerdictKind::Undecidable);
     }
 
@@ -514,9 +548,9 @@ mod tests {
             ClaimClass::Phenomenological,
         );
         let v = Verdict::undecidable(&c, "coNP-complete; no brute-force search").with_intractable();
-        assert!(v.intractable);
+        assert!(v.intractable());
         assert_eq!(v.kind, VerdictKind::Undecidable);
-        assert_eq!(v.derivation, DerivationAssurance::Executed);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
     }
 
     #[test]
@@ -529,10 +563,10 @@ mod tests {
         );
         let v = Verdict::holds(&c, "exact Ratio sums vanish").with_certified_numeric("0", "0");
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
-        assert_eq!(v.numeric_lo.as_deref(), Some("0"));
-        assert_eq!(v.numeric_hi.as_deref(), Some("0"));
-        assert_ne!(v.derivation, DerivationAssurance::Asserted);
+        assert_eq!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo(), Some("0"));
+        assert_eq!(v.numeric_hi(), Some("0"));
+        assert_ne!(v.derivation(), DerivationAssurance::Asserted);
     }
 
     #[test]
@@ -545,7 +579,7 @@ mod tests {
         );
         let v = Verdict::holds(&c, "cell count matches Betti alternating sum").with_cross_checked();
         assert_eq!(v.kind, VerdictKind::Holds);
-        assert_eq!(v.derivation, DerivationAssurance::CrossChecked);
-        assert_ne!(v.derivation, DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.derivation(), DerivationAssurance::CrossChecked);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
     }
 }

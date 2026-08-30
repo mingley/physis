@@ -780,9 +780,9 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
-        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
-        assert_eq!(v.numeric_lo.as_deref(), Some("0"));
-        assert_eq!(v.numeric_hi.as_deref(), Some("0"));
+        assert_eq!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo(), Some("0"));
+        assert_eq!(v.numeric_hi(), Some("0"));
         assert!(v.evidence.iter().any(|e| e.contains("exact Ratio")));
     }
 
@@ -803,9 +803,9 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
-        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
-        assert_eq!(v.numeric_lo.as_deref(), Some("0"));
-        assert_eq!(v.numeric_hi.as_deref(), Some("0"));
+        assert_eq!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo(), Some("0"));
+        assert_eq!(v.numeric_hi(), Some("0"));
         assert!(v.evidence.iter().any(|e| e.contains("Q_u = 2/3")));
     }
 
@@ -873,9 +873,9 @@ mod tests {
         let v = t.evaluate(&c);
         assert_eq!(v.kind, VerdictKind::Holds);
         assert_eq!(v.class, ClaimClass::ModelInternal);
-        assert_eq!(v.derivation, DerivationAssurance::CertifiedNumeric);
-        assert_eq!(v.numeric_lo.as_deref(), Some("-1/2"));
-        assert_eq!(v.numeric_hi.as_deref(), Some("-1/2"));
+        assert_eq!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.numeric_lo(), Some("-1/2"));
+        assert_eq!(v.numeric_hi(), Some("-1/2"));
         assert!(v.evidence.iter().any(|e| e.contains("Y_L = -1/2")));
         assert!(v.evidence.iter().any(|e| e.contains("-2/3")));
     }

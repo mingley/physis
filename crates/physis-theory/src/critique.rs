@@ -154,7 +154,7 @@ fn report_of(t: &dyn Theory) -> TheoryReport {
             layer: c.layer.as_str().into(),
             kind: v.kind,
             class: v.class,
-            derivation: v.derivation,
+            derivation: v.derivation(),
             summary: v.summary,
             evidence: v.evidence,
         })

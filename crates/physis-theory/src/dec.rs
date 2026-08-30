@@ -800,7 +800,7 @@ mod tests {
 
     fn derivation(t: &dyn Theory, id: &str) -> DerivationAssurance {
         let c = t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
-        t.evaluate(&c).derivation
+        t.evaluate(&c).derivation()
     }
 
     #[test]
