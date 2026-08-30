@@ -21,14 +21,14 @@ mechanically restores decidability — a clean knob → verdict diff.
 | id | object |
 |---|---|
 | `combinational-circuit` | a finite, acyclic boolean circuit |
-| `turing-machine` | a deterministic Turing machine (`tape_bound` knob) |
+| `turing-machine` | a deterministic Turing machine (`tape_bound` knob). The unrelativized machine lives on the IR package; `add-oracle` is not a knob |
 | `landauer-engine` | a computation coupled to a heat bath (Landauer/Bennett) |
 
 ## Knobs
 
 | theory | knob | effect |
 |---|---|---|
-| `turing-machine` | `tape_bound` | tape length in cells; `0` = unbounded. A finite bound makes the machine a finite automaton. |
+| `turing-machine` | `tape_bound` | tape length in cells; `0` = unbounded. A finite bound makes the machine a finite automaton. A halt oracle is not this knob: `add-oracle` is an IR mutation. |
 | `turing-machine` | `nondeterministic` | whether the transition relation allows nondeterministic branching; flips `comp.deterministic`. |
 | `landauer-engine` | `temperature_k` | bath temperature (K); sets the energy scale `k_B·T·ln2`. The `ln2` factor is not this knob: `add-kt` is an IR mutation. A Maxwell demon that skips the memory cost is not this knob: `add-demon` is an IR mutation. |
 | `landauer-engine` | `bits_erased` | number of logical bits irreversibly erased. |
@@ -39,13 +39,14 @@ package. `add-feedback` appends a cyclic NAND and is an IR mutation.
 `add-contention` appends a second NAND on the same output wire and is
 a second IR mutation: `comp.deterministic` fails. That is still
 `combinational-circuit`, not a silent Turing-machine install.
-`turing-machine` keeps `nondeterministic`.
+`turing-machine` keeps `nondeterministic`. `add-oracle` is still
+`turing-machine`, not a silent combinational-circuit install.
 
 ## Claims
 
 | id | meaning |
 |---|---|
-| `comp.halts` | the machine halts on every input |
+| `comp.halts` | the machine halts on every input. On `turing-machine` this names the unrelativized TM. `add-oracle` appends `oracle halt` and the cell holds. That is not a knob. `tape_bound` stays a knob. Combinational's copy stays encoding-wide |
 | `comp.turing-complete` | the model is Turing complete |
 | `comp.deterministic` | the transition function is single-valued. On `combinational-circuit` this names unique NAND drivers. `add-contention` appends a second NAND on the same wire and the cell fails. That is not a knob. TM's copy stays encoding-wide; `nondeterministic` stays a knob |
 | `comp.decidable-equivalence` | equivalence of two instances is decidable |
@@ -103,6 +104,8 @@ is built on — an `open` verdict is a first-class, respected outcome.
 ```
 physis experiment computation
 physis set turing-machine tape_bound 1000
+physis hypothesize turing-machine  # add-oracle is IR, not set
+physis encode turing-machine       # unrelativized TM; not P3S, not a kernel proof
 ```
 
 Setting `tape_bound: 0 → 1000` flips:
@@ -127,6 +130,13 @@ and `set combinational-circuit contention` are unknown). A cyclic
 encoding makes `comp.halts` inapplicable (out of the combinational
 domain). A multi-driven encoding leaves the graph acyclic and fails
 determinism. No SAT solver and no tape simulator are run.
+
+`turing-machine` is an unrelativized machine described by an IR package
+(`equation tm`). `physis hypothesize turing-machine` forks the package
+with a halt oracle (`equation oracle halt`); that is not a knob
+(`set turing-machine oracle` is unknown). The oracle encoding makes
+`comp.halts` hold while Turing completeness still holds. `tape_bound`
+and `nondeterministic` stay knobs. No tape simulator is run.
 
 ## No borrowed spacetime
 

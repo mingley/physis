@@ -80,6 +80,10 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 ### combinational-circuit
 - (none — NAND netlist lives on the IR package; `add-feedback` is a cycle, not a knob. A second NAND writing the same wire is a second IR mutation (`add-contention`), not the Turing-machine `nondeterministic` knob.)
 
+### turing-machine
+- `tape_bound` — tape length in cells; `0` = unbounded. A finite bound makes the machine a finite automaton. A halt oracle is not this knob: `add-oracle` is an IR mutation
+- `nondeterministic` — whether the transition relation allows branching; flips `comp.deterministic`
+
 ### landauer-engine
 - `temperature_k` — bath temperature (K); sets `k_B·T·ln2`. The `ln2` factor is not this knob: `add-kt` is an IR mutation. A Maxwell demon that skips the memory cost is not this knob: `add-demon` is an IR mutation
 - `bits_erased` — number of logical bits irreversibly erased

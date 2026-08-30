@@ -184,6 +184,7 @@ cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension
 cargo run -p physis -- hypothesize type-iib
 cargo run -p physis -- hypothesize combinational-circuit
+cargo run -p physis -- hypothesize turing-machine  # add-oracle is IR, not set
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- enclose gut.weinberg-angle
 cargo run -p physis -- cite gut.proton-lifetime-sk

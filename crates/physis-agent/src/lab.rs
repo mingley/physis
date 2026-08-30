@@ -6141,6 +6141,136 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_turing_machine_oracle_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["oracle", "halt_oracle", "add-oracle"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "turing-machine".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("turing-machine".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-oracle") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-oracle: package → add-oracle";
+        let start = text.find(marker).expect("add-oracle hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  turing-machine  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let oracle_block = &rest[..end];
+        assert!(
+            oracle_block.contains("comp.halts") && oracle_block.contains("undecidable → holds"),
+            "add-oracle must flip halts undecidable to holds: {oracle_block}"
+        );
+        assert!(
+            !oracle_block.contains("comp.turing-complete"),
+            "add-oracle is not the tape_bound completeness fork: {oracle_block}"
+        );
+        assert!(
+            !oracle_block.contains("comp.deterministic"),
+            "add-oracle is not the nondeterministic knob: {oracle_block}"
+        );
+        assert!(
+            oracle_block.matches("undecidable → holds").count() == 1,
+            "add-oracle should flip only unrelativized halt: {oracle_block}"
+        );
+        assert!(
+            text.contains("tape_bound"),
+            "tape_bound must still be a knob probe: {text}"
+        );
+        assert!(
+            text.contains("nondeterministic"),
+            "nondeterministic must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("turing-machine").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| { c.id_str() == "comp.halts" && v.kind == VerdictKind::Undecidable }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("tape_bound").unwrap().display(),
+            "0",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("nondeterministic").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let bound = lab.exec(Command::Set {
+            theory: "turing-machine".into(),
+            knob: "tape_bound".into(),
+            value: "1000".into(),
+        });
+        assert_eq!(bound.exit_code(), 0, "{}", bound.text());
+        assert!(
+            bound.text().contains("comp.halts") && bound.text().contains("undecidable → holds"),
+            "tape_bound still flips halt: {}",
+            bound.text()
+        );
+        assert!(
+            bound.text().contains("comp.turing-complete") && bound.text().contains("holds → fails"),
+            "tape_bound still drops Turing completeness: {}",
+            bound.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "turing-machine".into(),
+            knob: "tape_bound".into(),
+            value: "0".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "comp.halts".into(),
+            })
+            .text()
+            .to_string();
+        let tm = why_theory_block(&why, "turing-machine");
+        assert!(
+            tm.contains("unrelativized Turing machine") || tm.contains("no halt oracle"),
+            "TM halt must name the unrelativized machine: {tm}"
+        );
+        assert!(
+            !tm.contains("not yet a machine-checked regime"),
+            "TM halt must not be encoding-wide: {tm}"
+        );
+        assert!(
+            tm.contains("encoding:    none"),
+            "hypothesize must not encode: {tm}"
+        );
+        let nand = why_theory_block(&why, "combinational-circuit");
+        assert!(
+            nand.contains("not yet a machine-checked regime"),
+            "combinational halt stays encoding-wide: {nand}"
+        );
+    }
+
+    #[test]
     fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
         let mut lab = Lab::standard();
         let journal_len = lab.journal().len();
@@ -7704,6 +7834,10 @@ mod tests {
             "loop must independently round-trip the discrete coboundary identity: {text}"
         );
         assert!(
+            text.contains("encode  turing-machine"),
+            "loop must independently round-trip the unrelativized TM: {text}"
+        );
+        assert!(
             !text.contains("encode  rayleigh-jeans"),
             "Rayleigh–Jeans has no IR package: {text}"
         );
@@ -9113,12 +9247,25 @@ mod tests {
         assert_ne!(derham_id, planck_id);
         assert_ne!(derham_id, nand_id);
 
-        for theory in [
-            "standard-model",
-            "type-iib",
-            "turing-machine",
-            "rayleigh-jeans",
-        ] {
+        let tm = lab
+            .exec(Command::Encode {
+                theory: "turing-machine".into(),
+            })
+            .text()
+            .to_string();
+        assert!(tm.contains("equations  1"), "{tm}");
+        assert!(tm.contains("round-trip canonical"), "{tm}");
+        assert!(tm.contains("not P3S"), "{tm}");
+        assert!(!tm.contains("receipt"), "{tm}");
+        let tm_id = encoding_package_id(&tm);
+        assert_eq!(
+            tm_id.to_hex(),
+            "63961d0b197deadfeb9fbbbfbf8c7c4b27f5d83a29e5e7bc75e66dbab076332f"
+        );
+        assert_ne!(tm_id, derham_id);
+        assert_ne!(tm_id, nand_id);
+
+        for theory in ["standard-model", "type-iib", "rayleigh-jeans"] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
             });
@@ -9464,6 +9611,25 @@ mod tests {
             encoding_package_id(&derham_again),
             derham_id,
             "hypothesize must not install the sign-flip mutant"
+        );
+
+        let hypo_tm = lab
+            .exec(Command::Hypothesize {
+                theory: Some("turing-machine".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_tm.contains("add-oracle"), "{hypo_tm}");
+        let tm_again = lab
+            .exec(Command::Encode {
+                theory: "turing-machine".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&tm_again),
+            tm_id,
+            "hypothesize must not install the oracle mutant"
         );
 
         let p3s = lab

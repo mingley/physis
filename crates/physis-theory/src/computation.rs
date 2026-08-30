@@ -28,6 +28,12 @@
 //! `info.landauer-cost` fails. `temperature_k` / `bits_erased` /
 //! `reversible` still scale the bath and Bennett reversibility. Those
 //! forks are still this object, not a silent Turing-machine install.
+//!
+//! An unrelativized Turing machine lives on the IR package. A halt
+//! oracle (`add-oracle`) is a package mutation, not a `tape_bound` or
+//! `nondeterministic` knob: `comp.halts` becomes decidable while the
+//! model stays Turing complete. No tape simulator is run. That fork is
+//! still this object, not a silent combinational-circuit install.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -326,6 +332,15 @@ fn unique_driver_domain() -> DomainOfValidity {
     )
 }
 
+fn halt_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["unrelativized Turing machine".into()],
+        vec!["no halt oracle".into()],
+        "Halting here is the unrelativized TM. A halt oracle is a new \
+         encoding, not a silent tape_bound knob.",
+    )
+}
+
 impl Knobbed for CombinationalCircuit {
     fn specs(&self) -> &'static [KnobSpec] {
         &[]
@@ -493,7 +508,7 @@ const TM_SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "tape_bound",
         layer: LayerId::Information,
-        doc: "Tape length bound in cells; 0 means an unbounded tape. A finite bound makes the machine a finite automaton.",
+        doc: "Tape length bound in cells; 0 means an unbounded tape. A finite bound makes the machine a finite automaton. A halt oracle is not this knob: add-oracle is an IR mutation.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 0, max: 1_000_000 },
     },
@@ -506,18 +521,93 @@ const TM_SPECS: &[KnobSpec] = &[
     },
 ];
 
+/// Unrelativized TM equation on the live package.
+const TM_EQ: &str = "tm";
+/// Halt-oracle encoding: the RE halt set as an oracle (`0'`).
+const ORACLE_EQ: &str = "oracle halt";
+
+fn parse_tm_encoding(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut tm = false;
+    let mut oracle = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            TM_EQ => tm = true,
+            ORACLE_EQ => oracle = true,
+            _ => {}
+        }
+    }
+    if !tm {
+        return Err(format!(
+            "{} package has no unrelativized tm equation",
+            pkg.id
+        ));
+    }
+    Ok(oracle)
+}
+
 /// A Turing machine with an optional tape bound and (non)determinism.
-#[derive(Clone, Debug, Default)]
+///
+/// The unrelativized machine lives on the IR package. A halt oracle
+/// (`add-oracle`) is a package mutation, not a knob: `comp.halts`
+/// holds while Turing completeness still holds. `tape_bound` /
+/// `nondeterministic` stay knobs. No tape simulator is run.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct TuringMachine {
     /// Tape bound in cells; 0 means unbounded.
     tape_bound: u64,
     /// Whether the transition relation is nondeterministic.
     nondeterministic: bool,
+    /// Whether the encoding includes a halt oracle (`0'`).
+    oracle: bool,
 }
 
 impl TuringMachine {
     fn unbounded(&self) -> bool {
         self.tape_bound == 0
+    }
+
+    /// IR package for this machine encoding. Equations are `tm` and,
+    /// when forked, `oracle halt`. Tape bound and nondeterminism stay
+    /// on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![TM_EQ.to_string()];
+        if self.oracle {
+            equations.push(ORACLE_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["unrelativized-tm".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: HALTS.into(),
+                statement: "The machine halts on every input.".into(),
+                layer: "information".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a machine encoding from a package. Knobs default; overlay
+    /// them from a live engine when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "turing-machine" {
+            return Err(format!(
+                "turing-machine package id '{}' is not turing-machine",
+                pkg.id
+            ));
+        }
+        let oracle = parse_tm_encoding(pkg)?;
+        Ok(Self {
+            oracle,
+            ..Self::default()
+        })
+    }
+
+    fn oracle_equation() -> String {
+        ORACLE_EQ.to_string()
     }
 }
 
@@ -560,8 +650,9 @@ impl Theory for TuringMachine {
     }
     fn summary(&self) -> &'static str {
         "A deterministic Turing machine. With an unbounded tape it is Turing \
-         complete and its halting is undecidable; bounding the tape makes it a \
-         finite automaton whose halting and equivalence are decidable."
+         complete and its unrelativized halting is undecidable; bounding the \
+         tape makes it a finite automaton whose halting and equivalence are \
+         decidable. A halt oracle is an IR mutation, not a tape_bound knob."
     }
     fn world(&self) -> Option<World> {
         None // computation has no spacetime/gauge/spectrum projection
@@ -579,11 +670,26 @@ impl Theory for TuringMachine {
     }
     fn claims(&self) -> Vec<Claim> {
         comp_claims()
+            .into_iter()
+            .map(|cl| {
+                if cl.id_str() == HALTS {
+                    cl.with_domain(halt_domain())
+                } else {
+                    cl
+                }
+            })
+            .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id_str() {
             HALTS => {
-                if self.unbounded() {
+                if self.oracle {
+                    Verdict::holds(claim, "a halt oracle decides the RE halt set").with_evidence([
+                        "oracle halt (0'); no tape simulator is run".to_string(),
+                        "unrelativized TM halt is RE-complete; the oracle is the encoding, not cycle detection"
+                            .to_string(),
+                    ])
+                } else if self.unbounded() {
                     Verdict::undecidable(claim,
                         "the halting problem: no algorithm decides halting for an unbounded-tape machine",
                     )
@@ -667,6 +773,36 @@ impl Theory for TuringMachine {
             }
             _ => Verdict::inapplicable(claim, "claim not made by a computational object"),
         }
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.oracle = parsed.oracle;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.oracle {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::oracle_equation()),
+        );
+        if let Ok(parsed) = Self::from_package(&mutated) {
+            if parsed.oracle {
+                let mut fork = self.clone();
+                fork.oracle = true;
+                return vec![("add-oracle".into(), Box::new(fork))];
+            }
+        }
+        Vec::new()
     }
 }
 
@@ -1086,6 +1222,7 @@ pub fn computation() -> ExperimentReport {
             "Bounding the tape turns the machine into a finite automaton: halting and equivalence become decidable, but it is no longer Turing complete.".into(),
             "`comp.feasible-decision` is coNP-complete (circuits) / exponential (bounded tape): decidable is not feasible. No simulator is run.".into(),
             "`hypothesize combinational-circuit`: add-feedback and add-contention are IR, not set.".into(),
+            "`hypothesize turing-machine`: add-oracle is IR, not set. tape_bound stays a knob.".into(),
         ],
         &computation_rows(),
         theories,
@@ -1383,6 +1520,199 @@ mod tests {
         assert_eq!(verdict(&tm, DETERMINISTIC), VerdictKind::Holds);
         tm.set("nondeterministic", KnobValue::Bool(true)).unwrap();
         assert_eq!(verdict(&tm, DETERMINISTIC), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn halt_oracle_is_ir_not_a_knob() {
+        let mut tm = TuringMachine::default();
+        assert!(!tm.oracle);
+        assert_eq!(verdict(&tm, HALTS), VerdictKind::Undecidable);
+        assert_eq!(verdict(&tm, TURING_COMPLETE), VerdictKind::Holds);
+        assert!(
+            TuringMachine::default()
+                .set("oracle", KnobValue::Bool(true))
+                .is_err(),
+            "halt oracle is an IR mutation, not a knob"
+        );
+        assert!(
+            TuringMachine::default()
+                .set("halt_oracle", KnobValue::Bool(true))
+                .is_err(),
+            "halt_oracle is not a knob"
+        );
+        assert!(
+            TuringMachine::default()
+                .set("add-oracle", KnobValue::Bool(true))
+                .is_err(),
+            "add-oracle is not a knob"
+        );
+        let src = render_package(&tm.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay tm");
+        assert_eq!(pkg.equations[0], TM_EQ);
+        assert_eq!(
+            TuringMachine::from_package(&pkg).unwrap(),
+            tm,
+            "IR round-trip must preserve the unrelativized TM"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(TuringMachine::oracle_equation()),
+        );
+        let parsed = TuringMachine::from_package(&mutated).unwrap();
+        assert!(parsed.oracle);
+        let mut fork = tm.clone();
+        fork.oracle = true;
+        assert_eq!(fork.id(), "turing-machine");
+        assert_eq!(verdict(&fork, HALTS), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, TURING_COMPLETE), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, DETERMINISTIC), VerdictKind::Holds);
+        assert_eq!(
+            verdict(&fork, DECIDABLE_EQUIVALENCE),
+            VerdictKind::Undecidable
+        );
+        assert_eq!(verdict(&fork, P_EQUALS_NP), VerdictKind::Undecidable);
+        assert_eq!(verdict(&fork, FEASIBLE_DECISION), VerdictKind::Inapplicable);
+        assert_eq!(verdict(&tm, HALTS), VerdictKind::Undecidable);
+        let cell = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == HALTS)
+            .unwrap();
+        let v = fork.evaluate(&cell);
+        assert!(
+            !v.summary.contains("tape") && !v.summary.contains("finite"),
+            "oracle is not the tape_bound knob: {}",
+            v.summary
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("0'") && e.contains("no tape simulator")),
+            "got {:?}",
+            v.evidence
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("RE-complete") && e.contains("not cycle detection")),
+            "got {:?}",
+            v.evidence
+        );
+        tm.set("tape_bound", KnobValue::UInt(1000)).unwrap();
+        assert_eq!(verdict(&tm, HALTS), VerdictKind::Holds);
+        assert_eq!(verdict(&tm, TURING_COMPLETE), VerdictKind::Fails);
+        let mut bounded_fork = fork.clone();
+        bounded_fork
+            .set("tape_bound", KnobValue::UInt(1000))
+            .unwrap();
+        assert_eq!(verdict(&bounded_fork, HALTS), VerdictKind::Holds);
+        assert_eq!(verdict(&bounded_fork, TURING_COMPLETE), VerdictKind::Fails);
+        let mut nd = fork.clone();
+        nd.set("nondeterministic", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&nd, DETERMINISTIC), VerdictKind::Fails);
+        assert_eq!(verdict(&nd, HALTS), VerdictKind::Holds);
+
+        let probes = TuringMachine::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-oracle"),
+            "live TM must offer add-oracle: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-oracle")
+            .expect("add-oracle");
+        assert_eq!(verdict(probe.1.as_ref(), HALTS), VerdictKind::Holds);
+        assert_eq!(
+            verdict(probe.1.as_ref(), TURING_COMPLETE),
+            VerdictKind::Holds
+        );
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes.iter().all(|(label, _)| label != "add-oracle"),
+            "oracle fork must not re-offer add-oracle"
+        );
+        let live = TuringMachine::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut bounded = TuringMachine::default();
+        bounded.set("tape_bound", KnobValue::UInt(1000)).unwrap();
+        let rebuilt = bounded.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("tape_bound").unwrap(),
+            KnobValue::UInt(1000),
+            "reparse must overlay oracle IR onto live knobs"
+        );
+        assert_eq!(
+            rebuilt.get("nondeterministic").unwrap(),
+            KnobValue::Bool(false),
+            "reparse must overlay oracle IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), HALTS),
+            VerdictKind::Holds,
+            "bounded tape still Holds halt on the live unrelativized encoding"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), TURING_COMPLETE),
+            VerdictKind::Fails
+        );
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            verdict(live_rebuilt.as_ref(), HALTS),
+            VerdictKind::Undecidable
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == HALTS)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "TM halt must name the unrelativized machine: {:?}",
+            cell.domain()
+        );
+        assert!(
+            CombinationalCircuit::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-oracle"),
+            "combinational-circuit must not grow add-oracle"
+        );
+        assert!(
+            LandauerEngine::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-oracle"),
+            "landauer-engine must not grow add-oracle"
+        );
+        assert!(
+            crate::blackbody::Blackbody::planck()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-oracle"),
+            "planck must not grow add-oracle"
+        );
+        assert!(
+            crate::dec::DeRham::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-oracle"),
+            "de-rham must not grow add-oracle"
+        );
+        assert!(
+            TuringMachine::default()
+                .set("tape_bound", KnobValue::UInt(1000))
+                .is_ok(),
+            "turing-machine keeps the tape_bound knob"
+        );
+        assert!(
+            TuringMachine::default()
+                .set("nondeterministic", KnobValue::Bool(true))
+                .is_ok(),
+            "turing-machine keeps the nondeterministic knob"
+        );
     }
 
     #[test]

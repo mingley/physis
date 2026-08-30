@@ -32,6 +32,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Turing-machine halt oracle is an IR mutation**
+  (`turing-machine`, `add-oracle`). The unrelativized machine is the
+  live encoding (`tm`); appending `oracle halt` decides the RE halt
+  set and flips `comp.halts` undecidable to holds. Turing completeness
+  still holds. The residual is that unrelativized halt is RE-complete
+  (`0'` decides it) and is evidence, not a tape simulator. That is
+  not a knob. `tape_bound` stays a knob and still restores decidability
+  by making the machine a finite automaton. `nondeterministic` stays a
+  knob. Halt names the unrelativized-TM domain. Mutants stay
+  `turing-machine`; they are not a silent combinational-circuit
+  install. Mutants are not installed, not journaled, and not Canonical
+  or P4. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  P3N count stays 4. Verified: IR round-trip; set oracle is unknown;
+  hypothesize turing-machine; live unrelativized TM restored; encode
+  pin
+  `63961d0b197deadfeb9fbbbfbf8c7c4b27f5d83a29e5e7bc75e66dbab076332f`.
+
 - **De Rham coboundary identity is an IR package**
   (`de-rham`, `add-sign-flip`). The catalog polynomial
   `(b − a) − (c − a) + (c − b)` is the live encoding, with
