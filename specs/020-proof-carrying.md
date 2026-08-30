@@ -52,7 +52,9 @@ Nothing gains authority merely because an agent wrote code that returns
   the sentence.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
   `Judgment` has no `Deserialize` impl: JSON cannot mint
-  `LogicalJudgment::Proved`. The lab projects `Judgment` from evaluator
+  `logical proved`. `LogicalJudgment` has no public `Proved`
+  constructor: only `from_lab` can produce proved, and only with a
+  dual-checked receipt. The lab projects `Judgment` from evaluator
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set

@@ -90,14 +90,20 @@
 //! }
 //! ```
 //!
-//! JSON cannot mint a typed [`judgment::Judgment`] either (`LogicalJudgment::Proved`
-//! is not a deserializable tag):
+//! JSON cannot mint a typed [`judgment::Judgment`] either (`logical proved`
+//! is not a deserializable tag, and [`judgment::LogicalJudgment`] has no
+//! public `Proved` constructor):
 //!
 //! ```compile_fail
 //! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
 //! fn _blocked() {
 //!     needs_deserialize::<physis_core::judgment::Judgment>();
 //! }
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::LogicalJudgment;
+//! let _ = LogicalJudgment::Proved;
 //! ```
 //!
 //! JSON cannot mint a [`formal::FormalClaim`] identity hash either

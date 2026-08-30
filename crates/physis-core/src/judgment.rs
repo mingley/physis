@@ -2,13 +2,23 @@
 //! compatible dataset are different Rust types.
 //!
 //! [`Judgment::from_lab`] projects evaluator + receipts. JSON cannot mint
-//! [`LogicalJudgment::Proved`].
+//! a proved judgment, and neither can a struct or enum literal:
 //!
 //! ```compile_fail
 //! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
 //! fn _blocked() {
 //!     needs_deserialize::<physis_core::judgment::Judgment>();
 //! }
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::LogicalJudgment;
+//! let _ = LogicalJudgment::Proved;
+//! ```
+//!
+//! ```compile_fail
+//! use physis_core::judgment::LogicalJudgment;
+//! let _ = LogicalJudgment { kind: todo!() };
 //! ```
 
 use serde::{Deserialize, Serialize};
@@ -19,7 +29,7 @@ use crate::artifact::ArtifactId;
 /// the Level-2 evaluator result. A Level-3 claim carries one of these.
 ///
 /// Constructed by [`Judgment::from_lab`]. There is no [`serde::Deserialize`]
-/// impl: JSON cannot mint [`LogicalJudgment::Proved`].
+/// impl, and [`LogicalJudgment`] has no public proved constructor.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Judgment {
@@ -36,15 +46,55 @@ pub enum Judgment {
 }
 
 /// Outcome of a logical claim.
+///
+/// A proved value is produced only by [`Judgment::from_lab`] when a
+/// dual-checked receipt exists. There is no public `Proved` constructor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[serde(transparent)]
+pub struct LogicalJudgment {
+    kind: LogicalKind,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum LogicalJudgment {
-    /// Independently checked proof of the challenge statement.
+enum LogicalKind {
     Proved,
-    /// Counterexample or refutation of the challenge statement.
     Disproved,
-    /// Neither.
     Undetermined,
+}
+
+impl LogicalJudgment {
+    pub(crate) const fn proved() -> Self {
+        Self {
+            kind: LogicalKind::Proved,
+        }
+    }
+
+    pub(crate) const fn disproved() -> Self {
+        Self {
+            kind: LogicalKind::Disproved,
+        }
+    }
+
+    pub(crate) const fn undetermined() -> Self {
+        Self {
+            kind: LogicalKind::Undetermined,
+        }
+    }
+
+    /// True when this is a dual-checked kernel proof, not evaluator Holds.
+    pub const fn is_proved(self) -> bool {
+        matches!(self.kind, LogicalKind::Proved)
+    }
+
+    /// Stable kebab-case name (`proved`, `disproved`, `undetermined`).
+    pub const fn as_str(self) -> &'static str {
+        match self.kind {
+            LogicalKind::Proved => "proved",
+            LogicalKind::Disproved => "disproved",
+            LogicalKind::Undetermined => "undetermined",
+        }
+    }
 }
 
 /// Outcome of a numeric claim.
@@ -361,7 +411,7 @@ impl TrustProfile {
 
 impl Judgment {
     /// Project a lab evaluation into a typed judgment. Evaluator `holds`
-    /// is not [`LogicalJudgment::Proved`]. A model-internal evaluation
+    /// is not a proved judgment. A model-internal evaluation
     /// that overlays [`crate::assurance::EmpiricalStatus::Inconclusive`]
     /// is [`NumericJudgment::Unresolved`] (too coarse to decide), not a
     /// failed theorem. [`crate::assurance::DerivationAssurance::CertifiedNumeric`]
@@ -394,11 +444,11 @@ impl Judgment {
         match class {
             ClaimClass::Mathematical | ClaimClass::ModelInternal | ClaimClass::Phenomenological => {
                 let j = if dual_checked && kind == VerdictKind::Holds {
-                    LogicalJudgment::Proved
+                    LogicalJudgment::proved()
                 } else if kind == VerdictKind::Fails {
-                    LogicalJudgment::Disproved
+                    LogicalJudgment::disproved()
                 } else {
-                    LogicalJudgment::Undetermined
+                    LogicalJudgment::undetermined()
                 };
                 Judgment::Logical(j)
             }
@@ -421,7 +471,7 @@ impl Judgment {
                 Judgment::Empirical(j)
             }
             ClaimClass::Conjecture | ClaimClass::OpenProblem => {
-                Judgment::Logical(LogicalJudgment::Undetermined)
+                Judgment::Logical(LogicalJudgment::undetermined())
             }
         }
     }
@@ -429,14 +479,7 @@ impl Judgment {
     /// Stable two-token label (`logical proved`).
     pub fn label(&self) -> String {
         match self {
-            Judgment::Logical(j) => format!(
-                "logical {}",
-                match j {
-                    LogicalJudgment::Proved => "proved",
-                    LogicalJudgment::Disproved => "disproved",
-                    LogicalJudgment::Undetermined => "undetermined",
-                }
-            ),
+            Judgment::Logical(j) => format!("logical {}", j.as_str()),
             Judgment::Numeric(NumericJudgment::Certified { .. }) => "numeric certified".into(),
             Judgment::Numeric(NumericJudgment::Counterexample { .. }) => {
                 "numeric counterexample".into()
@@ -542,7 +585,7 @@ mod tests {
             None,
         );
         assert_eq!(open.label(), "logical undetermined");
-        assert_ne!(open, Judgment::Logical(LogicalJudgment::Proved));
+        assert!(!matches!(&open, Judgment::Logical(j) if j.is_proved()));
         let proved = Judgment::from_lab(
             crate::assurance::ClaimClass::Mathematical,
             crate::claim::VerdictKind::Holds,
@@ -553,7 +596,8 @@ mod tests {
             None,
         );
         assert_eq!(proved.label(), "logical proved");
-        assert_eq!(proved, Judgment::Logical(LogicalJudgment::Proved));
+        assert!(matches!(&proved, Judgment::Logical(j) if j.is_proved()));
+        assert_eq!(proved, Judgment::Logical(LogicalJudgment::proved()));
     }
 
     #[test]

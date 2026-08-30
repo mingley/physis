@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **LogicalJudgment cannot mint proved**
+  (`LogicalJudgment` is a transparent wrapper with a private kind).
+  JSON still cannot mint `logical proved`; a Rust `Proved` variant
+  cannot be constructed outside `from_lab` either. Catalog d² hash
+  unchanged. Verified: compile-fail against `LogicalJudgment::Proved`
+  and a kind struct literal; from_lab Holds is not proved until a
+  receipt. Live prove of catalog d² is still Lean+nanoda; why after
+  prove is still `logical proved`. `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **FormalClaim is not JSON-mintable**
   (`FormalClaim` private fields, no Deserialize). `from_claim` is the
   only constructor and recomputes the statement hash from the live
