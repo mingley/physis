@@ -69,7 +69,9 @@ When Lean 4.34 and `lean4export` are on PATH (`LEAN4EXPORT`), `prove` of a
 catalog FormalClaim identity mints `FormalBackend::Lean4` (`lean-kernel` + `nanoda`).
 The catalog obligation is that identity, not the slug: a matching id with
 different commitments, the encoding-wide domain placeholder, or only
-`encoding-is-the-model` cannot borrow ExactIdentity or Physlib. `Challenge`
+`encoding-is-the-model` cannot borrow ExactIdentity or Physlib. `FormalClaim`
+is from_claim-only (private fields, no Deserialize; the hash is recomputed
+from the live sentence). `Challenge`
 is generate-only (private fields, no Deserialize). Otherwise it mints `ExactCertificate` (dual expanders). Neither is an enum
 an agent can set. `physis review` overlays a justified semantic tag from a
 trusted dossier bound to the live FormalClaim; journal restore re-runs

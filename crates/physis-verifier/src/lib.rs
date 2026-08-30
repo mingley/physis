@@ -215,7 +215,7 @@ pub fn verify(
 fn bind_catalog(challenge: &Challenge) -> Result<(), VerifyError> {
     if let Some(spec) = CATALOG
         .iter()
-        .find(|s| s.formal_claim().statement_hash == challenge.statement_hash())
+        .find(|s| s.formal_claim().statement_hash() == challenge.statement_hash())
     {
         if spec.claim_id != challenge.claim_id() {
             return Err(VerifyError::NoExactIdentity);

@@ -99,6 +99,16 @@
 //!     needs_deserialize::<physis_core::judgment::Judgment>();
 //! }
 //! ```
+//!
+//! JSON cannot mint a [`formal::FormalClaim`] identity hash either
+//! (`from_claim` recomputes the hash; there is no struct-literal constructor):
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::formal::FormalClaim>();
+//! }
+//! ```
 
 #![forbid(unsafe_code)]
 

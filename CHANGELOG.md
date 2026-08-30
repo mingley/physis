@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **FormalClaim is not JSON-mintable**
+  (`FormalClaim` private fields, no Deserialize). `from_claim` is the
+  only constructor and recomputes the statement hash from the live
+  sentence: a forged hash on `Claim` is not copied through. JSON cannot
+  mint a catalog identity. Catalog d² hash unchanged. Verified:
+  compile-fail against FormalClaim literals and Deserialize;
+  `from_claim` restores an honest hash. Live prove of catalog d² is
+  still Lean+nanoda. `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Judgment is not JSON-mintable**
   (`Judgment` and `LogicalJudgment` have no Deserialize). `from_lab`
   projects evaluator plus receipts; JSON cannot mint `logical proved`.

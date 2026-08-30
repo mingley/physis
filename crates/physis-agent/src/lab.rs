@@ -2359,7 +2359,7 @@ mod tests {
             let live = lab.find_claim(spec.claim_id).unwrap();
             assert_eq!(
                 live.statement_hash,
-                spec.formal_claim().statement_hash,
+                spec.formal_claim().statement_hash(),
                 "{} live hash must be the catalog FormalClaim",
                 spec.claim_id
             );

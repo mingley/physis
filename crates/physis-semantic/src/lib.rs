@@ -273,7 +273,7 @@ impl SemanticStore {
 /// red-team corpus. The minted record is bound to `claim.statement_hash`.
 /// Never returns [`SemanticAssurance::Canonical`].
 pub fn review(claim: &FormalClaim) -> Result<SemanticRecord, SemanticError> {
-    let d = dossier(&claim.id.0).ok_or(SemanticError::NoDossier)?;
+    let d = dossier(&claim.id().0).ok_or(SemanticError::NoDossier)?;
     if lookup_matching(claim).is_none() {
         return Err(SemanticError::WrongIdentity);
     }
@@ -325,7 +325,7 @@ fn review_dossier(
         format!(
             "claim:{}\nstatement:{}\nsource:{}\ncatalog:{}\nir:{}\nlevel:{}",
             d.claim_id,
-            claim.statement_hash,
+            claim.statement_hash(),
             source.source_hash,
             catalog_hash,
             ir_hash,
@@ -335,7 +335,7 @@ fn review_dossier(
     );
     Ok(SemanticRecord::mint(
         d.claim_id.into(),
-        claim.statement_hash,
+        claim.statement_hash(),
         level,
         evidence_hash,
         source.source_hash,
@@ -415,7 +415,7 @@ mod tests {
             assert_eq!(rec.assurance(), SemanticAssurance::AdversariallyReviewed);
             assert_ne!(rec.assurance(), SemanticAssurance::Canonical);
             assert_ne!(rec.assurance(), SemanticAssurance::Unreviewed);
-            assert_eq!(rec.statement_hash(), spec.formal_claim().statement_hash);
+            assert_eq!(rec.statement_hash(), spec.formal_claim().statement_hash());
         }
     }
 
@@ -477,16 +477,16 @@ lean_ref ∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0
     fn slug_review_is_not_p3s_for_a_changed_identity() {
         let unspecified = unspecified("dec.d-squared-zero");
         let live = catalog_d2();
-        assert_ne!(unspecified.statement_hash, live.statement_hash);
+        assert_ne!(unspecified.statement_hash(), live.statement_hash());
 
         let err = review(&unspecified).unwrap_err();
         assert_eq!(err, SemanticError::WrongIdentity);
 
         let rec = review(&live).unwrap();
-        assert_eq!(rec.statement_hash(), live.statement_hash);
+        assert_eq!(rec.statement_hash(), live.statement_hash());
         let mut store = SemanticStore::empty();
         store.record(&rec);
-        assert!(store.by_statement(live.statement_hash).is_some());
-        assert!(store.by_statement(unspecified.statement_hash).is_none());
+        assert!(store.by_statement(live.statement_hash()).is_some());
+        assert!(store.by_statement(unspecified.statement_hash()).is_none());
     }
 }

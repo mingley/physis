@@ -38,6 +38,7 @@ Level-3 trust
   L3 Hodge domain          ✓ dec.hodge-harmonic names discrete Laplacian DomainOfValidity; Euler and Poincaré stay encoding-wide
   L3 long-wavelength domain ✓ dispersion and ohm-circuit quasi-static name DomainOfValidity; Maxwell copy stays encoding-wide
   L3 judgment seal         ✓ Judgment has no Deserialize; from_lab projects Proved from a receipt; JSON cannot mint a theorem
+  L3 formal-claim seal     ✓ FormalClaim is from_claim-only; no Deserialize; a forged Claim hash is not copied through
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
 ```
 

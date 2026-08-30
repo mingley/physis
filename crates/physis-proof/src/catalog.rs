@@ -65,7 +65,7 @@ impl IdentitySpec {
 
     /// True when `claim` is this catalog identity, not merely the same slug.
     pub fn matches(&self, claim: &FormalClaim) -> bool {
-        claim.statement_hash == self.formal_claim().statement_hash
+        claim.statement_hash() == self.formal_claim().statement_hash()
     }
 }
 

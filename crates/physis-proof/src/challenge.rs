@@ -143,15 +143,16 @@ impl Challenge {
                 s.axioms.iter().map(|a| (*a).to_string()).collect(),
             ),
             None => (
-                format!("-- uninterpreted Prop\n-- {}", claim.statement),
+                format!("-- uninterpreted Prop\n-- {}", claim.statement()),
                 None,
                 Vec::new(),
             ),
         };
-        let statement_hash = claim.statement_hash;
-        let assumption_hash = claim.assumptions.0;
+        debug_assert!(claim.hash_is_consistent());
+        let statement_hash = claim.statement_hash();
+        let assumption_hash = claim.assumptions().0;
         let challenge_hash = ArtifactId::of(Self::canonical_bytes(
-            &claim.id.0,
+            &claim.id().0,
             statement_hash,
             assumption_hash,
             &lean_type,
@@ -159,7 +160,7 @@ impl Challenge {
             &axioms,
         ));
         Self {
-            claim_id: claim.id.0.clone(),
+            claim_id: claim.id().0.clone(),
             statement_hash,
             assumption_hash,
             lean_type,
@@ -172,35 +173,18 @@ impl Challenge {
 
 #[cfg(test)]
 mod tests {
-    use physis_core::assumption::{AssumptionSet, DomainOfValidity};
     use physis_core::assurance::ClaimClass;
+    use physis_core::claim::Claim;
     use physis_core::formal::FormalClaim;
-    use physis_core::id::{ClaimId, LayerId};
+    use physis_core::id::LayerId;
 
     use super::*;
 
     fn claim_with(id: &str, stmt: &str, commitments: physis_core::ClaimCommitments) -> FormalClaim {
-        let assumptions = AssumptionSet::encoding_internal();
-        let domain = DomainOfValidity::encoding_wide();
-        let statement_hash = ArtifactId::of(FormalClaim::canonical_bytes(
-            id,
-            stmt,
-            ClaimClass::Mathematical,
-            LayerId::Mathematical,
-            &assumptions,
-            &domain,
-            &commitments,
-        ));
-        FormalClaim {
-            id: ClaimId::new(id),
-            statement: stmt.into(),
-            statement_hash,
-            assumptions: assumptions.id,
-            domain,
-            class: ClaimClass::Mathematical,
-            layer: LayerId::Mathematical,
-            commitments,
-        }
+        FormalClaim::from_claim(
+            &Claim::new(id, stmt, LayerId::Mathematical, ClaimClass::Mathematical)
+                .with_commitments(commitments),
+        )
     }
 
     fn claim(id: &str, stmt: &str) -> FormalClaim {

@@ -4,7 +4,8 @@
 //! physics and cannot mint [`physis_core`] claims as machine-proved.
 //!
 //! Trusted side: [`Challenge::generate`] from a [`physis_core::FormalClaim`].
-//! Fields are private; JSON cannot mint a challenge. Untrusted side:
+//! Both have private fields; JSON cannot mint a challenge or a catalog
+//! identity. Untrusted side:
 //! [`UntrustedProof`]. The verifier (a different crate) is the only place a
 //! receipt can be minted.
 

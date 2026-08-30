@@ -7,6 +7,30 @@
 //! identity. Changing ∀ to ∃, a sign, a unit, a constant, or a boundary
 //! condition yields a new content-addressed hash. The lab slug ([`ClaimId`])
 //! is a stable name, not that hash.
+//!
+//! Constructed only by [`FormalClaim::from_claim`], which recomputes the
+//! statement hash from the live sentence. JSON cannot mint an identity:
+//!
+//! ```compile_fail
+//! use physis_core::formal::FormalClaim;
+//! let _ = FormalClaim {
+//!     id: physis_core::ClaimId::new("x"),
+//!     statement: String::new(),
+//!     statement_hash: todo!(),
+//!     assumptions: todo!(),
+//!     domain: todo!(),
+//!     class: physis_core::ClaimClass::Mathematical,
+//!     layer: physis_core::LayerId::Mathematical,
+//!     commitments: physis_core::ClaimCommitments::unspecified(),
+//! };
+//! ```
+//!
+//! ```compile_fail
+//! fn needs_deserialize<'de, T: serde::Deserialize<'de>>() {}
+//! fn _blocked() {
+//!     needs_deserialize::<physis_core::formal::FormalClaim>();
+//! }
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -157,25 +181,19 @@ fn push_why_list(lines: &mut Vec<String>, key: &str, items: &[String]) {
 }
 
 /// Immutable identity of a scientific sentence.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Constructed only by [`FormalClaim::from_claim`]. There is no
+/// [`serde::Deserialize`] impl: JSON cannot mint a catalog hash.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FormalClaim {
-    /// Lab claim id (`astro.sky-finite`, …).
-    pub id: ClaimId,
-    /// The sentence as encoded today (English until physis-ir exists).
-    pub statement: String,
-    /// Hash of the canonical identity bytes.
-    pub statement_hash: ArtifactId,
-    /// Assumption-set id.
-    pub assumptions: AssumptionSetId,
-    /// Domain of validity.
-    pub domain: DomainOfValidity,
-    /// Claim class.
-    pub class: ClaimClass,
-    /// Layer.
-    pub layer: LayerId,
-    /// First-class identity fields committed in the hash.
-    #[serde(default)]
-    pub commitments: ClaimCommitments,
+    id: ClaimId,
+    statement: String,
+    statement_hash: ArtifactId,
+    assumptions: AssumptionSetId,
+    domain: DomainOfValidity,
+    class: ClaimClass,
+    layer: LayerId,
+    commitments: ClaimCommitments,
 }
 
 impl FormalClaim {
@@ -186,6 +204,26 @@ impl FormalClaim {
         class: ClaimClass,
         layer: LayerId,
         assumptions: &AssumptionSet,
+        domain: &DomainOfValidity,
+        commitments: &ClaimCommitments,
+    ) -> Vec<u8> {
+        Self::identity_bytes(
+            id,
+            statement,
+            class,
+            layer,
+            &assumptions.id,
+            domain,
+            commitments,
+        )
+    }
+
+    fn identity_bytes(
+        id: &str,
+        statement: &str,
+        class: ClaimClass,
+        layer: LayerId,
+        assumptions: &AssumptionSetId,
         domain: &DomainOfValidity,
         commitments: &ClaimCommitments,
     ) -> Vec<u8> {
@@ -203,7 +241,7 @@ impl FormalClaim {
         s.push_str(layer.as_str());
         s.push('\n');
         s.push_str("assumptions:");
-        s.push_str(&assumptions.id.0.to_hex());
+        s.push_str(&assumptions.0.to_hex());
         s.push('\n');
         s.push_str("domain:");
         s.push_str(&domain.id.to_hex());
@@ -212,12 +250,76 @@ impl FormalClaim {
         s.into_bytes()
     }
 
-    /// Identity of an executable lab claim.
+    /// True when [`Self::statement_hash`] matches [`Self::canonical_bytes`].
+    pub fn hash_is_consistent(&self) -> bool {
+        ArtifactId::of(Self::identity_bytes(
+            &self.id.0,
+            &self.statement,
+            self.class,
+            self.layer,
+            &self.assumptions,
+            &self.domain,
+            &self.commitments,
+        )) == self.statement_hash
+    }
+
+    /// Lab claim id (`astro.sky-finite`, …).
+    pub fn id(&self) -> &ClaimId {
+        &self.id
+    }
+
+    /// The sentence as encoded today (English until physis-ir exists).
+    pub fn statement(&self) -> &str {
+        &self.statement
+    }
+
+    /// Hash of the canonical identity bytes.
+    pub fn statement_hash(&self) -> ArtifactId {
+        self.statement_hash
+    }
+
+    /// Assumption-set id.
+    pub fn assumptions(&self) -> &AssumptionSetId {
+        &self.assumptions
+    }
+
+    /// Domain of validity.
+    pub fn domain(&self) -> &DomainOfValidity {
+        &self.domain
+    }
+
+    /// Claim class.
+    pub fn class(&self) -> ClaimClass {
+        self.class
+    }
+
+    /// Layer.
+    pub fn layer(&self) -> LayerId {
+        self.layer
+    }
+
+    /// First-class identity fields committed in the hash.
+    pub fn commitments(&self) -> &ClaimCommitments {
+        &self.commitments
+    }
+
+    /// Identity of an executable lab claim. Recomputes the statement hash
+    /// from the live sentence, class, layer, assumptions, domain, and
+    /// commitments. A forged [`Claim::statement_hash`] is not copied through.
     pub fn from_claim(claim: &Claim) -> Self {
+        let statement_hash = ArtifactId::of(Self::canonical_bytes(
+            &claim.id.0,
+            &claim.statement,
+            claim.class,
+            claim.layer,
+            &claim.assumptions,
+            &claim.domain,
+            &claim.commitments,
+        ));
         Self {
             id: claim.id.clone(),
             statement: claim.statement.clone(),
-            statement_hash: claim.statement_hash,
+            statement_hash,
             assumptions: claim.assumptions.id.clone(),
             domain: claim.domain.clone(),
             class: claim.class,
@@ -230,6 +332,7 @@ impl FormalClaim {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::claim::Claim;
     use crate::id::LayerId;
 
     fn hash(statement: &str, commitments: &ClaimCommitments) -> ArtifactId {
@@ -317,5 +420,25 @@ mod tests {
         assert!(lines
             .iter()
             .any(|l| l.contains("libraries:") && l.contains("physlib:unversioned")));
+    }
+
+    #[test]
+    fn from_claim_recomputes_a_forged_hash() {
+        let mut claim = Claim::new(
+            "math.example",
+            "P holds",
+            LayerId::Mathematical,
+            ClaimClass::Mathematical,
+        );
+        let honest = claim.statement_hash;
+        claim.statement_hash = ArtifactId::of(b"forged-catalog-hash");
+        assert_ne!(claim.statement_hash, honest);
+        let formal = FormalClaim::from_claim(&claim);
+        assert_eq!(formal.statement_hash(), honest);
+        assert!(formal.hash_is_consistent());
+        assert_eq!(formal.id().0, "math.example");
+        assert_eq!(formal.statement(), "P holds");
+        assert_eq!(formal.class(), ClaimClass::Mathematical);
+        assert_eq!(formal.layer(), LayerId::Mathematical);
     }
 }
