@@ -29,6 +29,13 @@ lists every fitted knob in the lab.
 ### newtonian-gravity
 - (none — inverse-square is a single law; the Schwarzschild 3GM u² term is an IR mutation, not a knob. GR keeps `dim`.)
 
+### linear-medium
+- `epsilon_r` — relative permittivity; raises n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` is an IR mutation
+- `mu_r` — relative permeability
+
+### ohm-circuit
+- `frequency_hz` — operating frequency; lumped model holds while c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation
+
 ### string / M constructions (type-iib, type-iia, type-i, heterotic-e8e8, heterotic-so32, bosonic, m-theory)
 - `kind` — chosen
 - `total_dim` — chosen (the critical-dimension theorem constrains it)

@@ -9,7 +9,11 @@
 //! The flagship claim is mechanical, not a table: in vacuum the wave speed is
 //! `1/√(ε₀μ₀) = c` (checked in `physis_model::constants`). In a linear medium
 //! the refractive index `n = √(ε_r μ_r)` slows light below `c` and selects a
-//! rest frame, so the wave-speed and Lorentz-invariance claims flip.
+//! rest frame, so the wave-speed and Lorentz-invariance claims flip. The
+//! constitutive law lives on the IR package. Tellegen magnetoelectric mixing
+//! is a package mutation (`add-tellegen`), not an `ε_r` knob: the unique
+//! index `n = √(ε_r μ_r)` splits (`n₊ ≠ n₋`) and `em.constitutive-linear`
+//! fails. `epsilon_r` / `mu_r` still scale the isotropic-linear index.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -38,15 +42,18 @@ pub const CHARGE_CONSERVATION: &str = "em.charge-conservation";
 pub const LORENTZ_INVARIANCE: &str = "em.lorentz-invariance";
 /// The lumped-element (quasi-static) approximation is valid.
 pub const QUASI_STATIC_VALID: &str = "em.quasi-static-valid";
+/// Constitutive law is isotropic linear: D = εE, B = μH, unique n = √(ε_r μ_r).
+pub const CONSTITUTIVE_LINEAR: &str = "em.constitutive-linear";
 
 /// Matrix rows for the electromagnetism lab.
-pub fn em_rows() -> [&'static str; 7] {
+pub fn em_rows() -> [&'static str; 8] {
     [
         WAVE_SPEED_C,
         GAUSS,
         FARADAY,
         AMPERE,
         CHARGE_CONSERVATION,
+        CONSTITUTIVE_LINEAR,
         LORENTZ_INVARIANCE,
         QUASI_STATIC_VALID,
     ]
@@ -161,6 +168,52 @@ fn is_vacuum(epsilon_r: f64, mu_r: f64) -> bool {
     (refractive_index(epsilon_r, mu_r) - 1.0).abs() < 1e-9
 }
 
+/// Tellegen magnetoelectric mixing, as a dimensionless index split.
+const TELLEGEN_XI: f64 = 0.1;
+/// Isotropic linear constitutive law on the live linear-medium package.
+const LINEAR_EQ: &str = "constitutive isotropic-linear";
+/// Tellegen magnetoelectric mixing (D mixes H, B mixes E).
+const TELLEGEN_EQ: &str = "constitutive tellegen";
+
+fn parse_constitutive(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut linear = false;
+    let mut tellegen = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            LINEAR_EQ => linear = true,
+            TELLEGEN_EQ => tellegen = true,
+            _ => {}
+        }
+    }
+    if !linear {
+        return Err(format!(
+            "{} package has no isotropic-linear constitutive law",
+            pkg.id
+        ));
+    }
+    Ok(tellegen)
+}
+
+fn constitutive_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["isotropic linear D = εE, B = μH".into()],
+        vec!["unique refractive index n = √(ε_r μ_r)".into()],
+        "The constitutive cell is the isotropic-linear encoding. Tellegen \
+         magnetoelectric mixing is a new encoding, not a silent ε_r knob.",
+    )
+}
+
+/// Circular / magnetoelectric indices. Equal iff the constitutive law is
+/// isotropic linear (no Tellegen ξ).
+fn constitutive_indices(epsilon_r: f64, mu_r: f64, tellegen: bool) -> (f64, f64) {
+    let n = refractive_index(epsilon_r, mu_r);
+    if tellegen {
+        (n + TELLEGEN_XI, n - TELLEGEN_XI)
+    } else {
+        (n, n)
+    }
+}
+
 fn em_claims() -> Vec<Claim> {
     vec![
         Claim::new(
@@ -194,6 +247,12 @@ fn em_claims() -> Vec<Claim> {
             ClaimClass::ModelInternal,
         ),
         Claim::new(
+            CONSTITUTIVE_LINEAR,
+            "The constitutive law is isotropic linear: D = εE and B = μH.",
+            LayerId::Field,
+            ClaimClass::ModelInternal,
+        ),
+        Claim::new(
             LORENTZ_INVARIANCE,
             "The field equations are invariant under Lorentz boosts.",
             LayerId::Spacetime,
@@ -208,15 +267,24 @@ fn em_claims() -> Vec<Claim> {
     ]
 }
 
-fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
+fn eval_em(epsilon_r: f64, mu_r: f64, tellegen: bool, claim: &Claim) -> Verdict {
     let n = refractive_index(epsilon_r, mu_r);
+    let vacuum = is_vacuum(epsilon_r, mu_r) && !tellegen;
     match claim.id_str() {
         WAVE_SPEED_C => {
-            if is_vacuum(epsilon_r, mu_r) {
+            if vacuum {
                 Verdict::holds(claim, "wave speed is 1/√(ε₀μ₀) = c").with_evidence([format!(
                     "ε₀·μ₀·c² = {:.6} (dimensionless, = 1)",
                     epsilon0().value() * mu0().value() * C.value() * C.value()
                 )])
+            } else if tellegen {
+                let (np, nm) = constitutive_indices(epsilon_r, mu_r, true);
+                Verdict::fails(
+                    claim,
+                    format!(
+                        "Tellegen mixing: no unique n = √(ε_r μ_r); n₊ = {np:.3}, n₋ = {nm:.3}"
+                    ),
+                )
             } else {
                 Verdict::fails(
                     claim,
@@ -225,7 +293,7 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
             }
         }
         GAUSS => {
-            if is_vacuum(epsilon_r, mu_r) {
+            if vacuum {
                 let r = coulomb_gauss_residual();
                 Verdict::holds(claim, "∇·E = 0 in vacuum away from charges")
                     .with_class(ClaimClass::ModelInternal)
@@ -237,7 +305,7 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
             }
         }
         FARADAY => {
-            if is_vacuum(epsilon_r, mu_r) {
+            if vacuum {
                 let r = plane_wave_faraday_residual();
                 Verdict::holds(claim, "∇×E = −∂B/∂t")
                     .with_class(ClaimClass::ModelInternal)
@@ -249,7 +317,7 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
             }
         }
         AMPERE => {
-            if is_vacuum(epsilon_r, mu_r) {
+            if vacuum {
                 let r = plane_wave_ampere_residual();
                 Verdict::holds(claim, "∇×B = ∂E/∂t (sourceless)")
                     .with_class(ClaimClass::ModelInternal)
@@ -271,8 +339,26 @@ fn eval_em(epsilon_r: f64, mu_r: f64, claim: &Claim) -> Verdict {
             "∇·(∇×A) = {:.1e} ≈ 0 verified numerically — the identity behind continuity",
             div_curl_residual()
         )]),
+        CONSTITUTIVE_LINEAR => {
+            let (np, nm) = constitutive_indices(epsilon_r, mu_r, tellegen);
+            if (np - nm).abs() < 1e-12 {
+                Verdict::holds(
+                    claim,
+                    format!("isotropic linear D = εE, B = μH; unique n = {n:.3}"),
+                )
+                .with_evidence([format!("n₊ = n₋ = {np:.6} = √(ε_r μ_r)")])
+            } else {
+                Verdict::fails(
+                    claim,
+                    "Tellegen magnetoelectric mixing: D is not εE and B is not μH",
+                )
+                .with_evidence([format!(
+                    "n₊ = {np:.3}, n₋ = {nm:.3} (ξ = {TELLEGEN_XI}); unique n = √(ε_r μ_r) splits"
+                )])
+            }
+        }
         LORENTZ_INVARIANCE => {
-            if is_vacuum(epsilon_r, mu_r) {
+            if vacuum {
                 Verdict::holds(
                     claim,
                     "vacuum Maxwell equations are invariant under Lorentz boosts",
@@ -344,7 +430,7 @@ impl Theory for MaxwellVacuum {
         em_claims()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(1.0, 1.0, claim)
+        eval_em(1.0, 1.0, false, claim)
     }
 }
 
@@ -372,10 +458,16 @@ const MEDIUM_SPECS: &[KnobSpec] = &[
 ];
 
 /// Classical electromagnetism in a linear medium (ε_r, μ_r knobs).
-#[derive(Clone, Debug)]
+///
+/// The constitutive law lives on the IR package. Tellegen magnetoelectric
+/// mixing is a package mutation (`add-tellegen`), not a knob: the unique
+/// index n = √(ε_r μ_r) splits. `epsilon_r` / `mu_r` still scale the
+/// isotropic-linear index (electrically ordinary vs vacuum-like).
+#[derive(Clone, Debug, PartialEq)]
 pub struct LinearMedium {
     epsilon_r: f64,
     mu_r: f64,
+    tellegen: bool,
 }
 
 impl Default for LinearMedium {
@@ -384,7 +476,53 @@ impl Default for LinearMedium {
         Self {
             epsilon_r: 2.25,
             mu_r: 1.0,
+            tellegen: false,
         }
+    }
+}
+
+impl LinearMedium {
+    /// IR package for this constitutive law. Equations are
+    /// `constitutive isotropic-linear` and, when forked, `constitutive tellegen`.
+    /// ε_r and μ_r stay on the struct.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![LINEAR_EQ.to_string()];
+        if self.tellegen {
+            equations.push(TELLEGEN_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["isotropic-linear-constitutive".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: CONSTITUTIVE_LINEAR.into(),
+                statement: "The constitutive law is isotropic linear: D = εE and B = μH.".into(),
+                layer: "field".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a constitutive encoding from a package. ε_r / μ_r default;
+    /// overlay them from a live medium when forking.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "linear-medium" {
+            return Err(format!(
+                "linear-medium package id '{}' is not linear-medium",
+                pkg.id
+            ));
+        }
+        Ok(Self {
+            tellegen: parse_constitutive(pkg)?,
+            ..Self::default()
+        })
+    }
+
+    fn tellegen_equation() -> String {
+        TELLEGEN_EQ.to_string()
     }
 }
 
@@ -429,7 +567,8 @@ impl Theory for LinearMedium {
         "Classical electromagnetism in a linear dielectric/magnetic medium. The \
          refractive index n = √(ε_r μ_r) slows light below c and picks a rest \
          frame, so the wave-speed and Lorentz-invariance claims fail unless the \
-         medium is trivial."
+         medium is trivial. Tellegen magnetoelectric mixing is an IR mutation, \
+         not an ε_r knob."
     }
     fn world(&self) -> Option<World> {
         Some(em_world(
@@ -440,9 +579,48 @@ impl Theory for LinearMedium {
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()
+            .into_iter()
+            .map(|c| {
+                if c.id_str() == CONSTITUTIVE_LINEAR {
+                    c.with_domain(constitutive_domain())
+                } else {
+                    c
+                }
+            })
+            .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(self.epsilon_r, self.mu_r, claim)
+        eval_em(self.epsilon_r, self.mu_r, self.tellegen, claim)
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.tellegen = parsed.tellegen;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.tellegen {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::tellegen_equation()),
+        );
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.tellegen => {
+                let mut fork = self.clone();
+                fork.tellegen = true;
+                vec![("add-tellegen".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
+        }
     }
 }
 
@@ -682,6 +860,10 @@ impl Theory for OhmCircuit {
                 claim,
                 "quasi-static circuit theory has a preferred (lab) rest frame",
             ),
+            CONSTITUTIVE_LINEAR => Verdict::inapplicable(
+                claim,
+                "lumped circuits are not a field constitutive encoding",
+            ),
             QUASI_STATIC_VALID => {
                 if self.quasi_static_valid() {
                     Verdict::holds(
@@ -753,11 +935,13 @@ pub fn em_vacuum() -> ExperimentReport {
          charge conservation are theorems of the encoding. A linear medium is a \
          knob-controlled effective description, not new fundamental physics. \
          Lumped KCL is the ohm-circuit IR netlist (`add-tline` is an IR fork, \
-         not a knob).",
+         not a knob). The linear-medium constitutive law is IR (`add-tellegen` \
+         is an IR fork, not an ε_r knob).",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "Vacuum wave speed is a theorem: ε₀·μ₀·c² = 1 (typed, checked).".into(),
             "A medium with n > 1 slows light and selects a rest frame, so wave-speed and Lorentz-invariance fail.".into(),
+            "`hypothesize linear-medium`: add-tellegen is IR, not set.".into(),
         ],
         &em_rows(),
         theories,
@@ -853,9 +1037,11 @@ mod tests {
         // The electricity knob → verdict diff required by M3.
         let mut m = LinearMedium::default();
         assert_eq!(verdict(&m, WAVE_SPEED_C), VerdictKind::Fails);
+        assert_eq!(verdict(&m, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
         m.set("epsilon_r", KnobValue::Float(1.0)).unwrap();
         assert_eq!(verdict(&m, WAVE_SPEED_C), VerdictKind::Holds);
         assert_eq!(verdict(&m, LORENTZ_INVARIANCE), VerdictKind::Holds);
+        assert_eq!(verdict(&m, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
     }
 
     #[test]
@@ -980,6 +1166,104 @@ mod tests {
             mkcl.domain().is_encoding_wide(),
             "Maxwell continuity stays encoding-wide: {:?}",
             mkcl.domain()
+        );
+    }
+
+    #[test]
+    fn tellegen_mixing_is_ir_not_a_knob() {
+        let mut m = LinearMedium::default();
+        assert!(
+            LinearMedium::default()
+                .set("tellegen", KnobValue::Bool(true))
+                .is_err(),
+            "Tellegen mixing is an IR mutation, not a knob"
+        );
+        let src = render_package(&m.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            LinearMedium::from_package(&pkg).unwrap(),
+            m,
+            "IR round-trip must preserve the isotropic-linear constitutive law"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(LinearMedium::tellegen_equation()),
+        );
+        let parsed = LinearMedium::from_package(&mutated).unwrap();
+        assert!(parsed.tellegen);
+        let mut fork = m.clone();
+        fork.tellegen = true;
+        assert_eq!(verdict(&fork, CONSTITUTIVE_LINEAR), VerdictKind::Fails);
+        assert_eq!(verdict(&m, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, GAUSS), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CHARGE_CONSERVATION), VerdictKind::Holds);
+        m.set("epsilon_r", KnobValue::Float(1.0)).unwrap();
+        assert_eq!(verdict(&m, WAVE_SPEED_C), VerdictKind::Holds);
+        assert_eq!(verdict(&m, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
+        let mut glass_tellegen = LinearMedium {
+            tellegen: true,
+            ..Default::default()
+        };
+        glass_tellegen
+            .set("epsilon_r", KnobValue::Float(1.0))
+            .unwrap();
+        assert_eq!(
+            verdict(&glass_tellegen, WAVE_SPEED_C),
+            VerdictKind::Fails,
+            "Tellegen n₊ ≠ n₋ is not vacuum even at ε_r = 1"
+        );
+        assert_eq!(
+            verdict(&glass_tellegen, CONSTITUTIVE_LINEAR),
+            VerdictKind::Fails
+        );
+        let probes = LinearMedium::default().structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-tellegen");
+        assert_eq!(
+            verdict(probes[0].1.as_ref(), CONSTITUTIVE_LINEAR),
+            VerdictKind::Fails
+        );
+        assert!(fork.structural_mutations().is_empty());
+        let live = LinearMedium::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("epsilon_r").unwrap(),
+            KnobValue::Float(2.25),
+            "reparse must overlay constitutive IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), CONSTITUTIVE_LINEAR),
+            VerdictKind::Holds
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == CONSTITUTIVE_LINEAR)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "linear-medium constitutive must name D=εE: {:?}",
+            cell.domain()
+        );
+        let maxwell = MaxwellVacuum;
+        let mcell = maxwell
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == CONSTITUTIVE_LINEAR)
+            .unwrap();
+        assert!(
+            mcell.domain().is_encoding_wide(),
+            "Maxwell vacuum constitutive stays encoding-wide: {:?}",
+            mcell.domain()
+        );
+        assert_eq!(verdict(&maxwell, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
+        let ohm = OhmCircuit::default();
+        assert_eq!(
+            verdict(&ohm, CONSTITUTIVE_LINEAR),
+            VerdictKind::Inapplicable
         );
     }
 }

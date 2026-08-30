@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Linear-medium Tellegen mixing is an IR mutation**
+  (`linear-medium`, `add-tellegen`). The constitutive law is isotropic
+  linear (`constitutive isotropic-linear`); appending
+  `constitutive tellegen` splits the unique index n = √(ε_r μ_r) into
+  n₊ ≠ n₋ and flips `em.constitutive-linear` holds to fails. That is
+  not a knob. `epsilon_r` / `mu_r` still flip `em.wave-speed-c` and
+  `em.lorentz-invariance` independently. Maxwell vacuum Holds
+  encoding-wide (unit medium); ohm-circuit is inapplicable. Mutants
+  are not installed, not journaled, and not Canonical or P4. Catalog
+  d² hash unchanged. Unique-vacuum graph id unchanged. P3N count
+  stays 4. Verified: IR round-trip; set tellegen is unknown;
+  hypothesize linear-medium; live constitutive law restored; encode pin
+  `35df991eb0911875613084efff07327ed6821b5580bfbccb85dd08387c3722eb`.
+
 - **Newtonian 3GM u² Binet term is an IR mutation**
   (`newtonian-gravity`, `add-schwarzschild`). Inverse-square light and
   orbits are the live Binet rhs (`binet inverse-square`); appending
@@ -94,7 +108,7 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   netlist, `klein-gordon` nearest-neighbour stencil, `wilson-u1` /
   `wilson-su2` / `wilson-su3` 1×1 plaquettes, `ohm-circuit` lumped
   branches, `bell-test` singlet ket, `newtonian-gravity` inverse-square
-  Binet rhs). A forged
+  Binet rhs, `linear-medium` isotropic-linear constitutive law). A forged
   `package_hash` cannot mint. Refuses theories with no package.
   Hypothesize mutants are not installed. Not P3S, not a kernel receipt,
   not Canonical, not P4. Loop encodes after cite. Unique-vacuum graph
@@ -114,6 +128,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `4a54aa1db88b053ef04a53593732c435331a71dcc0f8ad3749e7cbb6786990dc`.
   Newtonian-gravity package id
   `e6e7c4222c571adcf6f526a27ab5e0572fb41d92361c7f3ce393e71e23184078`.
+  Linear-medium package id
+  `35df991eb0911875613084efff07327ed6821b5580bfbccb85dd08387c3722eb`.
   Verified: role gates; journal restore; hypothesize does not change
   the live package id.
 

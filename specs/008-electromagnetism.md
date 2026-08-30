@@ -21,14 +21,14 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | id | object |
 |---|---|
 | `maxwell-vacuum` | Classical EM in vacuum: a U(1) gauge field of light |
-| `linear-medium` | Classical EM in a linear medium (`ε_r`, `μ_r` knobs) |
+| `linear-medium` | Classical EM in a linear medium (`ε_r`, `μ_r` knobs; isotropic-linear constitutive IR) |
 | `ohm-circuit` | Lumped-element circuit theory: the quasi-static effective limit of Maxwell (`frequency_hz` knob; lumped branch IR) |
 
 ## Knobs
 
 | theory | knob | effect |
 |---|---|---|
-| `linear-medium` | `epsilon_r` | relative permittivity ε_r ≥ 1; raises the refractive index n = √(ε_r μ_r) |
+| `linear-medium` | `epsilon_r` | relative permittivity ε_r ≥ 1; raises the refractive index n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` is an IR mutation |
 | `linear-medium` | `mu_r` | relative permeability μ_r ≥ 1; raises n |
 | `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation |
 
@@ -43,6 +43,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `em.faraday` | Faraday's law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
+| `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | theorem on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
 | `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
 | `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit names `λ > 100 ×` circuit size); inapplicable to full Maxwell (encoding-wide) |
 
@@ -92,12 +93,15 @@ rest frame:
 ```
 physis experiment em-vacuum
 physis set linear-medium epsilon_r 1   # n → 1, wave-speed-c and lorentz-invariance flip to holds
+physis hypothesize linear-medium       # add-tellegen is IR, not set
 physis set ohm-circuit frequency_hz 1e10   # electrically short → lumped model fails
 physis hypothesize ohm-circuit             # add-tline is IR, not set
 ```
 
 The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
-`em.lorentz-invariance` from `fails` to `holds`.
+`em.lorentz-invariance` from `fails` to `holds`. That is orthogonal to
+Tellegen mixing: `em.constitutive-linear` still holds after the knob
+turn, and fails only on the `add-tellegen` IR fork.
 
 ## Non-goals (this milestone)
 

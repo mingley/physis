@@ -6,7 +6,7 @@ Goal: prove the workspace is not a string-theory toy by hosting a second scienti
 
 New theory `maxwell-vacuum` (and later `linear-medium`):
 
-- Knobs: none in vacuum except unit system; in a medium, `epsilon_r`, `mu_r`
+- Knobs: none in vacuum except unit system; in a medium, `epsilon_r`, `mu_r` (constitutive form is IR: `add-tellegen` is not a knob)
 - Claims:
   - `1/√(ε₀μ₀) = c` as a **theorem** of the encoding
   - Faraday / Ampere structure as encoded facts, then as typed exterior calculus if we get that far

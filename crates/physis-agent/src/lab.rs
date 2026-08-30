@@ -4715,6 +4715,61 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_linear_medium_tellegen_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "linear-medium".into(),
+            knob: "tellegen".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("tellegen"),
+            "{}",
+            blocked.text()
+        );
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("linear-medium".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-tellegen") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("em.constitutive-linear") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("linear-medium").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "em.constitutive-linear" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("epsilon_r").unwrap().display(),
+            "2.25",
+            "hypothesize must restore knobs"
+        );
+        assert_eq!(
+            live.get("mu_r").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5423,8 +5478,16 @@ mod tests {
             "loop must independently round-trip the inverse-square Binet rhs: {text}"
         );
         assert!(
+            text.contains("encode  linear-medium"),
+            "loop must independently round-trip the isotropic-linear constitutive law: {text}"
+        );
+        assert!(
             !text.contains("encode  general-relativity"),
             "GR is not the Newton IR package: {text}"
+        );
+        assert!(
+            !text.contains("encode  maxwell-vacuum"),
+            "Maxwell vacuum is not the linear-medium IR package: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -6670,12 +6733,31 @@ mod tests {
         assert_ne!(newton_id, bell_id);
         assert_ne!(newton_id, nand_id);
 
+        let medium = lab
+            .exec(Command::Encode {
+                theory: "linear-medium".into(),
+            })
+            .text()
+            .to_string();
+        assert!(medium.contains("equations  1"), "{medium}");
+        assert!(medium.contains("round-trip canonical"), "{medium}");
+        assert!(medium.contains("not P3S"), "{medium}");
+        assert!(!medium.contains("receipt"), "{medium}");
+        let medium_id = encoding_package_id(&medium);
+        assert_eq!(
+            medium_id.to_hex(),
+            "35df991eb0911875613084efff07327ed6821b5580bfbccb85dd08387c3722eb"
+        );
+        assert_ne!(medium_id, ohm_id);
+        assert_ne!(medium_id, nand_id);
+
         for theory in [
             "standard-model",
             "type-iib",
             "de-rham",
             "turing-machine",
             "general-relativity",
+            "maxwell-vacuum",
         ] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
@@ -6819,6 +6901,25 @@ mod tests {
             encoding_package_id(&newton_again),
             newton_id,
             "hypothesize must not install the Schwarzschild Binet mutant"
+        );
+
+        let hypo_medium = lab
+            .exec(Command::Hypothesize {
+                theory: Some("linear-medium".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_medium.contains("add-tellegen"), "{hypo_medium}");
+        let medium_again = lab
+            .exec(Command::Encode {
+                theory: "linear-medium".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&medium_again),
+            medium_id,
+            "hypothesize must not install the Tellegen constitutive mutant"
         );
 
         let p3s = lab
