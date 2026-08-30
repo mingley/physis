@@ -25,8 +25,9 @@ Nothing gains authority merely because an agent wrote code that returns
   `Ratio` cancellation or an exact `Ratio` solve (Standard Model chiral
   anomalies, and the hypercharge quadratic whose discriminant is a
   square in Q). `CrossChecked` / P2 is earned when two independent
-  executable paths agree (`dec.euler-poincare` cell counts vs Betti
-  alternating sum; `dec.hodge-harmonic` Laplacian nullity vs `b₁`).
+  executable paths agree (`dec.hodge-harmonic`: Laplacian nullity vs
+  coboundary `b₁`). Euler–Poincaré stays `executed`: with these Betti
+  formulas, `b₀−b₁+b₂ ≡ V−E+F` is rank-cancellation, not a second path.
   Neither overlay is a Lean receipt. A P3F
   `Unreviewed` result is labelled dangerous. `physis why` prints a typed
   `Judgment` (evaluator `holds` is `logical undetermined`) and the

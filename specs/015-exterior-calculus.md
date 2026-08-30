@@ -89,24 +89,26 @@ non-trivial check — `b₀ = 1`, `b₁ = 2`, `b₂ = 1`, `χ = 0`, all computed
 coboundary, with the Hodge Laplacian's harmonic dimension matching `b₁ = 2`.
 Topology is detected mechanically, by linear algebra on the coboundary.
 
-## Two invariants cross-checked
-
-Two more theorems each compute a classical invariant *two independent ways* and
-check they agree — the kind of redundant, mechanical cross-check the lab is for:
+## Two invariants, only one of them a second path
 
 - **Euler–Poincaré** (`dec.euler-poincare`): the Euler characteristic from cell
   counts, `χ = V − E + F`, equals the alternating sum of Betti numbers,
-  `b₀ − b₁ + b₂`. Disk: `χ = 1`; circle: `χ = 0` — both agree on both sides.
+  `b₀ − b₁ + b₂`. Disk: `χ = 1`; circle: `χ = 0`. With the rank-nullity
+  formulas used here (`b₀ = V−rank(d₀)`, `b₁ = E−rank(d₁)−rank(d₀)`,
+  `b₂ = F−rank(d₁)`), that equality is **cancellation**, not a second
+  algorithm. The cell `holds` as `executed`. It does not mint P2.
 - **Hodge theorem** (`dec.hodge-harmonic`): the dimension of harmonic 1-forms —
   the nullity of the combinatorial Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁` — equals
-  `b₁`. Disk: `0`; circle: `1`. Harmonic representatives ≅ cohomology, computed
-  from the coboundary matrices.
+  `b₁`. Disk: `0`; circle: `1`. That is a different matrix from the coboundary
+  rank formula. Agreement overlays `DerivationAssurance::CrossChecked` (P2),
+  not a Lean receipt, not P3N, and not P4. Forgetting the up or down term of
+  `Δ₁` disagrees with `b₁`. A mismatch `fails` and does not mint P2.
 
-Both are identities, so they `hold` on every shape alike; only the numbers change
-with the `shape` knob. Agreement overlays `DerivationAssurance::CrossChecked`
-(P2), not a Lean receipt, not P3N, and not P4. A mismatch `fails` and does not
-mint P2. Poincaré (`dec.closed-equals-exact`) stays a single `b₁ = 0` check
-(`executed`); it is not this two-path overlay.
+Poincaré (`dec.closed-equals-exact`) stays a single `b₁ = 0` check
+(`executed`); it is not this overlay.
+
+Both identities `hold` on every shape alike; only the numbers change
+with the `shape` knob.
 
 ## Non-orientability: the Klein bottle vs the torus
 

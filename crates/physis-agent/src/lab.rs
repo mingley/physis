@@ -1812,17 +1812,16 @@ mod tests {
             .to_string();
         assert!(
             p2.lines()
-                .any(|l| l.contains("de-rham") && l.contains("dec.euler-poincare")),
-            "{p2}"
-        );
-        assert!(
-            p2.lines()
                 .any(|l| l.contains("de-rham") && l.contains("dec.hodge-harmonic")),
             "{p2}"
         );
         assert!(
-            p2.lines().any(|l| l.trim() == "count 2"),
-            "P2 is the two DEC two-path cells, not more: {p2}"
+            !p2.contains("dec.euler-poincare"),
+            "Euler-Poincaré is rank-cancellation, not a second path: {p2}"
+        );
+        assert!(
+            p2.lines().any(|l| l.trim() == "count 1"),
+            "P2 is Hodge Laplacian vs b1, not Euler-Poincaré: {p2}"
         );
         assert!(
             !p2.contains("dec.d-squared-zero"),
@@ -1842,11 +1841,8 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(why.contains("derivation: cross-checked"), "{why}");
-        assert!(why.contains("P2"), "{why}");
-        assert!(!why.contains("P3F"), "{why}");
-        assert!(!why.contains("P3N"), "{why}");
-        assert!(why.contains("kernel proof: none"), "{why}");
+        assert!(why.contains("derivation: executed"), "{why}");
+        assert!(!why.contains("derivation: cross-checked"), "{why}");
 
         let why_h = lab
             .exec(Command::Why {
@@ -1867,7 +1863,7 @@ mod tests {
             .to_string();
         assert!(
             run.lines()
-                .any(|l| l.contains("dec.euler-poincare") && l.contains("cross-checked")),
+                .any(|l| l.contains("dec.euler-poincare") && l.contains("executed")),
             "{run}"
         );
         assert!(

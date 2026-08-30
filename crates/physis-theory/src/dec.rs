@@ -708,13 +708,16 @@ impl Theory for DeRham {
                         claim,
                         format!("χ = V−E+F = {chi_cells} = b₀−b₁+b₂ (Euler–Poincaré)"),
                     )
-                    .with_evidence([format!(
-                        "V−E+F = {chi_cells}; b₀−b₁+b₂ = {chi_betti} (b₀={}, b₁={}, b₂={})",
-                        c.betti0(),
-                        c.betti1(),
-                        c.betti2()
-                    )])
-                    .with_cross_checked()
+                    .with_evidence([
+                        format!(
+                            "V−E+F = {chi_cells}; b₀−b₁+b₂ = {chi_betti} (b₀={}, b₁={}, b₂={})",
+                            c.betti0(),
+                            c.betti1(),
+                            c.betti2()
+                        ),
+                        "rank-nullity cancellation: b₀−b₁+b₂ ≡ V−E+F for these Betti formulas; not a second path"
+                            .to_string(),
+                    ])
                 } else {
                     Verdict::fails(
                         claim,
@@ -962,13 +965,55 @@ mod tests {
     }
 
     #[test]
+    fn euler_poincare_is_rank_cancellation_not_a_second_path() {
+        // b0 = V-r0, b1 = E-r1-r0, b2 = F-r1 ⇒ b0-b1+b2 ≡ V-E+F.
+        // A broken matrix_rank still satisfies Euler-Poincaré, so that
+        // agreement must not mint CrossChecked.
+        for cx in [
+            Complex::disk(),
+            Complex::circle(),
+            Complex::torus(),
+            Complex::klein_bottle(),
+            Complex::sphere(),
+        ] {
+            assert_eq!(cx.euler_from_cells(), cx.euler_from_betti());
+        }
+    }
+
+    #[test]
+    fn forgetting_a_laplacian_term_is_not_hodge() {
+        // Circle has no faces: Δ = d0 d0^T. The zero matrix has nullity E,
+        // not b1, so Hodge is a genuine second matrix, not rank-cancellation.
+        let circle = Complex::circle();
+        let n = circle.edges.len();
+        let zero = vec![vec![0.0; n]; n];
+        let zero_nullity = n - matrix_rank(zero);
+        assert_eq!(zero_nullity, n);
+        assert_eq!(circle.betti1(), 1);
+        assert_eq!(circle.harmonic1_dim(), 1);
+        assert_ne!(zero_nullity, circle.betti1());
+
+        let torus = Complex::torus();
+        let d0 = torus.d0_matrix();
+        let down_only = matmul(&d0, &transpose(&d0));
+        let dim_down = torus.edges.len() - matrix_rank(down_only);
+        assert_ne!(
+            dim_down,
+            torus.betti1(),
+            "d0 d0^T nullity is not b1 when faces exist"
+        );
+        assert_eq!(torus.harmonic1_dim(), torus.betti1());
+    }
+
+    #[test]
     fn euler_and_hodge_claims_hold_under_the_knob() {
         let mut t = DeRham::default();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
         assert_eq!(
             derivation(&t, EULER_POINCARE),
-            DerivationAssurance::CrossChecked
+            DerivationAssurance::Executed,
+            "b0-b1+b2 is rank-cancellation of V-E+F, not a second path"
         );
         assert_eq!(
             derivation(&t, HODGE_HARMONIC),
@@ -990,7 +1035,7 @@ mod tests {
         assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
         assert_eq!(
             derivation(&t, EULER_POINCARE),
-            DerivationAssurance::CrossChecked
+            DerivationAssurance::Executed
         );
         t.set("shape", KnobValue::Choice("torus".into())).unwrap();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);
@@ -998,6 +1043,10 @@ mod tests {
         assert_eq!(
             derivation(&t, CLOSED_EQUALS_EXACT),
             DerivationAssurance::Executed
+        );
+        assert_eq!(
+            derivation(&t, HODGE_HARMONIC),
+            DerivationAssurance::CrossChecked
         );
         t.set("shape", KnobValue::Choice("sphere".into())).unwrap();
         assert_eq!(kind(&t, EULER_POINCARE), VerdictKind::Holds);

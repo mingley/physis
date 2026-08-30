@@ -68,9 +68,9 @@ prediction, and `inspect origin fitted` lists the knobs that accommodate
 rather than derive. `inspect trust P3N` lists exact-`Ratio` cancellations
 and the exact hypercharge solve (Standard Model chiral anomalies and
 `sm.hypercharge-derivation`), not the heuristic 3% GQW band and not a
-kernel proof. `inspect trust P2` lists two-path agreement
-(`dec.euler-poincare`, `dec.hodge-harmonic`), not Poincaré and not a
-kernel proof. `exec` checks role, then trust, then budget:
+kernel proof. `inspect trust P2` lists Hodge Laplacian-versus-`b₁` agreement
+(`dec.hodge-harmonic`), not Euler–Poincaré rank-cancellation, not Poincaré,
+and not a kernel proof. `exec` checks role, then trust, then budget:
 `reproduce` and the loop's review step require P3F. Standalone encoding
 review does not.
 

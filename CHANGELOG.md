@@ -12,14 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
-- **Euler–Poincaré and Hodge earn P2**
-  (`dec.euler-poincare`, `dec.hodge-harmonic`,
-  `Verdict::with_cross_checked`). Cell counts vs Betti alternating sum,
-  and Laplacian nullity vs `b₁`, are two executable paths. Agreement is
-  `CrossChecked` / P2, not a Lean receipt, not P3N, not P3F, not P4.
-  A mismatch Fails without P2. Poincaré stays `executed`.
-  `inspect trust P2` lists both DEC cells (count 2). Verified: unit
-  tests, inspect/why P2, `fmt`, `clippy -D warnings`, full suite, CLI.
+- **Hodge earns P2; Euler–Poincaré does not**
+  (`dec.hodge-harmonic`, `Verdict::with_cross_checked`). Laplacian
+  nullity versus coboundary `b₁` is a second matrix: forgetting the up
+  or down term disagrees. That overlay is `CrossChecked` / P2, not a
+  Lean receipt, not P3N, not P3F, not P4. Euler–Poincaré stays
+  `executed`: `b₀−b₁+b₂ ≡ V−E+F` is rank-cancellation of the Betti
+  formulas, not a second path. Poincaré stays `executed`.
+  `inspect trust P2` lists Hodge (count 1). Verified: unit tests,
+  inspect/why P2, `fmt`, `clippy -D warnings`, full suite, CLI.
 
 - **Exact SM hypercharge solve earns P3N**
   (`sm.hypercharge-derivation`, `Ratio::checked_sqrt`,
