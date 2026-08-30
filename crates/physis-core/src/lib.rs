@@ -81,6 +81,11 @@
 //! let _ = Epistemic::Theorem;
 //! ```
 //!
+//! ```compile_fail
+//! use physis_core::assurance::SemanticAssurance;
+//! let _ = SemanticAssurance::Canonical;
+//! ```
+//!
 //! P3F cannot be deserialized or written as a struct literal:
 //!
 //! ```compile_fail

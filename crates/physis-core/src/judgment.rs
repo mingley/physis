@@ -565,9 +565,7 @@ impl TrustProfile {
         }
         match ev.semantic {
             SemanticAssurance::Unreviewed | SemanticAssurance::SourceAnchored => {}
-            SemanticAssurance::IndependentlyEncoded
-            | SemanticAssurance::AdversariallyReviewed
-            | SemanticAssurance::Canonical => {
+            SemanticAssurance::IndependentlyEncoded | SemanticAssurance::AdversariallyReviewed => {
                 s.p2 = true;
                 s.p3s = true;
             }

@@ -17,7 +17,7 @@ You are operating inside **physis**, a typed laboratory. You do not have opinion
 - Do not treat `VerdictKind::Holds` as “true of nature”. Verdicts are internal to the encoding.
 - Do not treat `DerivationAssurance::Executed` as a kernel proof. It means the evaluator ran.
 - Do not invent a `theorem` tag or a `MachineProved` enum variant. Only `physis-verifier` can mint `Verified<T>`, and that mint is crate-private.
-- Do not silently upgrade `Asserted` (conjecture/heuristic/open) to `Executed`, or `Unreviewed` to a stronger semantic tag, without encoding an actual check. `physis review` is allowed only because it *runs* provenance, a second encoding, and the red-team corpus. It never assigns `Canonical`.
+- Do not silently upgrade `Asserted` (conjecture/heuristic/open) to `Executed`, or `Unreviewed` to a stronger semantic tag, without encoding an actual check. `physis review` is allowed only because it *runs* provenance, a second encoding, and the red-team corpus. There is no `SemanticAssurance::Canonical` variant.
 - Do not implement Geometric Unity, or claim to. `observer-geometry` is a scaffold.
 - Do not declare string theory false because `predictivity.unique-vacuum` fails. That cell *is* the landscape objection, labelled heuristic.
 - Do not add `unsafe`. The workspace is `#![forbid(unsafe_code)]`.
@@ -60,7 +60,9 @@ has no `Deserialize`, so JSON cannot mint `logical proved`;
 `NumericJudgment` has no public `Certified` constructor;
 `EmpiricalJudgment` has no public `Compatible` constructor;
 `HeuristicJudgment` has no public `Suggestive` constructor;
-`StatisticalJudgment` has no public `Computed` constructor),
+`StatisticalJudgment` has no public `Computed` constructor;
+there is no `SemanticAssurance::Canonical` variant; P3S is a review-store
+tag, not an evaluator field),
 a derived `trust` profile (P3F only from a verifier receipt; P3S from
 encoding review of the live `statement_hash`, not the slug; P4 is not assigned from an in-process remint), the
 statement hash (which commits to quantifiers, units, constants, boundary

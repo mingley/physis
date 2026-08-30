@@ -71,7 +71,9 @@ Nothing gains authority merely because an agent wrote code that returns
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set
-  as an enum; P4 is not assigned from an in-process remint. P3N is
+  as an enum; P4 is not assigned from an in-process remint. There is no
+  `SemanticAssurance::Canonical` variant; P3S is taken from the review
+  store of the live `statement_hash`, not from `Verdict.semantic`. P3N is
   earned when an evaluator overlays `CertifiedNumeric` after an exact
   `Ratio` cancellation or an exact `Ratio` solve (Standard Model chiral
   anomalies, and the hypercharge quadratic whose discriminant is a
@@ -165,7 +167,8 @@ identity; a slug-only review line is not P3S.
 
 ## What is not yet true
 
-- `SemanticAssurance::Canonical` (reserved; not agent-mintable)
+- Community-canonical encodings (review tops out at
+  `AdversariallyReviewed`; there is no `Canonical` variant to assign)
 - P4 independent reproduction (in-process `reproduce` remints and
   **refuses** to assign P4; a distinct implementation is still required)
 - Mathlib-scale Physlib; four catalog identities are kernel-checked

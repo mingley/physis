@@ -5,7 +5,8 @@
 //! catalog FormalClaim (not merely the slug), binds the record to
 //! [`physis_core::formal::FormalClaim::statement_hash`],
 //! builds a [`physis_provenance::SourceRecord`], parses a second encoding, and
-//! *runs* the red-team corpus. [`SemanticAssurance::Canonical`] is never assigned.
+//! *runs* the red-team corpus. There is no `SemanticAssurance::Canonical`
+//! variant: that name is reserved and not agent-mintable.
 //! A review of one identity is not P3S for a later identity that kept the slug,
 //! and a Physlib dossier will not mint against a different FormalClaim.
 //!
@@ -184,7 +185,6 @@ impl SemanticRecord {
         evidence_hash: ArtifactId,
         source_hash: ArtifactId,
     ) -> Self {
-        debug_assert_ne!(assurance, SemanticAssurance::Canonical);
         debug_assert_ne!(assurance, SemanticAssurance::Unreviewed);
         Self {
             claim_id,
@@ -206,7 +206,7 @@ impl SemanticRecord {
         self.statement_hash
     }
 
-    /// Justified tag. Never [`SemanticAssurance::Canonical`].
+    /// Justified tag. Never Canonical: that variant does not exist.
     pub fn assurance(&self) -> SemanticAssurance {
         self.assurance
     }
@@ -271,7 +271,7 @@ impl SemanticStore {
 
 /// Dual-check encodings and provenance, then (if independent) run the
 /// red-team corpus. The minted record is bound to [`FormalClaim::statement_hash`].
-/// Never returns [`SemanticAssurance::Canonical`].
+/// Never returns a Canonical tag: that variant does not exist.
 pub fn review(claim: &FormalClaim) -> Result<SemanticRecord, SemanticError> {
     let d = dossier(&claim.id().0).ok_or(SemanticError::NoDossier)?;
     if lookup_matching(claim).is_none() {
@@ -413,7 +413,6 @@ mod tests {
         for spec in CATALOG {
             let rec = review(&spec.formal_claim()).unwrap();
             assert_eq!(rec.assurance(), SemanticAssurance::AdversariallyReviewed);
-            assert_ne!(rec.assurance(), SemanticAssurance::Canonical);
             assert_ne!(rec.assurance(), SemanticAssurance::Unreviewed);
             assert_eq!(rec.statement_hash(), spec.formal_claim().statement_hash());
         }

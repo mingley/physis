@@ -12,6 +12,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Canonical is not a mintable semantic tag**
+  (`SemanticAssurance` has no `Canonical` variant; P3S is taken from the
+  review store of the live statement hash, not `Verdict.semantic`).
+  Encoding review still tops out at adversarially-reviewed. Catalog d²
+  hash unchanged. Verified: compile-fail against
+  `SemanticAssurance::Canonical`; inspect P3S is empty until review.
+  Live prove of catalog d² is still Lean+nanoda. `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **StatisticalJudgment cannot mint computed**
   (`StatisticalJudgment` is a transparent wrapper with a private kind).
   There is no public `Computed` constructor. `from_lab` does not project

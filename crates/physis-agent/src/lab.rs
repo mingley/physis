@@ -491,7 +491,7 @@ impl Lab {
                             VerdictKind::Undecidable => 2,
                             VerdictKind::Inapplicable => 3,
                         };
-                        let semantic = self.semantic_tag(&c, v.semantic);
+                        let semantic = self.semantic_tag(&c);
                         by_derivation.entry(v.derivation.as_str()).or_default()[idx] += 1;
                         by_class.entry(v.class.as_str()).or_default()[idx] += 1;
                         by_semantic.entry(semantic.as_str()).or_default()[idx] += 1;
@@ -582,7 +582,7 @@ impl Lab {
                             text.push_str(&format!("  class:      {}\n", v.class.as_str()));
                             text.push_str(&format!("  derivation: {}\n", v.derivation.as_str()));
                             text.push_str(&format!("  empirical:  {}\n", v.empirical.as_str()));
-                            let semantic = self.semantic_tag(&c, v.semantic);
+                            let semantic = self.semantic_tag(&c);
                             text.push_str(&format!("  semantic:   {}\n", semantic.as_str()));
                             let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                             let profile = self.profile_for(&c, v.derivation, semantic);
@@ -808,15 +808,13 @@ impl Lab {
 
     /// Encoding-review overlay for this live identity. A review recorded
     /// against a different `statement_hash` of the same slug is not P3S.
-    fn semantic_tag(
-        &self,
-        claim: &physis_core::claim::Claim,
-        fallback: SemanticAssurance,
-    ) -> SemanticAssurance {
+    /// The evaluator's `Verdict.semantic` is not consulted: P3S is a
+    /// review-store tag, not a field a theory can set.
+    fn semantic_tag(&self, claim: &physis_core::claim::Claim) -> SemanticAssurance {
         self.reviews
             .by_statement(claim.statement_hash())
             .map(|r| r.assurance())
-            .unwrap_or(fallback)
+            .unwrap_or(SemanticAssurance::Unreviewed)
     }
 
     fn profile_for(
@@ -871,7 +869,7 @@ impl Lab {
                 let mut n = 0usize;
                 for (id, t) in &self.theories {
                     for (c, verdict) in t.evaluate_all() {
-                        let semantic = self.semantic_tag(&c, verdict.semantic);
+                        let semantic = self.semantic_tag(&c);
                         let profile = self.profile_for(&c, verdict.derivation, semantic);
                         if profile.has(tier) {
                             n += 1;
@@ -2451,6 +2449,40 @@ mod tests {
                 assert!(!c.assumptions.items.is_empty());
             }
         }
+    }
+
+    #[test]
+    fn inspect_p3s_is_empty_until_review() {
+        let mut lab = Lab::standard();
+        let before = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3S".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            before.lines().any(|l| l.trim() == "count 0"),
+            "evaluator semantic must not mint P3S: {before}"
+        );
+        assert!(!before.contains("dec.d-squared-zero"), "{before}");
+        lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let after = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3S".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            after
+                .lines()
+                .any(|l| l.contains("de-rham") && l.contains("dec.d-squared-zero")),
+            "{after}"
+        );
+        assert!(after.lines().any(|l| l.trim() == "count 1"), "{after}");
     }
 
     #[test]

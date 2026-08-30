@@ -14,6 +14,13 @@
 //! There is **no** [`DerivationAssurance`] variant for a kernel proof.
 //! `MachineProved` exists only as `physis_verifier::Verified<T>` minted
 //! from a dual-checker receipt. Setting an enum cannot create it.
+//!
+//! There is **no** [`SemanticAssurance::Canonical`] variant:
+//!
+//! ```compile_fail
+//! use physis_core::assurance::SemanticAssurance;
+//! let _ = SemanticAssurance::Canonical;
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -171,6 +178,10 @@ impl EmpiricalStatus {
 /// It does not prove the assumptions encode the right physics. A
 /// `MachineProved` result with [`SemanticAssurance::Unreviewed`] is
 /// dangerous and must be presented as such.
+///
+/// There is no `Canonical` variant. That name is reserved and not
+/// agent-mintable: encoding review tops out at
+/// [`SemanticAssurance::AdversariallyReviewed`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SemanticAssurance {
@@ -182,8 +193,6 @@ pub enum SemanticAssurance {
     IndependentlyEncoded,
     /// An encoding auditor has challenged and not found a fatal hole.
     AdversariallyReviewed,
-    /// Community-canonical encoding of a named result.
-    Canonical,
 }
 
 impl SemanticAssurance {
@@ -194,7 +203,6 @@ impl SemanticAssurance {
             SemanticAssurance::SourceAnchored => "source-anchored",
             SemanticAssurance::IndependentlyEncoded => "independently-encoded",
             SemanticAssurance::AdversariallyReviewed => "adversarially-reviewed",
-            SemanticAssurance::Canonical => "canonical",
         }
     }
 }

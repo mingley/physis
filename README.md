@@ -42,7 +42,7 @@ This repository does **not** decide whether string theory is false. It makes the
 | `physis-data` | datasets and empirical receipts |
 | `physis-ir` | declarative theory packages |
 | `physis-audit` | red-team corpus |
-| `physis-semantic` | encoding review from evidence; `Canonical` is reserved |
+| `physis-semantic` | encoding review from evidence; no `Canonical` variant |
 | `physis-constants` | versioned constants |
 | `physis-agent` | Lab, protocol v2, hash-linked journal |
 | `physis` | Facade + CLI |

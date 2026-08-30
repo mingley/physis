@@ -32,7 +32,7 @@ Level-3 trust
   L3 GUT/SM domains        ✓ mixing-angle and SM P3N cells name DomainOfValidity; Super-K and Tr Q stay encoding-wide
   L3 catalog assumptions   ✓ catalog lab_claim includes IdentitySpec axioms; encoding-is-the-model alone is not the catalog identity
   L3 catalog identity      ✓ ExactIdentity and review bind to FormalClaim, not slug; live claims are IdentitySpec::lab_claim
-  L3 P3S semantic          ✓ encoding review bound to statement_hash, not slug; never Canonical
+  L3 P3S semantic          ✓ encoding review bound to statement_hash, not slug; Canonical is not a variant; P3S is not an evaluator field
   L3 P3N numeric           ✓ SM anomalies, hypercharge solve, hydrogen Q=T3+Y, GUT-scale 3/8; Tr Q is ΣY already certified, not a second P3N; not GQW at M_Z
   L3 P2 cross-check        ✓ Hodge Laplacian nullity vs b1; Euler–Poincaré is rank-cancellation, not P2
   L3 Hodge domain          ✓ dec.hodge-harmonic names discrete Laplacian DomainOfValidity; Euler and Poincaré stay encoding-wide
