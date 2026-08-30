@@ -86,7 +86,7 @@ Domains also compose: `run landauer-engine` bridges computation and
 thermodynamics — erasing a bit costs `k_B·T·ln2` as a typed `Qty<Energy>`
 on the live encoding, `set landauer-engine reversible true` flips
 `info.thermodynamically-free` `fails → holds`, and `hypothesize landauer-engine`
-forks the bound (`add-kt`) so `info.landauer-cost` `holds → fails`.
+forks the bound (`add-kt` / `add-demon`) so `info.landauer-cost` `holds → fails`.
 
 The `su5-gut` theory mechanizes "accommodate vs derive" with real stakes:
 embedding one SM generation in a complete SU(5) multiplet **derives** charge

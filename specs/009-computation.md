@@ -30,7 +30,7 @@ mechanically restores decidability — a clean knob → verdict diff.
 |---|---|---|
 | `turing-machine` | `tape_bound` | tape length in cells; `0` = unbounded. A finite bound makes the machine a finite automaton. |
 | `turing-machine` | `nondeterministic` | whether the transition relation allows nondeterministic branching; flips `comp.deterministic`. |
-| `landauer-engine` | `temperature_k` | bath temperature (K); sets the energy scale `k_B·T·ln2`. The `ln2` factor is not this knob: `add-kt` is an IR mutation. |
+| `landauer-engine` | `temperature_k` | bath temperature (K); sets the energy scale `k_B·T·ln2`. The `ln2` factor is not this knob: `add-kt` is an IR mutation. A Maxwell demon that skips the memory cost is not this knob: `add-demon` is an IR mutation. |
 | `landauer-engine` | `bits_erased` | number of logical bits irreversibly erased. |
 | `landauer-engine` | `reversible` | logical reversibility (Bennett): erases nothing, so the process can be free. This stays a knob. |
 
@@ -53,7 +53,7 @@ a second IR mutation: `comp.deterministic` fails. That is still
 | `comp.feasible-decision` | a resource-feasible procedure in this lab decides the instance |
 | `comp.p-equals-np` | P = NP — encoded as `undecidable`/`open`, an honest unknown |
 | `comp.acyclic` | NAND gate graph has no cycle (combinational-circuit IR netlist) |
-| `info.landauer-cost` | erasing a bit dissipates at least `k_B·T·ln2` (named domain: kT ln2 Landauer bound). **holds** on the live encoding (`erase kT ln2`). `add-kt` appends `erase kT` and the encoding energy is `N kT`, so this cell fails. That is not a knob. `reversible` / `bits_erased` stay knobs |
+| `info.landauer-cost` | erasing a bit dissipates at least `k_B·T·ln2` (named domain: kT ln2 Landauer bound). **holds** on the live encoding (`erase kT ln2`). `add-kt` appends `erase kT` and the encoding energy is `N kT`, so this cell fails. `add-demon` appends `erase demon` and the encoding energy is 0 while bits are still erased, so this cell fails. That is not a knob. `reversible` / `bits_erased` stay knobs |
 | `info.thermodynamically-free` | the process erases nothing and can dissipate no heat |
 
 ## Landauer's principle: the computation ↔ thermodynamics bridge
@@ -78,7 +78,7 @@ The knob → verdict diff is cross-domain:
 ```
 physis run landauer-engine        # info.thermodynamically-free: fails (erases 1 bit)
 physis set landauer-engine reversible true
-physis hypothesize landauer-engine  # add-kt is IR, not set
+physis hypothesize landauer-engine  # add-kt and add-demon are IR, not set
 ```
 
 flips `info.thermodynamically-free` `fails → holds`: a reversible computation
@@ -86,7 +86,9 @@ erases nothing, so the Landauer floor is zero and the process can be free.
 Setting `bits_erased 0` is the other route to a free process; raising
 `bits_erased` or `temperature_k` scales the computed dissipation linearly.
 `add-kt` flips `info.landauer-cost` `holds → fails` without converting
-`reversible`.
+`reversible`. `add-demon` flips the same cell: the encoding reports
+zero dissipation while bits are still erased. That is not Bennett
+reversibility (thermo-free still fails).
 
 ## Honest unknowns: P vs NP
 

@@ -78,7 +78,7 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 - (none — NAND netlist lives on the IR package; `add-feedback` is a cycle, not a knob. A second NAND writing the same wire is a second IR mutation (`add-contention`), not the Turing-machine `nondeterministic` knob.)
 
 ### landauer-engine
-- `temperature_k` — bath temperature (K); sets `k_B·T·ln2`. The `ln2` factor is not this knob: `add-kt` is an IR mutation
+- `temperature_k` — bath temperature (K); sets `k_B·T·ln2`. The `ln2` factor is not this knob: `add-kt` is an IR mutation. A Maxwell demon that skips the memory cost is not this knob: `add-demon` is an IR mutation
 - `bits_erased` — number of logical bits irreversibly erased
 - `reversible` — logical reversibility (Bennett): erases nothing, so the process can be free. This stays a knob.
 

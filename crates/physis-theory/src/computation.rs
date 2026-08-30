@@ -22,10 +22,12 @@
 //!
 //! The Landauer bound lives on the IR package. Dropping `ln2` (`E = N kT`
 //! instead of `N kT ln2`) is a package mutation (`add-kt`), not a
-//! `reversible` knob: the encoding energy is no longer the Landauer floor
-//! and `info.landauer-cost` fails. `temperature_k` / `bits_erased` /
-//! `reversible` still scale the bath and Bennett reversibility. That fork
-//! is still this object, not a silent Turing-machine install.
+//! `reversible` knob. A Maxwell demon that extracts work without paying
+//! the memory-erasure cost (`add-demon`) is a second mutation: the
+//! encoding dissipates 0 while bits are still erased and
+//! `info.landauer-cost` fails. `temperature_k` / `bits_erased` /
+//! `reversible` still scale the bath and Bennett reversibility. Those
+//! forks are still this object, not a silent Turing-machine install.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -677,29 +679,33 @@ pub const INFO_THERMO_FREE: &str = "info.thermodynamically-free";
 const LANDAUER_LN2_EQ: &str = "erase kT ln2";
 /// Dropped-ln2 encoding: `E = N kT`.
 const KT_EQ: &str = "erase kT";
+/// Maxwell-demon encoding: extracted work, memory erasure not paid (`E = 0`).
+const DEMON_EQ: &str = "erase demon";
 
-fn parse_landauer_bound(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_landauer_bound(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut ln2 = false;
     let mut drop_ln2 = false;
+    let mut demon = false;
     for eq in &pkg.equations {
         match eq.trim() {
             LANDAUER_LN2_EQ => ln2 = true,
             KT_EQ => drop_ln2 = true,
+            DEMON_EQ => demon = true,
             _ => {}
         }
     }
     if !ln2 {
         return Err(format!("{} package has no kT ln2 Landauer bound", pkg.id));
     }
-    Ok(drop_ln2)
+    Ok((drop_ln2, demon))
 }
 
 fn landauer_cost_domain() -> DomainOfValidity {
     DomainOfValidity::new(
         vec!["kT ln2 Landauer bound".into()],
         vec!["E = N k_B T ln2 for irreversible erasure".into()],
-        "The cost cell is the kT ln2 encoding. Dropping ln2 is a new encoding, \
-         not a silent reversible knob.",
+        "The cost cell is the kT ln2 encoding. Dropping ln2 or a Maxwell demon \
+         that skips the memory cost is a new encoding, not a silent reversible knob.",
     )
 }
 
@@ -752,9 +758,10 @@ const LANDAUER_SPECS: &[KnobSpec] = &[
 ///
 /// The `kT ln2` bound lives on the IR package. Dropping `ln2` is a package
 /// mutation (`add-kt`), not a knob: the encoding energy is `N kT` and
-/// `info.landauer-cost` fails. That fork is still this object, not a silent
-/// Turing-machine install. `temperature_k` / `bits_erased` / `reversible`
-/// stay knobs.
+/// `info.landauer-cost` fails. A Maxwell demon (`add-demon`) is a second
+/// mutation: the encoding dissipates 0 while bits are still erased. Those
+/// forks are still this object, not a silent Turing-machine install.
+/// `temperature_k` / `bits_erased` / `reversible` stay knobs.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LandauerEngine {
     /// Bath temperature in kelvin.
@@ -765,6 +772,8 @@ pub struct LandauerEngine {
     reversible: bool,
     /// Whether the encoding dropped `ln2` (`E = N kT`).
     drop_ln2: bool,
+    /// Whether the encoding is a Maxwell demon (`E = 0` while bits are erased).
+    demon: bool,
 }
 
 impl Default for LandauerEngine {
@@ -775,6 +784,7 @@ impl Default for LandauerEngine {
             bits_erased: 1,
             reversible: false,
             drop_ln2: false,
+            demon: false,
         }
     }
 }
@@ -787,6 +797,7 @@ impl LandauerEngine {
             bits_erased: 0,
             reversible: true,
             drop_ln2: false,
+            demon: false,
         }
     }
 
@@ -802,12 +813,15 @@ impl LandauerEngine {
     /// Dissipated energy this encoding computes, as a typed quantity.
     ///
     /// Live: `E = N · k_B · T · ln2`. Mutant (`add-kt`): `E = N · k_B · T`.
+    /// Mutant (`add-demon`): `E = 0` while bits are still erased.
     /// The units fall out of the type system: `k_B` carries J/K, `kelvin(T)`
     /// carries K, so the product is an energy.
     pub fn landauer_energy(&self) -> Qty<Energy> {
         let n = self.effective_bits() as f64;
         let kt_n = k_boltzmann() * kelvin(self.temperature_k) * n;
-        if self.drop_ln2 {
+        if self.demon {
+            kt_n * 0.0
+        } else if self.drop_ln2 {
             kt_n
         } else {
             kt_n * std::f64::consts::LN_2
@@ -815,12 +829,15 @@ impl LandauerEngine {
     }
 
     /// IR package for this bound encoding. Equations are `erase kT ln2`
-    /// and, when forked, `erase kT`. Temperature, bits, and reversibility
-    /// stay on the struct.
+    /// and, when forked, `erase kT` and/or `erase demon`. Temperature, bits,
+    /// and reversibility stay on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![LANDAUER_LN2_EQ.to_string()];
         if self.drop_ln2 {
             equations.push(KT_EQ.to_string());
+        }
+        if self.demon {
+            equations.push(DEMON_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -847,14 +864,20 @@ impl LandauerEngine {
                 pkg.id
             ));
         }
+        let (drop_ln2, demon) = parse_landauer_bound(pkg)?;
         Ok(Self {
-            drop_ln2: parse_landauer_bound(pkg)?,
+            drop_ln2,
+            demon,
             ..Self::default()
         })
     }
 
     fn kt_equation() -> String {
         KT_EQ.to_string()
+    }
+
+    fn demon_equation() -> String {
+        DEMON_EQ.to_string()
     }
 }
 
@@ -900,7 +923,8 @@ impl Theory for LandauerEngine {
     fn summary(&self) -> &'static str {
         "A computation coupled to a heat bath. Erasing a logical bit costs at \
          least k_B·T·ln2 of energy (Landauer) on the live encoding; dropping \
-         ln2 is an IR mutation, not a reversible knob. A logically reversible \
+         ln2 is an IR mutation, not a reversible knob. A Maxwell demon that \
+         skips the memory cost is a second IR mutation. A logically reversible \
          computation erases nothing and can be thermodynamically free (Bennett)."
     }
     fn world(&self) -> Option<World> {
@@ -941,7 +965,15 @@ impl Theory for LandauerEngine {
             INFO_LANDAUER_COST => {
                 let n = self.effective_bits();
                 let bound = landauer_bound_joules(n, self.temperature_k);
-                if encoding_matches_ln2_bound(e, bound) {
+                if self.demon {
+                    Verdict::fails(
+                        claim,
+                        "Maxwell demon: extracted work without paying the memory-erasure cost",
+                    )
+                    .with_evidence([format!(
+                        "E = {e:.3e} J vs N kT ln2 = {bound:.3e} J (N = {n})"
+                    )])
+                } else if encoding_matches_ln2_bound(e, bound) {
                     Verdict::holds(
                         claim,
                         format!(
@@ -996,25 +1028,40 @@ impl Theory for LandauerEngine {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.drop_ln2 = parsed.drop_ln2;
+        fork.demon = parsed.demon;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.drop_ln2 {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(&pkg, &PackageMutation::AppendEquation(Self::kt_equation()));
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.drop_ln2 => {
-                let mut fork = self.clone();
-                fork.drop_ln2 = true;
-                vec![("add-kt".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.drop_ln2 {
+            let mutated =
+                apply_mutation(&pkg, &PackageMutation::AppendEquation(Self::kt_equation()));
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.drop_ln2 {
+                    let mut fork = self.clone();
+                    fork.drop_ln2 = true;
+                    out.push(("add-kt".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.demon {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::demon_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.demon {
+                    let mut fork = self.clone();
+                    fork.demon = true;
+                    out.push(("add-demon".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -1451,13 +1498,33 @@ mod tests {
         assert_eq!(verdict(&free_fork, INFO_LANDAUER_COST), VerdictKind::Holds);
         assert_eq!(verdict(&free_fork, INFO_THERMO_FREE), VerdictKind::Holds);
         let probes = LandauerEngine::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-kt");
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-kt"),
+            "live Landauer must offer add-kt: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-demon"),
+            "live Landauer must offer add-demon: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let kt_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-kt")
+            .expect("add-kt");
         assert_eq!(
-            verdict(probes[0].1.as_ref(), INFO_LANDAUER_COST),
+            verdict(kt_probe.1.as_ref(), INFO_LANDAUER_COST),
             VerdictKind::Fails
         );
-        assert!(fork.structural_mutations().is_empty());
+        let kt_fork_probes = fork.structural_mutations();
+        assert!(
+            kt_fork_probes.iter().all(|(label, _)| label != "add-kt"),
+            "kt fork must not re-offer add-kt"
+        );
+        assert!(
+            kt_fork_probes.iter().any(|(label, _)| label == "add-demon"),
+            "kt fork must still offer add-demon"
+        );
         let live = LandauerEngine::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -1511,6 +1578,156 @@ mod tests {
                 .is_ok(),
             "turing-machine keeps the nondeterministic knob"
         );
+    }
+
+    #[test]
+    fn demon_without_memory_cost_is_ir_not_a_knob() {
+        let mut e = LandauerEngine::default();
+        assert!(
+            LandauerEngine::default()
+                .set("demon", KnobValue::Bool(true))
+                .is_err(),
+            "Maxwell demon is an IR mutation, not a knob"
+        );
+        assert!(
+            LandauerEngine::default()
+                .set("memory", KnobValue::Bool(false))
+                .is_err(),
+            "memory is not a knob"
+        );
+        assert!(
+            LandauerEngine::default()
+                .set("tape_bound", KnobValue::UInt(1000))
+                .is_err(),
+            "landauer-engine must not grow a tape_bound knob; that stays on turing-machine"
+        );
+        let src = render_package(&e.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay erase kT ln2"
+        );
+        assert_eq!(pkg.equations[0], LANDAUER_LN2_EQ);
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(LandauerEngine::demon_equation()),
+        );
+        let parsed = LandauerEngine::from_package(&mutated).unwrap();
+        assert!(parsed.demon);
+        assert!(!parsed.drop_ln2);
+        let mut fork = e.clone();
+        fork.demon = true;
+        assert_eq!(verdict(&fork, INFO_LANDAUER_COST), VerdictKind::Fails);
+        assert_eq!(verdict(&e, INFO_LANDAUER_COST), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, INFO_THERMO_FREE), VerdictKind::Fails);
+        let live_e = e.landauer_energy().value();
+        let mutant_e = fork.landauer_energy().value();
+        let bound = landauer_bound_joules(1, 300.0);
+        assert!(
+            encoding_matches_ln2_bound(live_e, bound),
+            "live energy must be N kT ln2, got {live_e}"
+        );
+        assert!(
+            mutant_e.abs() < 1e-40,
+            "demon energy must be 0, got {mutant_e}"
+        );
+        assert!(
+            (bound - 1.0).abs() > 0.5,
+            "Landauer residual must be the kT ln2 scale, not a unit flag, got {bound}"
+        );
+        let half = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == INFO_LANDAUER_COST)
+            .unwrap();
+        let v = fork.evaluate(&half);
+        assert!(
+            !v.summary.contains("without ln2"),
+            "demon is not the dropped-ln2 fork: {}",
+            v.summary
+        );
+        e.set("reversible", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&e, INFO_LANDAUER_COST), VerdictKind::Holds);
+        assert_eq!(verdict(&e, INFO_THERMO_FREE), VerdictKind::Holds);
+        let mut cold = LandauerEngine::default();
+        cold.set("temperature_k", KnobValue::Float(0.0)).unwrap();
+        assert_eq!(verdict(&cold, INFO_LANDAUER_COST), VerdictKind::Holds);
+        cold.demon = true;
+        assert_eq!(cold.landauer_energy().value(), 0.0);
+        assert_eq!(
+            landauer_bound_joules(1, 0.0),
+            0.0,
+            "T = 0 makes N kT ln2 vanish; residual is not the encoding"
+        );
+        assert_eq!(
+            verdict(&cold, INFO_LANDAUER_COST),
+            VerdictKind::Fails,
+            "demon encoding must fail the cost even when T = 0 makes the bound 0"
+        );
+        let probes = LandauerEngine::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-demon"),
+            "live Landauer must offer add-demon: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let demon_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-demon")
+            .expect("add-demon");
+        assert_eq!(
+            verdict(demon_probe.1.as_ref(), INFO_LANDAUER_COST),
+            VerdictKind::Fails
+        );
+        assert_eq!(
+            verdict(demon_probe.1.as_ref(), INFO_THERMO_FREE),
+            VerdictKind::Fails
+        );
+        let demon_fork_probes = fork.structural_mutations();
+        assert!(
+            demon_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-demon"),
+            "demon fork must not re-offer add-demon"
+        );
+        assert!(
+            demon_fork_probes.iter().any(|(label, _)| label == "add-kt"),
+            "demon fork must still offer add-kt"
+        );
+        let live = LandauerEngine::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("reversible").unwrap(),
+            KnobValue::Bool(false),
+            "reparse must overlay demon IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), INFO_LANDAUER_COST),
+            VerdictKind::Holds
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == INFO_LANDAUER_COST)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "landauer-cost must name kT ln2: {:?}",
+            cell.domain()
+        );
+        assert!(
+            TuringMachine::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-demon"),
+            "turing-machine must not grow add-demon"
+        );
+        let mut tm = TuringMachine::default();
+        tm.set("nondeterministic", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&tm, DETERMINISTIC), VerdictKind::Fails);
     }
 
     #[test]

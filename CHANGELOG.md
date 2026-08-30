@@ -12,6 +12,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Landauer Maxwell demon is an IR mutation**
+  (`landauer-engine`, `add-demon`). The kT ln2 bound is the live
+  encoding (`erase kT ln2`); appending `erase demon` makes the
+  encoding dissipate 0 while bits are still erased and flips
+  `info.landauer-cost` holds to fails. The residual is the unpaid
+  N kT ln2 floor (~2.87e-21 J at 300 K) and is evidence, not the
+  encoding: T = 0 makes that floor 0 and the cell still fails. That
+  is not a knob. Thermodynamic freedom still fails (bits are erased).
+  Dropped ln2 remains a separate cost fork (`add-kt`). `reversible` /
+  `bits_erased` / `temperature_k` stay knobs. Cost names kT ln2
+  Landauer bound. Mutants stay `landauer-engine`; they are not a
+  silent Turing-machine install. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Live encode
+  pin unchanged. Verified: IR round-trip; set demon is unknown;
+  hypothesize landauer-engine; live kT ln2 restored; encode pin
+  `94e8b44c1e141f6e4cbff91a409b805361e5fe00a925121348b62cdbc3e187a9`.
+
 - **Combinational multi-driven net is an IR mutation**
   (`combinational-circuit`, `add-contention`). Unique NAND drivers are
   the live encoding (`nand 0 1 -> 2`); appending `nand 0 0 -> 2` puts a

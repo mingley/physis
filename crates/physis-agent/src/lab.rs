@@ -5974,9 +5974,25 @@ mod tests {
             text.contains("add-kt") && text.contains("ir structural"),
             "{text}"
         );
+        let marker = "add-kt: package → add-kt";
+        let start = text.find(marker).expect("add-kt hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  landauer-engine  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let kt_block = &rest[..end];
         assert!(
-            text.contains("info.landauer-cost") && text.contains("holds → fails"),
-            "{text}"
+            kt_block.contains("info.landauer-cost") && kt_block.contains("holds → fails"),
+            "add-kt must flip landauer-cost holds to fails: {kt_block}"
+        );
+        assert!(
+            !kt_block.contains("info.thermodynamically-free"),
+            "add-kt is not the reversible Bennett probe: {kt_block}"
+        );
+        assert!(
+            text.contains("add-demon"),
+            "demon must still be an IR fork: {text}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -6037,6 +6053,95 @@ mod tests {
             knob: "reversible".into(),
             value: "false".into(),
         });
+        let why = lab
+            .exec(Command::Why {
+                claim: "info.landauer-cost".into(),
+            })
+            .text()
+            .to_string();
+        let le = why_theory_block(&why, "landauer-engine");
+        assert!(
+            le.contains("kT ln2 Landauer bound"),
+            "landauer-cost must name kT ln2: {le}"
+        );
+        assert!(
+            !le.contains("not yet a machine-checked regime"),
+            "landauer-cost must not be encoding-wide: {le}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_landauer_engine_demon_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["demon", "memory"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "landauer-engine".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("landauer-engine".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-demon") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-demon: package → add-demon";
+        let start = text.find(marker).expect("add-demon hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  landauer-engine  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let demon_block = &rest[..end];
+        assert!(
+            demon_block.contains("info.landauer-cost") && demon_block.contains("holds → fails"),
+            "add-demon must flip landauer-cost holds to fails: {demon_block}"
+        );
+        assert!(
+            !demon_block.contains("info.thermodynamically-free"),
+            "add-demon is not the reversible Bennett probe: {demon_block}"
+        );
+        assert!(
+            text.contains("add-kt"),
+            "add-kt must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("landauer-engine").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "info.landauer-cost" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("reversible").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let tm = lab.theory("turing-machine").unwrap();
+        assert_eq!(
+            tm.get("tape_bound").unwrap().display(),
+            "0",
+            "landauer IR must not convert the Turing-machine tape_bound knob"
+        );
         let why = lab
             .exec(Command::Why {
                 claim: "info.landauer-cost".into(),
@@ -8361,6 +8466,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_landauer.contains("add-kt"), "{hypo_landauer}");
+        assert!(hypo_landauer.contains("add-demon"), "{hypo_landauer}");
         let landauer_again = lab
             .exec(Command::Encode {
                 theory: "landauer-engine".into(),
