@@ -23,7 +23,7 @@ Layer: agent
 | `compare` / `design` | discriminating claims; rank theory pairs |
 | `sensitivity` | perturb one knob, count flips |
 | `review <claim>` | raise semantic assurance from a trusted dossier (never Canonical) |
-| `inspect <axis> <value>` | inverse query over `trust`, `class`, knob `origin`, or knowledge `gap` |
+| `inspect <axis> <value>` | inverse query over `trust`, `class`, knob `origin`, knowledge `gap`, or projected `judgment` (`statistical-computed`, `empirical-excluded`, `logical-proved`, …). Super-K is `empirical-excluded`; the PDG GQW cell is `statistical-computed`; `logical-proved` is empty until a dual-checked receipt exists |
 | `formalize <claim>` | emit the catalog encoding as untrusted bytes (not a receipt) |
 | `reproduce <claim>` | remint a stored receipt in-process; **not P4** |
 | `gaps` | rebuild the knowledge-gap graph from live verdicts and lemma edges (not deserialized). Failing evaluations are not listed as missing theorems. Overlap without containment is `insufficient-precision`. coNP-complete search is `computationally-intractable`, not Rice. An empirical prediction with no registered dataset is `missing-dataset`. Super-K `p→e+π0` is a Dataset; `gut.proton-lifetime-sk` is decided (excluded / compatible), not that hole |

@@ -95,10 +95,13 @@ trusted dossier bound to the live FormalClaim; journal restore re-runs
 review of that identity rather than deserializing the tag, and only when
 the journaled `statement_hash` is the live FormalClaim. A slug-only
 review line is not P3S. A review of an
-older identity that kept the slug is not P3S. `physis inspect trust|class|origin|gap <value>` inverts those
+older identity that kept the slug is not P3S. `physis inspect trust|class|origin|gap|judgment <value>` inverts those
 axes: knobs carry a `ParameterOrigin` so a fitted dilaton is not a derived
 prediction, and `inspect origin fitted` lists the knobs that accommodate
-rather than derive. `inspect trust P3N` lists exact-`Ratio` cancellations
+rather than derive. `inspect judgment statistical-computed` lists the PDG
+GQW NLL cell; `inspect judgment empirical-excluded` lists Super-K (not that
+Gaussian); `inspect judgment logical-proved` is empty until a dual-checked
+receipt exists. `inspect trust P3N` lists exact-`Ratio` cancellations
 and the exact hypercharge solve (Standard Model chiral anomalies and
 `sm.hypercharge-derivation`) and hydrogen neutrality from `Q = T₃ + Y`
 (`empirical.charge-quantization`), plus GUT-scale `sin²θ_W = 3/8`

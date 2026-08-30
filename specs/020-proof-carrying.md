@@ -163,7 +163,7 @@ those tools; a local checkout without them still mints
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → replicate → design → audit → review |
-| origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap |
+| origin | `KnobSpec.origin`, `physis inspect` | Distinguish chosen/fitted knobs from measured ones; invert trust/class/origin/gap/judgment |
 | gaps | `physis gaps`, `NodeKind::KnowledgeGap` | Live gap graph, content-addressed; rebuilt, not deserialized. `MissingTheorem` only for evaluator-Holds claims without a receipt; Fails is decided, not a missing lemma. `InsufficientPrecision` is overlap without containment on an empirical receipt, **or** a lattice too coarse to certify a numerical order (`field.second-order-accurate`, `|k a| ≥ 1`). `ComputationallyIntractable` is coNP-complete / exponential search, not Rice. `MissingDataset` is an empirical prediction with no registered dataset. Super-K `p→e+π0` is registered; `gut.proton-lifetime-sk` is the dim-6 comparison, not that hole |
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
 | evidence | `physis evidence`, `NodeKind::Evidence` | Competing encodings (distinct FormalClaims of one slug) and competing evaluations; Statement + Evaluation parents; content-addressed, not deserialized; confidence is derived TrustProfile, not a numeric score; never Canonical or P4 |

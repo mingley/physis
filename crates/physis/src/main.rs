@@ -267,7 +267,7 @@ USAGE:
     physis sensitivity <theory> <knob>
     physis hypothesize [theory]
     physis review <claim-id>
-    physis inspect [trust|class|origin|gap] <value>
+    physis inspect [trust|class|origin|gap|judgment] <value>
     physis loop
     physis audit
     physis experiments

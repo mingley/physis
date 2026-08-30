@@ -705,6 +705,33 @@ impl Judgment {
             Judgment::Heuristic(j) => format!("heuristic {}", j.as_str()),
         }
     }
+
+    /// Labels `from_lab` can project, for inverse queries.
+    pub const LABELS: [&'static str; 12] = [
+        "logical proved",
+        "logical disproved",
+        "logical undetermined",
+        "numeric certified",
+        "numeric unresolved",
+        "empirical compatible",
+        "empirical excluded",
+        "empirical inconclusive",
+        "statistical computed",
+        "statistical unquantified",
+        "heuristic suggestive",
+        "heuristic failed",
+    ];
+
+    /// Parse a kebab or space two-token label (`statistical-computed`).
+    pub fn parse_label(s: &str) -> Option<&'static str> {
+        let want = s
+            .to_ascii_lowercase()
+            .replace('-', " ")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        Self::LABELS.iter().copied().find(|l| *l == want)
+    }
 }
 
 #[cfg(test)]
@@ -1067,5 +1094,28 @@ mod tests {
             None,
         );
         assert_eq!(super_k.label(), "empirical excluded");
+    }
+
+    #[test]
+    fn parse_label_accepts_kebab_and_rejects_unknown() {
+        assert_eq!(
+            Judgment::parse_label("statistical-computed"),
+            Some("statistical computed")
+        );
+        assert_eq!(
+            Judgment::parse_label("empirical excluded"),
+            Some("empirical excluded")
+        );
+        assert_eq!(
+            Judgment::parse_label("logical-proved"),
+            Some("logical proved")
+        );
+        assert!(Judgment::parse_label("vibes").is_none());
+        assert!(Judgment::parse_label("statistical").is_none());
+        let mut seen = std::collections::BTreeSet::new();
+        for l in Judgment::LABELS {
+            assert!(seen.insert(l), "duplicate judgment label {l}");
+        }
+        assert_eq!(Judgment::LABELS.len(), 12);
     }
 }

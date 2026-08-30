@@ -579,18 +579,8 @@ impl Lab {
                             text.push_str(&format!("  empirical:  {}\n", v.empirical().as_str()));
                             let semantic = self.semantic_tag(&c);
                             text.push_str(&format!("  semantic:   {}\n", semantic.as_str()));
-                            let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                             let profile = self.profile_for(&c, v.derivation(), semantic);
-                            let judgment = Judgment::from_lab(
-                                v.class,
-                                v.kind,
-                                v.empirical(),
-                                v.derivation(),
-                                dual,
-                                v.numeric_lo(),
-                                v.numeric_hi(),
-                                v.statistical_nll(),
-                            );
+                            let judgment = self.projected_judgment(&c, &v);
                             text.push_str(&format!("  judgment:   {}\n", judgment.label()));
                             if let (Some(lo), Some(hi)) = (v.numeric_lo(), v.numeric_hi()) {
                                 text.push_str(&format!("  enclosure:  [{lo}, {hi}]\n"));
@@ -832,6 +822,23 @@ impl Lab {
         })
     }
 
+    fn projected_judgment(
+        &self,
+        claim: &physis_core::claim::Claim,
+        v: &physis_core::claim::Verdict,
+    ) -> Judgment {
+        Judgment::from_lab(
+            v.class,
+            v.kind,
+            v.empirical(),
+            v.derivation(),
+            self.receipts.by_statement(claim.statement_hash()).is_some(),
+            v.numeric_lo(),
+            v.numeric_hi(),
+            v.statistical_nll(),
+        )
+    }
+
     /// Competing encodings and evaluations of a lab slug. Groups by
     /// statement hash: a shared id is not one FormalClaim. Inserts a
     /// rebuilt [`NodeKind::Evidence`] snapshot (Statement and Evaluation
@@ -847,16 +854,7 @@ impl Lab {
                 let semantic = self.semantic_tag(&c);
                 let dual = self.receipts.by_statement(c.statement_hash()).is_some();
                 let profile = self.profile_for(&c, v.derivation(), semantic);
-                let judgment = Judgment::from_lab(
-                    v.class,
-                    v.kind,
-                    v.empirical(),
-                    v.derivation(),
-                    dual,
-                    v.numeric_lo(),
-                    v.numeric_hi(),
-                    v.statistical_nll(),
-                );
+                let judgment = self.projected_judgment(&c, &v);
                 let domain = if c.domain().is_encoding_wide() {
                     "encoding-wide".to_string()
                 } else if !c.domain().regimes.is_empty() {
@@ -1044,8 +1042,8 @@ impl Lab {
     fn inspect(&self, axis: Option<&str>, value: Option<&str>) -> Response {
         match (axis, value) {
             (None, None) | (Some("help"), _) => Response::ok(
-                "inspect <trust|class|origin|gap> <value>\n\
-                 examples: inspect trust P0 | inspect class conjecture | inspect origin chosen | inspect gap missing-theorem\n",
+                "inspect <trust|class|origin|gap|judgment> <value>\n\
+                 examples: inspect trust P0 | inspect class conjecture | inspect origin chosen | inspect gap missing-theorem | inspect judgment statistical-computed\n",
             ),
             (Some("trust"), Some(v)) => {
                 let want = v.to_ascii_uppercase();
@@ -1165,11 +1163,37 @@ impl Lab {
                 text.push_str(&format!("count {n}\n"));
                 Response::ok(text)
             }
+            (Some("judgment"), Some(v)) => {
+                let Some(want) = Judgment::parse_label(v) else {
+                    return Response::err(format!(
+                        "unknown judgment label '{v}' (logical-proved|statistical-computed|empirical-excluded|…)"
+                    ));
+                };
+                let mut text = format!("inspect judgment {want}\n");
+                let mut n = 0usize;
+                for (id, t) in &self.theories {
+                    for (c, verdict) in t.evaluate_all() {
+                        let judgment = self.projected_judgment(&c, &verdict);
+                        if judgment.label() == want {
+                            n += 1;
+                            text.push_str(&format!(
+                                "  {id:<20} {:<36} {}\n",
+                                c.id_str(),
+                                want
+                            ));
+                        }
+                    }
+                }
+                text.push_str(&format!("count {n}\n"));
+                Response::ok(text)
+            }
             (Some(axis), None) => Response::err(format!(
-                "inspect {axis} needs a value (trust P0 | class conjecture | origin chosen | gap missing-theorem)"
+                "inspect {axis} needs a value (trust P0 | class conjecture | origin chosen | gap missing-theorem | judgment statistical-computed)"
             )),
             (None, Some(_)) => {
-                Response::err("inspect needs an axis (trust|class|origin|gap) before a value")
+                Response::err(
+                    "inspect needs an axis (trust|class|origin|gap|judgment) before a value",
+                )
             }
             (Some(other), _) => Response::err(format!("unknown inspect axis '{other}'")),
         }
@@ -4509,6 +4533,7 @@ mod tests {
             .text()
             .to_string();
         assert!(help.contains("inspect <trust"), "{help}");
+        assert!(help.contains("judgment"), "{help}");
 
         let bad = lab.exec(Command::Inspect {
             axis: Some("vibes".into()),
@@ -4520,6 +4545,96 @@ mod tests {
             bad.text()
         );
         assert_eq!(bad.exit_code(), 1);
+    }
+
+    #[test]
+    fn inspect_judgment_inverts_projected_labels() {
+        let mut lab = Lab::standard();
+        let stat = lab
+            .exec(Command::Inspect {
+                axis: Some("judgment".into()),
+                value: Some("statistical-computed".into()),
+            })
+            .text()
+            .to_string();
+        assert!(stat.contains("gut.weinberg-angle-mz-interval"), "{stat}");
+        assert!(
+            !stat.contains("gut.proton-lifetime-sk"),
+            "Super-K is interval-subset, not a Gaussian NLL: {stat}"
+        );
+        assert!(
+            stat.lines().any(|l| l.trim() == "count 1"),
+            "only the PDG GQW cell is statistical computed: {stat}"
+        );
+
+        let excluded = lab
+            .exec(Command::Inspect {
+                axis: Some("judgment".into()),
+                value: Some("empirical-excluded".into()),
+            })
+            .text()
+            .to_string();
+        assert!(excluded.contains("gut.proton-lifetime-sk"), "{excluded}");
+        assert!(
+            !excluded.contains("gut.weinberg-angle-mz-interval"),
+            "PDG NLL is statistical computed, not empirical excluded: {excluded}"
+        );
+
+        let proved = lab
+            .exec(Command::Inspect {
+                axis: Some("judgment".into()),
+                value: Some("logical-proved".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            proved.lines().any(|l| l.trim() == "count 0"),
+            "no kernel proof until prove: {proved}"
+        );
+
+        let minted = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            minted.contains("lean-kernel") || minted.contains("expand-recursive"),
+            "{minted}"
+        );
+        let after = lab
+            .exec(Command::Inspect {
+                axis: Some("judgment".into()),
+                value: Some("logical-proved".into()),
+            })
+            .text()
+            .to_string();
+        assert!(after.contains("dec.d-squared-zero"), "{after}");
+        assert!(
+            !after.contains("gut.weinberg-angle-mz-interval"),
+            "NLL is not a kernel proof: {after}"
+        );
+
+        let unknown = lab.exec(Command::Inspect {
+            axis: Some("judgment".into()),
+            value: Some("vibes".into()),
+        });
+        assert_eq!(unknown.exit_code(), 1, "{}", unknown.text());
+        assert!(
+            unknown.text().contains("unknown judgment label"),
+            "{}",
+            unknown.text()
+        );
+
+        lab.set_role(Role::Explorer);
+        assert_eq!(
+            lab.exec(Command::Inspect {
+                axis: Some("judgment".into()),
+                value: Some("statistical-computed".into()),
+            })
+            .exit_code(),
+            0
+        );
     }
 
     #[test]

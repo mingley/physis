@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Inverse query over projected judgments**
+  (`physis inspect judgment`). `statistical-computed` lists the PDG
+  GQW cell; `empirical-excluded` lists Super-K `p→e+π0`;
+  `logical-proved` is empty until a dual-checked receipt exists.
+  Explorer may observe. Does not mint. Catalog d² hash unchanged.
+  Verified: count 1 statistical; Super-K is not that row; prove d²
+  appears under logical-proved; unknown labels refuse.
+
 - **PDG mixing angle carries a Gaussian likelihood**
   (`LikelihoodModel::Gaussian`, `Verdict::with_statistical_nll`).
   `gut.weinberg-angle-mz-interval` keeps interval-subset on the empirical

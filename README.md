@@ -159,6 +159,8 @@ cargo run -p physis -- review dec.d-squared-zero
 cargo run -p physis -- inspect origin fitted
 cargo run -p physis -- inspect class conjecture
 cargo run -p physis -- inspect gap missing-theorem
+cargo run -p physis -- inspect judgment statistical-computed
+cargo run -p physis -- inspect judgment empirical-excluded
 cargo run -p physis -- why gut.weinberg-angle-mz-interval
 cargo run -p physis -- why gut.proton-lifetime-sk
 cargo run -p physis -- --role explorer prove dec.d-squared-zero   # refused
