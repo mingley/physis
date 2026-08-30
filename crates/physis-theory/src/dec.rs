@@ -26,6 +26,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::ops::Add;
 
+use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
@@ -624,7 +625,14 @@ impl Theory for DeRham {
                 "The dimension of harmonic 1-forms equals b₁ (Hodge theorem).",
                 LayerId::Mathematical,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(DomainOfValidity::new(
+                vec!["finite simplicial 1-cochains".into()],
+                vec!["combinatorial Hodge Laplacian Δ₁ = d₀d₀ᵀ + d₁ᵀd₁".into()],
+                "dim ker Δ₁ = b₁ is discrete Hodge on this complex, not the \
+                 smooth Hodge theorem on a Riemannian manifold. Using it there \
+                 is a new claim. Euler–Poincaré rank-cancellation is not this cell.",
+            )),
             Claim::new(
                 FUNDAMENTAL_CLASS,
                 "The complex has a fundamental class over ℝ: b₂ = 1.",
@@ -963,6 +971,39 @@ mod tests {
     }
 
     #[test]
+    fn hodge_names_a_discrete_regime() {
+        let t = DeRham::default();
+        let claim = |id: &str| t.claims().into_iter().find(|c| c.id.0 == id).unwrap();
+        let hodge = claim(HODGE_HARMONIC);
+        assert!(
+            !hodge.domain.is_encoding_wide(),
+            "Hodge P2 must name the discrete Laplacian: {:?}",
+            hodge.domain
+        );
+        assert!(
+            hodge
+                .domain
+                .regimes
+                .iter()
+                .any(|r| r.contains("finite simplicial")),
+            "Hodge regime: {:?}",
+            hodge.domain
+        );
+        assert!(
+            claim(EULER_POINCARE).domain.is_encoding_wide(),
+            "Euler–Poincaré is rank-cancellation, not a named Hodge regime"
+        );
+        assert!(
+            claim(CLOSED_EQUALS_EXACT).domain.is_encoding_wide(),
+            "Poincaré stays encoding-wide"
+        );
+        assert!(
+            !claim(D_SQUARED_ZERO).domain.is_encoding_wide(),
+            "catalog d² already names a coboundary regime"
+        );
+    }
+
+    #[test]
     fn euler_poincare_is_rank_cancellation_not_a_second_path() {
         // b0 = V-r0, b1 = E-r1-r0, b2 = F-r1 ⇒ b0-b1+b2 ≡ V-E+F.
         // A broken matrix_rank still satisfies Euler-Poincaré, so that
@@ -1017,6 +1058,35 @@ mod tests {
             derivation(&t, HODGE_HARMONIC),
             DerivationAssurance::CrossChecked
         );
+        let hodge = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == HODGE_HARMONIC)
+            .unwrap();
+        assert!(
+            !hodge.domain.is_encoding_wide(),
+            "Hodge P2 must name the discrete Laplacian regime: {:?}",
+            hodge.domain
+        );
+        assert!(
+            hodge
+                .domain
+                .regimes
+                .iter()
+                .any(|r| r.contains("finite simplicial")),
+            "Hodge regime: {:?}",
+            hodge.domain
+        );
+        let euler = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id.0 == EULER_POINCARE)
+            .unwrap();
+        assert!(
+            euler.domain.is_encoding_wide(),
+            "Euler–Poincaré stays encoding-wide rank-cancellation: {:?}",
+            euler.domain
+        );
         assert_eq!(
             derivation(&t, D_SQUARED_ZERO),
             DerivationAssurance::Executed,
@@ -1042,6 +1112,11 @@ mod tests {
         assert!(
             poincare.commitments.formal_libraries.is_empty(),
             "Poincaré is not a catalog polynomial"
+        );
+        assert!(
+            poincare.domain.is_encoding_wide(),
+            "Poincaré stays encoding-wide; it is not discrete Hodge: {:?}",
+            poincare.domain
         );
         assert_eq!(
             derivation(&t, CLOSED_EQUALS_EXACT),

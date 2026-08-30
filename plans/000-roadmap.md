@@ -35,6 +35,7 @@ Level-3 trust
   L3 P3S semantic          ✓ encoding review bound to statement_hash, not slug; never Canonical
   L3 P3N numeric           ✓ SM anomalies, hypercharge solve, hydrogen Q=T3+Y, GUT-scale 3/8; Tr Q is ΣY already certified, not a second P3N; not GQW at M_Z
   L3 P2 cross-check        ✓ Hodge Laplacian nullity vs b1; Euler–Poincaré is rank-cancellation, not P2
+  L3 Hodge domain          ✓ dec.hodge-harmonic names discrete Laplacian DomainOfValidity; Euler and Poincaré stay encoding-wide
   L3 precision gap         ✓ coarse field.second-order-accurate is InsufficientPrecision, not Fails; not P3N
 ```
 

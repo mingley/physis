@@ -39,7 +39,9 @@ Nothing gains authority merely because an agent wrote code that returns
   `DomainOfValidity` (not the encoding-wide placeholder). SM anomalies,
   hypercharge solve, and hydrogen neutrality name one generation /
   hydrogen. Super-K proton lifetime stays encoding-wide until Super-K
-  is a Dataset. Lean compiler versions live on the receipt, not
+  is a Dataset. `dec.hodge-harmonic` names discrete combinatorial Hodge
+  on finite simplicial 1-cochains, not the smooth Hodge theorem.
+  Lean compiler versions live on the receipt, not
   the sentence.
 - `physis why` / `physis epistemics` do not print a `theorem` tag.
 -   `TrustProfile` is derived from receipts and reviews. P3F cannot be set
@@ -52,7 +54,8 @@ Nothing gains authority merely because an agent wrote code that returns
   anomaly already certified, not a second P3N. Georgi–Quinn–Weinberg
   running at `M_Z` and the 3% band are not P3N. `CrossChecked` / P2 is earned when two independent
   executable paths agree (`dec.hodge-harmonic`: Laplacian nullity vs
-  coboundary `b₁`). Euler–Poincaré stays `executed`: with these Betti
+  coboundary `b₁` on this complex; the cell names that discrete regime).
+  Euler–Poincaré stays `executed`: with these Betti
   formulas, `b₀−b₁+b₂ ≡ V−E+F` is rank-cancellation, not a second path.
   Neither overlay is a Lean receipt. A P3F
   `Unreviewed` result is labelled dangerous. `physis why` prints a typed
@@ -146,6 +149,8 @@ identity; a slug-only review line is not P3S.
   catalog axioms. `field.second-order-accurate` names `|k a| < 1`.
   GUT mixing-angle and SM P3N cells name unification-scale / `M_Z` /
   one generation / hydrogen. Super-K and GUT `Tr Q` stay encoding-wide.
+  `dec.hodge-harmonic` names discrete combinatorial Hodge; Euler–Poincaré
+  and Poincaré stay encoding-wide.
 - Trust tiers do not gate observation or standalone encoding-review.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op.

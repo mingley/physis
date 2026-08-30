@@ -2098,6 +2098,10 @@ mod tests {
             .to_string();
         assert!(why.contains("derivation: executed"), "{why}");
         assert!(!why.contains("derivation: cross-checked"), "{why}");
+        assert!(
+            why.contains("not yet a machine-checked regime"),
+            "Euler–Poincaré stays encoding-wide: {why}"
+        );
 
         let why_h = lab
             .exec(Command::Why {
@@ -2109,6 +2113,11 @@ mod tests {
         assert!(why_h.contains("P2"), "{why_h}");
         assert!(!why_h.contains("P3F"), "{why_h}");
         assert!(why_h.contains("kernel proof: none"), "{why_h}");
+        assert!(why_h.contains("finite simplicial 1-cochains"), "{why_h}");
+        assert!(
+            !why_h.contains("not yet a machine-checked regime"),
+            "Hodge P2 must name the discrete Laplacian, not encoding-wide: {why_h}"
+        );
 
         let run = lab
             .exec(Command::Run {

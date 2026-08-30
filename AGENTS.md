@@ -88,7 +88,9 @@ encoding-wide. It does not list GUT `Tr Q` (`ΣY` is already
 the gravitational anomaly), Georgi–Quinn–Weinberg running at `M_Z`, the
 3% band, or a kernel proof. `inspect trust P2` lists Hodge Laplacian-versus-`b₁` agreement
 (`dec.hodge-harmonic`), not Euler–Poincaré rank-cancellation, not Poincaré,
-and not a kernel proof. `exec` checks role, then trust, then budget:
+and not a kernel proof. That P2 cell names discrete combinatorial Hodge
+on finite simplicial 1-cochains; Euler–Poincaré and Poincaré stay
+encoding-wide. `exec` checks role, then trust, then budget:
 `reproduce` and the loop's review step require P3F. Standalone encoding
 review does not.
 

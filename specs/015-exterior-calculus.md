@@ -37,8 +37,8 @@ computes topology: the first Betti number counts holes, and whether every closed
 | `dec.d-squared-zero` | `d ∘ d = 0` | `d₁(d₀ f) = 0` for every basis 0-form, exactly |
 | `dec.first-betti-number` | the number of holes `b₁` | `b₁ = n_edges − rank(d₁) − rank(d₀)`, ranks by Gaussian elimination |
 | `dec.closed-equals-exact` | every closed 1-form is exact (Poincaré) | holds iff `b₁ = 0` |
-| `dec.euler-poincare` | `V−E+F = b₀−b₁+b₂` | the Euler characteristic computed two independent ways, checked equal |
-| `dec.hodge-harmonic` | `dim(harmonic 1-forms) = b₁` (Hodge) | nullity of the Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁`, checked against `b₁` |
+| `dec.euler-poincare` | `V−E+F = b₀−b₁+b₂` | rank-cancellation of these Betti formulas, not a second path. Domain stays encoding-wide |
+| `dec.hodge-harmonic` | `dim(harmonic 1-forms) = b₁` (discrete Hodge) | nullity of the combinatorial Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁`, checked against `b₁`. Domain: finite simplicial 1-cochains, not the smooth Hodge theorem |
 | `dec.fundamental-class` | `b₂ = 1` over ℝ | computed `b₂`; holds for the torus and the 2-sphere, fails for the disk, circle, and Klein bottle |
 
 `dec.closed-equals-exact` declares a live lemma edge to `dec.d-squared-zero`
@@ -100,7 +100,9 @@ Topology is detected mechanically, by linear algebra on the coboundary.
 - **Hodge theorem** (`dec.hodge-harmonic`): the dimension of harmonic 1-forms —
   the nullity of the combinatorial Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁` — equals
   `b₁`. Disk: `0`; circle: `1`. That is a different matrix from the coboundary
-  rank formula. Agreement overlays `DerivationAssurance::CrossChecked` (P2),
+  rank formula. The cell names that discrete regime (finite simplicial
+  1-cochains), not the smooth Hodge theorem on a Riemannian manifold.
+  Agreement overlays `DerivationAssurance::CrossChecked` (P2),
   not a Lean receipt, not P3N, and not P4. Forgetting the up or down term of
   `Δ₁` disagrees with `b₁`. A mismatch `fails` and does not mint P2.
 

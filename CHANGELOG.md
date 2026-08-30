@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Hodge P2 names a discrete DomainOfValidity**
+  (`dec.hodge-harmonic`). Encoding-wide "Hodge theorem" is a hidden
+  regime: the cell is combinatorial Laplacian nullity vs coboundary
+  `b₁` on a finite simplicial complex, not the smooth Hodge theorem.
+  Euler–Poincaré and Poincaré stay encoding-wide. Catalog d² hash
+  unchanged. Verified: Hodge is not encoding-wide; Euler and Poincaré
+  are; `inspect trust P2` stays count 1; `why` names finite simplicial
+  1-cochains. Live prove of catalog d² is still Lean+nanoda. `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **GUT mixing-angle and SM P3N cells name a DomainOfValidity**
   Encoding-wide with a filled boundary or dataset is a hidden regime.
   `gut.weinberg-angle` is unification-scale, not `sin²θ_W(M_Z)`. GQW
