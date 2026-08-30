@@ -157,6 +157,13 @@ pub enum Command {
         /// Claim id.
         claim: String,
     },
+    /// Independently rebuild a live [`physis_provenance::SourceRecord`].
+    /// Datasets and catalog dossiers. Not P3S, not a kernel receipt,
+    /// not Canonical, and not P4.
+    Cite {
+        /// Claim id.
+        claim: String,
+    },
 }
 
 impl Command {
@@ -193,6 +200,7 @@ impl Command {
             Command::Reproduce { .. } => "reproduce",
             Command::Gaps => "gaps",
             Command::Enclose { .. } => "enclose",
+            Command::Cite { .. } => "cite",
         }
     }
 }

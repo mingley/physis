@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Independent SourceRecord cite is a unique provenance-auditor op**
+  (`physis cite`, `Role::ProvenanceAuditor`). Rebuilds live dataset
+  (PDG, Super-K) and catalog-dossier locators via `SourceRecord::recheck`.
+  A forged `source_hash` cannot mint. Not P3S, not a kernel receipt,
+  not Canonical, not P4. Unique-vacuum and GUT-scale 3/8 refuse. Loop
+  cites after enclose. Catalog d² hash unchanged. Unique-vacuum graph
+  id unchanged. P3N count stays 4. Super-K source id
+  `26467998781b7d501f90a1dc762d3c16ae636f867ea61152923c505e1ad3bbef`.
+  Verified: recheck rejects a tampered
+  hash; role gates; journal restore.
+
 - **Independent Ratio enclose is a unique numerical-verifier op**
   (`physis enclose`, `Role::NumericalVerifier`). Parses live
   `CertifiedNumeric` overlay strings as canonical `Ratio` (`3/8`, `0`,

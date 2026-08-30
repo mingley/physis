@@ -163,9 +163,11 @@ version = "0.1.0"
 dependencies = [
  "physis-audit",
  "physis-core",
+ "physis-data",
  "physis-model",
  "physis-numeric",
  "physis-proof",
+ "physis-provenance",
  "physis-semantic",
  "physis-store",
  "physis-theory",

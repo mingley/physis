@@ -168,6 +168,8 @@ cargo run -p physis -- --role explorer score standard-model       # refused
 cargo run -p physis -- --role empirical-analyst score standard-model
 cargo run -p physis -- --role numerical-verifier enclose gut.weinberg-angle
 cargo run -p physis -- --role explorer enclose gut.weinberg-angle   # refused
+cargo run -p physis -- --role provenance-auditor cite gut.proton-lifetime-sk
+cargo run -p physis -- --role reviewer cite gut.proton-lifetime-sk  # refused
 cargo run -p physis -- --role formalizer formalize dec.d-squared-zero
 cargo run -p physis -- prove dec.d-squared-zero
 cargo run -p physis -- --role proof-searcher reproduce dec.d-squared-zero  # refused
@@ -179,6 +181,7 @@ cargo run -p physis -- hypothesize type-iib
 cargo run -p physis -- hypothesize combinational-circuit
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- enclose gut.weinberg-angle
+cargo run -p physis -- cite gut.proton-lifetime-sk
 cargo run -p physis -- sweep type-iib total_dim 8,9,10,11,12
 cargo run -p physis -- audit
 cargo run -p physis --example kinetic_energy

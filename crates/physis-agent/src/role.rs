@@ -17,7 +17,9 @@ use crate::protocol::Command;
 /// [`Role::ReplicationAgent`]. An explorer cannot score the empirical
 /// target: that is [`Role::EmpiricalAnalyst`]. A proof-searcher cannot
 /// independently parse a `CertifiedNumeric` enclosure: that is
-/// [`Role::NumericalVerifier`] (not a kernel receipt, not P4).
+/// [`Role::NumericalVerifier`] (not a kernel receipt, not P4). A reviewer
+/// cannot independently rehash a `SourceRecord`: that is
+/// [`Role::ProvenanceAuditor`] (not P3S).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Role {
@@ -44,11 +46,14 @@ pub enum Role {
     /// Independently parse a `CertifiedNumeric` enclosure as `Ratio`.
     /// Cannot prove. Not a kernel receipt, not Canonical, and not P4.
     NumericalVerifier,
+    /// Independently rebuild a live `SourceRecord`. Cannot prove or
+    /// review. Not P3S, not Canonical, and not P4.
+    ProvenanceAuditor,
 }
 
 impl Role {
     /// Every named role, including the lab.
-    pub const ALL: [Role; 10] = [
+    pub const ALL: [Role; 11] = [
         Role::Lab,
         Role::Explorer,
         Role::Formalizer,
@@ -59,6 +64,7 @@ impl Role {
         Role::ReplicationAgent,
         Role::EmpiricalAnalyst,
         Role::NumericalVerifier,
+        Role::ProvenanceAuditor,
     ];
 
     /// Stable kebab-case name.
@@ -74,6 +80,7 @@ impl Role {
             Role::ReplicationAgent => "replication-agent",
             Role::EmpiricalAnalyst => "empirical-analyst",
             Role::NumericalVerifier => "numerical-verifier",
+            Role::ProvenanceAuditor => "provenance-auditor",
         }
     }
 
@@ -84,7 +91,8 @@ impl Role {
     }
 
     /// Observe-only ops: no knob writes, no mint, no review, no audit,
-    /// no empirical score, no remint, no independent Ratio enclose.
+    /// no empirical score, no remint, no independent Ratio enclose, no
+    /// independent SourceRecord rebuild.
     fn observe(cmd: &Command) -> bool {
         matches!(
             cmd,
@@ -134,6 +142,7 @@ impl Role {
             Role::ReplicationAgent => matches!(cmd, Command::Reproduce { .. }),
             Role::EmpiricalAnalyst => matches!(cmd, Command::Score { .. }),
             Role::NumericalVerifier => matches!(cmd, Command::Enclose { .. }),
+            Role::ProvenanceAuditor => matches!(cmd, Command::Cite { .. }),
             Role::Explorer | Role::Lab => false,
         }
     }
@@ -319,7 +328,7 @@ mod tests {
         let enclose = Command::Enclose {
             claim: "gut.weinberg-angle".into(),
         };
-        assert_eq!(Role::ALL.len(), 10);
+        assert_eq!(Role::ALL.len(), 11);
         assert!(Role::NumericalVerifier.permits(&enclose));
         assert!(!Role::NumericalVerifier.permits(&prove()));
         assert!(!Role::NumericalVerifier.permits(&Command::Reproduce {
@@ -333,6 +342,24 @@ mod tests {
         assert!(!Role::EmpiricalAnalyst.permits(&enclose));
         assert!(Role::Lab.permits(&enclose));
         assert!(Role::parse("numerical-verifier") == Some(Role::NumericalVerifier));
+    }
+
+    #[test]
+    fn provenance_auditor_can_cite_not_prove_or_review() {
+        let cite = Command::Cite {
+            claim: "gut.proton-lifetime-sk".into(),
+        };
+        assert!(Role::ProvenanceAuditor.permits(&cite));
+        assert!(!Role::ProvenanceAuditor.permits(&prove()));
+        assert!(!Role::ProvenanceAuditor.permits(&review()));
+        assert!(!Role::ProvenanceAuditor.permits(&Command::Enclose {
+            claim: "gut.weinberg-angle".into(),
+        }));
+        assert!(!Role::Explorer.permits(&cite));
+        assert!(!Role::Reviewer.permits(&cite));
+        assert!(!Role::NumericalVerifier.permits(&cite));
+        assert!(Role::Lab.permits(&cite));
+        assert!(Role::parse("provenance-auditor") == Some(Role::ProvenanceAuditor));
     }
 
     #[test]

@@ -269,24 +269,15 @@ impl SemanticStore {
     }
 }
 
-/// Dual-check encodings and provenance, then (if independent) run the
-/// red-team corpus. The minted record is bound to [`FormalClaim::statement_hash`].
-/// Never returns a Canonical tag: that variant does not exist.
-pub fn review(claim: &FormalClaim) -> Result<SemanticRecord, SemanticError> {
-    let d = dossier(&claim.id().0).ok_or(SemanticError::NoDossier)?;
-    if lookup_matching(claim).is_none() {
-        return Err(SemanticError::WrongIdentity);
-    }
-    review_dossier(d, d.ir, claim)
+/// Independently rebuild the dossier [`SourceRecord`]. Does not parse IR,
+/// does not run the red-team corpus, and does not mint P3S.
+pub fn cite_source(claim_id: &str) -> Result<SourceRecord, SemanticError> {
+    let d = dossier(claim_id).ok_or(SemanticError::NoDossier)?;
+    dossier_source(d)
 }
 
-fn review_dossier(
-    d: &Dossier,
-    ir_src: &str,
-    claim: &FormalClaim,
-) -> Result<SemanticRecord, SemanticError> {
-    let spec = lookup(d.claim_id).ok_or(SemanticError::NoDossier)?;
-    let source = SourceRecord::new(
+fn dossier_source(d: &Dossier) -> Result<SourceRecord, SemanticError> {
+    SourceRecord::new(
         Citation {
             work: d.work.into(),
             edition: d.edition.into(),
@@ -304,7 +295,27 @@ fn review_dossier(
         ArtifactId::of(format!("{}|{}|{}", d.work, d.edition, d.version).as_bytes()),
         None,
     )
-    .map_err(|e| SemanticError::VagueSource(e.to_string()))?;
+    .map_err(|e| SemanticError::VagueSource(e.to_string()))
+}
+
+/// Dual-check encodings and provenance, then (if independent) run the
+/// red-team corpus. The minted record is bound to [`FormalClaim::statement_hash`].
+/// Never returns a Canonical tag: that variant does not exist.
+pub fn review(claim: &FormalClaim) -> Result<SemanticRecord, SemanticError> {
+    let d = dossier(&claim.id().0).ok_or(SemanticError::NoDossier)?;
+    if lookup_matching(claim).is_none() {
+        return Err(SemanticError::WrongIdentity);
+    }
+    review_dossier(d, d.ir, claim)
+}
+
+fn review_dossier(
+    d: &Dossier,
+    ir_src: &str,
+    claim: &FormalClaim,
+) -> Result<SemanticRecord, SemanticError> {
+    let spec = lookup(d.claim_id).ok_or(SemanticError::NoDossier)?;
+    let source = dossier_source(d)?;
 
     let catalog_expr = (spec.identity)();
     let catalog_hash = ArtifactId::of(catalog_expr.canonical().as_bytes());
@@ -487,5 +498,14 @@ lean_ref ∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0
         store.record(&rec);
         assert!(store.by_statement(live.statement_hash()).is_some());
         assert!(store.by_statement(unspecified.statement_hash()).is_none());
+    }
+
+    #[test]
+    fn cite_source_rebuilds_the_dossier_without_raising_p3s() {
+        let rec = cite_source("dec.d-squared-zero").unwrap();
+        assert!(rec.recheck().is_ok());
+        assert!(rec.citation.work.contains("Desbrun"));
+        assert!(cite_source("predictivity.unique-vacuum").is_err());
+        assert!(cite_source("gut.proton-lifetime-sk").is_err());
     }
 }

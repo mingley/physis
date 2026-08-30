@@ -125,6 +125,18 @@ pub enum JournalEvent {
         /// rebuilds; a forged hash cannot mint the certificate.
         certificate_hash: String,
     },
+    /// An independent SourceRecord rebuild. Restore rebuilds from live
+    /// dataset or dossier fields. The recorded source hash is not
+    /// deserialized as authority, is not P3S, and is not Canonical or P4.
+    Cite {
+        /// Unix millis.
+        t: u64,
+        /// Claim id (lab slug).
+        claim: String,
+        /// Content-addressed Source node hex. Restore rebuilds; a
+        /// forged hash cannot mint the record.
+        source_hash: String,
+    },
 }
 
 /// Parse JSONL into events, counting non-blank lines that fail to deserialize.
@@ -248,6 +260,15 @@ impl JournalEvent {
             t: now_ms(),
             claim: claim.into(),
             certificate_hash: certificate_hash.into(),
+        }
+    }
+
+    /// An independent SourceRecord rebuild, stamped with the current time.
+    pub fn cite(claim: impl Into<String>, source_hash: impl Into<String>) -> Self {
+        JournalEvent::Cite {
+            t: now_ms(),
+            claim: claim.into(),
+            source_hash: source_hash.into(),
         }
     }
 }
@@ -489,6 +510,25 @@ mod tests {
             } => {
                 assert_eq!(claim, "gut.weinberg-angle");
                 assert_eq!(certificate_hash, "deadbeef");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn cite_event_round_trips_and_is_not_p3s() {
+        let ev = JournalEvent::cite("gut.proton-lifetime-sk", "deadbeef");
+        let s = serde_json::to_string(&ev).unwrap();
+        assert!(s.contains("\"event\":\"cite\""));
+        assert!(s.contains("\"source_hash\":\"deadbeef\""));
+        assert!(!s.contains("receipt"), "{s}");
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Cite {
+                claim, source_hash, ..
+            } => {
+                assert_eq!(claim, "gut.proton-lifetime-sk");
+                assert_eq!(source_hash, "deadbeef");
             }
             other => panic!("{other:?}"),
         }

@@ -59,6 +59,8 @@ pub struct Lab {
     /// Independent Ratio parses keyed by statement hash. Not a kernel
     /// receipt store and not the `CertifiedNumeric` overlay that earns P3N.
     numeric_certs: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
+    /// Independent SourceRecord rebuilds keyed by statement hash. Not P3S.
+    cited_sources: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
 }
 
 /// The experiments the lab can run, with one-line descriptions.
@@ -123,6 +125,7 @@ impl Lab {
             role: Role::Lab,
             budget: ResearchBudget::unlimited(),
             numeric_certs: BTreeMap::new(),
+            cited_sources: BTreeMap::new(),
         }
     }
 
@@ -268,7 +271,7 @@ impl Lab {
     }
 
     /// Re-apply journaled `set-knob` events and remint prove / review /
-    /// evidence / enclose from live state, **without** recording them again.
+    /// evidence / enclose / cite from live state, **without** recording them again.
     ///
     /// This resumes a persisted session: after loading a journal from a file,
     /// call this so subsequent turns build on the prior ones instead of on
@@ -319,6 +322,11 @@ impl Lab {
                     // Rebuild from live CertifiedNumeric overlay strings.
                     // The recorded certificate hash is not deserialized.
                     let _ = self.build_numeric_certificates(&claim);
+                }
+                JournalEvent::Cite { claim, .. } => {
+                    // Rebuild from live dataset / dossier SourceRecords.
+                    // The recorded source hash is not deserialized.
+                    let _ = self.build_cite(&claim);
                 }
                 _ => {}
             }
@@ -614,6 +622,15 @@ impl Lab {
                                     "  enclose:     none (overlay is not an independent Ratio parse)\n",
                                 );
                             }
+                            if let Some(id) = self.cited_sources.get(&c.statement_hash()) {
+                                text.push_str(&format!("  source:      {id}\n"));
+                            } else if physis_data::dataset_for_claim(c.id_str()).is_some()
+                                || physis_semantic::cite_source(c.id_str()).is_ok()
+                            {
+                                text.push_str(
+                                    "  source:      none (locator is not an independent SourceRecord rebuild)\n",
+                                );
+                            }
                             if let Some(nll) = v.statistical_nll() {
                                 text.push_str(&format!("  nll:        {nll}\n"));
                             }
@@ -746,6 +763,7 @@ impl Lab {
             Command::Reproduce { claim } => self.reproduce_claim(&claim),
             Command::Gaps => self.gaps(),
             Command::Enclose { claim } => self.enclose_claim(&claim),
+            Command::Cite { claim } => self.cite_claim(&claim),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -1176,6 +1194,114 @@ impl Lab {
         };
         let mut out = format!("enclose  {claim_id}  certificate {}\n", bundle.to_hex());
         let prefix = format!("enclose  {claim_id}\n");
+        if let Some(rest) = text.strip_prefix(&prefix) {
+            out.push_str(rest);
+        } else {
+            out.push_str(&text);
+        }
+        Ok((out, bundle))
+    }
+
+    /// Independently rebuild a live [`physis_provenance::SourceRecord`].
+    /// Datasets and catalog dossiers. Does not raise P3S, does not mint
+    /// a kernel receipt, Canonical, or P4.
+    fn cite_claim(&mut self, claim_id: &str) -> Response {
+        match self.build_cite(claim_id) {
+            Ok((out, id)) => {
+                self.journal
+                    .record(JournalEvent::cite(claim_id, id.to_hex()));
+                Response::ok(out)
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Rebuild a Source node from live dataset or dossier fields. Does
+    /// not journal and does not deserialize a recorded source hash.
+    fn build_cite(
+        &mut self,
+        claim_id: &str,
+    ) -> Result<(String, physis_core::artifact::ArtifactId), String> {
+        let mut hashes = Vec::new();
+        for t in self.theories.values() {
+            for (c, _) in t.evaluate_all() {
+                if c.id_str() == claim_id {
+                    hashes.push((t.id().to_string(), c.statement_hash()));
+                }
+            }
+        }
+        if hashes.is_empty() {
+            return Err(format!("unknown claim '{claim_id}'"));
+        }
+
+        let (kind, label, rec) = if let Some(ds) = physis_data::dataset_for_claim(claim_id) {
+            let rec = ds
+                .source
+                .recheck()
+                .map_err(|e| format!("cite {claim_id}: {e}"))?;
+            ("dataset", ds.id, rec)
+        } else {
+            match physis_semantic::cite_source(claim_id) {
+                Ok(rec) => {
+                    let rec = rec.recheck().map_err(|e| format!("cite {claim_id}: {e}"))?;
+                    ("dossier", "catalog".to_string(), rec)
+                }
+                Err(_) => {
+                    return Err(format!("cite {claim_id}: no precise source artifact"));
+                }
+            }
+        };
+
+        let mut text = format!("cite  {claim_id}\n");
+        text.push_str(&format!("  kind     {kind}  {label}\n"));
+        text.push_str(&format!("  work     {}\n", rec.citation.work));
+        text.push_str(&format!("  edition  {}\n", rec.citation.edition));
+        text.push_str(&format!("  version  {}\n", rec.version));
+        if let Some(eq) = &rec.locator.equation {
+            text.push_str(&format!("  equation {eq}\n"));
+        }
+        if let Some(section) = &rec.locator.section {
+            text.push_str(&format!("  section  {section}\n"));
+        }
+        if let Some(table) = &rec.locator.table {
+            text.push_str(&format!("  table    {table}\n"));
+        }
+        if let Some(range) = &rec.locator.dataset_range {
+            text.push_str(&format!("  range    {range}\n"));
+        }
+        if let Some(exp) = &rec.locator.experiment {
+            text.push_str(&format!("  experiment {exp}\n"));
+        }
+        text.push_str(&format!("  record    {}\n", rec.source_hash));
+        text.push_str("  not P3S; not a kernel proof; not P4; not Canonical\n");
+
+        let payload = format!(
+            "{}\t{}\t{}\t{}",
+            rec.source_hash, rec.citation.work, rec.citation.edition, rec.version
+        );
+        let mut node_ids = Vec::new();
+        for (theory, hash) in &hashes {
+            let stmt = self.store.insert(Node::new(
+                NodeKind::Statement,
+                vec![],
+                hash.to_hex().as_bytes(),
+            ));
+            let node =
+                self.store
+                    .insert(Node::new(NodeKind::Source, vec![stmt], payload.as_bytes()));
+            self.cited_sources.insert(*hash, node);
+            node_ids.push(node);
+            text.push_str(&format!("  identity  {}  {theory}\n", hash.to_hex()));
+        }
+        node_ids.sort();
+        let bundle = if node_ids.len() == 1 {
+            node_ids[0]
+        } else {
+            self.store
+                .insert(Node::new(NodeKind::Source, node_ids, claim_id.as_bytes()))
+        };
+        let mut out = format!("cite  {claim_id}  source {}\n", bundle.to_hex());
+        let prefix = format!("cite  {claim_id}\n");
         if let Some(rest) = text.strip_prefix(&prefix) {
             out.push_str(rest);
         } else {
@@ -1620,7 +1746,7 @@ impl Lab {
     fn research_loop(&mut self) -> Response {
         let snap = self.snapshot_knobs();
         let mut text = String::from(
-            "loop observe → hypothesize → prove → falsify → enclose → replicate → design → audit → review\n",
+            "loop observe → hypothesize → prove → falsify → enclose → cite → replicate → design → audit → review\n",
         );
 
         let mut holds = 0usize;
@@ -1696,6 +1822,22 @@ impl Lab {
                     text.push_str(&format!("enclose  {slug}  {}\n", cert.to_hex()));
                 }
                 Err(e) => text.push_str(&format!("enclose  {slug}  {e}\n")),
+            }
+        }
+
+        let mut cite_slugs = BTreeSet::new();
+        for spec in CATALOG {
+            cite_slugs.insert(spec.claim_id.to_string());
+        }
+        cite_slugs.insert("gut.weinberg-angle-mz-interval".into());
+        cite_slugs.insert("gut.proton-lifetime-sk".into());
+        for slug in cite_slugs {
+            match self.build_cite(&slug) {
+                Ok((_, id)) => {
+                    self.journal.record(JournalEvent::cite(&slug, id.to_hex()));
+                    text.push_str(&format!("cite  {slug}  {}\n", id.to_hex()));
+                }
+                Err(e) => text.push_str(&format!("cite  {slug}  {e}\n")),
             }
         }
 
@@ -4198,6 +4340,13 @@ mod tests {
             .unwrap_or_else(|| panic!("expected 64 hex certificate id in {line}"))
     }
 
+    fn source_node_id(text: &str) -> physis_core::artifact::ArtifactId {
+        let line = text.lines().next().expect("empty cite");
+        let hex = line.split_whitespace().last().expect("source hex");
+        physis_core::artifact::ArtifactId::from_hex(hex)
+            .unwrap_or_else(|| panic!("expected 64 hex source id in {line}"))
+    }
+
     fn unique_vacuum_statement(lab: &Lab, theory: &str) -> physis_core::artifact::ArtifactId {
         let (c, _) = lab
             .theory(theory)
@@ -4718,6 +4867,18 @@ mod tests {
         assert!(
             !text.contains("enclose  gut.proton-lifetime-sk"),
             "Super-K is not CertifiedNumeric: {text}"
+        );
+        assert!(
+            text.contains("cite  gut.proton-lifetime-sk"),
+            "loop must independently rebuild Super-K SourceRecord: {text}"
+        );
+        assert!(
+            text.contains("cite  dec.d-squared-zero"),
+            "loop must cite catalog dossiers without that being P3S by itself: {text}"
+        );
+        assert!(
+            !text.contains("cite  predictivity.unique-vacuum"),
+            "unique-vacuum has no precise source artifact: {text}"
         );
         assert_eq!(
             lab.theory("type-iib")
@@ -5570,6 +5731,165 @@ mod tests {
             .text()
             .to_string();
         assert!(why.contains(&format!("enclose:     {live}")), "{why}");
+    }
+
+    #[test]
+    fn provenance_auditor_cites_source_records_and_cannot_review() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Cite {
+            claim: "gut.proton-lifetime-sk".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("explorer cannot cite"),
+            "{}",
+            blocked.text()
+        );
+
+        lab.set_role(Role::Reviewer);
+        let blocked_rev = lab.exec(Command::Cite {
+            claim: "gut.proton-lifetime-sk".into(),
+        });
+        assert!(
+            blocked_rev.text().contains("reviewer cannot cite"),
+            "{}",
+            blocked_rev.text()
+        );
+
+        lab.set_role(Role::ProvenanceAuditor);
+        let review = lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            review.text().contains("provenance-auditor cannot review"),
+            "{}",
+            review.text()
+        );
+        let prove = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            prove.text().contains("provenance-auditor cannot prove"),
+            "{}",
+            prove.text()
+        );
+
+        let sk = lab
+            .exec(Command::Cite {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        assert!(sk.contains("kind     dataset  sk-2020-p-e-pi0"), "{sk}");
+        assert!(sk.contains("Takenaka"), "{sk}");
+        assert!(sk.contains("not P3S"), "{sk}");
+        assert!(!sk.contains("receipt"), "{sk}");
+        let sk_id = source_node_id(&sk);
+        assert_eq!(lab.store.get(sk_id).map(|n| n.kind), Some(NodeKind::Source));
+
+        let pdg = lab
+            .exec(Command::Cite {
+                claim: "gut.weinberg-angle-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(pdg.contains("pdg-2024-sin2theta"), "{pdg}");
+        assert!(pdg.contains("PDG Review"), "{pdg}");
+
+        let d2 = lab
+            .exec(Command::Cite {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(d2.contains("kind     dossier  catalog"), "{d2}");
+        assert!(d2.contains("Desbrun"), "{d2}");
+        assert!(d2.contains("not P3S"), "{d2}");
+
+        for claim in [
+            "predictivity.unique-vacuum",
+            "gut.weinberg-angle",
+            "dec.closed-equals-exact",
+        ] {
+            let resp = lab.exec(Command::Cite {
+                claim: claim.into(),
+            });
+            assert_eq!(resp.exit_code(), 1, "{claim} {}", resp.text());
+            assert!(
+                resp.text().contains("no precise source artifact"),
+                "{claim} {}",
+                resp.text()
+            );
+        }
+
+        let p3s = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3S".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3s.contains("count 0"), "cite must not raise P3S: {p3s}");
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3n.contains("count 4"), "cite must not mint P3N: {p3n}");
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains(&format!("source:      {sk_id}")), "{why}");
+        assert!(!why.contains("P3S"), "{why}");
+    }
+
+    #[test]
+    fn source_record_restores_by_rebuild_not_deserialize() {
+        let mut lab1 = Lab::standard();
+        let first = lab1
+            .exec(Command::Cite {
+                claim: "gut.proton-lifetime-sk".into(),
+            })
+            .text()
+            .to_string();
+        let live = source_node_id(&first);
+        assert_eq!(
+            live.to_hex(),
+            "26467998781b7d501f90a1dc762d3c16ae636f867ea61152923c505e1ad3bbef",
+            "journaling must not change the Super-K source payload"
+        );
+        let jsonl = lab1.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"cite\""), "{jsonl}");
+        assert!(
+            jsonl.contains(&format!("\"source_hash\":\"{}\"", live.to_hex())),
+            "{jsonl}"
+        );
+
+        let mut lab2 = Lab::standard();
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        let journal_len = lab2.journal().len();
+        lab2.restore_from_journal();
+        assert_eq!(lab2.journal().len(), journal_len);
+        assert_eq!(lab2.store.get(live).map(|n| n.kind), Some(NodeKind::Source));
+
+        let forged_hex = "0".repeat(64);
+        let tampered = format!(
+            r#"{{"event":"cite","t":1,"claim":"gut.proton-lifetime-sk","source_hash":"{forged_hex}"}}"#
+        );
+        let mut lab3 = Lab::standard();
+        *lab3.journal_mut() = Journal::from_jsonl(&tampered);
+        lab3.restore_from_journal();
+        assert_eq!(lab3.store.get(live).map(|n| n.kind), Some(NodeKind::Source));
+        let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
+            .expect("64 hex zeros is an ArtifactId");
+        assert!(lab3.store.get(forged).is_none());
     }
 
     #[test]

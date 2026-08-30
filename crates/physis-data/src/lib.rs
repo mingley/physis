@@ -206,6 +206,17 @@ pub fn super_kamiokande_proton_lifetime() -> Dataset {
     )
 }
 
+/// Live dataset whose [`SourceRecord`] is the empirical provenance of
+/// `claim_id`. The GUT-scale `3/8` cell is not this registry; neither
+/// is heuristic GQW running at `M_Z` without the interval receipt.
+pub fn dataset_for_claim(claim_id: &str) -> Option<Dataset> {
+    match claim_id {
+        "gut.weinberg-angle-mz-interval" => Some(pdg_2024_sin2theta()),
+        "gut.proton-lifetime-sk" => Some(super_kamiokande_proton_lifetime()),
+        _ => None,
+    }
+}
+
 /// Receipt of an empirical comparison. Exclusion is this object, not
 /// `prediction != known_number`.
 ///
@@ -400,5 +411,18 @@ mod tests {
         );
         assert!(rec.nll.is_none());
         assert!(rec.excluded);
+    }
+
+    #[test]
+    fn dataset_for_claim_is_the_hashed_source_not_a_slogan() {
+        let pdg = dataset_for_claim("gut.weinberg-angle-mz-interval").expect("PDG cell");
+        assert_eq!(pdg.id, "pdg-2024-sin2theta");
+        assert!(pdg.source.recheck().is_ok());
+        let sk = dataset_for_claim("gut.proton-lifetime-sk").expect("Super-K cell");
+        assert_eq!(sk.id, SK_2020_P_E_PI0);
+        assert!(sk.source.recheck().is_ok());
+        assert!(dataset_for_claim("predictivity.unique-vacuum").is_none());
+        assert!(dataset_for_claim("gut.weinberg-angle").is_none());
+        assert!(dataset_for_claim("dec.d-squared-zero").is_none());
     }
 }

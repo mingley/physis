@@ -219,8 +219,9 @@ identity; a slug-only review line is not P3S.
   is `empirical-analyst`. A proof-searcher cannot independently parse a
   `CertifiedNumeric` enclosure; that is `numerical-verifier` (`physis
   enclose`, a content-addressed NumericCertificate; not a kernel
-  receipt, not Canonical, not P4). ProvenanceAuditor /
-  EncodingAuditor / Judge are not empty aliases for existing ops.
+  receipt, not Canonical, not P4). A reviewer cannot independently
+  rehash a `SourceRecord`; that is `provenance-auditor` (`physis cite`;
+  not P3S). EncodingAuditor / Judge are not empty aliases for existing ops.
 
 ## Vertical slice
 

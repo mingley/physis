@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 pub enum ProvenanceError {
     /// The locator is a slogan, not a page/equation/dataset row.
     VagueLocator(String),
+    /// Stored `source_hash` does not match a reconstruction of the fields.
+    HashMismatch,
 }
 
 impl std::fmt::Display for ProvenanceError {
@@ -20,6 +22,12 @@ impl std::fmt::Display for ProvenanceError {
                 write!(
                     f,
                     "refusing vague source locator '{s}'; need work/edition/page/equation"
+                )
+            }
+            ProvenanceError::HashMismatch => {
+                write!(
+                    f,
+                    "stored source_hash does not match the reconstructed SourceRecord"
                 )
             }
         }
@@ -132,6 +140,23 @@ impl SourceRecord {
             extraction,
         })
     }
+
+    /// Rebuild this record from its fields. Rejects slogan locators and
+    /// a stored hash that does not match the reconstruction. The stored
+    /// `source_hash` is not authority.
+    pub fn recheck(&self) -> Result<Self, ProvenanceError> {
+        let rebuilt = Self::new(
+            self.citation.clone(),
+            self.version.clone(),
+            self.locator.clone(),
+            self.artifact_hash,
+            self.extraction.clone(),
+        )?;
+        if rebuilt.source_hash != self.source_hash {
+            return Err(ProvenanceError::HashMismatch);
+        }
+        Ok(rebuilt)
+    }
 }
 
 #[cfg(test)]
@@ -184,5 +209,12 @@ mod tests {
         )
         .unwrap();
         assert_eq!(rec.locator.equation.as_deref(), Some("6.6"));
+        assert!(rec.recheck().is_ok());
+        let mut forged = rec.clone();
+        forged.source_hash = ArtifactId::of(b"forged-source");
+        assert!(matches!(
+            forged.recheck(),
+            Err(ProvenanceError::HashMismatch)
+        ));
     }
 }
