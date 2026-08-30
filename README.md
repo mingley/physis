@@ -80,7 +80,7 @@ The same typed knob→verdict machine hosts five sciences (`physis experiments`)
 | `solid` | lattice oscillators — **Dulong–Petit fails** the third law; Einstein holds it but **fails T³** (exponential freeze-out); Debye holds both the third law and `C_V ∝ T³` |
 | `gravity` | solar-system gravity — **Newton fails** Eddington's 1.75″ and Mercury's 43″; GR holds them; Soldner's half-angle is the standing claim GR doubles |
 | `olbers` | night sky — **static Euclidean fails** finite brightness and a dark sky (`F ∝ R`, `τ → ∞`); a finite-age horizon holds both; Hubble dimming is an independent flip |
-| `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2` |
+| `bell` | a CHSH Bell test — **local realism is refuted** by a computed `S = 2√2 > 2`; `add-product` / `add-pr-box` are IR, not visibility knobs |
 
 Domains also compose: `run landauer-engine` bridges computation and
 thermodynamics — erasing a bit costs `k_B·T·ln2` as a typed `Qty<Energy>`

@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Bell-test PR-box correlator is an IR mutation**
+  (`bell-test`, `add-pr-box`). Hilbert-space CHSH is the live encoding
+  (`state singlet`); appending `correlator pr-box` makes the CHSH
+  combination of `E = (−1)^{xy}` equal 4, which exceeds Tsirelson's
+  `2√2` and flips `quantum.tsirelson-bound` holds to fails. That is
+  not a knob. Bell violation still holds (`S = 4 > 2`). The operator
+  correlator fails (PR E is not `−cos(a−b)`). Product ket remains a
+  separate Bell-violation fork (`add-product`). `visibility` stays a
+  Werner mixedness knob and still flips `quantum.bell-violation` on
+  the singlet. Tsirelson names Hilbert-space CHSH (Tsirelson 2√2).
+  Mutants stay `bell-test`. Mutants are not installed, not journaled,
+  and not Canonical or P4. Catalog d² hash unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4. Live encode pin unchanged.
+  Verified: IR round-trip; set prbox is unknown; hypothesize
+  bell-test; live singlet restored; encode pin
+  `4a54aa1db88b053ef04a53593732c435331a71dcc0f8ad3749e7cbb6786990dc`.
+
 - **Maxwell vacuum Proca mass is an IR mutation**
   (`maxwell-vacuum`, `add-proca`). Massless Coulomb Gauss is the live
   encoding; appending `proca m2 A` makes the Coulomb residual of

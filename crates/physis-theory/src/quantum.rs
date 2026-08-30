@@ -13,7 +13,9 @@
 //! `1/√2` the correlations are reproducible by a local model. The ket lives on
 //! the IR package. A product-state encoding is a package mutation
 //! (`add-product`), not a knob: the singlet correlator and the Bell violation
-//! fail on the mutant.
+//! fail on the mutant. A PR-box correlator is a second mutation
+//! (`add-pr-box`): the CHSH combination of `E = (−1)^{xy}` is 4, which
+//! exceeds Tsirelson's `2√2`, so `quantum.tsirelson-bound` fails.
 
 use std::f64::consts::PI;
 
@@ -57,21 +59,25 @@ const ANGLE_STEPS: usize = 90;
 const SINGLET_EQ: &str = "state singlet";
 /// Product-state encoding (computational |01⟩).
 const PRODUCT_EQ: &str = "state product";
+/// Popescu–Rohrlich no-signalling correlator on the PR-box fork.
+const PRBOX_EQ: &str = "correlator pr-box";
 
-fn parse_bell_state(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_bell_state(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut singlet = false;
     let mut product = false;
+    let mut prbox = false;
     for eq in &pkg.equations {
         match eq.trim() {
             SINGLET_EQ => singlet = true,
             PRODUCT_EQ => product = true,
+            PRBOX_EQ => prbox = true,
             _ => {}
         }
     }
     if !singlet {
         return Err(format!("{} package has no singlet ket", pkg.id));
     }
-    Ok(product)
+    Ok((product, prbox))
 }
 
 fn singlet_domain() -> DomainOfValidity {
@@ -81,6 +87,29 @@ fn singlet_domain() -> DomainOfValidity {
         "Bell violation here is the singlet encoding. A product ket is a new \
          encoding, not a silent Werner mixture.",
     )
+}
+
+fn tsirelson_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["Hilbert-space CHSH (Tsirelson 2√2)".into()],
+        vec!["quantum correlator E = -cos(a-b); |S|max = 2√2".into()],
+        "Tsirelson is the Hilbert-space encoding. A PR-box correlator is a new \
+         encoding, not a silent visibility knob.",
+    )
+}
+
+/// PR-box correlator `E(x,y) = (−1)^{xy}` on bits. Not a ket.
+fn pr_box_e(x: i32, y: i32) -> f64 {
+    if x * y == 1 {
+        -1.0
+    } else {
+        1.0
+    }
+}
+
+/// CHSH combination `E00 + E01 + E10 − E11` of the PR-box table. Equals 4.
+fn pr_box_chsh() -> f64 {
+    (pr_box_e(0, 0) + pr_box_e(0, 1) + pr_box_e(1, 0) - pr_box_e(1, 1)).abs()
 }
 
 /// The signed CHSH combination `S` for the singlet correlator
@@ -133,11 +162,15 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
 ///
 /// Default encoding is a two-qubit singlet. A product state is a package
 /// mutation (`add-product`), not a knob: the singlet correlator and Bell
-/// violation fail on the mutant. `visibility` stays a Werner mixedness knob.
+/// violation fail on the mutant. A PR-box correlator is a second mutation
+/// (`add-pr-box`): `E = (−1)^{xy}` gives CHSH `S = 4`, so Tsirelson's bound
+/// fails. `visibility` stays a Werner mixedness knob.
 #[derive(Clone, Debug, PartialEq)]
 pub struct BellTest {
     visibility: f64,
     product: bool,
+    /// PR-box correlator. Not a knob.
+    prbox: bool,
 }
 
 impl Default for BellTest {
@@ -145,6 +178,7 @@ impl Default for BellTest {
         Self {
             visibility: 1.0,
             product: false,
+            prbox: false,
         }
     }
 }
@@ -179,11 +213,15 @@ impl BellTest {
     }
 
     /// IR package for this ket. Equations are `state singlet` and, when
-    /// forked, `state product`. Visibility stays on the struct.
+    /// forked, `state product` and/or `correlator pr-box`. Visibility stays
+    /// on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![SINGLET_EQ.to_string()];
         if self.product {
             equations.push(PRODUCT_EQ.to_string());
+        }
+        if self.prbox {
+            equations.push(PRBOX_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -210,8 +248,10 @@ impl BellTest {
                 pkg.id
             ));
         }
+        let (product, prbox) = parse_bell_state(pkg)?;
         Ok(Self {
-            product: parse_bell_state(pkg)?,
+            product,
+            prbox,
             ..Self::default()
         })
     }
@@ -220,9 +260,16 @@ impl BellTest {
         PRODUCT_EQ.to_string()
     }
 
-    /// The CHSH correlator |S| at the optimal singlet angles.
+    fn prbox_equation() -> String {
+        PRBOX_EQ.to_string()
+    }
+
+    /// The CHSH correlator |S|. PR-box uses the bit table; product uses
+    /// operator expectations on |01⟩; otherwise the singlet at optimal angles.
     fn chsh_s(&self) -> f64 {
-        if self.product {
+        if self.prbox {
+            pr_box_chsh()
+        } else if self.product {
             product_chsh().abs()
         } else {
             chsh_value(self.visibility, 0.0, PI / 2.0, PI / 4.0, 3.0 * PI / 4.0).abs()
@@ -233,7 +280,12 @@ impl BellTest {
     /// (the first angle is fixed to 0 by rotational symmetry). This mechanically
     /// checks Tsirelson's bound: for the quantum correlator no angle choice
     /// exceeds `V·2√2`, and at full visibility the maximum saturates `2√2`.
+    /// A PR-box is not an angle-parameterized quantum correlator; its CHSH
+    /// value is the bit-table combination, identically 4.
     fn max_chsh_over_angles(&self) -> f64 {
+        if self.prbox {
+            return pr_box_chsh();
+        }
         if self.product {
             return self.chsh_s();
         }
@@ -305,6 +357,7 @@ impl Theory for BellTest {
         "A CHSH test on a two-qubit ket. Local hidden-variable theories obey \
          |S| ≤ 2; the singlet encoding computes |S| = 2√2, mechanically \
          refuting local realism. A product ket is an IR mutation, not a knob. \
+         A PR-box correlator is a second IR mutation: S = 4 exceeds Tsirelson. \
          A visibility knob turns the singlet violation off."
     }
     fn world(&self) -> Option<World> {
@@ -312,7 +365,13 @@ impl Theory for BellTest {
     }
     fn note(&self) -> String {
         format!(
-            "CHSH singlet, visibility = {}, S = {:.3}",
+            "CHSH {}, visibility = {}, S = {:.3}",
+            match (self.product, self.prbox) {
+                (true, true) => "product+PR-box",
+                (true, false) => "product",
+                (false, true) => "PR-box",
+                (false, false) => "singlet",
+            },
             self.visibility,
             self.chsh_s()
         )
@@ -344,7 +403,8 @@ impl Theory for BellTest {
                 "The CHSH correlator does not exceed Tsirelson's bound 2√2.",
                 LayerId::Quantum,
                 ClaimClass::ModelInternal,
-            ),
+            )
+            .with_domain(tsirelson_domain()),
             Claim::new(
                 LOCAL_REALISM_BOUND,
                 "The local-hidden-variable maximum of |S| is exactly 2.",
@@ -367,7 +427,17 @@ impl Theory for BellTest {
                 }
             }
             QM_CORRELATOR => {
-                if self.product {
+                if self.prbox {
+                    let residual = (pr_box_e(0, 0) - singlet_correlator(0.0, 0.0)).abs();
+                    Verdict::fails(
+                        claim,
+                        "PR-box E = (−1)^{xy} is not ⟨ψ⁻|σ(a)⊗σ(b)|ψ⁻⟩ = −cos(a−b)",
+                    )
+                    .with_evidence([format!(
+                        "max |E_PR − ⟨σ⊗σ⟩| = {residual:.3} at (0,0); CHSH S_PR = {:.3}",
+                        pr_box_chsh()
+                    )])
+                } else if self.product {
                     Verdict::fails(
                         claim,
                         "product state: ⟨ψ|σ(a)⊗σ(b)|ψ⟩ is not the singlet −cos(a−b)",
@@ -464,28 +534,42 @@ impl Theory for BellTest {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.product = parsed.product;
+        fork.prbox = parsed.prbox;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.product {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::product_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.product => {
-                let mut fork = self.clone();
-                fork.product = true;
-                vec![("add-product".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.product {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::product_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.product {
+                    let mut fork = self.clone();
+                    fork.product = true;
+                    out.push(("add-product".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.prbox {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::prbox_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.prbox {
+                    let mut fork = self.clone();
+                    fork.prbox = true;
+                    out.push(("add-pr-box".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -501,12 +585,13 @@ pub fn bell() -> ExperimentReport {
         "The Born rule, the CHSH value, and Tsirelson's bound are computed from \
          the two-qubit ket. Local realism is a falsifiable assumption here, and \
          it fails on the singlet. A product ket is an IR fork (`add-product`), \
-         not a visibility knob.",
+         not a visibility knob. A PR-box correlator is a second IR fork \
+         (`add-pr-box`): S = 4 exceeds Tsirelson.",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "S is computed at the optimal CHSH angles; the classical bound is 2, the quantum (Tsirelson) bound is 2√2.".into(),
             "`set bell-test visibility 0.5` drops S below 2 — a local model then suffices.".into(),
-            "`hypothesize bell-test`: add-product is IR, not set.".into(),
+            "`hypothesize bell-test`: add-product and add-pr-box are IR, not set.".into(),
         ],
         &quantum_rows(),
         theories,
@@ -632,13 +717,38 @@ mod tests {
         assert_eq!(verdict(&t, BELL_VIOLATION), VerdictKind::Fails);
         assert_eq!(verdict(&t, QM_CORRELATOR), VerdictKind::Holds);
         let probes = BellTest::default().structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-product");
+        assert_eq!(probes.len(), 2);
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-product"),
+            "live Bell must offer add-product: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-pr-box"),
+            "live Bell must offer add-pr-box: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let product_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-product")
+            .unwrap();
         assert_eq!(
-            verdict(probes[0].1.as_ref(), BELL_VIOLATION),
+            verdict(product_probe.1.as_ref(), BELL_VIOLATION),
             VerdictKind::Fails
         );
-        assert!(fork.structural_mutations().is_empty());
+        let product_fork_probes = fork.structural_mutations();
+        assert!(
+            product_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-product"),
+            "product fork must not re-offer add-product"
+        );
+        assert!(
+            product_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-pr-box"),
+            "product fork must still offer add-pr-box"
+        );
         let live = BellTest::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -663,6 +773,123 @@ mod tests {
             !bell.domain().is_encoding_wide(),
             "Bell violation must name the singlet: {:?}",
             bell.domain()
+        );
+    }
+
+    #[test]
+    fn pr_box_correlator_is_ir_not_a_knob() {
+        let mut t = BellTest::default();
+        assert!(
+            BellTest::default()
+                .set("prbox", KnobValue::Bool(true))
+                .is_err(),
+            "PR-box correlator is an IR mutation, not a knob"
+        );
+        assert!(
+            BellTest::default()
+                .set("pr-box", KnobValue::Bool(true))
+                .is_err(),
+            "PR-box is not a knob"
+        );
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay the singlet ket"
+        );
+        assert_eq!(pkg.equations[0], SINGLET_EQ);
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(BellTest::prbox_equation()),
+        );
+        let parsed = BellTest::from_package(&mutated).unwrap();
+        assert!(parsed.prbox);
+        let mut fork = t.clone();
+        fork.prbox = true;
+        assert_eq!(verdict(&fork, TSIRELSON_BOUND), VerdictKind::Fails);
+        assert_eq!(verdict(&t, TSIRELSON_BOUND), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, BELL_VIOLATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, QM_CORRELATOR), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, BORN_NORMALIZATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, LOCAL_REALISM_BOUND), VerdictKind::Holds);
+        let s = pr_box_chsh();
+        assert!(
+            (s - 4.0).abs() < 1e-12,
+            "PR-box CHSH must be the bit-table combination 4, got {s}"
+        );
+        let tsirelson = 2.0 * 2.0_f64.sqrt();
+        assert!(
+            s > tsirelson + 0.5,
+            "PR-box S must exceed 2√2, got {s} vs {tsirelson}"
+        );
+        let residual = (pr_box_e(0, 0) - singlet_correlator(0.0, 0.0)).abs();
+        assert!(
+            (residual - 2.0).abs() < 1e-12,
+            "PR E(0,0)=1 vs singlet ⟨σ⊗σ⟩=−1 must differ by 2, got {residual}"
+        );
+        t.set("visibility", KnobValue::Float(0.5)).unwrap();
+        assert_eq!(verdict(&t, BELL_VIOLATION), VerdictKind::Fails);
+        assert_eq!(verdict(&t, TSIRELSON_BOUND), VerdictKind::Holds);
+        let mut noisy = fork.clone();
+        noisy.set("visibility", KnobValue::Float(0.5)).unwrap();
+        assert_eq!(
+            verdict(&noisy, TSIRELSON_BOUND),
+            VerdictKind::Fails,
+            "visibility must not convert a PR-box into Hilbert-space CHSH"
+        );
+        assert_eq!(verdict(&noisy, BELL_VIOLATION), VerdictKind::Holds);
+        let probes = BellTest::default().structural_mutations();
+        let p = probes
+            .iter()
+            .find(|(label, _)| label == "add-pr-box")
+            .expect("add-pr-box");
+        assert_eq!(verdict(p.1.as_ref(), TSIRELSON_BOUND), VerdictKind::Fails);
+        let prbox_probes = fork.structural_mutations();
+        assert!(
+            prbox_probes.iter().all(|(l, _)| l != "add-pr-box"),
+            "PR-box fork must not re-offer add-pr-box"
+        );
+        assert!(
+            prbox_probes.iter().any(|(l, _)| l == "add-product"),
+            "PR-box fork must still offer add-product"
+        );
+        let live = BellTest::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("visibility").unwrap(),
+            KnobValue::Float(1.0),
+            "reparse must overlay correlator IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), TSIRELSON_BOUND),
+            VerdictKind::Holds
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == TSIRELSON_BOUND)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "Bell Tsirelson must name Hilbert-space CHSH: {:?}",
+            cell.domain()
+        );
+        assert!(
+            crate::em::MaxwellVacuum::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-pr-box"),
+            "maxwell-vacuum must not grow add-pr-box"
+        );
+        assert!(
+            BellTest::default()
+                .set("visibility", KnobValue::Float(0.7))
+                .is_ok(),
+            "bell-test keeps the visibility knob"
         );
     }
 }

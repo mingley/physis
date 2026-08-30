@@ -4849,6 +4849,94 @@ mod tests {
             "1",
             "hypothesize must restore knobs"
         );
+        assert!(
+            text.contains("add-pr-box"),
+            "PR-box must still be an IR fork: {text}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_bell_test_prbox_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["prbox", "pr-box", "pr_box"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "bell-test".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("bell-test".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-pr-box") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-pr-box: package → add-pr-box";
+        let start = text.find(marker).expect("add-pr-box hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  bell-test  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let prbox_block = &rest[..end];
+        assert!(
+            prbox_block.contains("quantum.tsirelson-bound")
+                && prbox_block.contains("holds → fails"),
+            "add-pr-box must flip tsirelson holds to fails: {prbox_block}"
+        );
+        assert!(
+            !prbox_block.contains("quantum.bell-violation"),
+            "add-pr-box is not the product-ket fork: {prbox_block}"
+        );
+        assert!(
+            text.contains("add-product"),
+            "product must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("bell-test").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "quantum.tsirelson-bound" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("visibility").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "quantum.tsirelson-bound".into(),
+            })
+            .text()
+            .to_string();
+        let bell = why_theory_block(&why, "bell-test");
+        assert!(
+            bell.contains("Hilbert-space CHSH (Tsirelson 2√2)"),
+            "Bell Tsirelson must name Hilbert-space CHSH: {bell}"
+        );
+        assert!(
+            !bell.contains("not yet a machine-checked regime"),
+            "Bell Tsirelson must not be encoding-wide: {bell}"
+        );
     }
 
     #[test]
@@ -7683,6 +7771,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_bell.contains("add-product"), "{hypo_bell}");
+        assert!(hypo_bell.contains("add-pr-box"), "{hypo_bell}");
         let bell_again = lab
             .exec(Command::Encode {
                 theory: "bell-test".into(),

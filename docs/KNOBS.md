@@ -29,6 +29,9 @@ lists every fitted knob in the lab.
 ### newtonian-gravity
 - (none — inverse-square is a single law; the Schwarzschild 3GM u² term is an IR mutation, not a knob. GR keeps `dim`.)
 
+### bell-test
+- `visibility` — Werner-state visibility V. Ket topology is not this knob: `add-product` is an IR mutation. Tsirelson is not this knob: `add-pr-box` is an IR mutation
+
 ### maxwell-vacuum
 - (none — vacuum is the unit medium; magnetic current is an IR mutation (`add-monopole`), not a knob. A Proca mass term is a second IR mutation (`add-proca`), not a knob. `epsilon_r` / `mu_r` stay on linear-medium.)
 
