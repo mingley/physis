@@ -4,8 +4,10 @@
 //! live on the links between sites; the unimproved Wilson action sums
 //! `1 - cos(θ)` over 1×1 plaquettes. That stencil lives on the IR package.
 //! A 2×1 rectangle term is a package mutation (`add-rectangle`), not a knob:
-//! `gauge.local` fails on the mutant. Gauge invariance remains a structural
-//! theorem of any Wilson loop. The confinement/deconfinement behaviour is a
+//! `gauge.local` fails on the mutant. A fundamental Higgs (`add-higgs`) is a
+//! second mutation: static charges are screened and `gauge.confining` fails.
+//! Gauge invariance remains a structural theorem of any Wilson loop. The
+//! confinement/deconfinement behaviour of the pure-gauge encoding is a
 //! knob-sensitive, honestly-labelled result of lattice gauge theory:
 //!
 //! - compact U(1) confines at all couplings in 2D and 3D;
@@ -35,6 +37,10 @@ use crate::framework::Theory;
 const PLAQUETTE_EQ: &str = "wilson-plaquette 1x1";
 /// Rectangle (Symanzik / next-nearest) term: 2×1 Wilson loops.
 const RECTANGLE_EQ: &str = "wilson-rectangle 2x1";
+/// Fundamental Higgs (screening / perimeter law).
+const HIGGS_EQ: &str = "higgs fundamental";
+/// Higgs Yukawa mass in lattice units. Evidence, not a knob.
+const HIGGS_SCREENING_MASS: f64 = 1.0;
 
 fn gauge_local_domain() -> DomainOfValidity {
     DomainOfValidity::new(
@@ -45,26 +51,40 @@ fn gauge_local_domain() -> DomainOfValidity {
     )
 }
 
-fn parse_wilson_stencil(pkg: &TheoryPackage) -> Result<bool, String> {
+fn gauge_confining_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["pure Wilson gauge field".into()],
+        vec!["no fundamental Higgs screening".into()],
+        "Confinement here is the pure-gauge encoding. A fundamental Higgs that \
+         screens static charges is a new encoding, not a silent beta knob.",
+    )
+}
+
+fn parse_wilson_stencil(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut plaquette = false;
     let mut rectangle = false;
+    let mut higgs = false;
     for eq in &pkg.equations {
         match eq.trim() {
             PLAQUETTE_EQ => plaquette = true,
             RECTANGLE_EQ => rectangle = true,
+            HIGGS_EQ => higgs = true,
             _ => {}
         }
     }
     if !plaquette {
         return Err(format!("{} package has no 1x1 Wilson plaquette", pkg.id));
     }
-    Ok(rectangle)
+    Ok((rectangle, higgs))
 }
 
-fn wilson_package(id: &str, name: &str, rectangle: bool) -> TheoryPackage {
+fn wilson_package(id: &str, name: &str, rectangle: bool, higgs: bool) -> TheoryPackage {
     let mut equations = vec![PLAQUETTE_EQ.to_string()];
     if rectangle {
         equations.push(RECTANGLE_EQ.to_string());
+    }
+    if higgs {
+        equations.push(HIGGS_EQ.to_string());
     }
     TheoryPackage {
         id: id.to_string(),
@@ -80,6 +100,17 @@ fn wilson_package(id: &str, name: &str, rectangle: bool) -> TheoryPackage {
         }],
         lean_ref: None,
     }
+}
+
+fn higgs_screening_fail(claim: &Claim) -> Verdict {
+    Verdict::fails(
+        claim,
+        "fundamental Higgs screens static charges: perimeter law, not confinement",
+    )
+    .with_evidence([format!(
+        "Yukawa mass m_H = {HIGGS_SCREENING_MASS} (lattice units); \
+         v → 0 recovers pure-gauge confinement and is not the encoding"
+    )])
 }
 
 /// The action is invariant under local gauge transformations of the links.
@@ -231,12 +262,15 @@ const SPECS: &[KnobSpec] = &[
 ///
 /// The unimproved 1×1 plaquette stencil lives on the IR package.
 /// A 2×1 rectangle term is a package mutation (`add-rectangle`), not a knob.
+/// A fundamental Higgs (`add-higgs`) is a second mutation: static charges
+/// are screened. `dimension` / `beta` / `sites_per_side` stay knobs.
 #[derive(Clone, Debug, PartialEq)]
 pub struct WilsonU1 {
     dimension: u8,
     beta: f64,
     sites_per_side: u32,
     rectangle: bool,
+    higgs: bool,
 }
 
 impl Default for WilsonU1 {
@@ -247,12 +281,16 @@ impl Default for WilsonU1 {
             beta: 1.0,
             sites_per_side: 8,
             rectangle: false,
+            higgs: false,
         }
     }
 }
 
 impl WilsonU1 {
     fn is_confining(&self) -> bool {
+        if self.higgs {
+            return false;
+        }
         match self.dimension {
             2 | 3 => true,              // compact U(1) always confines here
             _ => self.beta < BETA_C_4D, // 4D: confining below the transition
@@ -260,22 +298,29 @@ impl WilsonU1 {
     }
 
     /// IR package for this Wilson stencil. Equations are `wilson-plaquette 1x1`
-    /// and, when forked, `wilson-rectangle 2x1`. Knobs stay on the struct.
+    /// and, when forked, `wilson-rectangle 2x1` and/or `higgs fundamental`.
+    /// Knobs stay on the struct.
     pub fn package(&self) -> TheoryPackage {
-        wilson_package(self.id(), self.name(), self.rectangle)
+        wilson_package(self.id(), self.name(), self.rectangle, self.higgs)
     }
 
     /// Load a Wilson stencil from a package. Knobs default; overlay them from a
     /// live field when forking.
     pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        let (rectangle, higgs) = parse_wilson_stencil(pkg)?;
         Ok(Self {
-            rectangle: parse_wilson_stencil(pkg)?,
+            rectangle,
+            higgs,
             ..Self::default()
         })
     }
 
     fn rectangle_equation() -> String {
         RECTANGLE_EQ.to_string()
+    }
+
+    fn higgs_equation() -> String {
+        HIGGS_EQ.to_string()
     }
 }
 
@@ -322,9 +367,10 @@ impl Theory for WilsonU1 {
         "Compact U(1) lattice gauge theory: the gauge field lives on links and \
          the action sums 1 − cos(θ) over plaquettes. Gauge invariance is a \
          structural theorem; locality is the unimproved 1×1 Wilson stencil \
-         (a 2×1 rectangle is an IR mutation, not a knob). Confinement is a \
-         knob-sensitive lattice result (all β in 2D/3D; a transition near \
-         β ≈ 1.01 in 4D)."
+         (a 2×1 rectangle is an IR mutation, not a knob). A fundamental Higgs \
+         is a second IR mutation: static charges are screened. Confinement of \
+         the pure-gauge encoding is a knob-sensitive lattice result (all β in \
+         2D/3D; a transition near β ≈ 1.01 in 4D)."
     }
     fn world(&self) -> Option<World> {
         let space = self.dimension.saturating_sub(1);
@@ -350,7 +396,9 @@ impl Theory for WilsonU1 {
                 self.sites_per_side,
                 self.dimension,
                 self.beta,
-                if self.is_confining() {
+                if self.higgs {
+                    "Higgs screening"
+                } else if self.is_confining() {
                     "confining"
                 } else {
                     "Coulomb phase"
@@ -378,7 +426,8 @@ impl Theory for WilsonU1 {
                 "Static charges are confined.",
                 LayerId::Interaction,
                 ClaimClass::Heuristic,
-            ),
+            )
+            .with_domain(gauge_confining_domain()),
             Claim::new(
                 ASYMPTOTIC_FREEDOM,
                 "The coupling runs to zero at high energy.",
@@ -408,6 +457,11 @@ impl Theory for WilsonU1 {
                     Verdict::inapplicable(
                         claim,
                         "exact plaquette factorization is the unimproved 1x1 Wilson action; a 2x1 rectangle term is a new encoding",
+                    )
+                } else if self.higgs {
+                    Verdict::inapplicable(
+                        claim,
+                        "exact plaquette factorization is pure 2D Yang-Mills; a fundamental Higgs is a new encoding",
                     )
                 } else if self.dimension == 2 {
                     let sigma = exact_2d_string_tension(self.beta);
@@ -455,34 +509,43 @@ impl Theory for WilsonU1 {
                     )
                 }
             }
-            CONFINING => match self.dimension {
-                2 | 3 => Verdict::holds(claim,
-                    format!(
-                        "compact U(1) confines at all β in {}D (Polyakov)",
-                        self.dimension
-                    ),
-                ),
-                _ => {
-                    if self.beta < BETA_C_4D {
-                        Verdict::holds(claim,
+            CONFINING => {
+                if self.higgs {
+                    higgs_screening_fail(claim)
+                } else {
+                    match self.dimension {
+                        2 | 3 => Verdict::holds(
+                            claim,
                             format!(
-                                "4D strong coupling β={} < β_c≈{BETA_C_4D}: confining",
-                                self.beta
+                                "compact U(1) confines at all β in {}D (Polyakov)",
+                                self.dimension
                             ),
-                        )
-                    } else {
-                        Verdict::fails(claim,
-                            format!(
-                                "4D weak coupling β={} ≥ β_c≈{BETA_C_4D}: Coulomb (deconfined) phase",
-                                self.beta
-                            ),
-                        )
-                        .with_evidence([
-                            "compact U(1) in 4D has a phase transition; the continuum limit here is free Maxwell".to_string(),
-                        ])
+                        ),
+                        _ => {
+                            if self.beta < BETA_C_4D {
+                                Verdict::holds(
+                                    claim,
+                                    format!(
+                                        "4D strong coupling β={} < β_c≈{BETA_C_4D}: confining",
+                                        self.beta
+                                    ),
+                                )
+                            } else {
+                                Verdict::fails(
+                                    claim,
+                                    format!(
+                                        "4D weak coupling β={} ≥ β_c≈{BETA_C_4D}: Coulomb (deconfined) phase",
+                                        self.beta
+                                    ),
+                                )
+                                .with_evidence([
+                                    "compact U(1) in 4D has a phase transition; the continuum limit here is free Maxwell".to_string(),
+                                ])
+                            }
+                        }
                     }
                 }
-            },
+            }
             _ => Verdict::inapplicable(claim, "claim not made by a lattice gauge object"),
         }
     }
@@ -493,28 +556,42 @@ impl Theory for WilsonU1 {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.rectangle = parsed.rectangle;
+        fork.higgs = parsed.higgs;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.rectangle {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::rectangle_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.rectangle => {
-                let mut fork = self.clone();
-                fork.rectangle = true;
-                vec![("add-rectangle".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.rectangle {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::rectangle_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.rectangle {
+                    let mut fork = self.clone();
+                    fork.rectangle = true;
+                    out.push(("add-rectangle".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.higgs {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::higgs_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.higgs {
+                    let mut fork = self.clone();
+                    fork.higgs = true;
+                    out.push(("add-higgs".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -549,7 +626,8 @@ const SUN_SPECS: &[KnobSpec] = &[
 ///
 /// The unimproved 1×1 plaquette stencil lives on the IR package, same
 /// dialect as [`WilsonU1`]. A 2×1 rectangle term is a package mutation
-/// (`add-rectangle`), not a knob.
+/// (`add-rectangle`), not a knob. A fundamental Higgs (`add-higgs`) is a
+/// second mutation: static charges are screened.
 #[derive(Clone, Debug, PartialEq)]
 pub struct WilsonSun {
     n: u8,
@@ -557,6 +635,7 @@ pub struct WilsonSun {
     beta: f64,
     sites_per_side: u32,
     rectangle: bool,
+    higgs: bool,
 }
 
 impl WilsonSun {
@@ -568,6 +647,7 @@ impl WilsonSun {
             beta: 2.3,
             sites_per_side: 8,
             rectangle: false,
+            higgs: false,
         }
     }
 
@@ -579,12 +659,13 @@ impl WilsonSun {
             beta: 6.0,
             sites_per_side: 8,
             rectangle: false,
+            higgs: false,
         }
     }
 
     /// IR package for this Wilson stencil. Knobs stay on the struct.
     pub fn package(&self) -> TheoryPackage {
-        wilson_package(self.id(), self.name(), self.rectangle)
+        wilson_package(self.id(), self.name(), self.rectangle, self.higgs)
     }
 
     /// Load a Wilson stencil from a package. Group rank comes from the
@@ -599,12 +680,18 @@ impl WilsonSun {
                 ))
             }
         };
-        base.rectangle = parse_wilson_stencil(pkg)?;
+        let (rectangle, higgs) = parse_wilson_stencil(pkg)?;
+        base.rectangle = rectangle;
+        base.higgs = higgs;
         Ok(base)
     }
 
     fn rectangle_equation() -> String {
         RECTANGLE_EQ.to_string()
+    }
+
+    fn higgs_equation() -> String {
+        HIGGS_EQ.to_string()
     }
 }
 
@@ -658,7 +745,9 @@ impl Theory for WilsonSun {
          asymptotically free and is expected to confine at all couplings in 4D — \
          but 4D confinement / the Yang–Mills mass gap is unproven (a Millennium \
          Problem), so that verdict is honestly a conjecture. Locality is the \
-         unimproved 1×1 Wilson stencil (a 2×1 rectangle is an IR mutation, not a knob)."
+         unimproved 1×1 Wilson stencil (a 2×1 rectangle is an IR mutation, not a \
+         knob). A fundamental Higgs is a second IR mutation: static charges are \
+         screened."
     }
     fn world(&self) -> Option<World> {
         let space = self.dimension.saturating_sub(1);
@@ -705,7 +794,8 @@ impl Theory for WilsonSun {
                 "Static charges are confined.",
                 LayerId::Interaction,
                 ClaimClass::Conjecture,
-            ),
+            )
+            .with_domain(gauge_confining_domain()),
             Claim::new(
                 ASYMPTOTIC_FREEDOM,
                 "The coupling runs to zero at high energy.",
@@ -736,6 +826,11 @@ impl Theory for WilsonSun {
                         claim,
                         "exact 2D factorization is the unimproved 1x1 Wilson action; a 2x1 rectangle term is a new encoding",
                     )
+                } else if self.higgs {
+                    Verdict::inapplicable(
+                        claim,
+                        "exact 2D factorization is pure Yang-Mills; a fundamental Higgs is a new encoding",
+                    )
                 } else if self.dimension == 2 {
                     let n = self.n as f64;
                     let sigma = exact_2d_string_tension_sun(n, self.beta);
@@ -754,9 +849,7 @@ impl Theory for WilsonSun {
                             "unlike 4D, this needs no mass-gap conjecture — it is a theorem".to_string(),
                         ])
                     } else {
-                        Verdict::fails(claim,
-                            format!("σ = {sigma:.4} ≤ 0 at β = {}", self.beta),
-                        )
+                        Verdict::fails(claim, format!("σ = {sigma:.4} ≤ 0 at β = {}", self.beta))
                     }
                 } else {
                     Verdict::inapplicable(
@@ -765,7 +858,8 @@ impl Theory for WilsonSun {
                     )
                 }
             }
-            GAUGE_INVARIANT => Verdict::holds(claim,
+            GAUGE_INVARIANT => Verdict::holds(
+                claim,
                 "non-abelian plaquette action is gauge invariant by construction",
             ),
             GAUGE_LOCAL => {
@@ -781,23 +875,33 @@ impl Theory for WilsonSun {
                     )
                 }
             }
-            ASYMPTOTIC_FREEDOM => Verdict::holds(claim,
+            ASYMPTOTIC_FREEDOM => Verdict::holds(
+                claim,
                 "non-abelian SU(N) is asymptotically free (Gross–Wilczek–Politzer 1973)",
             ),
-            CONFINING => match self.dimension {
-                2 | 3 => Verdict::holds(claim,
-                    format!("SU({}) confines in {}D", self.n, self.dimension),
-                ),
-                _ => Verdict::holds(claim,
-                    format!(
-                        "SU({}) is expected to confine in 4D at all β, but the mass gap is unproven",
-                        self.n
-                    ),
-                )
-                .with_evidence([
-                    "4D Yang–Mills existence and mass gap is a Clay Millennium Problem".to_string(),
-                ]),
-            },
+            CONFINING => {
+                if self.higgs {
+                    higgs_screening_fail(claim)
+                } else {
+                    match self.dimension {
+                        2 | 3 => Verdict::holds(
+                            claim,
+                            format!("SU({}) confines in {}D", self.n, self.dimension),
+                        ),
+                        _ => Verdict::holds(
+                            claim,
+                            format!(
+                                "SU({}) is expected to confine in 4D at all β, but the mass gap is unproven",
+                                self.n
+                            ),
+                        )
+                        .with_evidence([
+                            "4D Yang–Mills existence and mass gap is a Clay Millennium Problem"
+                                .to_string(),
+                        ]),
+                    }
+                }
+            }
             _ => Verdict::inapplicable(claim, "claim not made by a lattice gauge object"),
         }
     }
@@ -808,28 +912,42 @@ impl Theory for WilsonSun {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.rectangle = parsed.rectangle;
+        fork.higgs = parsed.higgs;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.rectangle {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::rectangle_equation()),
-        );
-        match Self::from_package(&mutated) {
-            Ok(parsed) if parsed.rectangle => {
-                let mut fork = self.clone();
-                fork.rectangle = true;
-                vec![("add-rectangle".into(), Box::new(fork))]
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.rectangle {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::rectangle_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.rectangle {
+                    let mut fork = self.clone();
+                    fork.rectangle = true;
+                    out.push(("add-rectangle".into(), Box::new(fork)));
+                }
             }
-            _ => Vec::new(),
         }
+        if !self.higgs {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::higgs_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.higgs {
+                    let mut fork = self.clone();
+                    fork.higgs = true;
+                    out.push(("add-higgs".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -848,6 +966,7 @@ pub fn gauge_lattice() -> ExperimentReport {
          asymptotically free, and which claims are theorems vs conjectures?",
         "Gauge invariance is a theorem of any Wilson loop. Locality is the \
          unimproved 1×1 stencil (`add-rectangle` is an IR fork, not a knob). \
+         A fundamental Higgs (`add-higgs`) screens static charges. \
          U(1) is not asymptotically free and deconfines in 4D above β≈1.01; SU(N) \
          is asymptotically free and is *expected* to confine in 4D — but that is \
          the unproven Yang–Mills mass gap, so it is honestly a conjecture.",
@@ -855,8 +974,7 @@ pub fn gauge_lattice() -> ExperimentReport {
             "`holds` / `fails` are internal to the encoding; read `class` and `derivation`.".into(),
             "The gauge field lives on links; the action sums over plaquettes.".into(),
             "U(1): `set wilson-u1 beta 2` deconfines the 4D theory (Coulomb phase).".into(),
-            "SU(N): 4D confinement holds as a *conjecture* — the Millennium mass-gap problem."
-                .into(),
+            "`hypothesize wilson-u1`: add-rectangle and add-higgs are IR, not set.".into(),
         ],
         &gauge_rows(),
         theories,
@@ -1091,14 +1209,38 @@ mod tests {
             VerdictKind::Inapplicable
         );
         let probes = w.structural_mutations();
-        assert_eq!(probes.len(), 1);
-        assert_eq!(probes[0].0, "add-rectangle");
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-rectangle"),
+            "live Wilson U(1) must offer add-rectangle: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-higgs"),
+            "live Wilson U(1) must offer add-higgs: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let rect_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-rectangle")
+            .expect("add-rectangle");
         assert_eq!(
-            verdict(probes[0].1.as_ref(), GAUGE_LOCAL),
+            verdict(rect_probe.1.as_ref(), GAUGE_LOCAL),
             VerdictKind::Fails
         );
         assert_eq!(verdict(&w, GAUGE_LOCAL), VerdictKind::Holds);
-        assert!(fork.structural_mutations().is_empty());
+        let rect_fork_probes = fork.structural_mutations();
+        assert!(
+            rect_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-rectangle"),
+            "rectangle fork must not re-offer add-rectangle"
+        );
+        assert!(
+            rect_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-higgs"),
+            "rectangle fork must still offer add-higgs"
+        );
         let canonical = physis_ir::certify_round_trip(&w.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
         let rebuilt = w.reparse_package(&parsed).unwrap();
@@ -1146,14 +1288,38 @@ mod tests {
                 VerdictKind::Inapplicable
             );
             let probes = w.structural_mutations();
-            assert_eq!(probes.len(), 1);
-            assert_eq!(probes[0].0, "add-rectangle");
+            assert!(
+                probes.iter().any(|(label, _)| label == "add-rectangle"),
+                "live Wilson SU(N) must offer add-rectangle: {:?}",
+                probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+            );
+            assert!(
+                probes.iter().any(|(label, _)| label == "add-higgs"),
+                "live Wilson SU(N) must offer add-higgs: {:?}",
+                probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+            );
+            let rect_probe = probes
+                .iter()
+                .find(|(label, _)| label == "add-rectangle")
+                .expect("add-rectangle");
             assert_eq!(
-                verdict(probes[0].1.as_ref(), GAUGE_LOCAL),
+                verdict(rect_probe.1.as_ref(), GAUGE_LOCAL),
                 VerdictKind::Fails
             );
             assert_eq!(verdict(&w, GAUGE_LOCAL), VerdictKind::Holds);
-            assert!(fork.structural_mutations().is_empty());
+            let rect_fork_probes = fork.structural_mutations();
+            assert!(
+                rect_fork_probes
+                    .iter()
+                    .all(|(label, _)| label != "add-rectangle"),
+                "rectangle fork must not re-offer add-rectangle"
+            );
+            assert!(
+                rect_fork_probes
+                    .iter()
+                    .any(|(label, _)| label == "add-higgs"),
+                "rectangle fork must still offer add-higgs"
+            );
             let canonical = physis_ir::certify_round_trip(&w.ir_package().unwrap()).unwrap();
             let parsed = parse_package(&canonical).unwrap();
             let rebuilt = w.reparse_package(&parsed).unwrap();
@@ -1164,5 +1330,190 @@ mod tests {
             WilsonSun::from_package(&WilsonU1::default().package()).is_err(),
             "SU(N) must not load a U(1) package id"
         );
+    }
+
+    #[test]
+    fn higgs_screening_is_ir_not_a_knob() {
+        let mut w = WilsonU1::default();
+        assert!(
+            WilsonU1::default()
+                .set("higgs", KnobValue::Bool(true))
+                .is_err(),
+            "fundamental Higgs is an IR mutation, not a knob"
+        );
+        assert!(
+            WilsonU1::default()
+                .set("scalar", KnobValue::Bool(true))
+                .is_err(),
+            "scalar is not a knob"
+        );
+        assert!(
+            WilsonU1::default()
+                .set("vev", KnobValue::Float(1.0))
+                .is_err(),
+            "vev is not a knob"
+        );
+        let src = render_package(&w.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay 1x1 plaquette"
+        );
+        assert_eq!(pkg.equations[0], PLAQUETTE_EQ);
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(WilsonU1::higgs_equation()),
+        );
+        let parsed = WilsonU1::from_package(&mutated).unwrap();
+        assert!(parsed.higgs);
+        assert!(!parsed.rectangle);
+        let mut fork = w.clone();
+        fork.higgs = true;
+        assert_eq!(verdict(&fork, CONFINING), VerdictKind::Fails);
+        assert_eq!(verdict(&w, CONFINING), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, GAUGE_LOCAL), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, GAUGE_INVARIANT), VerdictKind::Holds);
+        assert_eq!(
+            verdict(&fork, STRONG_COUPLING_AREA_LAW),
+            VerdictKind::Holds,
+            "Higgs screening is not the gauge-action strong-coupling expansion"
+        );
+        let half = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == CONFINING)
+            .unwrap();
+        let v = fork.evaluate(&half);
+        assert!(
+            !v.summary.contains("2x1") && !v.summary.contains("rectangle"),
+            "higgs is not the rectangle fork: {}",
+            v.summary
+        );
+        assert!(
+            (HIGGS_SCREENING_MASS - 1.0).abs() < 1e-12,
+            "screening mass is evidence in lattice units"
+        );
+        w.set("beta", KnobValue::Float(2.0)).unwrap();
+        assert_eq!(verdict(&w, CONFINING), VerdictKind::Fails);
+        let mut coulomb_higgs = fork.clone();
+        coulomb_higgs.set("beta", KnobValue::Float(2.0)).unwrap();
+        assert_eq!(
+            verdict(&coulomb_higgs, CONFINING),
+            VerdictKind::Fails,
+            "Higgs encoding must fail confining even in the 4D Coulomb phase"
+        );
+        let mut two_d = WilsonU1::default();
+        two_d.set("dimension", KnobValue::UInt(2)).unwrap();
+        assert_eq!(verdict(&two_d, EXACT_AREA_LAW_2D), VerdictKind::Holds);
+        two_d.higgs = true;
+        assert_eq!(
+            verdict(&two_d, EXACT_AREA_LAW_2D),
+            VerdictKind::Inapplicable
+        );
+        let probes = WilsonU1::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-higgs"),
+            "live Wilson U(1) must offer add-higgs: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        let higgs_probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-higgs")
+            .expect("add-higgs");
+        assert_eq!(
+            verdict(higgs_probe.1.as_ref(), CONFINING),
+            VerdictKind::Fails
+        );
+        let higgs_fork_probes = fork.structural_mutations();
+        assert!(
+            higgs_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-higgs"),
+            "higgs fork must not re-offer add-higgs"
+        );
+        assert!(
+            higgs_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-rectangle"),
+            "higgs fork must still offer add-rectangle"
+        );
+        let live = WilsonU1::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(
+            rebuilt.get("beta").unwrap(),
+            KnobValue::Float(1.0),
+            "reparse must overlay Higgs IR onto live knobs"
+        );
+        assert_eq!(verdict(rebuilt.as_ref(), CONFINING), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == CONFINING)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "confining must name pure Wilson gauge: {:?}",
+            cell.domain()
+        );
+    }
+
+    #[test]
+    fn sun_higgs_screening_is_ir_not_a_knob() {
+        for mk in [WilsonSun::su2, WilsonSun::su3] {
+            let mut w = mk();
+            assert!(
+                w.set("higgs", KnobValue::Bool(true)).is_err(),
+                "fundamental Higgs is an IR mutation, not a knob"
+            );
+            let src = render_package(&w.package());
+            let pkg = parse_package(&src).unwrap();
+            assert_eq!(pkg.equations.len(), 1);
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(WilsonSun::higgs_equation()),
+            );
+            let parsed = WilsonSun::from_package(&mutated).unwrap();
+            assert!(parsed.higgs);
+            assert!(!parsed.rectangle);
+            let mut fork = w.clone();
+            fork.higgs = true;
+            assert_eq!(verdict(&fork, CONFINING), VerdictKind::Fails);
+            assert_eq!(verdict(&w, CONFINING), VerdictKind::Holds);
+            assert_eq!(verdict(&fork, GAUGE_LOCAL), VerdictKind::Holds);
+            assert_eq!(verdict(&fork, ASYMPTOTIC_FREEDOM), VerdictKind::Holds);
+            w.set("beta", KnobValue::Float(50.0)).unwrap();
+            assert_eq!(
+                verdict(&w, CONFINING),
+                VerdictKind::Holds,
+                "SU(N) stays confining at weak coupling; that is not Higgs screening"
+            );
+            let mut weak_higgs = fork.clone();
+            weak_higgs.set("beta", KnobValue::Float(50.0)).unwrap();
+            assert_eq!(
+                verdict(&weak_higgs, CONFINING),
+                VerdictKind::Fails,
+                "Higgs encoding must fail confining even at weak SU(N) coupling; v → 0 is not the encoding"
+            );
+            let probes = mk().structural_mutations();
+            let higgs_probe = probes
+                .iter()
+                .find(|(label, _)| label == "add-higgs")
+                .expect("add-higgs");
+            assert_eq!(
+                verdict(higgs_probe.1.as_ref(), CONFINING),
+                VerdictKind::Fails
+            );
+            let higgs_fork_probes = fork.structural_mutations();
+            assert!(higgs_fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-higgs"));
+            assert!(higgs_fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-rectangle"));
+        }
     }
 }

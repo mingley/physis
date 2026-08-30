@@ -12,6 +12,32 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Wilson fundamental Higgs is an IR mutation**
+  (`wilson-u1`, `wilson-su2`, `wilson-su3`, `add-higgs`). Unimproved
+  1×1 plaquettes are the live encoding (`wilson-plaquette 1x1`);
+  appending `higgs fundamental` screens static charges and flips
+  `gauge.confining` holds to fails. The residual is a Yukawa mass
+  m_H = 1 in lattice units and is evidence, not the encoding: v → 0
+  recovers pure-gauge confinement and the cell still fails, including
+  SU(N) at weak coupling where the live encoding still holds. That is
+  not a knob. Locality still holds (Higgs is not a 2×1 rectangle).
+  The gauge-action strong-coupling area law still holds at default β.
+  Rectangle 2×1 remains a separate locality fork (`add-rectangle`).
+  `dimension` / `beta` / `sites_per_side` stay knobs. Confining names
+  pure Wilson gauge field. Mutants stay the same Wilson object; they
+  are not a silent install of another group. Mutants are not
+  installed, not journaled, and not Canonical or P4. Catalog d² hash
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Live encode pins unchanged. Verified: IR round-trip; set higgs is
+  unknown; hypothesize wilson-u1 / wilson-su3; live 1×1 restored;
+  encode pins
+  `d9644435e8775eeb95d5e81638ad61a589686d65ff6929caf0ec3c2769d4423a`
+  (U(1)),
+  `32f36c4b5c3dc442b1c1fa970c1949c12fd0601b640f6c784d2317fcb742897a`
+  (SU(2)),
+  `03bd82af34a6e36ee04985c243a0e2a35ab9fe56a1b28d3ad0bb63ea8461d8d3`
+  (SU(3)).
+
 - **Linear-medium Pasteur chirality is an IR mutation**
   (`linear-medium`, `add-chiral`). Isotropic linear D = εE, B = μH is
   the live encoding (`constitutive isotropic-linear`); appending

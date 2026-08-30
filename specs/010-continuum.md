@@ -86,13 +86,15 @@ A compact U(1) lattice gauge theory whose degrees of freedom live on the links;
 the unimproved Wilson action sums `1 − cos(θ_plaquette)` over 1×1 plaquettes.
 That stencil lives on the IR package. A 2×1 rectangle term is a package
 mutation (`add-rectangle`), not a knob: `gauge.local` fails on the mutant.
-Knobs: `dimension` (2–4), `beta` (β = 1/g²), `sites_per_side`.
+A fundamental Higgs is a second package mutation (`add-higgs`): static
+charges are screened and `gauge.confining` fails. That is not a `beta`
+knob. Knobs: `dimension` (2–4), `beta` (β = 1/g²), `sites_per_side`.
 
 | claim | meaning | how it is decided |
 |---|---|---|
 | `gauge.invariant` | invariance under `U_μ(x) → g(x) U_μ(x) g(x+μ̂)†` | structural theorem of any Wilson loop |
 | `gauge.local` | only neighbouring links couple (1×1 plaquettes) | structural of the unimproved stencil. Domain: nearest-neighbour Wilson plaquettes. `add-rectangle` appends `wilson-rectangle 2x1` and this cell fails. That is not a knob. U(1) and SU(N) share the stencil dialect and each has a live package |
-| `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap) |
+| `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap). Domain: pure Wilson gauge field. `add-higgs` appends `higgs fundamental` and this cell fails (perimeter-law screening). That is not a knob |
 | `gauge.asymptotic-freedom` | the coupling runs to zero at high energy | U(1) `fails` (Landau pole); SU(N) `holds` (Gross–Wilczek–Politzer) |
 | `gauge.strong-coupling-area-law` | leading strong-coupling expansion gives an area law | **computed**: `σ = −ln(β/2N²) > 0` (theorem of the convergent expansion); fails at weak coupling |
 | `gauge.exact-area-law-2d` | 2D gauge theory confines at all couplings | **exactly computed**: U(1) via `σ = −ln(I₁(β)/I₀(β))`, SU(N) via `σ = (N²−1)/(2β)` (quadratic Casimir); `> 0` for every β (theorem); `inapplicable` in D > 2. Domain: 2D Wilson lattice / exact plaquette factorization |
@@ -145,8 +147,8 @@ physis set wilson-su3 beta 100      # weak coupling: strong-coupling area law fa
 - Interactions / renormalization beyond the Wilson stencil.
 
 ```
-physis hypothesize wilson-u1        # add-rectangle is IR, not set
-physis hypothesize wilson-su3       # same 2x1 rectangle fork on SU(3)
+physis hypothesize wilson-u1        # add-rectangle and add-higgs are IR, not set
+physis hypothesize wilson-su3       # same stencil forks on SU(3)
 physis hypothesize klein-gordon     # add-next-nearest and add-quartic are IR, not set
 physis hypothesize dirac-fermion    # add-wilson and add-next-nearest are IR, not set
 ```

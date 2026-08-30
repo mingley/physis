@@ -4926,9 +4926,21 @@ mod tests {
             text.contains("add-rectangle") && text.contains("ir structural"),
             "{text}"
         );
+        let marker = "add-rectangle: package → add-rectangle";
+        let start = text.find(marker).expect("add-rectangle hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  wilson-u1  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let rect_block = &rest[..end];
         assert!(
-            text.contains("gauge.local") && text.contains("holds → fails"),
-            "{text}"
+            rect_block.contains("gauge.local") && rect_block.contains("holds → fails"),
+            "add-rectangle must flip gauge.local holds to fails: {rect_block}"
+        );
+        assert!(
+            text.contains("add-higgs"),
+            "higgs must still be an IR fork: {text}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -4976,9 +4988,21 @@ mod tests {
             text.contains("add-rectangle") && text.contains("ir structural"),
             "{text}"
         );
+        let marker = "add-rectangle: package → add-rectangle";
+        let start = text.find(marker).expect("add-rectangle hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  wilson-su3  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let rect_block = &rest[..end];
         assert!(
-            text.contains("gauge.local") && text.contains("holds → fails"),
-            "{text}"
+            rect_block.contains("gauge.local") && rect_block.contains("holds → fails"),
+            "add-rectangle must flip gauge.local holds to fails: {rect_block}"
+        );
+        assert!(
+            text.contains("add-higgs"),
+            "higgs must still be an IR fork: {text}"
         );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
@@ -4993,6 +5017,177 @@ mod tests {
             live.get("beta").unwrap().display(),
             "6",
             "hypothesize must restore knobs"
+        );
+    }
+
+    #[test]
+    fn hypothesize_wilson_u1_higgs_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["higgs", "scalar", "vev"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "wilson-u1".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("wilson-u1".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-higgs") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-higgs: package → add-higgs";
+        let start = text.find(marker).expect("add-higgs hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  wilson-u1  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let higgs_block = &rest[..end];
+        assert!(
+            higgs_block.contains("gauge.confining") && higgs_block.contains("holds → fails"),
+            "add-higgs must flip gauge.confining holds to fails: {higgs_block}"
+        );
+        assert!(
+            !higgs_block.contains("gauge.local"),
+            "add-higgs is not the rectangle locality fork: {higgs_block}"
+        );
+        assert!(
+            text.contains("add-rectangle"),
+            "add-rectangle must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("wilson-u1").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "gauge.confining" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("beta").unwrap().display(),
+            "1",
+            "hypothesize must restore knobs"
+        );
+        let beta = lab.exec(Command::Set {
+            theory: "wilson-u1".into(),
+            knob: "beta".into(),
+            value: "2".into(),
+        });
+        assert_eq!(beta.exit_code(), 0, "{}", beta.text());
+        assert!(
+            beta.text().contains("gauge.confining") && beta.text().contains("holds → fails"),
+            "{}",
+            beta.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "wilson-u1".into(),
+            knob: "beta".into(),
+            value: "1".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "gauge.confining".into(),
+            })
+            .text()
+            .to_string();
+        let u1 = why_theory_block(&why, "wilson-u1");
+        assert!(
+            u1.contains("pure Wilson gauge field"),
+            "confining must name pure Wilson gauge: {u1}"
+        );
+        assert!(
+            !u1.contains("not yet a machine-checked regime"),
+            "confining must not be encoding-wide: {u1}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_wilson_su3_higgs_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "wilson-su3".into(),
+            knob: "higgs".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("wilson-su3".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("add-higgs") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-higgs: package → add-higgs";
+        let start = text.find(marker).expect("add-higgs hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  wilson-su3  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let higgs_block = &rest[..end];
+        assert!(
+            higgs_block.contains("gauge.confining") && higgs_block.contains("holds → fails"),
+            "add-higgs must flip gauge.confining holds to fails: {higgs_block}"
+        );
+        assert!(
+            !higgs_block.contains("gauge.local"),
+            "add-higgs is not the rectangle locality fork: {higgs_block}"
+        );
+        assert!(
+            text.contains("add-rectangle"),
+            "add-rectangle must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("wilson-su3").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "gauge.confining" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("beta").unwrap().display(),
+            "6",
+            "hypothesize must restore knobs"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "gauge.confining".into(),
+            })
+            .text()
+            .to_string();
+        let su3 = why_theory_block(&why, "wilson-su3");
+        assert!(
+            su3.contains("pure Wilson gauge field"),
+            "confining must name pure Wilson gauge: {su3}"
+        );
+        assert!(
+            !su3.contains("not yet a machine-checked regime"),
+            "confining must not be encoding-wide: {su3}"
         );
     }
 
@@ -8442,6 +8637,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_u1.contains("add-rectangle"), "{hypo_u1}");
+        assert!(hypo_u1.contains("add-higgs"), "{hypo_u1}");
         let u1_again = lab
             .exec(Command::Encode {
                 theory: "wilson-u1".into(),
@@ -8461,6 +8657,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_su2.contains("add-rectangle"), "{hypo_su2}");
+        assert!(hypo_su2.contains("add-higgs"), "{hypo_su2}");
         let su2_again = lab
             .exec(Command::Encode {
                 theory: "wilson-su2".into(),
@@ -8480,6 +8677,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_su3.contains("add-rectangle"), "{hypo_su3}");
+        assert!(hypo_su3.contains("add-higgs"), "{hypo_su3}");
         let su3_again = lab
             .exec(Command::Encode {
                 theory: "wilson-su3".into(),
