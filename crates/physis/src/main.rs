@@ -224,6 +224,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             let claim = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Formalize { claim })
         }
+        "reproduce" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Reproduce { claim })
+        }
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -243,6 +247,7 @@ USAGE:
     physis why <claim-id>
     physis prove <claim-id>
     physis formalize <claim-id>
+    physis reproduce <claim-id>
     physis falsify <claim-id>
     physis sweep <theory> <knob> <v1,v2,...>
     physis branch <name>

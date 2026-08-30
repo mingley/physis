@@ -12,6 +12,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **In-process reproduce is not P4**
+  (`physis reproduce`). Requires a prior receipt, remints through
+  `verify`, and matches challenge hash plus checkers. The output says
+  `not P4 (same binary, same process)`. `inspect trust P4` stays 0.
+  Explorer cannot reproduce. Verified: lab test, `fmt`,
+  `clippy -D warnings`, full suite, CLI.
+
 - **Agent roles propose; they do not mint**
   (`Role`, `ResearchBudget`, `physis formalize`). Explorer / formalizer /
   proof-searcher / falsifier / reviewer / auditor are processes that

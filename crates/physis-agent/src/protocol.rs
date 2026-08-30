@@ -126,6 +126,12 @@ pub enum Command {
         /// Claim id.
         claim: String,
     },
+    /// Re-run the dual checkers against a stored receipt. Same-process remint
+    /// is not P4 independent reproduction.
+    Reproduce {
+        /// Claim id.
+        claim: String,
+    },
 }
 
 impl Command {
@@ -157,6 +163,7 @@ impl Command {
             Command::Loop => "loop",
             Command::Inspect { .. } => "inspect",
             Command::Formalize { .. } => "formalize",
+            Command::Reproduce { .. } => "reproduce",
         }
     }
 }

@@ -81,7 +81,8 @@ dual expanders. `physis prove` uses the same preference.
 ## What is not yet true
 
 - `SemanticAssurance::Canonical` (reserved; not agent-mintable)
-- P4 independent reproduction (roles and budgets do not assign P4)
+- P4 independent reproduction (in-process `reproduce` remints and
+  **refuses** to assign P4; a distinct implementation is still required)
 - A first-class knowledge-gap *graph store* (inverse query exists as
   `physis inspect`; it is not yet a persisted graph)
 - Mathlib-scale Physlib; only the two catalog identities are kernel-checked

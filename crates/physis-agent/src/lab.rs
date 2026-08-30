@@ -684,6 +684,7 @@ impl Lab {
             Command::Loop => self.research_loop(),
             Command::Inspect { axis, value } => self.inspect(axis.as_deref(), value.as_deref()),
             Command::Formalize { claim } => self.formalize_claim(&claim),
+            Command::Reproduce { claim } => self.reproduce_claim(&claim),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -1026,6 +1027,37 @@ impl Lab {
             spec.lean_type,
             spec.axioms.join(", "),
         ))
+    }
+
+    /// Same-process remint against a stored receipt. Never assigns P4.
+    fn reproduce_claim(&mut self, claim_id: &str) -> Response {
+        let Some(prior) = self.receipts.by_claim(claim_id).cloned() else {
+            return Response::err(format!(
+                "reproduce {claim_id}: no prior receipt; this is not prove and not P4"
+            ));
+        };
+        match self.remint_preferred(claim_id) {
+            Ok(r) => {
+                let same_hash = r.challenge_hash == prior.challenge_hash;
+                let same_checkers = r.primary_checker.checker == prior.primary_checker.checker
+                    && r.secondary_checker.checker == prior.secondary_checker.checker;
+                if same_hash && same_checkers {
+                    Response::ok(format!(
+                        "reproduce {claim_id}\n\
+                         status     in-process remint matched\n\
+                         challenge  {}\n\
+                         checkers   {} + {}\n\
+                         trust      not P4 (same binary, same process)\n",
+                        r.challenge_hash, r.primary_checker.checker, r.secondary_checker.checker,
+                    ))
+                } else {
+                    Response::err(format!(
+                        "reproduce {claim_id}: remint diverged (hash={same_hash} checkers={same_checkers}); not P4"
+                    ))
+                }
+            }
+            Err(e) => Response::err(e),
+        }
     }
 
     fn research_loop(&mut self) -> Response {
@@ -2445,6 +2477,59 @@ mod tests {
         assert!(
             p3f.contains("count 0"),
             "loop must not mint when prove budget is zero: {p3f}"
+        );
+    }
+
+    #[test]
+    fn reproduce_matches_in_process_and_is_not_p4() {
+        let mut lab = Lab::standard();
+        let missing = lab.exec(Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert_eq!(missing.exit_code(), 1, "{}", missing.text());
+        assert!(
+            missing.text().contains("no prior receipt"),
+            "{}",
+            missing.text()
+        );
+
+        let proved = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            proved.contains("lean-kernel") || proved.contains("expand-recursive"),
+            "{proved}"
+        );
+
+        let text = lab
+            .exec(Command::Reproduce {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("in-process remint matched"), "{text}");
+        assert!(text.contains("not P4"), "{text}");
+
+        let p4 = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P4".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p4.contains("count 0"), "{p4}");
+
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            blocked.text().contains("explorer cannot reproduce"),
+            "{}",
+            blocked.text()
         );
     }
 }

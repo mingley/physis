@@ -23,6 +23,7 @@ Level-3 trust
   L3 Lean/nanoda kernels   ✓ Physlib d²=0 and interval; lake + nanoda on export
   L3 inspect / origin      ✓ ParameterOrigin; physis inspect
   L3 roles / budget        ✓ Role gates exec; formalize is untrusted; budget caps prove/review/set
+  L3 reproduce             ✓ in-process remint of a stored receipt; explicitly not P4
 ```
 
 Each milestone must:

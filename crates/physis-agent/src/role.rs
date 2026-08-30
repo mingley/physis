@@ -97,7 +97,7 @@ impl Role {
         }
         match self {
             Role::Formalizer => matches!(cmd, Command::Formalize { .. }),
-            Role::ProofSearcher => matches!(cmd, Command::Prove { .. }),
+            Role::ProofSearcher => matches!(cmd, Command::Prove { .. } | Command::Reproduce { .. }),
             Role::Falsifier => matches!(
                 cmd,
                 Command::Set { .. }
@@ -178,7 +178,7 @@ impl ResearchBudget {
     /// Spend one slot for a consuming command. Observe is free.
     pub fn try_consume(&mut self, cmd: &Command) -> Result<(), String> {
         match cmd {
-            Command::Prove { .. } => dec(&mut self.prove, "prove"),
+            Command::Prove { .. } | Command::Reproduce { .. } => dec(&mut self.prove, "prove"),
             Command::Review { .. } => dec(&mut self.review, "review"),
             Command::Set { .. } => dec(&mut self.set, "set"),
             _ => Ok(()),
@@ -228,6 +228,9 @@ mod tests {
         assert!(!Role::Explorer.permits(&Command::Formalize {
             claim: "dec.d-squared-zero".into(),
         }));
+        assert!(!Role::Explorer.permits(&Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        }));
     }
 
     #[test]
@@ -243,6 +246,9 @@ mod tests {
     #[test]
     fn proof_searcher_can_prove_not_review() {
         assert!(Role::ProofSearcher.permits(&prove()));
+        assert!(Role::ProofSearcher.permits(&Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        }));
         assert!(!Role::ProofSearcher.permits(&review()));
         assert!(!Role::ProofSearcher.permits(&Command::Loop));
     }
