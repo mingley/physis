@@ -20,7 +20,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 
 | id | object |
 |---|---|
-| `maxwell-vacuum` | Classical EM in vacuum: a U(1) gauge field of light |
+| `maxwell-vacuum` | Classical EM in vacuum: a U(1) gauge field of light (homogeneous Faraday IR) |
 | `linear-medium` | Classical EM in a linear medium (`ε_r`, `μ_r` knobs; isotropic-linear constitutive IR) |
 | `ohm-circuit` | Lumped-element circuit theory: the quasi-static effective limit of Maxwell (`frequency_hz` knob; lumped branch IR) |
 
@@ -32,7 +32,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 | `linear-medium` | `mu_r` | relative permeability μ_r ≥ 1; raises n |
 | `ohm-circuit` | `frequency_hz` | operating frequency; the lumped model holds while the wavelength c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation |
 
-`maxwell-vacuum` has no knobs (vacuum is the unit medium).
+`maxwell-vacuum` has no knobs (vacuum is the unit medium). Homogeneous Faraday is not a knob: `add-monopole` is an IR mutation.
 
 ## Claims
 
@@ -40,7 +40,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|---|
 | `em.wave-speed-c` | EM waves travel at c | theorem (vacuum); fails in a medium |
 | `em.gauss` | Gauss's law | theorem (vacuum: `∇·E = 0` verified on a Coulomb field); encoded-fact in a medium |
-| `em.faraday` | Faraday's law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
+| `em.faraday` | Faraday's law | theorem on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Faraday is KVL (encoding-wide Holds) |
 | `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
 | `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | theorem on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
@@ -70,7 +70,10 @@ theorems**. Gauss: a Coulomb field `E = r̂/r²` is checked to have `∇·E = 0`
 from the source (residual ≲ 1e-4). Faraday/Ampère: a plane wave
 `E = ŷ cos(x−t)`, `B = ẑ cos(x−t)` (natural units) is checked by central finite
 differences to satisfy `∂B/∂t + ∇×E = 0` and `∂E/∂t − ∇×B = 0` to residual
-≲ 1e-6. In a medium these revert to encoded facts (macroscopic form).
+≲ 1e-6. Homogeneous Faraday lives on the Maxwell vacuum IR package
+(`maxwell dF=0`). A magnetic current is a package mutation (`add-monopole`):
+the residual of `∂B/∂t + ∇×E + J_m` is the uniform current and Faraday fails.
+In a medium Faraday/Ampère/Gauss revert to encoded facts (macroscopic form).
 
 ## The theorem
 
@@ -94,6 +97,7 @@ rest frame:
 physis experiment em-vacuum
 physis set linear-medium epsilon_r 1   # n → 1, wave-speed-c and lorentz-invariance flip to holds
 physis hypothesize linear-medium       # add-tellegen is IR, not set
+physis hypothesize maxwell-vacuum      # add-monopole is IR, not set
 physis set ohm-circuit frequency_hz 1e10   # electrically short → lumped model fails
 physis hypothesize ohm-circuit             # add-tline is IR, not set
 ```
@@ -101,7 +105,9 @@ physis hypothesize ohm-circuit             # add-tline is IR, not set
 The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
 `em.lorentz-invariance` from `fails` to `holds`. That is orthogonal to
 Tellegen mixing: `em.constitutive-linear` still holds after the knob
-turn, and fails only on the `add-tellegen` IR fork.
+turn, and fails only on the `add-tellegen` IR fork. Homogeneous Faraday
+on Maxwell fails only on the `add-monopole` IR fork; that is not an
+`ε_r` knob and not a silent linear-medium install.
 
 ## Non-goals (this milestone)
 

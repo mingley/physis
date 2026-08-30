@@ -29,6 +29,9 @@ lists every fitted knob in the lab.
 ### newtonian-gravity
 - (none — inverse-square is a single law; the Schwarzschild 3GM u² term is an IR mutation, not a knob. GR keeps `dim`.)
 
+### maxwell-vacuum
+- (none — vacuum is the unit medium; magnetic current is an IR mutation (`add-monopole`), not a knob. `epsilon_r` / `mu_r` stay on linear-medium.)
+
 ### linear-medium
 - `epsilon_r` — relative permittivity; raises n = √(ε_r μ_r). Constitutive form is not this knob: `add-tellegen` is an IR mutation
 - `mu_r` — relative permeability

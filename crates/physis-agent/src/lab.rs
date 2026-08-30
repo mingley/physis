@@ -155,7 +155,7 @@ impl Lab {
         // Grand unification: SU(5) sits one layer above the SM.
         lab.insert(Box::new(Su5Gut::default()));
         // Second domain: electromagnetism shares the same lab and protocol.
-        lab.insert(Box::new(MaxwellVacuum));
+        lab.insert(Box::new(MaxwellVacuum::default()));
         lab.insert(Box::new(LinearMedium::default()));
         lab.insert(Box::new(OhmCircuit::default()));
         // Third domain: computation.
@@ -4770,6 +4770,95 @@ mod tests {
     }
 
     #[test]
+    fn hypothesize_maxwell_vacuum_monopole_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        let blocked = lab.exec(Command::Set {
+            theory: "maxwell-vacuum".into(),
+            knob: "monopole".into(),
+            value: "true".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("unknown knob") || blocked.text().contains("monopole"),
+            "{}",
+            blocked.text()
+        );
+        let eps_blocked = lab.exec(Command::Set {
+            theory: "maxwell-vacuum".into(),
+            knob: "epsilon_r".into(),
+            value: "1".into(),
+        });
+        assert_eq!(eps_blocked.exit_code(), 1, "{}", eps_blocked.text());
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("maxwell-vacuum".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-monopole") && text.contains("ir structural"),
+            "{text}"
+        );
+        assert!(
+            text.contains("em.faraday") && text.contains("holds → fails"),
+            "{text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("maxwell-vacuum").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| c.id_str() == "em.faraday" && v.kind == VerdictKind::Holds),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(live.id(), "maxwell-vacuum");
+        let medium = lab.theory("linear-medium").unwrap();
+        assert_eq!(
+            medium.get("epsilon_r").unwrap().display(),
+            "2.25",
+            "Maxwell IR must not convert linear-medium ε_r"
+        );
+        assert!(
+            medium.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "em.constitutive-linear" && v.kind == VerdictKind::Holds
+            }),
+            "linear-medium must stay the live isotropic-linear object"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "em.faraday".into(),
+            })
+            .text()
+            .to_string();
+        let mx = why_theory_block(&why, "maxwell-vacuum");
+        assert!(
+            mx.contains("source-free homogeneous dF=0"),
+            "Maxwell Faraday must name dF=0: {mx}"
+        );
+        assert!(
+            !mx.contains("not yet a machine-checked regime"),
+            "Maxwell Faraday must not be encoding-wide: {mx}"
+        );
+        let lm = why_theory_block(&why, "linear-medium");
+        assert!(
+            lm.contains("not yet a machine-checked regime"),
+            "linear-medium Faraday stays encoding-wide: {lm}"
+        );
+        let ohm = why_theory_block(&why, "ohm-circuit");
+        assert!(
+            ohm.contains("not yet a machine-checked regime"),
+            "ohm-circuit Faraday stays encoding-wide: {ohm}"
+        );
+    }
+
+    #[test]
     fn evidence_graph_separates_encodings_from_evaluations() {
         let mut lab = Lab::standard();
         let uniq = lab
@@ -5482,12 +5571,12 @@ mod tests {
             "loop must independently round-trip the isotropic-linear constitutive law: {text}"
         );
         assert!(
-            !text.contains("encode  general-relativity"),
-            "GR is not the Newton IR package: {text}"
+            text.contains("encode  maxwell-vacuum"),
+            "loop must independently round-trip the homogeneous Faraday encoding: {text}"
         );
         assert!(
-            !text.contains("encode  maxwell-vacuum"),
-            "Maxwell vacuum is not the linear-medium IR package: {text}"
+            !text.contains("encode  general-relativity"),
+            "GR is not the Newton IR package: {text}"
         );
         assert!(
             !text.contains("encode  standard-model"),
@@ -6751,13 +6840,30 @@ mod tests {
         assert_ne!(medium_id, ohm_id);
         assert_ne!(medium_id, nand_id);
 
+        let maxwell = lab
+            .exec(Command::Encode {
+                theory: "maxwell-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(maxwell.contains("equations  1"), "{maxwell}");
+        assert!(maxwell.contains("round-trip canonical"), "{maxwell}");
+        assert!(maxwell.contains("not P3S"), "{maxwell}");
+        assert!(!maxwell.contains("receipt"), "{maxwell}");
+        let maxwell_id = encoding_package_id(&maxwell);
+        assert_eq!(
+            maxwell_id.to_hex(),
+            "f6f47f600c798018d8cea30121512950f0066f56406aa7be34575f4fae034cc3"
+        );
+        assert_ne!(maxwell_id, medium_id);
+        assert_ne!(maxwell_id, nand_id);
+
         for theory in [
             "standard-model",
             "type-iib",
             "de-rham",
             "turing-machine",
             "general-relativity",
-            "maxwell-vacuum",
         ] {
             let resp = lab.exec(Command::Encode {
                 theory: theory.into(),
@@ -6920,6 +7026,25 @@ mod tests {
             encoding_package_id(&medium_again),
             medium_id,
             "hypothesize must not install the Tellegen constitutive mutant"
+        );
+
+        let hypo_maxwell = lab
+            .exec(Command::Hypothesize {
+                theory: Some("maxwell-vacuum".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hypo_maxwell.contains("add-monopole"), "{hypo_maxwell}");
+        let maxwell_again = lab
+            .exec(Command::Encode {
+                theory: "maxwell-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert_eq!(
+            encoding_package_id(&maxwell_again),
+            maxwell_id,
+            "hypothesize must not install the magnetic-current mutant"
         );
 
         let p3s = lab

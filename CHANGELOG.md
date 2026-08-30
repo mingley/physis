@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Maxwell vacuum magnetic current is an IR mutation**
+  (`maxwell-vacuum`, `add-monopole`). Homogeneous Faraday is the live
+  Bianchi encoding (`maxwell dF=0`); appending `dF = *j_m` makes the
+  plane-wave residual of ∇×E + ∂B/∂t + J_m the uniform magnetic
+  current and flips `em.faraday` holds to fails. That is not a knob.
+  Gauss, Ampère, wave-speed, Lorentz, charge conservation, and
+  constitutive-linear still hold on the mutant. Mutants stay
+  `maxwell-vacuum`; they are not a silent linear-medium install.
+  `epsilon_r` / `mu_r` stay on linear-medium. Maxwell Faraday names
+  source-free homogeneous dF=0; linear-medium Faraday and ohm-circuit
+  KVL stay encoding-wide. Mutants are not installed, not journaled,
+  and not Canonical or P4. Catalog d² hash unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4. Verified: IR round-trip; set
+  monopole is unknown; hypothesize maxwell-vacuum; live homogeneous
+  Faraday restored; encode pin
+  `f6f47f600c798018d8cea30121512950f0066f56406aa7be34575f4fae034cc3`.
+
 - **Linear-medium Tellegen mixing is an IR mutation**
   (`linear-medium`, `add-tellegen`). The constitutive law is isotropic
   linear (`constitutive isotropic-linear`); appending

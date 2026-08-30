@@ -14,6 +14,10 @@
 //! is a package mutation (`add-tellegen`), not an `ε_r` knob: the unique
 //! index `n = √(ε_r μ_r)` splits (`n₊ ≠ n₋`) and `em.constitutive-linear`
 //! fails. `epsilon_r` / `mu_r` still scale the isotropic-linear index.
+//! Homogeneous Faraday (`dF = 0`) lives on the Maxwell vacuum package.
+//! A magnetic current is a package mutation (`add-monopole`), not a
+//! constitutive knob: the plane-wave residual of `∇×E + ∂B/∂t + J_m`
+//! is no longer source-free and `em.faraday` fails.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -74,9 +78,10 @@ fn wave_bz(t: f64, x: f64) -> f64 {
     (x - t).cos()
 }
 
-/// Max residual of Faraday's law `∂B/∂t + (∇×E) = 0` over sample points,
-/// evaluated by central finite differences on the plane-wave fields.
-fn plane_wave_faraday_residual() -> f64 {
+/// Max residual of Faraday's law `∂B/∂t + (∇×E) + J_m = 0` over sample
+/// points, evaluated by central finite differences on the plane-wave
+/// fields. `j_m = 0` is the source-free homogeneous encoding.
+fn plane_wave_faraday_residual(j_m: f64) -> f64 {
     let h = 1e-4;
     let mut max = 0.0_f64;
     for i in 0..8 {
@@ -84,8 +89,8 @@ fn plane_wave_faraday_residual() -> f64 {
         let x = 0.29 * i as f64;
         let dbz_dt = (wave_bz(t + h, x) - wave_bz(t - h, x)) / (2.0 * h);
         let dey_dx = (wave_ey(t, x + h) - wave_ey(t, x - h)) / (2.0 * h);
-        // (∇×E)_z = ∂E_y/∂x (E_x = 0); Faraday: ∂B_z/∂t + (∇×E)_z = 0.
-        max = max.max((dbz_dt + dey_dx).abs());
+        // (∇×E)_z = ∂E_y/∂x (E_x = 0); Faraday: ∂B_z/∂t + (∇×E)_z + J_m = 0.
+        max = max.max((dbz_dt + dey_dx + j_m).abs());
     }
     max
 }
@@ -168,6 +173,12 @@ fn is_vacuum(epsilon_r: f64, mu_r: f64) -> bool {
     (refractive_index(epsilon_r, mu_r) - 1.0).abs() < 1e-9
 }
 
+/// Uniform magnetic current (natural units) on the `add-monopole` fork.
+const MAGNETIC_CURRENT: f64 = 1.0;
+/// Homogeneous Bianchi identity on the live Maxwell vacuum package.
+const MAXWELL_DF_EQ: &str = "maxwell dF=0";
+/// Magnetic current (inhomogeneous Bianchi) on the monopole fork.
+const MONOPOLE_EQ: &str = "dF = *j_m";
 /// Tellegen magnetoelectric mixing, as a dimensionless index split.
 const TELLEGEN_XI: f64 = 0.1;
 /// Isotropic linear constitutive law on the live linear-medium package.
@@ -200,6 +211,35 @@ fn constitutive_domain() -> DomainOfValidity {
         vec!["unique refractive index n = √(ε_r μ_r)".into()],
         "The constitutive cell is the isotropic-linear encoding. Tellegen \
          magnetoelectric mixing is a new encoding, not a silent ε_r knob.",
+    )
+}
+
+fn parse_maxwell_bianchi(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut homogeneous = false;
+    let mut monopole = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            MAXWELL_DF_EQ => homogeneous = true,
+            MONOPOLE_EQ => monopole = true,
+            _ => {}
+        }
+    }
+    if !homogeneous {
+        return Err(format!(
+            "{} package has no source-free homogeneous Faraday law",
+            pkg.id
+        ));
+    }
+    Ok(monopole)
+}
+
+fn faraday_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["source-free homogeneous dF=0".into()],
+        vec!["no magnetic current; plane-wave Faraday residual".into()],
+        "Maxwell Faraday is the source-free homogeneous encoding. \
+         A magnetic current dF = *j_m is a new encoding, not a silent \
+         constitutive knob.",
     )
 }
 
@@ -267,7 +307,7 @@ fn em_claims() -> Vec<Claim> {
     ]
 }
 
-fn eval_em(epsilon_r: f64, mu_r: f64, tellegen: bool, claim: &Claim) -> Verdict {
+fn eval_em(epsilon_r: f64, mu_r: f64, tellegen: bool, monopole: bool, claim: &Claim) -> Verdict {
     let n = refractive_index(epsilon_r, mu_r);
     let vacuum = is_vacuum(epsilon_r, mu_r) && !tellegen;
     match claim.id_str() {
@@ -306,12 +346,24 @@ fn eval_em(epsilon_r: f64, mu_r: f64, tellegen: bool, claim: &Claim) -> Verdict 
         }
         FARADAY => {
             if vacuum {
-                let r = plane_wave_faraday_residual();
-                Verdict::holds(claim, "∇×E = −∂B/∂t")
+                let j_m = if monopole { MAGNETIC_CURRENT } else { 0.0 };
+                let r = plane_wave_faraday_residual(j_m);
+                if r < 1e-6 {
+                    Verdict::holds(claim, "∇×E = −∂B/∂t")
+                        .with_class(ClaimClass::ModelInternal)
+                        .with_evidence([format!(
+                            "verified numerically on a vacuum plane wave: max residual {r:.1e}"
+                        )])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        "homogeneous Faraday is not source-free: magnetic current J_m",
+                    )
                     .with_class(ClaimClass::ModelInternal)
                     .with_evidence([format!(
-                        "verified numerically on a vacuum plane wave: max residual {r:.1e}"
+                        "verified numerically on a vacuum plane wave: max |∂B/∂t + ∇×E + J_m| = {r:.3} (J_m = {j_m})"
                     )])
+                }
             } else {
                 Verdict::holds(claim, "∇×E = −∂B/∂t (macroscopic form in the medium)")
             }
@@ -396,8 +448,58 @@ fn em_world(epsilon_r: f64, mu_r: f64, note: String) -> World {
 }
 
 /// Classical electromagnetism in vacuum (the U(1) gauge theory of light).
-#[derive(Clone, Debug, Default)]
-pub struct MaxwellVacuum;
+///
+/// Homogeneous Faraday lives on the IR package. A magnetic current is a
+/// package mutation (`add-monopole`), not a knob: the plane-wave residual
+/// of `∇×E + ∂B/∂t + J_m` is no longer source-free and `em.faraday` fails.
+/// That fork is still this object, not a silent linear-medium install.
+/// `epsilon_r` / `mu_r` stay on linear-medium.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MaxwellVacuum {
+    monopole: bool,
+}
+
+impl MaxwellVacuum {
+    /// IR package for this Bianchi encoding. Equations are `maxwell dF=0`
+    /// and, when forked, `dF = *j_m`.
+    pub fn package(&self) -> TheoryPackage {
+        let mut equations = vec![MAXWELL_DF_EQ.to_string()];
+        if self.monopole {
+            equations.push(MONOPOLE_EQ.to_string());
+        }
+        TheoryPackage {
+            id: self.id().to_string(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["source-free-homogeneous".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: FARADAY.into(),
+                statement: "A changing magnetic field induces an electric field.".into(),
+                layer: "field".into(),
+                class: "model-internal".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a Faraday encoding from a package.
+    pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
+        if pkg.id != "maxwell-vacuum" {
+            return Err(format!(
+                "maxwell-vacuum package id '{}' is not maxwell-vacuum",
+                pkg.id
+            ));
+        }
+        Ok(Self {
+            monopole: parse_maxwell_bianchi(pkg)?,
+        })
+    }
+
+    fn monopole_equation() -> String {
+        MONOPOLE_EQ.to_string()
+    }
+}
 
 impl Knobbed for MaxwellVacuum {
     fn specs(&self) -> &'static [KnobSpec] {
@@ -420,17 +522,65 @@ impl Theory for MaxwellVacuum {
     }
     fn summary(&self) -> &'static str {
         "Classical electromagnetism in vacuum: a U(1) gauge field whose waves \
-         travel at 1/√(ε₀μ₀) = c. The workspace's second domain, sharing the \
-         same typed substrate as the physics lab."
+         travel at 1/√(ε₀μ₀) = c. Homogeneous Faraday is an IR encoding. A \
+         magnetic current is an IR mutation, not a constitutive knob, and not \
+         a silent linear-medium install."
     }
     fn world(&self) -> Option<World> {
-        Some(em_world(1.0, 1.0, "Maxwell vacuum".to_string()))
+        Some(em_world(
+            1.0,
+            1.0,
+            if self.monopole {
+                "Maxwell vacuum with magnetic current dF = *j_m".to_string()
+            } else {
+                "Maxwell vacuum".to_string()
+            },
+        ))
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()
+            .into_iter()
+            .map(|c| {
+                if c.id_str() == FARADAY {
+                    c.with_domain(faraday_domain())
+                } else {
+                    c
+                }
+            })
+            .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(1.0, 1.0, false, claim)
+        eval_em(1.0, 1.0, false, self.monopole, claim)
+    }
+    fn ir_package(&self) -> Option<TheoryPackage> {
+        Some(self.package())
+    }
+    fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
+        let parsed = Self::from_package(pkg)?;
+        let mut fork = self.clone();
+        fork.monopole = parsed.monopole;
+        Ok(Box::new(fork))
+    }
+    fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
+        if self.monopole {
+            return Vec::new();
+        }
+        let src = render_package(&self.package());
+        let Ok(pkg) = parse_package(&src) else {
+            return Vec::new();
+        };
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Self::monopole_equation()),
+        );
+        match Self::from_package(&mutated) {
+            Ok(parsed) if parsed.monopole => {
+                let mut fork = self.clone();
+                fork.monopole = true;
+                vec![("add-monopole".into(), Box::new(fork))]
+            }
+            _ => Vec::new(),
+        }
     }
 }
 
@@ -590,7 +740,7 @@ impl Theory for LinearMedium {
             .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(self.epsilon_r, self.mu_r, self.tellegen, claim)
+        eval_em(self.epsilon_r, self.mu_r, self.tellegen, false, claim)
     }
     fn ir_package(&self) -> Option<TheoryPackage> {
         Some(self.package())
@@ -921,7 +1071,7 @@ impl Theory for OhmCircuit {
 /// lumped-circuit effective theory.
 pub fn em_vacuum() -> ExperimentReport {
     let theories: Vec<Box<dyn Theory>> = vec![
-        Box::new(MaxwellVacuum),
+        Box::new(MaxwellVacuum::default()),
         Box::new(LinearMedium::default()),
         Box::new(OhmCircuit::default()),
     ];
@@ -936,12 +1086,14 @@ pub fn em_vacuum() -> ExperimentReport {
          knob-controlled effective description, not new fundamental physics. \
          Lumped KCL is the ohm-circuit IR netlist (`add-tline` is an IR fork, \
          not a knob). The linear-medium constitutive law is IR (`add-tellegen` \
-         is an IR fork, not an ε_r knob).",
+         is an IR fork, not an ε_r knob). Homogeneous Faraday is the Maxwell \
+         vacuum IR (`add-monopole` is an IR fork, not a constitutive knob).",
         vec![
             "`holds` / `fails` are internal to the encoding.".into(),
             "Vacuum wave speed is a theorem: ε₀·μ₀·c² = 1 (typed, checked).".into(),
             "A medium with n > 1 slows light and selects a rest frame, so wave-speed and Lorentz-invariance fail.".into(),
             "`hypothesize linear-medium`: add-tellegen is IR, not set.".into(),
+            "`hypothesize maxwell-vacuum`: add-monopole is IR, not set.".into(),
         ],
         &em_rows(),
         theories,
@@ -960,7 +1112,7 @@ mod tests {
 
     #[test]
     fn vacuum_wave_speed_is_a_theorem() {
-        let v = MaxwellVacuum;
+        let v = MaxwellVacuum::default();
         assert_eq!(verdict(&v, WAVE_SPEED_C), VerdictKind::Holds);
         assert_eq!(verdict(&v, LORENTZ_INVARIANCE), VerdictKind::Holds);
         assert_eq!(verdict(&v, CHARGE_CONSERVATION), VerdictKind::Holds);
@@ -971,16 +1123,16 @@ mod tests {
         // The homogeneous Maxwell equations are verified numerically, so
         // Faraday/Ampère are computed theorems in vacuum.
         assert!(
-            plane_wave_faraday_residual() < 1e-6,
+            plane_wave_faraday_residual(0.0) < 1e-6,
             "faraday residual {}",
-            plane_wave_faraday_residual()
+            plane_wave_faraday_residual(0.0)
         );
         assert!(
             plane_wave_ampere_residual() < 1e-6,
             "ampere residual {}",
             plane_wave_ampere_residual()
         );
-        let v = MaxwellVacuum;
+        let v = MaxwellVacuum::default();
         let faraday = v
             .claims()
             .into_iter()
@@ -1006,7 +1158,7 @@ mod tests {
             "gauss residual {}",
             coulomb_gauss_residual()
         );
-        let v = MaxwellVacuum;
+        let v = MaxwellVacuum::default();
         let gauss = v
             .claims()
             .into_iter()
@@ -1079,7 +1231,7 @@ mod tests {
             "lumped validity must name λ >> circuit size: {:?}",
             qs.domain()
         );
-        let maxwell = MaxwellVacuum;
+        let maxwell = MaxwellVacuum::default();
         let mqs = maxwell
             .claims()
             .into_iter()
@@ -1156,7 +1308,7 @@ mod tests {
             "ohm-circuit KCL must name lumped nodes: {:?}",
             kcl.domain()
         );
-        let maxwell = MaxwellVacuum;
+        let maxwell = MaxwellVacuum::default();
         let mkcl = maxwell
             .claims()
             .into_iter()
@@ -1248,7 +1400,7 @@ mod tests {
             "linear-medium constitutive must name D=εE: {:?}",
             cell.domain()
         );
-        let maxwell = MaxwellVacuum;
+        let maxwell = MaxwellVacuum::default();
         let mcell = maxwell
             .claims()
             .into_iter()
@@ -1265,5 +1417,112 @@ mod tests {
             verdict(&ohm, CONSTITUTIVE_LINEAR),
             VerdictKind::Inapplicable
         );
+    }
+
+    #[test]
+    fn monopole_current_is_ir_not_a_knob() {
+        let v = MaxwellVacuum::default();
+        assert!(
+            MaxwellVacuum::default()
+                .set("monopole", KnobValue::Bool(true))
+                .is_err(),
+            "magnetic current is an IR mutation, not a knob"
+        );
+        assert!(
+            MaxwellVacuum::default()
+                .set("epsilon_r", KnobValue::Float(1.0))
+                .is_err(),
+            "Maxwell must not grow an ε_r knob; that stays on linear-medium"
+        );
+        assert!(
+            MaxwellVacuum::default()
+                .set("tellegen", KnobValue::Bool(true))
+                .is_err(),
+            "Maxwell must not grow a Tellegen knob"
+        );
+        let src = render_package(&v.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            MaxwellVacuum::from_package(&pkg).unwrap(),
+            v,
+            "IR round-trip must preserve source-free homogeneous Faraday"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(MaxwellVacuum::monopole_equation()),
+        );
+        let parsed = MaxwellVacuum::from_package(&mutated).unwrap();
+        assert!(parsed.monopole);
+        let mut fork = v.clone();
+        fork.monopole = true;
+        assert_eq!(verdict(&fork, FARADAY), VerdictKind::Fails);
+        assert_eq!(verdict(&v, FARADAY), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, GAUSS), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, AMPERE), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, WAVE_SPEED_C), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, LORENTZ_INVARIANCE), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CHARGE_CONSERVATION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, CONSTITUTIVE_LINEAR), VerdictKind::Holds);
+        assert_eq!(
+            verdict(&fork, QUASI_STATIC_VALID),
+            VerdictKind::Inapplicable
+        );
+        let jm = plane_wave_faraday_residual(MAGNETIC_CURRENT);
+        assert!(
+            (jm - MAGNETIC_CURRENT).abs() < 1e-6,
+            "inhomogeneous Faraday residual must be the magnetic current, got {jm}"
+        );
+        let probes = MaxwellVacuum::default().structural_mutations();
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].0, "add-monopole");
+        assert_eq!(verdict(probes[0].1.as_ref(), FARADAY), VerdictKind::Fails);
+        assert!(fork.structural_mutations().is_empty());
+        let live = MaxwellVacuum::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(rebuilt.ir_package().unwrap(), live.package());
+        assert_eq!(verdict(rebuilt.as_ref(), FARADAY), VerdictKind::Holds);
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FARADAY)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "Maxwell Faraday must name source-free dF=0: {:?}",
+            cell.domain()
+        );
+        let glass = LinearMedium::default();
+        let gfar = glass
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FARADAY)
+            .unwrap();
+        assert!(
+            gfar.domain().is_encoding_wide(),
+            "linear-medium Faraday stays encoding-wide: {:?}",
+            gfar.domain()
+        );
+        assert_eq!(verdict(&glass, FARADAY), VerdictKind::Holds);
+        assert!(
+            glass
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-monopole"),
+            "linear-medium must not grow add-monopole"
+        );
+        let ohm = OhmCircuit::default();
+        let ofar = ohm
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FARADAY)
+            .unwrap();
+        assert!(
+            ofar.domain().is_encoding_wide(),
+            "ohm-circuit Faraday stays encoding-wide: {:?}",
+            ofar.domain()
+        );
+        assert_eq!(verdict(&ohm, FARADAY), VerdictKind::Holds);
     }
 }
