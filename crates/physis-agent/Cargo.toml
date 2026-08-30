@@ -17,5 +17,6 @@ physis-verifier.workspace = true
 physis-audit.workspace = true
 physis-semantic.workspace = true
 physis-store.workspace = true
+physis-numeric.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -216,7 +216,10 @@ identity; a slug-only review line is not P3S.
   They now refuse `reproduce` and the loop's review step without P3F.
   Named *roles* still gate who may issue an op. A proof-searcher cannot
   remint; that is `replication-agent`. An explorer cannot score; that
-  is `empirical-analyst`. NumericalVerifier / ProvenanceAuditor /
+  is `empirical-analyst`. A proof-searcher cannot independently parse a
+  `CertifiedNumeric` enclosure; that is `numerical-verifier` (`physis
+  enclose`, a content-addressed NumericCertificate; not a kernel
+  receipt, not Canonical, not P4). ProvenanceAuditor /
   EncodingAuditor / Judge are not empty aliases for existing ops.
 
 ## Vertical slice

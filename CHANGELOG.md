@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Independent Ratio enclose is a unique numerical-verifier op**
+  (`physis enclose`, `Role::NumericalVerifier`). Parses live
+  `CertifiedNumeric` overlay strings as canonical `Ratio` (`3/8`, `0`,
+  `-1/2`) and stores a content-addressed `NumericCertificate`. Succeeds
+  on the four P3N cells; refuses unique-vacuum, Super-K, GQW NLL, and
+  Poincaré. Restore rebuilds from live strings; a forged
+  `certificate_hash` cannot mint. Not a kernel receipt, not Canonical,
+  not P4. `inspect trust P3N` stays count 4. Loop runs enclose after
+  falsify. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  GUT-scale 3/8 certificate
+  `0967e9f42ec9ff0fd8e29fecc5bb5a3ed9aba4974ac77b0e5217a4bb634ec202`.
+  Verified: parse_display rejects `6/16` and `0.23122`; role gates;
+  journal restore; P3N count.
+
 - **Correspondence cells name a DomainOfValidity**
   (`thermo.high-t-classical`, `thermo.debye-t3`, `thermo.rj-ir-limit`,
   `gauge.exact-area-law-2d`). High-T is `T/Θ ≥ 8`; Debye T³ is the

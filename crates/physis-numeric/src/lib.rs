@@ -102,6 +102,20 @@ impl Ratio {
         (d * d) / (Ratio::int(2) * sigma * sigma)
     }
 
+    /// Parse this ratio's [`Display`] form: `n` or `n/d` with `d > 0`,
+    /// already reduced, no whitespace, no leading `+`. `6/16` is
+    /// rejected because Display is `3/8`. This is the independent check
+    /// of a `CertifiedNumeric` enclosure string: the overlay is not the
+    /// certificate.
+    pub fn parse_display(s: &str) -> Option<Self> {
+        let parsed = parse_ratio_raw(s)?;
+        if parsed.to_string() == s {
+            Some(parsed)
+        } else {
+            None
+        }
+    }
+
     /// Exact square root when both numerator and denominator are perfect
     /// squares. `None` if the radicand is negative or not a square in Q.
     pub fn checked_sqrt(self) -> Option<Self> {
@@ -169,6 +183,32 @@ impl std::fmt::Display for Ratio {
         } else {
             write!(f, "{}/{}", self.num, self.den)
         }
+    }
+}
+
+fn parse_ratio_raw(s: &str) -> Option<Ratio> {
+    if s.is_empty() {
+        return None;
+    }
+    if s.as_bytes()
+        .iter()
+        .any(|b| !(b.is_ascii_digit() || *b == b'-' || *b == b'/'))
+    {
+        return None;
+    }
+    if let Some((num, den)) = s.split_once('/') {
+        if num.is_empty() || den.is_empty() || den.starts_with('-') {
+            return None;
+        }
+        let n: i128 = num.parse().ok()?;
+        let d: i128 = den.parse().ok()?;
+        if d <= 0 {
+            return None;
+        }
+        Some(Ratio::new(n, d))
+    } else {
+        let n: i128 = s.parse().ok()?;
+        Some(Ratio::int(n))
     }
 }
 
@@ -439,6 +479,34 @@ mod tests {
         let disc = s * s - Ratio::int(4) * p;
         assert_eq!(disc, Ratio::int(1));
         assert_eq!(disc.checked_sqrt(), Some(Ratio::int(1)));
+    }
+
+    #[test]
+    fn parse_display_accepts_canonical_form_only() {
+        assert_eq!(Ratio::parse_display("3/8"), Some(Ratio::new(3, 8)));
+        assert_eq!(Ratio::parse_display("0"), Some(Ratio::int(0)));
+        assert_eq!(Ratio::parse_display("-1/2"), Some(Ratio::new(-1, 2)));
+        assert_eq!(Ratio::parse_display("1"), Some(Ratio::int(1)));
+        assert_eq!(
+            Ratio::parse_display("6/16"),
+            None,
+            "unreduced is not Display"
+        );
+        assert_eq!(
+            Ratio::parse_display("0.23122"),
+            None,
+            "decimal is not a Ratio"
+        );
+        assert_eq!(Ratio::parse_display("3 / 8"), None);
+        assert_eq!(Ratio::parse_display("+3/8"), None);
+        assert_eq!(Ratio::parse_display("3/+8"), None);
+        assert_eq!(Ratio::parse_display("3/-8"), None);
+        assert_eq!(Ratio::parse_display(""), None);
+        assert_eq!(
+            Ratio::parse_display("03"),
+            None,
+            "leading zeros are not Display"
+        );
     }
 
     #[test]

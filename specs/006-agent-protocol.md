@@ -27,7 +27,8 @@ Layer: agent
 | `formalize <claim>` | emit the catalog encoding as untrusted bytes (not a receipt) |
 | `reproduce <claim>` | remint a stored receipt in-process; **not P4** |
 | `gaps` | rebuild the knowledge-gap graph from live verdicts and lemma edges (not deserialized). Failing evaluations are not listed as missing theorems. Overlap without containment is `insufficient-precision`. coNP-complete search is `computationally-intractable`, not Rice. An empirical prediction with no registered dataset is `missing-dataset`. Super-K `p→e+π0` is a Dataset; `gut.proton-lifetime-sk` is decided (excluded / compatible), not that hole |
-| `loop` | one research cycle: observe → hypothesize (chosen/fitted knobs and IR package forks; measured frozen) → prove → falsify → replicate → design → audit → review |
+| `enclose <claim>` | independently parse a `CertifiedNumeric` enclosure as `Ratio` and store a content-addressed NumericCertificate. Succeeds on the four P3N cells; refuses unique-vacuum, Super-K, GQW NLL, and Poincaré. Not a kernel receipt, not Canonical, not P4; P3N count stays 4. Restore rebuilds from live overlay strings |
+| `loop` | one research cycle: observe → hypothesize (chosen/fitted knobs and IR package forks; measured frozen) → prove → falsify → enclose → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |
 | `experiment <id>` | canonical experiment (fresh defaults) |
@@ -37,11 +38,13 @@ Layer: agent
 
 CLI tokens map 1:1 onto `physis_agent::Command`.
 
-`--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst`
+`--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst|numerical-verifier`
 gates which ops `exec` will dispatch. Named roles may observe (including `hypothesize`); each may
 run one kind of untrusted work. A proof-searcher cannot remint a receipt
 it requested; that is `replication-agent` (still not P4). An explorer
-cannot score the empirical target; that is `empirical-analyst`. None of
+cannot score the empirical target; that is `empirical-analyst`. A
+proof-searcher cannot independently parse a Ratio enclosure; that is
+`numerical-verifier` (not a kernel receipt, not P4). None of
 them mint `Verified` — `prove`
 still goes through `physis_verifier::verify`. `loop` and `replay` stay
 lab-only. `--budget prove=N,review=N,set=N` is a research cap on the
@@ -77,6 +80,11 @@ rather than parsing prose. Example: `physis --json set type-iib total_dim 9`.
   evaluations. The recorded hash is not deserialized as authority and is
   not Canonical or P4. `replay_journal` ignores this event (it still
   certifies only `set-knob`)
+- `enclose` — claim id, certificate hash; restore rebuilds the
+  NumericCertificate from live `CertifiedNumeric` overlay strings. The
+  recorded hash is not deserialized as authority, is not a kernel
+  receipt, and is not Canonical or P4. `replay_journal` ignores this
+  event (it still certifies only `set-knob`)
 
 Append-only. Optional file backend (`Journal::file`).
 
@@ -99,8 +107,9 @@ line against fresh defaults, so to persist a real session across process runs,
 pass `--journal <file.jsonl>`: the lab loads the file and *restores* prior state
 (`Lab::restore_from_journal`) before the new turn, so the accumulated file
 replays faithfully. Restore remints prove/review of recorded identities and
-rebuilds evidence graphs from live evaluations; it does not deserialize a
-`Verified`, a semantic tag, or a `graph_hash` as the artifact. `physis replay`
+rebuilds evidence graphs and numeric certificates from live evaluations;
+it does not deserialize a
+`Verified`, a semantic tag, a `graph_hash`, or a `certificate_hash` as the artifact. `physis replay`
 still certifies only `set-knob` diffs.
 
 Timestamps (`t`) are Unix milliseconds as `u64` — 128-bit integers do not

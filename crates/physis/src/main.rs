@@ -86,7 +86,7 @@ fn extract_opts(args: &[String]) -> Result<CliOpts, String> {
                 let name = &args[i + 1];
                 role = Role::parse(name).ok_or_else(|| {
                     format!(
-                        "unknown role '{name}' (lab|explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst)"
+                        "unknown role '{name}' (lab|explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst|numerical-verifier)"
                     )
                 })?;
                 i += 2;
@@ -236,6 +236,10 @@ fn parse(args: &[String]) -> Result<Command, String> {
             Ok(Command::Reproduce { claim })
         }
         "gaps" => Ok(Command::Gaps),
+        "enclose" => {
+            let claim = args.get(1).ok_or_else(usage)?.clone();
+            Ok(Command::Enclose { claim })
+        }
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -258,6 +262,7 @@ USAGE:
     physis formalize <claim-id>
     physis reproduce <claim-id>
     physis gaps
+    physis enclose <claim-id>
     physis falsify <claim-id>
     physis sweep <theory> <knob> <v1,v2,...>
     physis branch <name>

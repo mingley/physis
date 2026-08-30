@@ -1,8 +1,8 @@
 //! The laboratory: theories, knobs, experiments, journal.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use physis_core::assurance::{ClaimClass, SemanticAssurance};
+use physis_core::assurance::{ClaimClass, DerivationAssurance, SemanticAssurance};
 use physis_core::claim::VerdictKind;
 use physis_core::error::CoreError;
 use physis_core::formal::FormalClaim;
@@ -12,6 +12,7 @@ use physis_core::judgment::{
 };
 use physis_core::knob::{KnobDomain, KnobValue};
 use physis_core::AxiomLedger;
+use physis_numeric::Ratio;
 use physis_proof::{lookup_matching, Challenge, UntrustedProof, CATALOG};
 use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
@@ -55,6 +56,9 @@ pub struct Lab {
     axioms: AxiomLedger,
     role: Role,
     budget: ResearchBudget,
+    /// Independent Ratio parses keyed by statement hash. Not a kernel
+    /// receipt store and not the `CertifiedNumeric` overlay that earns P3N.
+    numeric_certs: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
 }
 
 /// The experiments the lab can run, with one-line descriptions.
@@ -118,6 +122,7 @@ impl Lab {
             axioms: AxiomLedger::physis_defaults(),
             role: Role::Lab,
             budget: ResearchBudget::unlimited(),
+            numeric_certs: BTreeMap::new(),
         }
     }
 
@@ -263,7 +268,7 @@ impl Lab {
     }
 
     /// Re-apply journaled `set-knob` events and remint prove / review /
-    /// evidence from live state, **without** recording them again.
+    /// evidence / enclose from live state, **without** recording them again.
     ///
     /// This resumes a persisted session: after loading a journal from a file,
     /// call this so subsequent turns build on the prior ones instead of on
@@ -271,10 +276,12 @@ impl Lab {
     /// single coherent, replayable session rather than a bag of independent
     /// one-shot diffs.
     ///
-    /// Evidence restore rebuilds the DAG from live evaluations. The recorded
-    /// `graph_hash` is not deserialized as the snapshot: a forged hash cannot
-    /// mint an Evidence node. [`crate::replay::replay_journal`] still certifies
-    /// only `set-knob` diffs.
+    /// Evidence restore rebuilds the DAG from live evaluations. Enclose
+    /// restore rebuilds numeric certificates from live overlay strings.
+    /// Recorded hashes are not deserialized as the snapshot: a forged hash
+    /// cannot mint an Evidence or NumericCertificate node.
+    /// [`crate::replay::replay_journal`] still certifies only `set-knob`
+    /// diffs.
     pub fn restore_from_journal(&mut self) {
         for ev in self.journal.events().to_vec() {
             match ev {
@@ -307,6 +314,11 @@ impl Lab {
                     // Rebuild from live evaluations. The recorded graph
                     // hash is not deserialized as the DAG.
                     let _ = self.build_evidence_graph(&claim);
+                }
+                JournalEvent::Enclose { claim, .. } => {
+                    // Rebuild from live CertifiedNumeric overlay strings.
+                    // The recorded certificate hash is not deserialized.
+                    let _ = self.build_numeric_certificates(&claim);
                 }
                 _ => {}
             }
@@ -595,6 +607,13 @@ impl Lab {
                             if let (Some(lo), Some(hi)) = (v.numeric_lo(), v.numeric_hi()) {
                                 text.push_str(&format!("  enclosure:  [{lo}, {hi}]\n"));
                             }
+                            if let Some(id) = self.numeric_certs.get(&c.statement_hash()) {
+                                text.push_str(&format!("  enclose:     {id}\n"));
+                            } else if v.derivation() == DerivationAssurance::CertifiedNumeric {
+                                text.push_str(
+                                    "  enclose:     none (overlay is not an independent Ratio parse)\n",
+                                );
+                            }
                             if let Some(nll) = v.statistical_nll() {
                                 text.push_str(&format!("  nll:        {nll}\n"));
                             }
@@ -726,6 +745,7 @@ impl Lab {
             Command::Formalize { claim } => self.formalize_claim(&claim),
             Command::Reproduce { claim } => self.reproduce_claim(&claim),
             Command::Gaps => self.gaps(),
+            Command::Enclose { claim } => self.enclose_claim(&claim),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
                 Ok(contents) => {
                     let (journal, malformed) = Journal::from_jsonl_counting(&contents);
@@ -1044,6 +1064,124 @@ impl Lab {
             out.push_str(&text);
         }
         Ok((out, graph))
+    }
+
+    /// Independently parse live `CertifiedNumeric` enclosure strings as
+    /// [`Ratio`]. Stores a content-addressed [`NodeKind::NumericCertificate`].
+    /// Does not mint a kernel receipt, Canonical, or P4, and does not
+    /// change the P3N overlay.
+    fn enclose_claim(&mut self, claim_id: &str) -> Response {
+        match self.build_numeric_certificates(claim_id) {
+            Ok((out, cert)) => {
+                self.journal
+                    .record(JournalEvent::enclose(claim_id, cert.to_hex()));
+                Response::ok(out)
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Rebuild numeric certificates from live overlay strings. Does not
+    /// journal and does not deserialize a recorded certificate hash.
+    fn build_numeric_certificates(
+        &mut self,
+        claim_id: &str,
+    ) -> Result<(String, physis_core::artifact::ArtifactId), String> {
+        let mut found = false;
+        let mut rows = Vec::new();
+        for t in self.theories.values() {
+            for (c, v) in t.evaluate_all() {
+                if c.id_str() != claim_id {
+                    continue;
+                }
+                found = true;
+                rows.push((
+                    t.id().to_string(),
+                    c.statement_hash(),
+                    v.derivation(),
+                    v.numeric_lo().map(str::to_string),
+                    v.numeric_hi().map(str::to_string),
+                ));
+            }
+        }
+        if !found {
+            return Err(format!("unknown claim '{claim_id}'"));
+        }
+
+        let mut text = format!("enclose  {claim_id}\n");
+        let mut cert_ids: Vec<physis_core::artifact::ArtifactId> = Vec::new();
+        for (theory, hash, derivation, lo, hi) in rows {
+            if derivation != DerivationAssurance::CertifiedNumeric {
+                text.push_str(&format!(
+                    "  skipped  {theory}  derivation {} (not certified-numeric)\n",
+                    derivation.as_str()
+                ));
+                continue;
+            }
+            let (Some(lo), Some(hi)) = (lo, hi) else {
+                return Err(format!(
+                    "enclose {claim_id}: {theory} certified-numeric overlay has no enclosure strings"
+                ));
+            };
+            let Some(lo_r) = Ratio::parse_display(&lo) else {
+                return Err(format!(
+                    "enclose {claim_id}: {theory} lower bound '{lo}' is not a canonical Ratio"
+                ));
+            };
+            let Some(hi_r) = Ratio::parse_display(&hi) else {
+                return Err(format!(
+                    "enclose {claim_id}: {theory} upper bound '{hi}' is not a canonical Ratio"
+                ));
+            };
+            if lo_r > hi_r {
+                return Err(format!(
+                    "enclose {claim_id}: {theory} reversed enclosure [{lo}, {hi}]"
+                ));
+            }
+            let stmt = self.store.insert(Node::new(
+                NodeKind::Statement,
+                vec![],
+                hash.to_hex().as_bytes(),
+            ));
+            let payload = format!("{lo}\t{hi}");
+            let cert = self.store.insert(Node::new(
+                NodeKind::NumericCertificate,
+                vec![stmt],
+                payload.as_bytes(),
+            ));
+            self.numeric_certs.insert(hash, cert);
+            cert_ids.push(cert);
+            text.push_str(&format!("  identity  {}\n", hash.to_hex()));
+            text.push_str(&format!("    theory       {theory}\n"));
+            text.push_str(&format!("    enclosure    [{lo}, {hi}]\n"));
+            text.push_str(&format!("    certificate  {}\n", cert.to_hex()));
+            text.push_str("    not a kernel proof; not P4; not Canonical\n");
+        }
+
+        if cert_ids.is_empty() {
+            return Err(format!(
+                "enclose {claim_id}: no certified-numeric enclosure to parse independently"
+            ));
+        }
+
+        cert_ids.sort();
+        let bundle = if cert_ids.len() == 1 {
+            cert_ids[0]
+        } else {
+            self.store.insert(Node::new(
+                NodeKind::NumericCertificate,
+                cert_ids,
+                claim_id.as_bytes(),
+            ))
+        };
+        let mut out = format!("enclose  {claim_id}  certificate {}\n", bundle.to_hex());
+        let prefix = format!("enclose  {claim_id}\n");
+        if let Some(rest) = text.strip_prefix(&prefix) {
+            out.push_str(rest);
+        } else {
+            out.push_str(&text);
+        }
+        Ok((out, bundle))
     }
 
     /// A dual-checked receipt for this slug counts only when it matches the
@@ -1482,7 +1620,7 @@ impl Lab {
     fn research_loop(&mut self) -> Response {
         let snap = self.snapshot_knobs();
         let mut text = String::from(
-            "loop observe → hypothesize → prove → falsify → replicate → design → audit → review\n",
+            "loop observe → hypothesize → prove → falsify → enclose → replicate → design → audit → review\n",
         );
 
         let mut holds = 0usize;
@@ -1540,6 +1678,25 @@ impl Lab {
         text.push_str("falsify  consistency.critical-dimension\n");
         for line in falsify.text().lines().skip(1) {
             text.push_str(&format!("  {line}\n"));
+        }
+
+        let mut enclose_slugs = BTreeSet::new();
+        for t in self.theories.values() {
+            for (c, v) in t.evaluate_all() {
+                if v.derivation() == DerivationAssurance::CertifiedNumeric {
+                    enclose_slugs.insert(c.id_str().to_string());
+                }
+            }
+        }
+        for slug in enclose_slugs {
+            match self.build_numeric_certificates(&slug) {
+                Ok((_, cert)) => {
+                    self.journal
+                        .record(JournalEvent::enclose(&slug, cert.to_hex()));
+                    text.push_str(&format!("enclose  {slug}  {}\n", cert.to_hex()));
+                }
+                Err(e) => text.push_str(&format!("enclose  {slug}  {e}\n")),
+            }
         }
 
         let mut replicate_ok = true;
@@ -4034,6 +4191,13 @@ mod tests {
             .unwrap_or_else(|| panic!("expected 64 hex graph id in {line}"))
     }
 
+    fn numeric_certificate_id(text: &str) -> physis_core::artifact::ArtifactId {
+        let line = text.lines().next().expect("empty enclose");
+        let hex = line.split_whitespace().last().expect("certificate hex");
+        physis_core::artifact::ArtifactId::from_hex(hex)
+            .unwrap_or_else(|| panic!("expected 64 hex certificate id in {line}"))
+    }
+
     fn unique_vacuum_statement(lab: &Lab, theory: &str) -> physis_core::artifact::ArtifactId {
         let (c, _) = lab
             .theory(theory)
@@ -4538,6 +4702,22 @@ mod tests {
         assert!(
             !text.contains("unproved_catalog"),
             "catalog membership is not a structural hypothesis: {text}"
+        );
+        assert!(
+            text.contains("enclose  gut.weinberg-angle"),
+            "loop must independently parse P3N Ratio strings: {text}"
+        );
+        assert!(
+            text.contains("enclose  consistency.anomaly-cancellation"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("enclose  predictivity.unique-vacuum"),
+            "Asserted unique-vacuum is not CertifiedNumeric: {text}"
+        );
+        assert!(
+            !text.contains("enclose  gut.proton-lifetime-sk"),
+            "Super-K is not CertifiedNumeric: {text}"
         );
         assert_eq!(
             lab.theory("type-iib")
@@ -5192,6 +5372,204 @@ mod tests {
             "{}",
             prove.text()
         );
+    }
+
+    #[test]
+    fn numerical_verifier_encloses_ratio_strings_and_cannot_prove() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Enclose {
+            claim: "gut.weinberg-angle".into(),
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("explorer cannot enclose"),
+            "{}",
+            blocked.text()
+        );
+
+        lab.set_role(Role::ProofSearcher);
+        let blocked_ps = lab.exec(Command::Enclose {
+            claim: "gut.weinberg-angle".into(),
+        });
+        assert!(
+            blocked_ps.text().contains("proof-searcher cannot enclose"),
+            "{}",
+            blocked_ps.text()
+        );
+
+        lab.set_role(Role::NumericalVerifier);
+        let prove = lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            prove.text().contains("numerical-verifier cannot prove"),
+            "{}",
+            prove.text()
+        );
+
+        let gut = lab
+            .exec(Command::Enclose {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        assert!(gut.contains("enclosure    [3/8, 3/8]"), "{gut}");
+        assert!(gut.contains("not a kernel proof"), "{gut}");
+        assert!(gut.contains("not P4"), "{gut}");
+        assert!(!gut.contains("receipt"), "{gut}");
+        let gut_id = numeric_certificate_id(&gut);
+        assert_eq!(
+            lab.store.get(gut_id).map(|n| n.kind),
+            Some(NodeKind::NumericCertificate)
+        );
+
+        let anom = lab
+            .exec(Command::Enclose {
+                claim: "consistency.anomaly-cancellation".into(),
+            })
+            .text()
+            .to_string();
+        assert!(anom.contains("standard-model"), "{anom}");
+        assert!(anom.contains("enclosure    [0, 0]"), "{anom}");
+        assert!(
+            anom.contains("skipped") && anom.contains("type-iib"),
+            "string Green-Schwarz must not be parsed as Ratio: {anom}"
+        );
+
+        let y = lab
+            .exec(Command::Enclose {
+                claim: "sm.hypercharge-derivation".into(),
+            })
+            .text()
+            .to_string();
+        assert!(y.contains("enclosure    [-1/2, -1/2]"), "{y}");
+
+        let h = lab
+            .exec(Command::Enclose {
+                claim: "empirical.charge-quantization".into(),
+            })
+            .text()
+            .to_string();
+        assert!(h.contains("enclosure    [0, 0]"), "{h}");
+
+        for (claim, why_token) in [
+            ("predictivity.unique-vacuum", "no certified-numeric"),
+            ("gut.proton-lifetime-sk", "no certified-numeric"),
+            ("gut.weinberg-angle-mz-interval", "no certified-numeric"),
+            ("dec.closed-equals-exact", "no certified-numeric"),
+        ] {
+            let resp = lab.exec(Command::Enclose {
+                claim: claim.into(),
+            });
+            assert_eq!(resp.exit_code(), 1, "{claim} {}", resp.text());
+            assert!(resp.text().contains(why_token), "{claim} {}", resp.text());
+        }
+
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p3n.contains("count 4"),
+            "independent enclose must not mint extra P3N: {p3n}"
+        );
+        assert!(!p3n.contains("gut.proton-lifetime-sk"), "{p3n}");
+        assert!(!p3n.contains("gut.weinberg-angle-mz"), "{p3n}");
+
+        let why = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains(&format!("enclose:     {gut_id}")), "{why}");
+        assert!(why.contains("P3N"), "{why}");
+        assert!(!why.contains("P4"), "{why}");
+    }
+
+    #[test]
+    fn numeric_certificate_restores_by_rebuild_not_deserialize() {
+        let mut lab1 = Lab::standard();
+        let first = lab1
+            .exec(Command::Enclose {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        let live = numeric_certificate_id(&first);
+        assert_eq!(
+            live.to_hex(),
+            "0967e9f42ec9ff0fd8e29fecc5bb5a3ed9aba4974ac77b0e5217a4bb634ec202",
+            "journaling must not change the GUT-scale 3/8 certificate payload"
+        );
+        let jsonl = lab1.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"enclose\""), "{jsonl}");
+        assert!(
+            jsonl.contains(&format!("\"certificate_hash\":\"{}\"", live.to_hex())),
+            "{jsonl}"
+        );
+
+        let mut lab2 = Lab::standard();
+        assert_eq!(
+            lab2.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::NumericCertificate)
+                .count(),
+            0
+        );
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        assert_eq!(
+            lab2.store
+                .iter()
+                .filter(|n| n.kind == NodeKind::NumericCertificate)
+                .count(),
+            0,
+            "from_jsonl must not insert NumericCertificate"
+        );
+        let journal_len = lab2.journal().len();
+        lab2.restore_from_journal();
+        assert_eq!(
+            lab2.journal().len(),
+            journal_len,
+            "restore must not journal enclose again"
+        );
+        assert_eq!(
+            lab2.store.get(live).map(|n| n.kind),
+            Some(NodeKind::NumericCertificate),
+            "restore rebuilds the live certificate"
+        );
+
+        let forged_hex = "0".repeat(64);
+        let tampered = format!(
+            r#"{{"event":"enclose","t":1,"claim":"gut.weinberg-angle","certificate_hash":"{forged_hex}"}}"#
+        );
+        let mut lab3 = Lab::standard();
+        *lab3.journal_mut() = Journal::from_jsonl(&tampered);
+        lab3.restore_from_journal();
+        assert_eq!(
+            lab3.store.get(live).map(|n| n.kind),
+            Some(NodeKind::NumericCertificate),
+            "tampered certificate_hash is not the DAG"
+        );
+        let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
+            .expect("64 hex zeros is an ArtifactId");
+        assert!(
+            lab3.store.get(forged).is_none(),
+            "a forged hash cannot mint the certificate"
+        );
+        assert_eq!(lab3.journal().len(), 1, "tampered restore must not append");
+
+        let why = lab2
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains(&format!("enclose:     {live}")), "{why}");
     }
 
     #[test]

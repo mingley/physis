@@ -150,6 +150,13 @@ pub enum Command {
     },
     /// Rebuild the knowledge-gap graph from live verdicts and receipts.
     Gaps,
+    /// Independently parse a `CertifiedNumeric` enclosure as `Ratio`.
+    /// Stores a content-addressed numeric certificate. Not a kernel
+    /// receipt, not Canonical, and not P4.
+    Enclose {
+        /// Claim id.
+        claim: String,
+    },
 }
 
 impl Command {
@@ -185,6 +192,7 @@ impl Command {
             Command::Formalize { .. } => "formalize",
             Command::Reproduce { .. } => "reproduce",
             Command::Gaps => "gaps",
+            Command::Enclose { .. } => "enclose",
         }
     }
 }

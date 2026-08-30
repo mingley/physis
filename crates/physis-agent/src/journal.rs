@@ -112,6 +112,19 @@ pub enum JournalEvent {
         /// forged hash cannot mint the graph.
         graph_hash: String,
     },
+    /// An independent Ratio parse of a `CertifiedNumeric` enclosure.
+    /// Restore rebuilds from live overlay strings. The recorded
+    /// certificate hash is not deserialized as authority and is not a
+    /// kernel receipt, Canonical, or P4.
+    Enclose {
+        /// Unix millis.
+        t: u64,
+        /// Claim id (lab slug).
+        claim: String,
+        /// Content-addressed NumericCertificate node hex. Restore
+        /// rebuilds; a forged hash cannot mint the certificate.
+        certificate_hash: String,
+    },
 }
 
 /// Parse JSONL into events, counting non-blank lines that fail to deserialize.
@@ -226,6 +239,15 @@ impl JournalEvent {
             t: now_ms(),
             claim: claim.into(),
             graph_hash: graph_hash.into(),
+        }
+    }
+
+    /// An independent Ratio enclose, stamped with the current time.
+    pub fn enclose(claim: impl Into<String>, certificate_hash: impl Into<String>) -> Self {
+        JournalEvent::Enclose {
+            t: now_ms(),
+            claim: claim.into(),
+            certificate_hash: certificate_hash.into(),
         }
     }
 }
@@ -446,6 +468,27 @@ mod tests {
             } => {
                 assert_eq!(claim, "predictivity.unique-vacuum");
                 assert_eq!(graph_hash, "deadbeef");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn enclose_event_round_trips_and_is_not_a_certificate() {
+        let ev = JournalEvent::enclose("gut.weinberg-angle", "deadbeef");
+        let s = serde_json::to_string(&ev).unwrap();
+        assert!(s.contains("\"event\":\"enclose\""));
+        assert!(s.contains("\"certificate_hash\":\"deadbeef\""));
+        assert!(!s.contains("receipt"), "{s}");
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Enclose {
+                claim,
+                certificate_hash,
+                ..
+            } => {
+                assert_eq!(claim, "gut.weinberg-angle");
+                assert_eq!(certificate_hash, "deadbeef");
             }
             other => panic!("{other:?}"),
         }

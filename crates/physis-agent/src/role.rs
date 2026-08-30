@@ -15,7 +15,9 @@ use crate::protocol::Command;
 /// untrusted work. None of them can deserialize a kernel proof. A
 /// proof-searcher cannot remint a receipt it just requested: that is
 /// [`Role::ReplicationAgent`]. An explorer cannot score the empirical
-/// target: that is [`Role::EmpiricalAnalyst`].
+/// target: that is [`Role::EmpiricalAnalyst`]. A proof-searcher cannot
+/// independently parse a `CertifiedNumeric` enclosure: that is
+/// [`Role::NumericalVerifier`] (not a kernel receipt, not P4).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Role {
@@ -39,11 +41,14 @@ pub enum Role {
     ReplicationAgent,
     /// Score a theory against the empirical-target fixture. Cannot prove.
     EmpiricalAnalyst,
+    /// Independently parse a `CertifiedNumeric` enclosure as `Ratio`.
+    /// Cannot prove. Not a kernel receipt, not Canonical, and not P4.
+    NumericalVerifier,
 }
 
 impl Role {
     /// Every named role, including the lab.
-    pub const ALL: [Role; 9] = [
+    pub const ALL: [Role; 10] = [
         Role::Lab,
         Role::Explorer,
         Role::Formalizer,
@@ -53,6 +58,7 @@ impl Role {
         Role::Auditor,
         Role::ReplicationAgent,
         Role::EmpiricalAnalyst,
+        Role::NumericalVerifier,
     ];
 
     /// Stable kebab-case name.
@@ -67,6 +73,7 @@ impl Role {
             Role::Auditor => "auditor",
             Role::ReplicationAgent => "replication-agent",
             Role::EmpiricalAnalyst => "empirical-analyst",
+            Role::NumericalVerifier => "numerical-verifier",
         }
     }
 
@@ -77,7 +84,7 @@ impl Role {
     }
 
     /// Observe-only ops: no knob writes, no mint, no review, no audit,
-    /// no empirical score, no remint.
+    /// no empirical score, no remint, no independent Ratio enclose.
     fn observe(cmd: &Command) -> bool {
         matches!(
             cmd,
@@ -126,6 +133,7 @@ impl Role {
             Role::Auditor => matches!(cmd, Command::Audit),
             Role::ReplicationAgent => matches!(cmd, Command::Reproduce { .. }),
             Role::EmpiricalAnalyst => matches!(cmd, Command::Score { .. }),
+            Role::NumericalVerifier => matches!(cmd, Command::Enclose { .. }),
             Role::Explorer | Role::Lab => false,
         }
     }
@@ -304,6 +312,27 @@ mod tests {
         assert!(!Role::EmpiricalAnalyst.permits(&prove()));
         assert!(!Role::Explorer.permits(&score));
         assert!(Role::Lab.permits(&score));
+    }
+
+    #[test]
+    fn numerical_verifier_can_enclose_not_prove() {
+        let enclose = Command::Enclose {
+            claim: "gut.weinberg-angle".into(),
+        };
+        assert_eq!(Role::ALL.len(), 10);
+        assert!(Role::NumericalVerifier.permits(&enclose));
+        assert!(!Role::NumericalVerifier.permits(&prove()));
+        assert!(!Role::NumericalVerifier.permits(&Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        }));
+        assert!(!Role::NumericalVerifier.permits(&Command::Score {
+            theory: "standard-model".into(),
+        }));
+        assert!(!Role::Explorer.permits(&enclose));
+        assert!(!Role::ProofSearcher.permits(&enclose));
+        assert!(!Role::EmpiricalAnalyst.permits(&enclose));
+        assert!(Role::Lab.permits(&enclose));
+        assert!(Role::parse("numerical-verifier") == Some(Role::NumericalVerifier));
     }
 
     #[test]

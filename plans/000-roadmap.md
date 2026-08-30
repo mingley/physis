@@ -51,6 +51,7 @@ Level-3 trust
   L3 statistical NLL       ✓ PDG sin²θ_W(M_Z) is a Gaussian; from_lab projects statistical computed from an exact Ratio NLL; Super-K stays empirical interval-subset; not P3N
   L3 proposer split        ✓ proof-searcher cannot remint; replication-agent reproduces (not P4); explorer cannot score; empirical-analyst scores
   L3 inspect judgment      ✓ physis inspect judgment inverts projected labels; statistical-computed is the PDG GQW cell; empirical-excluded is Super-K; logical-proved requires a receipt
+  L3 numerical enclose     ✓ physis enclose independently parses CertifiedNumeric Ratio strings into a NumericCertificate DAG; numerical-verifier unique op; restore rebuilds; not P3F, not Canonical, not P4; P3N count stays 4
 ```
 
 Each milestone must:

@@ -47,6 +47,10 @@ pub enum NodeKind {
     /// A rebuilt evidence graph: competing encodings and evaluations of
     /// one lab slug. Not deserialized as authority; never Canonical or P4.
     Evidence,
+    /// An independent Ratio parse of a `CertifiedNumeric` enclosure.
+    /// Not a kernel receipt, not Canonical, and not P4. Restore rebuilds
+    /// from live overlay strings; a recorded hash is not deserialized.
+    NumericCertificate,
 }
 
 /// One DAG node.
@@ -209,5 +213,15 @@ mod tests {
         assert!(kept.contains(&e2));
         assert!(!kept.contains(&graph));
         assert!(kept.contains(&graph2));
+    }
+
+    #[test]
+    fn numeric_certificate_is_not_a_calculation_or_receipt() {
+        let enclosure = Node::new(NodeKind::NumericCertificate, vec![], b"3/8\t3/8");
+        let calc = Node::new(NodeKind::Calculation, vec![], b"3/8\t3/8");
+        let receipt = Node::new(NodeKind::VerificationReceipt, vec![], b"3/8\t3/8");
+        assert_ne!(enclosure.id, calc.id);
+        assert_ne!(enclosure.id, receipt.id);
+        assert_eq!(enclosure.kind, NodeKind::NumericCertificate);
     }
 }
