@@ -214,6 +214,30 @@ impl Verdict {
 /// assumptions, domain, and commitments. There is no stored hash field and
 /// no [`serde::Deserialize`] impl: JSON cannot mint a catalog identity, and
 /// mutating the English statement cannot keep a stale kernel receipt.
+///
+/// Derivation, empirical, and semantic axes are private: a public field
+/// cannot mint [`DerivationAssurance::CertifiedNumeric`] or an
+/// encoding-review tag. Those overlays live on [`Verdict`].
+///
+/// ```compile_fail
+/// let mut c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// c.derivation = physis_core::DerivationAssurance::CertifiedNumeric;
+/// ```
+///
+/// ```compile_fail
+/// let mut c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// c.semantic = physis_core::SemanticAssurance::AdversariallyReviewed;
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Claim {
     /// Stable id, `theory.slug`.
@@ -225,11 +249,11 @@ pub struct Claim {
     /// What kind of sentence this is.
     pub class: ClaimClass,
     /// Derivation assurance. Constructors never produce a kernel proof.
-    pub derivation: DerivationAssurance,
+    derivation: DerivationAssurance,
     /// Empirical axis.
-    pub empirical: EmpiricalStatus,
+    empirical: EmpiricalStatus,
     /// Encoding-review axis. Defaults to [`SemanticAssurance::Unreviewed`].
-    pub semantic: SemanticAssurance,
+    semantic: SemanticAssurance,
     /// Explicit assumptions (never empty: the encoding-internal default).
     pub assumptions: AssumptionSet,
     /// Domain of validity.
@@ -286,6 +310,23 @@ impl Claim {
         ))
     }
 
+    /// How the deduction was tagged at construction. Never a kernel proof.
+    /// [`DerivationAssurance::CertifiedNumeric`] is a [`Verdict`] overlay.
+    pub const fn derivation(&self) -> DerivationAssurance {
+        self.derivation
+    }
+
+    /// Empirical axis at construction. Dataset overlays live on [`Verdict`].
+    pub const fn empirical(&self) -> EmpiricalStatus {
+        self.empirical
+    }
+
+    /// Encoding-review axis at construction. Always
+    /// [`SemanticAssurance::Unreviewed`]; P3S is a review-store tag.
+    pub const fn semantic(&self) -> SemanticAssurance {
+        self.semantic
+    }
+
     /// Record lemma ids this claim uses. Does not change [`Self::statement_hash`].
     pub fn with_dependencies(mut self, lemmas: &[&str]) -> Self {
         self.depends_on = lemmas.iter().copied().map(ClaimId::new).collect();
@@ -326,8 +367,8 @@ mod tests {
             LayerId::Mathematical,
             ClaimClass::Mathematical,
         );
-        assert_eq!(c.derivation, DerivationAssurance::Executed);
-        assert_eq!(c.semantic, SemanticAssurance::Unreviewed);
+        assert_eq!(c.derivation(), DerivationAssurance::Executed);
+        assert_eq!(c.semantic(), SemanticAssurance::Unreviewed);
         assert!(!c.assumptions.items.is_empty());
         let v = Verdict::holds(&c, "evaluator ran");
         assert_eq!(v.derivation, DerivationAssurance::Executed);
@@ -444,7 +485,7 @@ mod tests {
             LayerId::Effective,
             ClaimClass::Conjecture,
         );
-        assert_eq!(c.derivation, DerivationAssurance::Asserted);
+        assert_eq!(c.derivation(), DerivationAssurance::Asserted);
     }
 
     #[test]
@@ -455,7 +496,7 @@ mod tests {
             LayerId::Effective,
             ClaimClass::EmpiricalPrediction,
         );
-        assert_eq!(c.empirical, EmpiricalStatus::Untested);
+        assert_eq!(c.empirical(), EmpiricalStatus::Untested);
         let v = Verdict::undecidable(&c, "overlap is not containment")
             .with_empirical(EmpiricalStatus::Inconclusive);
         assert_eq!(v.class, ClaimClass::EmpiricalPrediction);

@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Claim cannot assign CertifiedNumeric**
+  (`Claim` derivation, empirical, and semantic fields are private).
+  Constructors tag derivation from class; `CertifiedNumeric` and
+  encoding-review overlays live on `Verdict`. Catalog d² hash unchanged.
+  Verified: compile-fail against assigning `Claim.derivation` and
+  `Claim.semantic`. Live prove of catalog d² is still Lean+nanoda.
+  `fmt`, `clippy -D warnings`, full suite, CLI.
+
 - **Verdict is not JSON-mintable**
   (`Verdict` has no Deserialize). Journal diffs still store
   `VerdictKind` only. JSON cannot mint a `certified-numeric` overlay or

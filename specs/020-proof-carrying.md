@@ -68,6 +68,9 @@ Nothing gains authority merely because an agent wrote code that returns
   does not yet project a statistical object, and a crate outside
   physis-core cannot mint one. `Verdict` has no `Deserialize` impl: JSON
   cannot mint a `certified-numeric` overlay or an encoding-review tag.
+  `Claim` derivation, empirical, and semantic fields are private: a
+  theory cannot assign `CertifiedNumeric` on the claim. Overlays live on
+  `Verdict`.
   The lab projects `Judgment` from evaluator
   + receipts via `from_lab`. Evaluator `holds` without a dual-checked
   receipt is `logical undetermined`.
