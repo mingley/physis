@@ -310,7 +310,7 @@ impl FormalClaim {
     pub fn from_claim(claim: &Claim) -> Self {
         let statement_hash = ArtifactId::of(Self::canonical_bytes(
             &claim.id.0,
-            &claim.statement,
+            claim.statement(),
             claim.class,
             claim.layer,
             &claim.assumptions,
@@ -319,7 +319,7 @@ impl FormalClaim {
         ));
         Self {
             id: claim.id.clone(),
-            statement: claim.statement.clone(),
+            statement: claim.statement().to_string(),
             statement_hash,
             assumptions: claim.assumptions.id.clone(),
             domain: claim.domain.clone(),
@@ -424,19 +424,16 @@ mod tests {
     }
 
     #[test]
-    fn from_claim_follows_a_mutated_sentence() {
-        let mut claim = Claim::new(
+    fn from_claim_matches_the_live_hash() {
+        let claim = Claim::new(
             "math.example",
             "P holds",
             LayerId::Mathematical,
             ClaimClass::Mathematical,
         );
-        let honest = claim.statement_hash();
-        claim.statement.push_str(" forged");
         let formal = FormalClaim::from_claim(&claim);
-        assert_ne!(formal.statement_hash(), honest);
         assert_eq!(formal.statement_hash(), claim.statement_hash());
         assert!(formal.hash_is_consistent());
-        assert_eq!(formal.statement(), "P holds forged");
+        assert_eq!(formal.statement(), claim.statement());
     }
 }

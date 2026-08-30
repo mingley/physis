@@ -149,8 +149,8 @@ fn report_of(t: &dyn Theory) -> TheoryReport {
         .evaluate_all()
         .into_iter()
         .map(|(c, v)| ClaimVerdict {
-            id: c.id.0,
-            statement: c.statement,
+            id: c.id.0.clone(),
+            statement: c.statement().to_string(),
             layer: c.layer.as_str().into(),
             kind: v.kind,
             class: v.class,

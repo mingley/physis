@@ -144,6 +144,18 @@
 //! }
 //! ```
 //!
+//! A public field cannot rebind that sentence either:
+//!
+//! ```compile_fail
+//! let mut c = physis_core::claim::Claim::new(
+//!     "x",
+//!     "y",
+//!     physis_core::LayerId::Mathematical,
+//!     physis_core::ClaimClass::Mathematical,
+//! );
+//! c.statement.push_str(" forged");
+//! ```
+//!
 //! JSON cannot mint a [`claim::Verdict`] overlay either (`certified-numeric`
 //! Holds is not a deserializable tag):
 //!

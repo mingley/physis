@@ -12,6 +12,14 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Claim cannot rebind the hashed sentence**
+  (`Claim.statement` is private; `statement()` is the getter).
+  Same-module mutation still cannot keep a stale hash; a public
+  assignment cannot rebind a kernel receipt. Catalog d² hash unchanged.
+  Verified: compile-fail against `Claim.statement.push_str`. Live prove
+  of catalog d² is still Lean+nanoda. `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **Verdict cannot assign CertifiedNumeric**
   (`Verdict` derivation, empirical, semantic, and enclosure fields are
   private). Overlay builders (`with_certified_numeric`,

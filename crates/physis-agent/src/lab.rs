@@ -578,7 +578,7 @@ impl Lab {
                         if c.id.0 == claim {
                             found += 1;
                             text.push_str(&format!("theory {}\n", t.id()));
-                            text.push_str(&format!("  statement:  {}\n", c.statement));
+                            text.push_str(&format!("  statement:  {}\n", c.statement()));
                             text.push_str(&format!("  class:      {}\n", v.class.as_str()));
                             text.push_str(&format!("  derivation: {}\n", v.derivation().as_str()));
                             text.push_str(&format!("  empirical:  {}\n", v.empirical().as_str()));

@@ -33,6 +33,16 @@
 //! c.statement_hash = physis_core::ArtifactId::of(b"forged");
 //! ```
 //!
+//! ```compile_fail
+//! let mut c = physis_core::claim::Claim::new(
+//!     "x",
+//!     "y",
+//!     physis_core::LayerId::Mathematical,
+//!     physis_core::ClaimClass::Mathematical,
+//! );
+//! c.statement.push_str(" forged");
+//! ```
+//!
 //! JSON cannot mint a [`Verdict`] either (`certified-numeric` Holds is not
 //! a deserializable overlay):
 //!
@@ -246,8 +256,9 @@ impl Verdict {
 ///
 /// [`Self::statement_hash`] is derived from the live sentence, class, layer,
 /// assumptions, domain, and commitments. There is no stored hash field and
-/// no [`serde::Deserialize`] impl: JSON cannot mint a catalog identity, and
-/// mutating the English statement cannot keep a stale kernel receipt.
+/// no [`serde::Deserialize`] impl: JSON cannot mint a catalog identity.
+/// The English statement is private: a public assignment cannot rebind a
+/// kernel receipt, and same-module mutation still cannot keep a stale hash.
 ///
 /// Derivation, empirical, and semantic axes are private: a public field
 /// cannot mint [`DerivationAssurance::CertifiedNumeric`] or an
@@ -272,12 +283,21 @@ impl Verdict {
 /// );
 /// c.semantic = physis_core::SemanticAssurance::AdversariallyReviewed;
 /// ```
+///
+/// ```compile_fail
+/// let mut c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// c.statement.push_str(" forged");
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Claim {
     /// Stable id, `theory.slug`.
     pub id: ClaimId,
-    /// English statement.
-    pub statement: String,
+    statement: String,
     /// Layer the statement is about.
     pub layer: LayerId,
     /// What kind of sentence this is.
@@ -330,18 +350,24 @@ impl Claim {
     }
 
     /// Content address of the live formal identity. Always hashed from
-    /// current fields: mutating [`Self::statement`] cannot keep a stale
-    /// catalog hash attached to a kernel receipt.
+    /// current fields: mutating the sentence cannot keep a stale catalog
+    /// hash attached to a kernel receipt.
     pub fn statement_hash(&self) -> ArtifactId {
         ArtifactId::of(FormalClaim::canonical_bytes(
             &self.id.0,
-            &self.statement,
+            self.statement(),
             self.class,
             self.layer,
             &self.assumptions,
             &self.domain,
             &self.commitments,
         ))
+    }
+
+    /// The sentence as encoded today. Private so a public assignment cannot
+    /// rebind a kernel receipt to different English.
+    pub fn statement(&self) -> &str {
+        &self.statement
     }
 
     /// How the deduction was tagged at construction. Never a kernel proof.
@@ -437,6 +463,13 @@ mod tests {
         let honest = c.statement_hash();
         c.statement.push_str(" forged");
         assert_ne!(c.statement_hash(), honest);
+        let formal = FormalClaim::from_claim(&c);
+        assert_eq!(formal.statement_hash(), c.statement_hash());
+        assert_eq!(formal.statement(), c.statement());
+        assert_eq!(
+            c.statement(),
+            "The exterior derivative is nilpotent: d ∘ d = 0. forged"
+        );
     }
 
     #[test]
