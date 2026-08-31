@@ -291,6 +291,18 @@ pub fn neutron_mass_energy_equivalent() -> Qty<Energy> {
     joule(1.505_349_762_87e-10)
 }
 
+/// Neutron mass energy equivalent in MeV, CODATA 2018.
+///
+/// This is the recommended centre in MeV from the neutron section, not
+/// the joule hull, not proton or muon MeV, and not the exact
+/// electronvolt Ratio. This Qty is not a certificate of a
+/// reconstruction from sibling masses. Ledger unit is MeV; this Qty is
+/// dimensionless, not SI joule. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn neutron_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
+    Qty::new(939.565_420_52)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -3290,6 +3302,47 @@ mod tests {
             physis_constants::neutron_mass_energy_equivalent().hash,
             physis_constants::muon_mass_energy_equivalent().hash,
             "m_n_c2 is not m_mu_c2"
+        );
+        assert!(
+            physis_constants::lookup("mnc2_MeV").is_none(),
+            "mnc2_MeV is not a ledger name; the live name is m_n_c2_MeV"
+        );
+        let m_n_c2_mev = physis_constants::neutron_mass_energy_equivalent_in_mev();
+        let m_n_c2_mev_centre = Ratio::new(93_956_542_052, 10i128.pow(8));
+        assert_eq!(
+            neutron_mass_energy_equivalent_in_mev().value(),
+            m_n_c2_mev_centre.to_f64(),
+            "m_n_c2_MeV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_n_c2_mev
+                .value
+                .contains(Interval::point(m_n_c2_mev_centre)),
+            "m_n_c2_MeV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_n_c2_mev.value.lo, m_n_c2_mev.value.hi,
+            "ledger m_n_c2_MeV stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::neutron_mass_energy_equivalent().hash,
+            "m_n_c2_MeV is not m_n_c2"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::proton_mass_energy_equivalent_in_mev().hash,
+            "m_n_c2_MeV is not m_p_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::muon_mass_energy_equivalent_in_mev().hash,
+            "m_n_c2_MeV is not m_mu_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::electron_volt().hash,
+            "m_n_c2_MeV is not eV"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
