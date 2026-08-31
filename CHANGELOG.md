@@ -10,7 +10,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Numerics
+
+- **Ratio order does not saturate on CODATA mass scale.**
+  Cross-multiplying `a.num * b.den` for a `10^{38}` denominator
+  overflows `i128`. Comparison now uses a 256-bit product instead of
+  saturating `i128` mul, so a one-sigma hull at proton-mass scale is
+  independently checkable. Small-ratio order (GQW `3/8`, PDG NLL) is
+  unchanged. Interval arithmetic still saturates; this is comparison
+  only. Not a kernel proof, not Canonical, not P4.
+
 ### Constants
+
+- **CODATA 2018 proton mass is a one-sigma Interval.**
+  `physis-constants` versions `m_p` as the CODATA 2018 hull
+  `1.67262192369(51)×10^{-27}` kg from JPCRD 50, 033105 table XXXI
+  (Proton, p). That is a measured hull, not an SI defining Ratio, not
+  electron mass, and not P3N. `10^{38}` fits `i128`; `m_e` still does
+  not (`10^{42}` overflows). `physis_model` `proton_mass()` Qty
+  locksteps to the recommended centre inside the hull. Adding `m_p` to
+  LEDGER changes the ledger bundle pin. The `G` and `alpha` hashes are
+  unchanged. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `m_p` hash
+  `ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8`;
+  node
+  `3fcee64bc46c5e13e69bc0d822e66e701b793910803445e5d4689ead316028a0`;
+  ledger node
+  `e3071c5cb052b899858040570c13196947ccb7b40000b0aab749cb2fcb6ddd53`.
+  `G` and `alpha` hashes and nodes unchanged.
 
 - **CODATA 2018 fine-structure constant is a one-sigma Interval.**
   `physis-constants` versions `alpha` as the CODATA 2018 hull

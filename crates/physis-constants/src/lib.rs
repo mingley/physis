@@ -8,7 +8,10 @@
 //! [`Interval`], not an exact Ratio. CODATA 2018 fine-structure `α` is
 //! a one-sigma [`Interval`] `7.2973525693(11)×10^{-3}` (JPCRD table
 //! XXXI, ATOMIC AND NUCLEAR): a measured hull, not an SI defining
-//! Ratio. Inverse-α is not stored. The IAU 2012 astronomical unit is
+//! Ratio. Inverse-α is not stored. CODATA 2018 proton mass `m_p` is a
+//! one-sigma [`Interval`] `1.67262192369(51)×10^{-27}` kg (JPCRD table
+//! XXXI, Proton, p): a measured hull, not an SI defining Ratio.
+//! Electron mass is not stored: `10^{42}` overflows `i128`. The IAU 2012 astronomical unit is
 //! an exact [`Ratio`] `149597870700` m (BIPM table 8). The parsec is
 //! `(648000/π) au` and is not a Ratio. IAU 2015 `(GM)_☉^N` is an exact
 //! [`Ratio`] `1.3271244×10^20` m³ s⁻² (AJ 152, 41 table 1): a
@@ -206,6 +209,10 @@ fn codata_2018_alpha_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "alpha = 7.2973525693(11)e-3")
 }
 
+fn codata_2018_proton_mass_source() -> SourceRecord {
+    codata_2018_jpcrd("Proton, p", "mp = 1.67262192369(51)e-27")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -247,6 +254,29 @@ pub fn fine_structure_constant() -> Constant<Interval> {
         codata_2018_alpha_interval(),
         "1",
         codata_2018_alpha_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 1.67262192369(51)×10⁻²⁷ kg.
+fn codata_2018_proton_mass_interval() -> Interval {
+    let scale = 10i128.pow(38);
+    let mu = 167_262_192_369;
+    let sigma = 51;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Proton mass m_p, CODATA 2018 one-sigma enclosure.
+///
+/// This is a measured hull, not an SI defining Ratio and not P3N.
+/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// still use `physis_model` `f64` Qty.
+pub fn proton_mass() -> Constant<Interval> {
+    Constant::new(
+        "m_p",
+        codata_2018_proton_mass_interval(),
+        "kg",
+        codata_2018_proton_mass_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -407,6 +437,7 @@ pub const LEDGER: &[&str] = &[
     "h",
     "G",
     "alpha",
+    "m_p",
     "au",
     "eV",
     "GM_sun",
@@ -441,6 +472,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "h" => Some(listing(planck_h(), "sci-exact")),
         "G" => Some(listing(newtonian_g(), "interval")),
         "alpha" => Some(listing(fine_structure_constant(), "interval")),
+        "m_p" => Some(listing(proton_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -663,6 +695,76 @@ mod tests {
     }
 
     #[test]
+    fn codata_2018_proton_mass_is_a_one_sigma_interval() {
+        let mp = proton_mass();
+        let scale = 10i128.pow(38);
+        let lo = Ratio::new(167_262_192_318, scale);
+        let hi = Ratio::new(167_262_192_420, scale);
+        let centre = Ratio::new(167_262_192_369, scale);
+        assert_eq!(mp.name, "m_p");
+        assert_eq!(mp.unit, "kg");
+        assert_eq!(mp.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(mp.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(mp.provenance.locator.section.as_deref(), Some("Proton, p"));
+        assert_eq!(
+            mp.provenance.locator.dataset_range.as_deref(),
+            Some("mp = 1.67262192369(51)e-27")
+        );
+        assert_eq!(mp.value, Interval::new(lo, hi));
+        assert_ne!(mp.value.lo, mp.value.hi, "m_p is measured, not SI-exact");
+        assert!(mp.value.contains(Interval::point(centre)));
+        assert!(!mp
+            .value
+            .contains(Interval::point(Ratio::new(167_262_000_000, scale))));
+        assert_eq!(mp.hash, proton_mass().hash);
+        assert_eq!(
+            mp.hash,
+            Constant::new(
+                "m_p",
+                codata_2018_proton_mass_interval(),
+                "kg",
+                codata_2018_proton_mass_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(mp.hash, fine_structure_constant().hash, "m_p is not alpha");
+        assert_ne!(mp.hash, newtonian_g().hash, "m_p is not G");
+        assert_ne!(
+            mp.provenance.source_hash,
+            fine_structure_constant().provenance.source_hash,
+            "m_p range is not the alpha range"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when m_p is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when m_p is added"
+        );
+        assert_eq!(
+            mp.hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8"
+        );
+        assert!(mp.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(38).is_some(),
+            "m_p = 1.67262192369e-27 is 167262192369/10^38; that denominator fits i128"
+        );
+        assert!(
+            10i128.checked_pow(42).is_none(),
+            "m_e = 9.1093837015e-31 is 91093837015/10^42; that denominator overflows i128"
+        );
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("mp").is_none());
+        assert!(lookup("proton-mass").is_none());
+        assert!(lookup("electron-mass").is_none());
+    }
+
+    #[test]
     fn iau2012_au_is_an_exact_ratio() {
         let au = astronomical_unit();
         assert_eq!(au.name, "au");
@@ -864,7 +966,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 14);
+        assert_eq!(LEDGER.len(), 15);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -888,6 +990,11 @@ mod tests {
         assert_eq!(
             lookup("alpha").unwrap().hash.to_hex(),
             "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38"
+        );
+        assert_eq!(lookup("m_p").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("m_p").unwrap().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8"
         );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
@@ -916,6 +1023,7 @@ mod tests {
             "444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4"
         );
         assert!(lookup("hbar").is_none());
+        assert!(lookup("m_e").is_none());
         assert!(lookup("alpha-inv").is_none());
         assert!(lookup("fine-structure").is_none());
         assert!(lookup("solar-gm").is_none());

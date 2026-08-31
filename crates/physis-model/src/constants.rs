@@ -41,6 +41,9 @@ pub fn electron_mass() -> Qty<Mass> {
 }
 
 /// Proton mass.
+///
+/// CODATA 2018 recommended centre. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
 pub fn proton_mass() -> Qty<Mass> {
     kg(1.672_621_923_69e-27)
 }
@@ -411,6 +414,26 @@ mod tests {
         assert!(
             physis_constants::lookup("alpha-inv").is_none(),
             "inverse-alpha is a different recommended value and is not stored"
+        );
+
+        let mp = physis_constants::proton_mass();
+        let mp_centre = Ratio::new(167_262_192_369, 10i128.pow(38));
+        assert_eq!(
+            proton_mass().value(),
+            mp_centre.to_f64(),
+            "m_p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mp.value.contains(Interval::point(mp_centre)),
+            "m_p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mp.value.lo, mp.value.hi,
+            "ledger m_p stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("m_e").is_none(),
+            "electron mass overflows i128 and is not a ledger entry"
         );
 
         let au = physis_constants::astronomical_unit();
