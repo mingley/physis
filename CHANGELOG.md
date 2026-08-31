@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **SI 2019 Planck h is SciExact, not a Ratio.**
+  `physis-constants` versions `h` as `662607015e-42` J s from BIPM
+  Brochure 9th ed. table 1. The reduced denominator `10^42` overflows
+  `i128`, so this is not a `Ratio`. `ħ` is not a terminating decimal
+  and is not stored. Theories still use `physis_model` `f64` Qty
+  constants. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `to_ratio` is `None`; hash
+  `50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef`.
+
 - **CODATA 2018 Newtonian G is a one-sigma Interval.**
   `physis-constants` versions `G` as the recommended hull
   `6.67430(15)×10⁻¹¹` from JPCRD 50, 033105 table XXXI, not an SI

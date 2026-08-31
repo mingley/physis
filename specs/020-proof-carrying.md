@@ -180,7 +180,7 @@ those tools; a local checkout without them still mints
 | trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
 | roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove or score. Proof-searcher cannot remint. Replication-agent remints (not P4). Empirical-analyst scores. Numerical-verifier encloses. Provenance-auditor cites. Encoding-auditor round-trips live IR packages. Judge rebuilds `from_lab` (JSON cannot mint `logical proved`). Budget is a cap, not a proof |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus, bound to the catalog FormalClaim; never `Canonical` |
-| constants | `physis-constants` | Versioned SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`, `K_cd` as exact `Ratio`. CODATA 2018 `G` is a one-sigma `Interval` (JPCRD table XXXI). Planck `h` is SI-exact but not a `Ratio` (`i128` denominator overflow). Theories still use `physis_model` `f64` Qty |
+| constants | `physis-constants` | Versioned SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`, `K_cd` as exact `Ratio`. Planck `h` is SI-exact `SciExact` `662607015e-42` (not a `Ratio`: `i128` denominator overflow). `ħ` is not stored. CODATA 2018 `G` is a one-sigma `Interval` (JPCRD table XXXI). Theories still use `physis_model` `f64` Qty |
 
 Journal events are hash-linked in memory (`Journal::tip`). Journal
 restore of a `prove` event remints through `verify` (never Deserialize)
@@ -195,9 +195,10 @@ identity; a slug-only review line is not P3S.
 ## What is not yet true
 
 - Versioned constants: SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`,
-  `K_cd` are exact `Ratio`. CODATA 2018 `G` is a one-sigma `Interval`.
-  Planck `h` is SI-exact but not a `Ratio` (`i128` denominator overflow).
-  Theories still use `physis_model` `f64` Qty constants
+  `K_cd` are exact `Ratio`. Planck `h` is SI-exact `SciExact`
+  `662607015e-42` (not a `Ratio`). `ħ` is not a terminating decimal.
+  CODATA 2018 `G` is a one-sigma `Interval`. Theories still use
+  `physis_model` `f64` Qty constants
 - Community-canonical encodings (review tops out at
   `AdversariallyReviewed`; there is no `Canonical` variant to assign)
 - P4 independent reproduction (in-process `reproduce` remints and

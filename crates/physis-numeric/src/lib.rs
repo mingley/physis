@@ -1,4 +1,7 @@
 //! Validated numerics. Raw `f64` is not authoritative for threshold claims.
+//!
+//! [`SciExact`] is a terminating decimal `significand × 10^{exp10}` for
+//! SI-exact values whose [`Ratio`] denominator does not fit in `i128`.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -198,6 +201,48 @@ impl std::fmt::Display for Ratio {
         } else {
             write!(f, "{}/{}", self.num, self.den)
         }
+    }
+}
+
+/// Exact terminating decimal `significand × 10^{exp10}`.
+///
+/// The significand is not divisible by 10 unless the value is zero.
+/// This is not a [`Ratio`]: `to_ratio` is `None` when `10^{|exp10|}`
+/// overflows `i128`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct SciExact {
+    /// Integer significand in lowest terms (no trailing base-10 zeros).
+    pub significand: i128,
+    /// Power of ten. Value is `significand × 10^{exp10}`.
+    pub exp10: i32,
+}
+
+impl SciExact {
+    /// Construct and strip trailing base-10 zeros from the significand.
+    pub const fn new(mut significand: i128, mut exp10: i32) -> Self {
+        while significand != 0 && significand % 10 == 0 {
+            significand /= 10;
+            exp10 += 1;
+        }
+        Self { significand, exp10 }
+    }
+
+    /// Exact [`Ratio`] when the power of ten fits in `i128`.
+    pub fn to_ratio(self) -> Option<Ratio> {
+        if self.exp10 >= 0 {
+            let p = 10i128.checked_pow(self.exp10 as u32)?;
+            Some(Ratio::int(self.significand.checked_mul(p)?))
+        } else {
+            let neg = self.exp10.checked_neg()?;
+            let p = 10i128.checked_pow(neg as u32)?;
+            Some(Ratio::new(self.significand, p))
+        }
+    }
+}
+
+impl std::fmt::Display for SciExact {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}e{}", self.significand, self.exp10)
     }
 }
 
@@ -648,5 +693,24 @@ mod tests {
             Ratio::new(-3, 10),
             "ties and halves round away from zero"
         );
+    }
+
+    #[test]
+    fn sci_exact_reduces_and_converts_only_when_the_power_fits() {
+        assert_eq!(
+            SciExact::new(6_626_070_150, -43),
+            SciExact::new(662_607_015, -42)
+        );
+        assert_eq!(SciExact::new(662_607_015, -42).to_string(), "662607015e-42");
+        assert_eq!(
+            SciExact::new(299_792_458, 0).to_ratio(),
+            Some(Ratio::int(299_792_458))
+        );
+        assert_eq!(
+            SciExact::new(1_602_176_634, -28).to_ratio(),
+            Some(Ratio::new(1_602_176_634, 10i128.pow(28)))
+        );
+        assert_eq!(SciExact::new(662_607_015, -42).to_ratio(), None);
+        assert!(10i128.checked_pow(42).is_none());
     }
 }

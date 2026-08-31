@@ -2,16 +2,17 @@
 //!
 //! SI 2019 defining constants that fit in [`physis_numeric::Ratio`] are
 //! `c`, `Δν_Cs`, `e`, `k`, `N_A`, and `K_cd`. Planck's `h` is SI-exact
-//! but is not a Ratio here: the reduced denominator does not fit in
-//! `i128`. CODATA 2018 Newtonian `G` is a one-sigma [`Interval`], not an
-//! exact Ratio. Theories still use `physis_model` `f64` Qty constants.
-//! This crate does not mint a kernel proof.
+//! [`physis_numeric::SciExact`] `662607015e-42` J s: the reduced
+//! denominator does not fit in `i128`, so it is not a Ratio. `ħ` is not
+//! a terminating decimal. CODATA 2018 Newtonian `G` is a one-sigma
+//! [`Interval`], not an exact Ratio. Theories still use `physis_model`
+//! `f64` Qty constants. This crate does not mint a kernel proof.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 use physis_core::artifact::ArtifactId;
-use physis_numeric::{Interval, Ratio};
+use physis_numeric::{Interval, Ratio, SciExact};
 use physis_provenance::{Citation, SourceLocator, SourceRecord};
 use serde::{Deserialize, Serialize};
 
@@ -143,6 +144,20 @@ pub fn luminous_efficacy() -> Constant<Ratio> {
     si2019_exact("K_cd", Ratio::int(683), "lm/W")
 }
 
+/// Planck constant h, exact, SI 2019, as a terminating decimal.
+///
+/// `h = 6.62607015×10⁻³⁴ J s = 662607015 × 10⁻⁴²`. That is not a
+/// [`Ratio`]: `10^42` overflows `i128`. `ħ = h/2π` is not stored here.
+pub fn planck_h() -> Constant<SciExact> {
+    Constant::new(
+        "h",
+        SciExact::new(662_607_015, -42),
+        "J s",
+        si_brochure(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 fn codata_2018_g_source() -> SourceRecord {
     SourceRecord::new(
         Citation {
@@ -263,6 +278,37 @@ mod tests {
             10i128.checked_pow(42).is_none(),
             "h = 6.62607015e-34 is 662607015/10^42; that denominator overflows i128"
         );
+        assert_eq!(planck_h().value.to_ratio(), None);
+    }
+
+    #[test]
+    fn planck_h_is_si_exact_sci_exact() {
+        let h = planck_h();
+        assert_eq!(h.name, "h");
+        assert_eq!(h.unit, "J s");
+        assert_eq!(h.value, SciExact::new(662_607_015, -42));
+        assert_eq!(h.value, SciExact::new(6_626_070_150, -43));
+        assert_eq!(h.value.to_string(), "662607015e-42");
+        assert_eq!(h.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(h.provenance.locator.table.as_deref(), Some("1"));
+        assert_eq!(
+            h.hash,
+            Constant::new(
+                "h",
+                SciExact::new(662_607_015, -42),
+                "J s",
+                si_brochure(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(h.hash, speed_of_light().hash);
+        assert_ne!(h.hash, newtonian_g().hash);
+        assert_eq!(
+            h.hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef"
+        );
+        assert!(h.provenance.recheck().is_ok());
     }
 
     #[test]
