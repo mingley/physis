@@ -597,6 +597,10 @@ fn codata_2018_neutron_molar_mass_source() -> SourceRecord {
     codata_2018_jpcrd("Neutron, n", "Mn = 1.00866491560(57)e-3")
 }
 
+fn codata_2018_neutron_compton_wavelength_source() -> SourceRecord {
+    codata_2018_jpcrd("Neutron, n", "lambda_C_n = 1.31959090581(75)e-15")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -2748,8 +2752,9 @@ fn codata_2018_neutron_molar_mass_interval() -> Interval {
 /// molar mass `M_mu`, not the kg hull `m_n`, not the u-row `m_n_u`, not
 /// a certificate that this equals `N_A × m_n`, not an SI defining
 /// Ratio, and not P3N. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD
-/// table XXXI footnote e) and is not stored. Reduced neutron Compton
-/// wavelength cites ħ and is not stored. Gyromagnetic ratios cite ħ
+/// table XXXI footnote e) and is not stored. The Compton wavelength is
+/// `lambda_C_n`. Reduced neutron Compton wavelength cites ħ and is
+/// not stored. Gyromagnetic ratios cite ħ
 /// and are not stored. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. The decade is `10^{14}`; `10^{13}` is the 10× trap
 /// (`1.0086649156e-3` would lose a digit of the reported uncertainty).
@@ -2760,6 +2765,37 @@ pub fn neutron_molar_mass() -> Constant<Interval> {
         codata_2018_neutron_molar_mass_interval(),
         "kg mol^{-1}",
         codata_2018_neutron_molar_mass_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 1.31959090581(75)×10⁻¹⁵ m.
+fn codata_2018_neutron_compton_wavelength_interval() -> Interval {
+    let scale = 10i128.pow(26);
+    let mu = 131_959_090_581i128;
+    let sigma = 75;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Neutron Compton wavelength λ_{C,n}, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in metres from the neutron section, not
+/// electron Compton `lambda_C`, not proton Compton `lambda_C_p`, not
+/// muon Compton `lambda_C_mu`, not a certificate that λ_{C,n} = 2π
+/// ƛ_{C,n}, not molar mass `M_n`, not an SI defining Ratio, and not
+/// P3N. The reduced neutron Compton wavelength is ħ/m_n c and is not
+/// stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
+/// footnote e) and is not stored. Gyromagnetic ratios cite ħ and are
+/// not stored. Electron mass is not stored: `10^{42}` overflows
+/// `i128`. The decade is `10^{26}`; `10^{25}` is the 10× trap
+/// (`1.3195909058e-15` would lose a digit). Theories still use
+/// `physis_model` `f64` Qty.
+pub fn neutron_compton_wavelength() -> Constant<Interval> {
+    Constant::new(
+        "lambda_C_n",
+        codata_2018_neutron_compton_wavelength_interval(),
+        "m",
+        codata_2018_neutron_compton_wavelength_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -2999,6 +3035,7 @@ pub const LEDGER: &[&str] = &[
     "mn_minus_mp_c2",
     "mn_minus_mp_c2_MeV",
     "M_n",
+    "lambda_C_n",
     "au",
     "eV",
     "GM_sun",
@@ -3151,6 +3188,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             "interval",
         )),
         "M_n" => Some(listing(neutron_molar_mass(), "interval")),
+        "lambda_C_n" => Some(listing(neutron_compton_wavelength(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -13619,6 +13657,129 @@ mod tests {
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_n_u").is_some());
         assert!(lookup("G").is_some());
+        assert!(lookup("lambda_C_n").is_some());
+    }
+
+    #[test]
+    fn codata_2018_neutron_compton_wavelength_is_a_one_sigma_interval() {
+        let r = neutron_compton_wavelength();
+        let scale = 10i128.pow(26);
+        let lo = Ratio::new(131_959_090_506, scale);
+        let hi = Ratio::new(131_959_090_656, scale);
+        let centre = Ratio::new(131_959_090_581, scale);
+        assert_eq!(r.name, "lambda_C_n");
+        assert_eq!(r.unit, "m");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Neutron, n"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("lambda_C_n = 1.31959090581(75)e-15")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(
+            r.value.lo, r.value.hi,
+            "lambda_C_n is measured, not SI-exact"
+        );
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA lambda_C_n is a positive wavelength hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[65979545253/50000000000000000000000000, 4123721583/3125000000000000000000000]"
+        );
+        assert_eq!(r.hash, neutron_compton_wavelength().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "lambda_C_n",
+                codata_2018_neutron_compton_wavelength_interval(),
+                "m",
+                codata_2018_neutron_compton_wavelength_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            compton_wavelength().hash,
+            "lambda_C_n is not lambda_C"
+        );
+        assert_ne!(
+            r.hash,
+            proton_compton_wavelength().hash,
+            "lambda_C_n is not lambda_C_p"
+        );
+        assert_ne!(
+            r.hash,
+            muon_compton_wavelength().hash,
+            "lambda_C_n is not lambda_C_mu"
+        );
+        assert_ne!(
+            r.hash,
+            reduced_compton_wavelength().hash,
+            "lambda_C_n is not lambdabar_C"
+        );
+        assert_ne!(r.hash, neutron_molar_mass().hash, "lambda_C_n is not M_n");
+        assert_ne!(r.hash, newtonian_g().hash, "lambda_C_n is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            proton_compton_wavelength().provenance.source_hash,
+            "lambda_C_n range is not the lambda_C_p range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            compton_wavelength().provenance.source_hash,
+            "lambda_C_n range is not the lambda_C range"
+        );
+        assert_eq!(
+            proton_compton_wavelength().hash.to_hex(),
+            "439c5267d7664a8bd5c359b40f5a2291b0b364e0a915c57378abd6787b9d5a08",
+            "lambda_C_p hash must stay pinned when lambda_C_n is added"
+        );
+        assert_eq!(
+            compton_wavelength().hash.to_hex(),
+            "6280f2b2f61adf3ae0fa3e65f3b12cfb4982f6601027d98552f541246198c3d8",
+            "lambda_C hash must stay pinned when lambda_C_n is added"
+        );
+        assert_eq!(
+            muon_compton_wavelength().hash.to_hex(),
+            "6fb48517f2b436bf1ede156c0dd4505692db4e7afe3e5d6f7ed2bfbfdc4198d9",
+            "lambda_C_mu hash must stay pinned when lambda_C_n is added"
+        );
+        assert_eq!(
+            neutron_molar_mass().hash.to_hex(),
+            "503014b9a1cfa5be5f983c7cd8f477ec6fa601225d084f3acd22ab41b88151d5",
+            "M_n hash must stay pinned when lambda_C_n is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when lambda_C_n is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "415d4c31f9aafa35bb84bf48212aa1669b889e9e3e147dec957a1d64a551a449"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("lambdabar_C_n").is_none());
+        assert!(lookup("lambdaCn").is_none());
+        assert!(lookup("lambda_C,n").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("rd").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("lambda_C_n").is_some());
+        assert!(lookup("lambda_C_p").is_some());
+        assert!(lookup("lambda_C").is_some());
+        assert!(lookup("lambda_C_mu").is_some());
+        assert!(lookup("M_n").is_some());
+        assert!(lookup("G").is_some());
     }
 
     #[test]
@@ -13823,7 +13984,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 93);
+        assert_eq!(LEDGER.len(), 94);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -14243,6 +14404,11 @@ mod tests {
             lookup("M_n").unwrap().hash.to_hex(),
             "503014b9a1cfa5be5f983c7cd8f477ec6fa601225d084f3acd22ab41b88151d5"
         );
+        assert_eq!(lookup("lambda_C_n").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("lambda_C_n").unwrap().hash.to_hex(),
+            "415d4c31f9aafa35bb84bf48212aa1669b889e9e3e147dec957a1d64a551a449"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -14342,6 +14508,9 @@ mod tests {
         assert!(lookup("Mn").is_none());
         assert!(lookup("M-n").is_none());
         assert!(lookup("M_n/mol").is_none());
+        assert!(lookup("lambdabar_C_n").is_none());
+        assert!(lookup("lambdaCn").is_none());
+        assert!(lookup("lambda_C,n").is_none());
         assert!(lookup("mue_mun").is_none());
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());
