@@ -157,7 +157,7 @@ pub fn proton_rms_charge_radius() -> Qty<Length> {
 ///
 /// This is the recommended signed centre from the proton section, not
 /// electron or muon magnetic moment and not vacuum permeability. The
-/// shielded proton moment is a later table row and is not stored. The
+/// shielded proton moment is a later table row stored as mu0p. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 pub fn proton_magnetic_moment(
 ) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
@@ -206,10 +206,22 @@ pub fn proton_g_factor() -> Qty<Dimensionless> {
 /// equals a reconstructed μp/μn from sibling moments. The
 /// neutron-proton magnetic-moment ratio is a later Neutron-section row
 /// and is not stored. The shielded proton moment is a later table row
-/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// stored as mu0p. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre.
 pub fn proton_neutron_magnetic_moment_ratio() -> Qty<Dimensionless> {
     Qty::new(-1.459_898_05)
+}
+
+/// Shielded proton magnetic moment μ′_p, CODATA 2018.
+///
+/// This is the recommended signed centre for the proton in spherical
+/// H2O at 25 °C, not the free proton moment and not vacuum
+/// permeability. The shielded Bohr-magneton and nuclear-magneton
+/// ratios are later table rows and are not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn shielded_proton_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(1.410_570_560e-26)
 }
 
 /// Muon mass.
@@ -2786,8 +2798,8 @@ mod tests {
             "mu_p is not rp"
         );
         assert!(
-            physis_constants::lookup("mu0p").is_none(),
-            "shielded proton magnetic moment is not stored in this increment"
+            physis_constants::lookup("g0p").is_none(),
+            "shielded proton g-factor is not stored in this increment"
         );
         assert!(
             physis_constants::lookup("mup_muB").is_none(),
@@ -2829,7 +2841,7 @@ mod tests {
             "mu_p_muB is not mu_e"
         );
         assert!(
-            physis_constants::lookup("mu0p").is_none(),
+            physis_constants::lookup("mu0p_muB").is_none(),
             "shielded proton Bohr-magneton ratio is not stored in this increment"
         );
         assert!(
@@ -2872,7 +2884,7 @@ mod tests {
             "mu_p_muN is not mu_mu_muN"
         );
         assert!(
-            physis_constants::lookup("mu0p").is_none(),
+            physis_constants::lookup("mu0p_muN").is_none(),
             "shielded proton nuclear-magneton ratio is not stored in this increment"
         );
         assert!(
@@ -2948,8 +2960,42 @@ mod tests {
             "mu_p_mun is not gp"
         );
         assert!(
-            physis_constants::lookup("mu0p").is_none(),
-            "shielded proton moment is not stored in this increment"
+            physis_constants::lookup("mu_0p").is_none(),
+            "mu_0p is not a ledger name; the live name is mu0p"
+        );
+        let mu0p = physis_constants::shielded_proton_magnetic_moment();
+        let mu0p_centre = Ratio::new(1_410_570_560, 10i128.pow(35));
+        assert_eq!(
+            shielded_proton_magnetic_moment().value(),
+            mu0p_centre.to_f64(),
+            "mu0p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu0p.value.contains(Interval::point(mu0p_centre)),
+            "mu0p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu0p.value.lo, mu0p.value.hi,
+            "ledger mu0p stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::shielded_proton_magnetic_moment().hash,
+            physis_constants::proton_magnetic_moment().hash,
+            "mu0p is not mu_p"
+        );
+        assert_ne!(
+            physis_constants::shielded_proton_magnetic_moment().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu0p is not mu0"
+        );
+        assert_ne!(
+            physis_constants::shielded_proton_magnetic_moment().hash,
+            physis_constants::electron_to_shielded_proton_magnetic_moment_ratio().hash,
+            "mu0p is not mu_e_mu0p"
+        );
+        assert!(
+            physis_constants::lookup("g0p").is_none(),
+            "shielded proton g-factor is not stored in this increment"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),
