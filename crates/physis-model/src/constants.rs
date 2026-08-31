@@ -245,6 +245,16 @@ pub fn electron_alpha_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(1.370_933_554_787e-4)
 }
 
+/// Electron charge to mass quotient −e/m_e (C kg⁻¹), CODATA 2018.
+///
+/// This is the recommended signed centre, not electron mass and not
+/// `e/m_e` from the SI-exact charge. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn electron_charge_to_mass(
+) -> Qty<physis_core::SI<typenum::N1, typenum::Z0, typenum::P1, typenum::P1>> {
+    Qty::new(-1.758_820_010_76e11)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -875,9 +885,28 @@ mod tests {
             physis_constants::lookup("me/m_a").is_none(),
             "me/m_a is not a ledger name; the live name is me_malpha"
         );
+        let e_me = physis_constants::electron_charge_to_mass();
+        let e_me_centre = Ratio::int(-175_882_001_076);
+        assert_eq!(
+            electron_charge_to_mass().value(),
+            e_me_centre.to_f64(),
+            "e_me Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("e_me").is_none(),
-            "electron charge-to-mass quotient is a different recommended value and is not stored"
+            e_me.value.contains(Interval::point(e_me_centre)),
+            "e_me Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            e_me.value.lo, e_me.value.hi,
+            "ledger e_me stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("-e/me").is_none(),
+            "-e/me is not a ledger name; the live name is e_me"
+        );
+        assert!(
+            physis_constants::lookup("M_e").is_none(),
+            "electron molar mass is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
