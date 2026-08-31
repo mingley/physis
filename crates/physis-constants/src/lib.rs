@@ -33,7 +33,11 @@
 //! not an SI defining Ratio. CODATA 2018 Hartree energy `E_h` is a
 //! one-sigma [`Interval`] `4.3597447222071(85)×10^{-18}` J from the
 //! same table: a measured hull, not an SI defining Ratio, and not the
-//! eV conversion. CODATA 2018 proton mass `m_p` is a
+//! eV conversion. CODATA 2018 electron-muon mass ratio `m_e/m_μ` is a
+//! one-sigma [`Interval`] `4.83633169(11)×10^{-3}` (JPCRD table XXXI,
+//! Electron, e-): a measured hull, not an SI defining Ratio. The
+//! quantum of circulation is not stored: `π` means it is not a Ratio.
+//! CODATA 2018 proton mass `m_p` is a
 //! one-sigma [`Interval`] `1.67262192369(51)×10^{-27}` kg (JPCRD table
 //! XXXI, Proton, p): a measured hull, not an SI defining Ratio.
 //! Electron mass is not stored: `10^{42}` overflows `i128`. The IAU 2012 astronomical unit is
@@ -268,6 +272,10 @@ fn codata_2018_bohr_source() -> SourceRecord {
 
 fn codata_2018_hartree_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "Eh = 4.3597447222071(85)e-18")
+}
+
+fn codata_2018_electron_muon_source() -> SourceRecord {
+    codata_2018_jpcrd("Electron, e-", "me/mmu = 4.83633169(11)e-3")
 }
 
 fn codata_2018_proton_mass_source() -> SourceRecord {
@@ -530,6 +538,29 @@ pub fn hartree_energy() -> Constant<Interval> {
     )
 }
 
+/// CODATA 2018 one-sigma hull of 4.83633169(11)×10⁻³.
+fn codata_2018_electron_muon_interval() -> Interval {
+    let scale = 10i128.pow(11);
+    let mu = 483_633_169;
+    let sigma = 11;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Electron-muon mass ratio m_e/m_μ, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended dimensionless hull, not an SI defining Ratio,
+/// not electron mass, and not P3N. The quantum of circulation `π ℏ/m_e`
+/// is not stored. Theories still use `physis_model` `f64` Qty.
+pub fn electron_muon_mass_ratio() -> Constant<Interval> {
+    Constant::new(
+        "me_mmu",
+        codata_2018_electron_muon_interval(),
+        "1",
+        codata_2018_electron_muon_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 /// CODATA 2018 one-sigma hull of 1.67262192369(51)×10⁻²⁷ kg.
 fn codata_2018_proton_mass_interval() -> Interval {
     let scale = 10i128.pow(38);
@@ -718,6 +749,7 @@ pub const LEDGER: &[&str] = &[
     "Rinf",
     "a0",
     "Eh",
+    "me_mmu",
     "m_p",
     "au",
     "eV",
@@ -762,6 +794,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "Rinf" => Some(listing(rydberg_constant(), "interval")),
         "a0" => Some(listing(bohr_radius(), "interval")),
         "Eh" => Some(listing(hartree_energy(), "interval")),
+        "me_mmu" => Some(listing(electron_muon_mass_ratio(), "interval")),
         "m_p" => Some(listing(proton_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
@@ -1816,6 +1849,126 @@ mod tests {
     }
 
     #[test]
+    fn codata_2018_electron_muon_mass_ratio_is_a_one_sigma_interval() {
+        let r = electron_muon_mass_ratio();
+        let scale = 10i128.pow(11);
+        let lo = Ratio::new(483_633_158, scale);
+        let hi = Ratio::new(483_633_180, scale);
+        let centre = Ratio::new(483_633_169, scale);
+        assert_eq!(r.name, "me_mmu");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("Electron, e-")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("me/mmu = 4.83633169(11)e-3")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "me_mmu is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r
+            .value
+            .contains(Interval::point(Ratio::new(483_000_000, scale))));
+        assert_eq!(r.hash, electron_muon_mass_ratio().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "me_mmu",
+                codata_2018_electron_muon_interval(),
+                "1",
+                codata_2018_electron_muon_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, proton_mass().hash, "me_mmu is not m_p");
+        assert_ne!(r.hash, hartree_energy().hash, "me_mmu is not Eh");
+        assert_ne!(
+            r.hash,
+            rydberg_energy_equivalent().hash,
+            "me_mmu is not hcRinf"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            proton_mass().provenance.source_hash,
+            "me_mmu range is not the m_p range"
+        );
+        assert_eq!(
+            hartree_energy().hash.to_hex(),
+            "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a",
+            "Eh hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            rydberg_energy_equivalent().hash.to_hex(),
+            "0d0308e874e54cb3d02570c972232b0d26c2d1d64b493880a1bb7ce4ff7827b2",
+            "hcRinf hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            rydberg_frequency().hash.to_hex(),
+            "c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969",
+            "cRinf hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            rydberg_constant().hash.to_hex(),
+            "fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090",
+            "Rinf hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            bohr_radius().hash.to_hex(),
+            "5d5098fcd983d3db221e4b4047e73de5061985c31a91ccdf12cd122b620eaf29",
+            "a0 hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            inverse_fine_structure_constant().hash.to_hex(),
+            "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482",
+            "inv_alpha hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            vacuum_impedance().hash.to_hex(),
+            "6f72c1c5833dc722ac6fb5223f982879499ff412157c6e6c9851d77088991316",
+            "Z0 hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            vacuum_permittivity().hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80",
+            "epsilon0 hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when me_mmu is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "d57979e61fa03bae0a3b0dc5e2cff20df53cdcb76b772cf6ea2589e77c9c3cb2"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("me/m_mu").is_none());
+        assert!(lookup("m_e/m_mu").is_none());
+        assert!(lookup("me_mp").is_none());
+        assert!(lookup("m_e").is_none());
+    }
+
+    #[test]
     fn codata_2018_proton_mass_is_a_one_sigma_interval() {
         let mp = proton_mass();
         let scale = 10i128.pow(38);
@@ -2087,7 +2240,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 24);
+        assert_eq!(LEDGER.len(), 25);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -2157,6 +2310,11 @@ mod tests {
             lookup("Eh").unwrap().hash.to_hex(),
             "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a"
         );
+        assert_eq!(lookup("me_mmu").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("me_mmu").unwrap().hash.to_hex(),
+            "d57979e61fa03bae0a3b0dc5e2cff20df53cdcb76b772cf6ea2589e77c9c3cb2"
+        );
         assert_eq!(lookup("m_p").unwrap().kind, "interval");
         assert_eq!(
             lookup("m_p").unwrap().hash.to_hex(),
@@ -2190,6 +2348,8 @@ mod tests {
         );
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_none());
+        assert!(lookup("me/m_mu").is_none());
+        assert!(lookup("me_mp").is_none());
         assert!(lookup("Y0").is_none());
         assert!(lookup("Z_0").is_none());
         assert!(lookup("epsilon_0").is_none());

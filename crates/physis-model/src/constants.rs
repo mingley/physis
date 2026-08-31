@@ -189,6 +189,14 @@ pub fn hartree_energy() -> Qty<Energy> {
     joule(4.359_744_722_207_1e-18)
 }
 
+/// Electron-muon mass ratio m_e/m_μ, CODATA 2018.
+///
+/// This is the recommended centre, not electron mass. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn electron_muon_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(4.836_331_69e-3)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -682,6 +690,30 @@ mod tests {
         assert!(
             physis_constants::lookup("Eh_eV").is_none(),
             "Hartree energy in eV is a different recommended value and is not stored"
+        );
+
+        let me_mmu = physis_constants::electron_muon_mass_ratio();
+        let me_mmu_centre = Ratio::new(483_633_169, 10i128.pow(11));
+        assert_eq!(
+            electron_muon_mass_ratio().value(),
+            me_mmu_centre.to_f64(),
+            "me_mmu Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            me_mmu.value.contains(Interval::point(me_mmu_centre)),
+            "me_mmu Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            me_mmu.value.lo, me_mmu.value.hi,
+            "ledger me_mmu stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("me/m_mu").is_none(),
+            "me/m_mu is not a ledger name; the live name is me_mmu"
+        );
+        assert!(
+            physis_constants::lookup("me_mp").is_none(),
+            "electron-proton mass ratio is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
