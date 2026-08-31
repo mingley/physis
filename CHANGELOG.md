@@ -22,6 +22,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 inverse fine-structure is a one-sigma Interval.**
+  `physis-constants` versions `inv_alpha` as the CODATA 2018 hull
+  `137.035999084(21)` from JPCRD 50, 033105 table XXXI (ATOMIC AND
+  NUCLEAR). This is a different recommended value from `alpha`, not
+  `1/α` as a derived Ratio, not Rydberg, and not P3N. `physis_model`
+  `inv_alpha()` Qty locksteps to the recommended centre inside the hull.
+  Adding `inv_alpha` to LEDGER changes the ledger bundle pin. The `G`,
+  `mu0`, `epsilon0`, `Z0`, `alpha`, and `m_p` hashes are unchanged.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `inv_alpha` hash
+  `4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482`;
+  node
+  `6943c43fe01b2b9dbde1c0bd147f0293a69cb15bb2e44877ea7e68013f6dce0e`;
+  ledger node
+  `95373c2218069b60b99e1dd4864d13f058f64292ed1fb270d30c581dfe405c49`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 characteristic impedance is a one-sigma Interval.**
   `physis-constants` versions `Z0` as the CODATA 2018 hull
   `376.730313668(57)` ohm from JPCRD 50, 033105 table XXXI

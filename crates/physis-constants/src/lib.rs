@@ -17,7 +17,10 @@
 //! CODATA 2018 fine-structure `α` is
 //! a one-sigma [`Interval`] `7.2973525693(11)×10^{-3}` (JPCRD table
 //! XXXI, ATOMIC AND NUCLEAR): a measured hull, not an SI defining
-//! Ratio. Inverse-α is not stored. CODATA 2018 proton mass `m_p` is a
+//! Ratio. CODATA 2018 inverse fine-structure `α⁻¹` is a one-sigma
+//! [`Interval`] `137.035999084(21)` from the same table: a different
+//! recommended hull, not `1/α` as a derived Ratio, and not Rydberg.
+//! CODATA 2018 proton mass `m_p` is a
 //! one-sigma [`Interval`] `1.67262192369(51)×10^{-27}` kg (JPCRD table
 //! XXXI, Proton, p): a measured hull, not an SI defining Ratio.
 //! Electron mass is not stored: `10^{42}` overflows `i128`. The IAU 2012 astronomical unit is
@@ -230,6 +233,10 @@ fn codata_2018_alpha_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "alpha = 7.2973525693(11)e-3")
 }
 
+fn codata_2018_inv_alpha_source() -> SourceRecord {
+    codata_2018_jpcrd("ATOMIC AND NUCLEAR", "inv_alpha = 137.035999084(21)")
+}
+
 fn codata_2018_proton_mass_source() -> SourceRecord {
     codata_2018_jpcrd("Proton, p", "mp = 1.67262192369(51)e-27")
 }
@@ -335,14 +342,40 @@ fn codata_2018_alpha_interval() -> Interval {
 /// Fine-structure constant α, CODATA 2018 one-sigma enclosure.
 ///
 /// This is the zero-momentum recommended hull, not an SI defining
-/// Ratio, not inverse-α, and not P3N. Running with energy is M4.
-/// Theories still use `physis_model` `f64` Qty.
+/// Ratio and not P3N. Running with energy is M4. Inverse-α is a
+/// different recommended Interval. Theories still use `physis_model`
+/// `f64` Qty.
 pub fn fine_structure_constant() -> Constant<Interval> {
     Constant::new(
         "alpha",
         codata_2018_alpha_interval(),
         "1",
         codata_2018_alpha_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 137.035999084(21).
+fn codata_2018_inv_alpha_interval() -> Interval {
+    let scale = 10i128.pow(9);
+    let mu = 137_035_999_084;
+    let sigma = 21;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Inverse fine-structure constant α⁻¹, CODATA 2018 one-sigma enclosure.
+///
+/// This is the zero-momentum recommended hull, not an SI defining
+/// Ratio, not Rydberg, and not P3N. It is a different recommended
+/// value from α; the product of the two centres is not a certificate
+/// that they multiply to one. Theories still use `physis_model` `f64`
+/// Qty.
+pub fn inverse_fine_structure_constant() -> Constant<Interval> {
+    Constant::new(
+        "inv_alpha",
+        codata_2018_inv_alpha_interval(),
+        "1",
+        codata_2018_inv_alpha_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -529,6 +562,7 @@ pub const LEDGER: &[&str] = &[
     "epsilon0",
     "Z0",
     "alpha",
+    "inv_alpha",
     "m_p",
     "au",
     "eV",
@@ -567,6 +601,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "epsilon0" => Some(listing(vacuum_permittivity(), "interval")),
         "Z0" => Some(listing(vacuum_impedance(), "interval")),
         "alpha" => Some(listing(fine_structure_constant(), "interval")),
+        "inv_alpha" => Some(listing(inverse_fine_structure_constant(), "interval")),
         "m_p" => Some(listing(proton_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
@@ -1014,6 +1049,98 @@ mod tests {
     }
 
     #[test]
+    fn codata_2018_inv_alpha_is_a_one_sigma_interval() {
+        let inv = inverse_fine_structure_constant();
+        let scale = 10i128.pow(9);
+        let lo = Ratio::new(137_035_999_063, scale);
+        let hi = Ratio::new(137_035_999_105, scale);
+        let centre = Ratio::new(137_035_999_084, scale);
+        assert_eq!(inv.name, "inv_alpha");
+        assert_eq!(inv.unit, "1");
+        assert_eq!(inv.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(inv.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            inv.provenance.locator.section.as_deref(),
+            Some("ATOMIC AND NUCLEAR")
+        );
+        assert_eq!(
+            inv.provenance.locator.dataset_range.as_deref(),
+            Some("inv_alpha = 137.035999084(21)")
+        );
+        assert_eq!(inv.value, Interval::new(lo, hi));
+        assert_ne!(
+            inv.value.lo, inv.value.hi,
+            "inv_alpha is measured, not SI-exact"
+        );
+        assert!(inv.value.contains(Interval::point(centre)));
+        assert!(!inv
+            .value
+            .contains(Interval::point(Ratio::new(137_035_000_000, scale))));
+        assert_eq!(inv.hash, inverse_fine_structure_constant().hash);
+        assert_eq!(
+            inv.hash,
+            Constant::new(
+                "inv_alpha",
+                codata_2018_inv_alpha_interval(),
+                "1",
+                codata_2018_inv_alpha_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            inv.hash,
+            fine_structure_constant().hash,
+            "inv_alpha is not alpha"
+        );
+        assert_ne!(inv.hash, newtonian_g().hash, "inv_alpha is not G");
+        assert_ne!(
+            inv.provenance.source_hash,
+            fine_structure_constant().provenance.source_hash,
+            "inv_alpha range is not the alpha range"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when inv_alpha is added"
+        );
+        assert_eq!(
+            vacuum_impedance().hash.to_hex(),
+            "6f72c1c5833dc722ac6fb5223f982879499ff412157c6e6c9851d77088991316",
+            "Z0 hash must stay pinned when inv_alpha is added"
+        );
+        assert_eq!(
+            vacuum_permittivity().hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80",
+            "epsilon0 hash must stay pinned when inv_alpha is added"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when inv_alpha is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when inv_alpha is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when inv_alpha is added"
+        );
+        assert_eq!(
+            inv.hash.to_hex(),
+            "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482"
+        );
+        assert!(inv.provenance.recheck().is_ok());
+        assert!(lookup("alpha-inv").is_none());
+        assert!(lookup("alpha_inv").is_none());
+        assert!(lookup("inverse-alpha").is_none());
+        assert!(lookup("Rinf").is_none());
+    }
+
+    #[test]
     fn codata_2018_proton_mass_is_a_one_sigma_interval() {
         let mp = proton_mass();
         let scale = 10i128.pow(38);
@@ -1285,7 +1412,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 18);
+        assert_eq!(LEDGER.len(), 19);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -1324,6 +1451,11 @@ mod tests {
         assert_eq!(
             lookup("alpha").unwrap().hash.to_hex(),
             "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38"
+        );
+        assert_eq!(lookup("inv_alpha").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("inv_alpha").unwrap().hash.to_hex(),
+            "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482"
         );
         assert_eq!(lookup("m_p").unwrap().kind, "interval");
         assert_eq!(
@@ -1364,6 +1496,8 @@ mod tests {
         assert!(lookup("eps0").is_none());
         assert!(lookup("mu_0").is_none());
         assert!(lookup("alpha-inv").is_none());
+        assert!(lookup("alpha_inv").is_none());
+        assert!(lookup("inverse-alpha").is_none());
         assert!(lookup("fine-structure").is_none());
         assert!(lookup("solar-gm").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());

@@ -139,6 +139,15 @@ pub fn fine_structure_constant() -> Qty<Dimensionless> {
     Qty::new(7.297_352_569_3e-3)
 }
 
+/// Inverse fine-structure constant α⁻¹ (dimensionless), CODATA 2018.
+///
+/// This is the zero-momentum recommended centre, not `1/α` as a derived
+/// exact value and not the PDG `α_em⁻¹(M_Z)` running value. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn inv_alpha() -> Qty<Dimensionless> {
+    Qty::new(137.035_999_084)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -495,7 +504,31 @@ mod tests {
         );
         assert!(
             physis_constants::lookup("alpha-inv").is_none(),
-            "inverse-alpha is a different recommended value and is not stored"
+            "alpha-inv is not a ledger name; the live name is inv_alpha"
+        );
+
+        let inv = physis_constants::inverse_fine_structure_constant();
+        let inv_centre = Ratio::new(137_035_999_084, 10i128.pow(9));
+        assert_eq!(
+            inv_alpha().value(),
+            inv_centre.to_f64(),
+            "inv_alpha Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            inv.value.contains(Interval::point(inv_centre)),
+            "inv_alpha Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            inv.value.lo, inv.value.hi,
+            "ledger inv_alpha stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("alpha_inv").is_none(),
+            "alpha_inv is not a ledger name; the live name is inv_alpha"
+        );
+        assert!(
+            physis_constants::lookup("inverse-alpha").is_none(),
+            "inverse-alpha is not a ledger name; the live name is inv_alpha"
         );
 
         let mp = physis_constants::proton_mass();
