@@ -22,6 +22,32 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 muon mass in u is a one-sigma Interval.**
+  `physis-constants` versions `m_mu_u` as the CODATA 2018 hull
+  `0.1134289259(25)` u from JPCRD 50, 033105 table XXXI (Muon, mu-).
+  This is not the kg hull `m_mu`, not electron molar mass `M_e`, not
+  the electron-muon mass ratio `me_mmu`, not the proton mass, not an
+  SI defining Ratio, not the Thomson cross section, and not P3N.
+  Electron mass is still not stored (`10^{42}` overflows `i128`).
+  `physis_model` `muon_mass_in_u()` Qty locksteps to the recommended
+  centre inside the hull. Adding `m_mu_u` to LEDGER changes the ledger
+  bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`,
+  `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`,
+  `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`,
+  `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`,
+  `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, and `m_p` hashes are unchanged. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: `m_mu_u` hash `ced234733b80023dd6d8687ce99efc8473defe15f63b74f3ecde00ece485515d`; node
+  `d9dd36e1db3fe1aa782b3cfb99db87ba10250a4f0d945607d0cfa0ad6b163b78`; ledger node `d49a8837f61dc3d91153c268de4c6e033e8643f7d43857181c4a3acf964c1a52`. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, and `m_p`
+  hashes and nodes unchanged.
+
 - **CODATA 2018 muon mass is a one-sigma Interval.**
   `physis-constants` versions `m_mu` as the CODATA 2018 hull
   `1.883531627(42)×10^{-28}` kg from JPCRD 50, 033105 table XXXI
