@@ -321,6 +321,15 @@ pub fn electron_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
     Qty::new(-1.001_159_652_181_28)
 }
 
+/// Electron magnetic moment to nuclear magneton ratio μ_e/μ_N, CODATA 2018.
+///
+/// This is the recommended signed centre, not the g-factor and not the
+/// magnetic-moment anomaly. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre.
+pub fn electron_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
+    Qty::new(-1_838.281_971_88)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -1087,6 +1096,25 @@ mod tests {
         assert_ne!(
             mu_e_mu_b.value.lo, mu_e_mu_b.value.hi,
             "ledger mu_e_muB stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("mue_muN").is_none(),
+            "mue_muN is not a ledger name; the live name is mu_e_muN"
+        );
+        let mu_e_mu_n = physis_constants::electron_magnetic_moment_to_nuclear_magneton();
+        let mu_e_mu_n_centre = Ratio::new(-183_828_197_188, 10i128.pow(8));
+        assert_eq!(
+            electron_magnetic_moment_to_nuclear_magneton().value(),
+            mu_e_mu_n_centre.to_f64(),
+            "mu_e_muN Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_e_mu_n.value.contains(Interval::point(mu_e_mu_n_centre)),
+            "mu_e_muN Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_e_mu_n.value.lo, mu_e_mu_n.value.hi,
+            "ledger mu_e_muN stays an Interval; the Qty is not that Interval"
         );
 
         let mp = physis_constants::proton_mass();
