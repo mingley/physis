@@ -228,7 +228,9 @@ dependencies = [
 name = "physis-model"
 version = "0.1.0"
 dependencies = [
+ "physis-constants",
  "physis-core",
+ "physis-numeric",
  "serde",
  "typenum",
 ]
