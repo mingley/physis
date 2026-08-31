@@ -302,6 +302,16 @@ pub fn classical_electron_radius() -> Qty<Length> {
     meters(2.817_940_326_199_999_6e-15)
 }
 
+/// Electron magnetic moment μ_e (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended signed centre, not the Bohr-magneton ratio
+/// and not the Thomson cross section. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn electron_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(-9.284_764_704_3e-24)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -1026,6 +1036,25 @@ mod tests {
         assert!(
             physis_constants::lookup("sigma_e").is_none(),
             "Thomson cross section is not a Ratio because it contains pi"
+        );
+        assert!(
+            physis_constants::lookup("mue").is_none(),
+            "mue is not a ledger name; the live name is mu_e"
+        );
+        let mu_e = physis_constants::electron_magnetic_moment();
+        let mu_e_centre = Ratio::new(-92_847_647_043, 10i128.pow(34));
+        assert_eq!(
+            electron_magnetic_moment().value(),
+            mu_e_centre.to_f64(),
+            "mu_e Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_e.value.contains(Interval::point(mu_e_centre)),
+            "mu_e Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_e.value.lo, mu_e.value.hi,
+            "ledger mu_e stays an Interval; the Qty is not that Interval"
         );
 
         let mp = physis_constants::proton_mass();
