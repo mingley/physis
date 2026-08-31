@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  be9e5f1f2ebfa8044d59332afc686773b98c2440ae66ecb550d5132d9c7c5b28"),
+            text.contains("constant  ledger  14bebc8eeb638f068e4a929363c0a053e5451b6dd2afdc698e408e0518cfe07d"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -13713,6 +13713,53 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let mn_minus_mp_c2 = lab
+            .exec(Command::Constant {
+                name: Some("mn_minus_mp_c2".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            mn_minus_mp_c2.contains("constant  mn_minus_mp_c2  node "),
+            "{mn_minus_mp_c2}"
+        );
+        assert!(
+            mn_minus_mp_c2.contains(
+                "hash     fa3bd81d58322a2d13a2e2c98b628fef9fb69bcdcf7c3335cd8e26d6b2fb2c45"
+            ),
+            "{mn_minus_mp_c2}"
+        );
+        assert!(
+            mn_minus_mp_c2.contains("kind     interval"),
+            "{mn_minus_mp_c2}"
+        );
+        assert!(mn_minus_mp_c2.contains("table    XXXI"), "{mn_minus_mp_c2}");
+        assert!(
+            mn_minus_mp_c2.contains("range    mn-mp_c2 = 2.07214689(74)e-13"),
+            "{mn_minus_mp_c2}"
+        );
+        assert!(mn_minus_mp_c2.contains("unit     J"), "{mn_minus_mp_c2}");
+        assert!(
+            mn_minus_mp_c2.contains(
+                "value    [41442923/200000000000000000000, 207214763/1000000000000000000000]"
+            ),
+            "{mn_minus_mp_c2}"
+        );
+        assert!(mn_minus_mp_c2.contains("rebuild  ok"), "{mn_minus_mp_c2}");
+        assert!(mn_minus_mp_c2.contains("not P3N"), "{mn_minus_mp_c2}");
+        assert!(!mn_minus_mp_c2.contains("receipt"), "{mn_minus_mp_c2}");
+        assert!(!mn_minus_mp_c2.contains("theorem"), "{mn_minus_mp_c2}");
+        let mn_minus_mp_c2_id = constant_node_id(&mn_minus_mp_c2);
+        assert_eq!(
+            mn_minus_mp_c2_id.to_hex(),
+            "d80066ce06701b9bfe83a44cfb9aa8a34bacc23e1d1a3860666ec0b317be0e08",
+            "journaling must not change the mn_minus_mp_c2 constant payload"
+        );
+        assert_eq!(
+            lab.store.get(mn_minus_mp_c2_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -16091,6 +16138,57 @@ mod tests {
             unknown_m_n_minus_m_p_u.text()
         );
 
+        let unknown_mn_hyphen_mp_c2 = lab.exec(Command::Constant {
+            name: Some("mn-mp_c2".into()),
+        });
+        assert_eq!(
+            unknown_mn_hyphen_mp_c2.exit_code(),
+            1,
+            "{}",
+            unknown_mn_hyphen_mp_c2.text()
+        );
+        assert!(
+            unknown_mn_hyphen_mp_c2
+                .text()
+                .contains("unknown constant 'mn-mp_c2'"),
+            "{}",
+            unknown_mn_hyphen_mp_c2.text()
+        );
+
+        let unknown_mn_minus_mp_slash_c2 = lab.exec(Command::Constant {
+            name: Some("mn_minus_mp/c2".into()),
+        });
+        assert_eq!(
+            unknown_mn_minus_mp_slash_c2.exit_code(),
+            1,
+            "{}",
+            unknown_mn_minus_mp_slash_c2.text()
+        );
+        assert!(
+            unknown_mn_minus_mp_slash_c2
+                .text()
+                .contains("unknown constant 'mn_minus_mp/c2'"),
+            "{}",
+            unknown_mn_minus_mp_slash_c2.text()
+        );
+
+        let unknown_m_n_minus_m_p_c2 = lab.exec(Command::Constant {
+            name: Some("m_n_minus_m_p_c2".into()),
+        });
+        assert_eq!(
+            unknown_m_n_minus_m_p_c2.exit_code(),
+            1,
+            "{}",
+            unknown_m_n_minus_m_p_c2.text()
+        );
+        assert!(
+            unknown_m_n_minus_m_p_c2
+                .text()
+                .contains("unknown constant 'm_n_minus_m_p_c2'"),
+            "{}",
+            unknown_m_n_minus_m_p_c2.text()
+        );
+
         let unknown_mue = lab.exec(Command::Constant {
             name: Some("mue".into()),
         });
@@ -16129,7 +16227,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "be9e5f1f2ebfa8044d59332afc686773b98c2440ae66ecb550d5132d9c7c5b28",
+            "14bebc8eeb638f068e4a929363c0a053e5451b6dd2afdc698e408e0518cfe07d",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -16851,6 +16949,16 @@ mod tests {
         );
         assert!(
             ledger.contains(
+                "hash     fa3bd81d58322a2d13a2e2c98b628fef9fb69bcdcf7c3335cd8e26d6b2fb2c45"
+            ),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains("range    mn-mp_c2 = 2.07214689(74)e-13"),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains(
                 "hash     fd6d15f0f9cd99a1889486d78f316d0e3299c3b9ff8db13d6429bcb47cccb465"
             ),
             "{ledger}"
@@ -17054,7 +17162,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "be9e5f1f2ebfa8044d59332afc686773b98c2440ae66ecb550d5132d9c7c5b28",
+            "14bebc8eeb638f068e4a929363c0a053e5451b6dd2afdc698e408e0518cfe07d",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -17686,6 +17794,14 @@ mod tests {
         .expect("pinned mn_minus_mp_u node");
         assert_eq!(
             lab2.store.get(mn_minus_mp_u).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let mn_minus_mp_c2 = physis_core::artifact::ArtifactId::from_hex(
+            "d80066ce06701b9bfe83a44cfb9aa8a34bacc23e1d1a3860666ec0b317be0e08",
+        )
+        .expect("pinned mn_minus_mp_c2 node");
+        assert_eq!(
+            lab2.store.get(mn_minus_mp_c2).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -19239,7 +19355,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  be9e5f1f2ebfa8044d59332afc686773b98c2440ae66ecb550d5132d9c7c5b28"),
+            text.contains("constant  ledger  14bebc8eeb638f068e4a929363c0a053e5451b6dd2afdc698e408e0518cfe07d"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

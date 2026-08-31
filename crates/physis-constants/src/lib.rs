@@ -585,6 +585,10 @@ fn codata_2018_neutron_proton_mass_difference_in_u_source() -> SourceRecord {
     codata_2018_jpcrd("Neutron, n", "mn-mp_u = 1.38844933(49)e-3")
 }
 
+fn codata_2018_neutron_proton_mass_difference_energy_equivalent_source() -> SourceRecord {
+    codata_2018_jpcrd("Neutron, n", "mn-mp_c2 = 2.07214689(74)e-13")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -2640,19 +2644,51 @@ fn codata_2018_neutron_proton_mass_difference_in_u_interval() -> Interval {
 /// mass in u `m_p_u`, not a certificate of a reconstruction from the
 /// kg hull or sibling u-rows, not an SI defining Ratio, and not P3N.
 /// Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote
-/// e) and is not stored. The joule and MeV energy equivalents and
-/// molar mass are later table rows and are not stored. Reduced neutron
-/// Compton wavelength cites ħ and is not stored. Gyromagnetic ratios
-/// cite ħ and are not stored. Electron mass is not stored: `10^{42}`
-/// overflows `i128`. The decade is `10^{11}`; `10^{10}` is the 10× trap
-/// (`1.3884493e-3` would lose a digit). Theories still use
-/// `physis_model` `f64` Qty.
+/// e) and is not stored. The joule hull is `mn_minus_mp_c2`. The MeV
+/// energy equivalent and molar mass are later table rows and are not
+/// stored. Reduced neutron Compton wavelength cites ħ and is not stored.
+/// Gyromagnetic ratios cite ħ and are not stored. Electron mass is not
+/// stored: `10^{42}` overflows `i128`. The decade is `10^{11}`; `10^{10}`
+/// is the 10× trap (`1.3884493e-3` would lose a digit). Theories still
+/// use `physis_model` `f64` Qty.
 pub fn neutron_proton_mass_difference_in_u() -> Constant<Interval> {
     Constant::new(
         "mn_minus_mp_u",
         codata_2018_neutron_proton_mass_difference_in_u_interval(),
         "u",
         codata_2018_neutron_proton_mass_difference_in_u_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 2.07214689(74)×10⁻¹³ J.
+fn codata_2018_neutron_proton_mass_difference_energy_equivalent_interval() -> Interval {
+    let scale = 10i128.pow(21);
+    let mu = 207_214_689i128;
+    let sigma = 74;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Neutron-proton mass difference energy equivalent (m_n − m_p)c², CODATA 2018.
+///
+/// This is the recommended hull in joules from the neutron section, not
+/// the kg hull `mn_minus_mp`, not the u-row `mn_minus_mp_u`, not neutron
+/// mass energy equivalent `m_n_c2`, not proton mass energy equivalent
+/// `m_p_c2`, not a certificate of a reconstruction from sibling masses
+/// or `c`, not the MeV conversion, not an SI defining Ratio, and not
+/// P3N. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
+/// footnote e) and is not stored. The MeV row and molar mass are later
+/// table rows and are not stored. Reduced neutron Compton wavelength
+/// cites ħ and is not stored. Gyromagnetic ratios cite ħ and are not
+/// stored. Electron mass is not stored: `10^{42}` overflows `i128`. The
+/// decade is `10^{21}`; `10^{20}` is the 10× trap (`2.0721468e-13`
+/// would lose a digit). Theories still use `physis_model` `f64` Qty.
+pub fn neutron_proton_mass_difference_energy_equivalent() -> Constant<Interval> {
+    Constant::new(
+        "mn_minus_mp_c2",
+        codata_2018_neutron_proton_mass_difference_energy_equivalent_interval(),
+        "J",
+        codata_2018_neutron_proton_mass_difference_energy_equivalent_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -2889,6 +2925,7 @@ pub const LEDGER: &[&str] = &[
     "mn_mp",
     "mn_minus_mp",
     "mn_minus_mp_u",
+    "mn_minus_mp_c2",
     "au",
     "eV",
     "GM_sun",
@@ -3032,6 +3069,10 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "mn_mp" => Some(listing(neutron_proton_mass_ratio(), "interval")),
         "mn_minus_mp" => Some(listing(neutron_proton_mass_difference(), "interval")),
         "mn_minus_mp_u" => Some(listing(neutron_proton_mass_difference_in_u(), "interval")),
+        "mn_minus_mp_c2" => Some(listing(
+            neutron_proton_mass_difference_energy_equivalent(),
+            "interval",
+        )),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -13133,9 +13174,128 @@ mod tests {
         assert!(lookup("m_e").is_none());
         assert!(lookup("Eh_eV").is_none());
         assert!(lookup("mn_minus_mp_u").is_some());
+        assert!(lookup("mn_minus_mp_c2").is_some());
         assert!(lookup("mn_minus_mp").is_some());
         assert!(lookup("m_n_u").is_some());
         assert!(lookup("m_p_u").is_some());
+        assert!(lookup("G").is_some());
+    }
+
+    #[test]
+    fn codata_2018_neutron_proton_mass_difference_energy_equivalent_is_a_one_sigma_interval() {
+        let r = neutron_proton_mass_difference_energy_equivalent();
+        let scale = 10i128.pow(21);
+        let lo = Ratio::new(207_214_615, scale);
+        let hi = Ratio::new(207_214_763, scale);
+        let centre = Ratio::new(207_214_689, scale);
+        assert_eq!(r.name, "mn_minus_mp_c2");
+        assert_eq!(r.unit, "J");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Neutron, n"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("mn-mp_c2 = 2.07214689(74)e-13")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(
+            r.value.lo, r.value.hi,
+            "mn_minus_mp_c2 is measured, not SI-exact"
+        );
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA mn_minus_mp_c2 is a positive energy-equivalent hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[41442923/200000000000000000000, 207214763/1000000000000000000000]"
+        );
+        assert_eq!(
+            r.hash,
+            neutron_proton_mass_difference_energy_equivalent().hash
+        );
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "mn_minus_mp_c2",
+                codata_2018_neutron_proton_mass_difference_energy_equivalent_interval(),
+                "J",
+                codata_2018_neutron_proton_mass_difference_energy_equivalent_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            neutron_proton_mass_difference().hash,
+            "mn_minus_mp_c2 is not mn_minus_mp"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_proton_mass_difference_in_u().hash,
+            "mn_minus_mp_c2 is not mn_minus_mp_u"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_mass_energy_equivalent().hash,
+            "mn_minus_mp_c2 is not m_n_c2"
+        );
+        assert_ne!(
+            r.hash,
+            proton_mass_energy_equivalent().hash,
+            "mn_minus_mp_c2 is not m_p_c2"
+        );
+        assert_ne!(r.hash, newtonian_g().hash, "mn_minus_mp_c2 is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            neutron_proton_mass_difference().provenance.source_hash,
+            "mn_minus_mp_c2 range is not the mn_minus_mp range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            neutron_mass_energy_equivalent().provenance.source_hash,
+            "mn_minus_mp_c2 range is not the m_n_c2 range"
+        );
+        assert_eq!(
+            neutron_proton_mass_difference_in_u().hash.to_hex(),
+            "3e84ef4f23bdc6d6c4b0f17c5ee3535eb8352184eba5836d253750fabdcbf122",
+            "mn_minus_mp_u hash must stay pinned when mn_minus_mp_c2 is added"
+        );
+        assert_eq!(
+            neutron_mass_energy_equivalent().hash.to_hex(),
+            "6e677c893f10770fdedc46ec68d0c6de2321e9d5fd03819ca0bc0054308ebff4",
+            "m_n_c2 hash must stay pinned when mn_minus_mp_c2 is added"
+        );
+        assert_eq!(
+            proton_mass_energy_equivalent().hash.to_hex(),
+            "9bdab3205a64c45d2c413626db03cdf6452e021df65c420170cd7ffb163990f3",
+            "m_p_c2 hash must stay pinned when mn_minus_mp_c2 is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when mn_minus_mp_c2 is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "fa3bd81d58322a2d13a2e2c98b628fef9fb69bcdcf7c3335cd8e26d6b2fb2c45"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("mn-mp_c2").is_none());
+        assert!(lookup("mn_minus_mp/c2").is_none());
+        assert!(lookup("m_n_minus_m_p_c2").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("rd").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("mn_minus_mp_c2").is_some());
+        assert!(lookup("mn_minus_mp_u").is_some());
+        assert!(lookup("m_n_c2").is_some());
+        assert!(lookup("m_p_c2").is_some());
         assert!(lookup("G").is_some());
     }
 
@@ -13341,7 +13501,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 90);
+        assert_eq!(LEDGER.len(), 91);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -13746,6 +13906,11 @@ mod tests {
             lookup("mn_minus_mp_u").unwrap().hash.to_hex(),
             "3e84ef4f23bdc6d6c4b0f17c5ee3535eb8352184eba5836d253750fabdcbf122"
         );
+        assert_eq!(lookup("mn_minus_mp_c2").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("mn_minus_mp_c2").unwrap().hash.to_hex(),
+            "fa3bd81d58322a2d13a2e2c98b628fef9fb69bcdcf7c3335cd8e26d6b2fb2c45"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -13836,6 +14001,9 @@ mod tests {
         assert!(lookup("mn-mp_u").is_none());
         assert!(lookup("mn_minus_mp/u").is_none());
         assert!(lookup("m_n_minus_m_p_u").is_none());
+        assert!(lookup("mn-mp_c2").is_none());
+        assert!(lookup("mn_minus_mp/c2").is_none());
+        assert!(lookup("m_n_minus_m_p_c2").is_none());
         assert!(lookup("mue_mun").is_none());
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());
