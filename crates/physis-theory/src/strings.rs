@@ -13,8 +13,12 @@
 //! Heterotic `SO(32)` lives on the IR package of `heterotic-so32`.
 //! Appending `SO(16)` (`add-so16`) is a package mutation, not those
 //! knobs: Green–Schwarz fails because dimension 120 is not a 10D
-//! solution, while SM still embeds via SO(10). Type I shares SO(32)
-//! gauge but has no package. Other string constructions have no package.
+//! solution, while SM still embeds via SO(10). Type I `Chan-Paton
+//! SO(32)` lives on the IR package of `type-i`. Appending
+//! `Chan-Paton SO(16)` (`add-chan-paton-16`) is a package mutation,
+//! not those knobs: Green–Schwarz fails because dimension 120 is not
+//! a 10D solution, while SM still embeds via SO(10). Type II, bosonic,
+//! and M-theory have no package.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -38,6 +42,10 @@ const MISSING_E8_EQ: &str = "missing E8";
 const SO32_EQ: &str = "SO(32)";
 /// Incomplete encoding: SO(16) in place of the live SO(32).
 const SO16_EQ: &str = "SO(16)";
+/// Live Type I gauge on the `type-i` package.
+const CHAN_PATON_SO32_EQ: &str = "Chan-Paton SO(32)";
+/// Incomplete Type I encoding: Chan-Paton rank 16.
+const CHAN_PATON_SO16_EQ: &str = "Chan-Paton SO(16)";
 
 fn e8e8_gs_domain() -> DomainOfValidity {
     DomainOfValidity::new(
@@ -52,6 +60,14 @@ fn so32_gs_domain() -> DomainOfValidity {
         vec!["SO(32)".into()],
         vec!["dimension 496 Green-Schwarz solution".into()],
         "Complete SO(32) (dimension 496). Appending SO(16) is not a Green-Schwarz solution.",
+    )
+}
+
+fn type_i_gs_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["Chan-Paton SO(32)".into()],
+        vec!["dimension 496 Green-Schwarz solution".into()],
+        "Complete Chan-Paton SO(32) (dimension 496). Appending Chan-Paton SO(16) is not a Green-Schwarz solution.",
     )
 }
 
@@ -170,14 +186,14 @@ const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "kind",
         layer: LayerId::Field,
-        doc: "Which string/M construction (sets critical dimension and default gauge). A missing E8 is not this knob: add-missing-e8 is an IR mutation on heterotic-e8e8. SO(16) is not this knob: add-so16 is an IR mutation on heterotic-so32.",
+        doc: "Which string/M construction (sets critical dimension and default gauge). A missing E8 is not this knob: add-missing-e8 is an IR mutation on heterotic-e8e8. SO(16) is not this knob: add-so16 is an IR mutation on heterotic-so32. Chan-Paton SO(16) is not this knob: add-chan-paton-16 is an IR mutation on type-i.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Choice(&StringKind::ALL),
     },
     KnobSpec {
         name: "total_dim",
         layer: LayerId::Spacetime,
-        doc: "Total spacetime dimension D. Superstring theorem: D=10; bosonic D=26; M D=11. A missing E8 is not this knob: add-missing-e8 is an IR mutation on heterotic-e8e8. SO(16) is not this knob: add-so16 is an IR mutation on heterotic-so32.",
+        doc: "Total spacetime dimension D. Superstring theorem: D=10; bosonic D=26; M D=11. A missing E8 is not this knob: add-missing-e8 is an IR mutation on heterotic-e8e8. SO(16) is not this knob: add-so16 is an IR mutation on heterotic-so32. Chan-Paton SO(16) is not this knob: add-chan-paton-16 is an IR mutation on type-i.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::UInt { min: 2, max: 32 },
     },
@@ -254,7 +270,10 @@ const SPECS: &[KnobSpec] = &[
 /// A missing E8 (`add-missing-e8`) is a package mutation, not a knob.
 /// Heterotic `SO(32)` lives on the IR package of `heterotic-so32`.
 /// Appending `SO(16)` (`add-so16`) is a package mutation, not a knob.
-/// `kind` and `total_dim` stay knobs. Type I has no package.
+/// Type I `Chan-Paton SO(32)` lives on the IR package of `type-i`.
+/// Appending `Chan-Paton SO(16)` (`add-chan-paton-16`) is a package
+/// mutation, not a knob. `kind` and `total_dim` stay knobs. Type II
+/// has no package.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StringTheory {
     kind: StringKind,
@@ -275,6 +294,10 @@ pub struct StringTheory {
     /// search may append `SO(16)`, which this flag records. Default
     /// false. Not a scientific knob.
     so16: bool,
+    /// Live type-i encodings carry complete `Chan-Paton SO(32)`.
+    /// Hypothesis search may append `Chan-Paton SO(16)`, which this
+    /// flag records. Default false. Not a scientific knob.
+    chan_paton_16: bool,
 }
 
 impl StringTheory {
@@ -297,17 +320,22 @@ impl StringTheory {
             euler_number: 0,
             missing_e8: false,
             so16: false,
+            chan_paton_16: false,
         }
     }
 
     /// Gauge algebra of this construction. Live heterotic-E8×E8 encodings
     /// keep both E8 factors. Hypothesis search may drop one (`add-missing-e8`).
     /// Live heterotic-SO(32) encodings keep SO(32). Hypothesis search may
-    /// append SO(16) (`add-so16`).
+    /// append SO(16) (`add-so16`). Live Type I encodings keep Chan-Paton
+    /// SO(32). Hypothesis search may append Chan-Paton SO(16)
+    /// (`add-chan-paton-16`).
     fn gauge(&self) -> GaugeGroup {
         if self.missing_e8 && self.kind == StringKind::HeteroticE8xE8 {
             GaugeGroup::e8()
-        } else if self.so16 && self.kind == StringKind::HeteroticSO32 {
+        } else if (self.so16 && self.kind == StringKind::HeteroticSO32)
+            || (self.chan_paton_16 && self.kind == StringKind::TypeI)
+        {
             GaugeGroup::so16()
         } else {
             self.kind.fundamental_gauge()
@@ -481,13 +509,14 @@ impl StringTheory {
 
     /// IR package for this construction. Heterotic-e8e8 equations are
     /// `E8 x E8` and, when forked, `missing E8`. Heterotic-so32 equations
-    /// are `SO(32)` and, when forked, `SO(16)`. `kind` and `total_dim`
-    /// stay on the struct.
+    /// are `SO(32)` and, when forked, `SO(16)`. Type I equations are
+    /// `Chan-Paton SO(32)` and, when forked, `Chan-Paton SO(16)`.
+    /// `kind` and `total_dim` stay on the struct.
     pub fn package(&self) -> TheoryPackage {
-        if self.id() == "heterotic-so32" {
-            self.so32_package()
-        } else {
-            self.e8e8_package()
+        match self.id() {
+            "heterotic-so32" => self.so32_package(),
+            "type-i" => self.type_i_package(),
+            _ => self.e8e8_package(),
         }
     }
 
@@ -535,8 +564,30 @@ impl StringTheory {
         }
     }
 
-    /// Load a heterotic encoding from a package. Knobs default; overlay
-    /// them from a live object when forking.
+    fn type_i_package(&self) -> TheoryPackage {
+        let mut equations = vec![CHAN_PATON_SO32_EQ.to_string()];
+        if self.chan_paton_16 {
+            equations.push(CHAN_PATON_SO16_EQ.to_string());
+        }
+        TheoryPackage {
+            id: "type-i".into(),
+            name: self.name().to_string(),
+            parameters: vec![],
+            assumptions: vec!["complete-chan-paton-so32".into()],
+            equations,
+            claims: vec![physis_ir::ClaimDecl {
+                id: claims::ANOMALY_CANCELLATION.into(),
+                statement: "Chiral gauge/gravitational anomalies cancel (Green–Schwarz in 10D)."
+                    .into(),
+                layer: "interaction".into(),
+                class: "phenomenological".into(),
+            }],
+            lean_ref: None,
+        }
+    }
+
+    /// Load a heterotic or Type I encoding from a package. Knobs default;
+    /// overlay them from a live object when forking.
     pub fn from_package(pkg: &TheoryPackage) -> Result<Self, String> {
         match pkg.id.as_str() {
             "heterotic-e8e8" => {
@@ -553,8 +604,15 @@ impl StringTheory {
                     ..Self::heterotic_so32()
                 })
             }
+            "type-i" => {
+                let chan_paton_16 = parse_type_i_gauge(pkg)?;
+                Ok(Self {
+                    chan_paton_16,
+                    ..Self::type_i()
+                })
+            }
             other => Err(format!(
-                "string package id '{other}' is not heterotic-e8e8 or heterotic-so32"
+                "string package id '{other}' is not heterotic-e8e8, heterotic-so32, or type-i"
             )),
         }
     }
@@ -565,6 +623,10 @@ impl StringTheory {
 
     fn so16_equation() -> String {
         SO16_EQ.to_string()
+    }
+
+    fn chan_paton_16_equation() -> String {
+        CHAN_PATON_SO16_EQ.to_string()
     }
 }
 
@@ -601,6 +663,25 @@ fn parse_so32_gauge(pkg: &TheoryPackage) -> Result<bool, String> {
         return Err(format!("{} package has no SO(32) gauge assignment", pkg.id));
     }
     Ok(so16)
+}
+
+fn parse_type_i_gauge(pkg: &TheoryPackage) -> Result<bool, String> {
+    let mut complete = false;
+    let mut chan_paton_16 = false;
+    for eq in &pkg.equations {
+        match eq.trim() {
+            CHAN_PATON_SO32_EQ => complete = true,
+            CHAN_PATON_SO16_EQ => chan_paton_16 = true,
+            _ => {}
+        }
+    }
+    if !complete {
+        return Err(format!(
+            "{} package has no Chan-Paton SO(32) gauge assignment",
+            pkg.id
+        ));
+    }
+    Ok(chan_paton_16)
 }
 
 impl Knobbed for StringTheory {
@@ -694,6 +775,8 @@ impl Theory for StringTheory {
             anomaly = anomaly.with_domain(e8e8_gs_domain());
         } else if self.kind == StringKind::HeteroticSO32 {
             anomaly = anomaly.with_domain(so32_gs_domain());
+        } else if self.kind == StringKind::TypeI {
+            anomaly = anomaly.with_domain(type_i_gs_domain());
         }
         vec![
             claims::c(
@@ -916,6 +999,15 @@ impl Theory for StringTheory {
                             "live encoding is SO(32) (dimension 496); SO(16) is not a 10D GS identity"
                                 .to_string(),
                         ])
+                    } else if self.chan_paton_16 && self.kind == StringKind::TypeI {
+                        Verdict::fails(
+                            claim,
+                            "Chan-Paton SO(16): dimension 120 is not a Green-Schwarz solution",
+                        )
+                        .with_evidence([
+                            "live encoding is Chan-Paton SO(32) (dimension 496); Chan-Paton SO(16) is not a 10D GS identity"
+                                .to_string(),
+                        ])
                     } else {
                         Verdict::fails(
                             claim,
@@ -1072,7 +1164,7 @@ impl Theory for StringTheory {
     }
 
     fn ir_package(&self) -> Option<TheoryPackage> {
-        matches!(self.id(), "heterotic-e8e8" | "heterotic-so32").then(|| self.package())
+        matches!(self.id(), "heterotic-e8e8" | "heterotic-so32" | "type-i").then(|| self.package())
     }
 
     fn reparse_package(&self, pkg: &TheoryPackage) -> Result<Box<dyn Theory>, String> {
@@ -1087,6 +1179,7 @@ impl Theory for StringTheory {
         let mut fork = self.clone();
         fork.missing_e8 = parsed.missing_e8;
         fork.so16 = parsed.so16;
+        fork.chan_paton_16 = parsed.chan_paton_16;
         Ok(Box::new(fork))
     }
 
@@ -1123,6 +1216,24 @@ impl Theory for StringTheory {
                     let mut fork = self.clone();
                     fork.so16 = true;
                     return vec![("add-so16".into(), Box::new(fork))];
+                }
+            }
+            return Vec::new();
+        }
+        if self.id() == "type-i" && !self.chan_paton_16 {
+            let src = render_package(&self.package());
+            let Ok(pkg) = parse_package(&src) else {
+                return Vec::new();
+            };
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::chan_paton_16_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.chan_paton_16 {
+                    let mut fork = self.clone();
+                    fork.chan_paton_16 = true;
+                    return vec![("add-chan-paton-16".into(), Box::new(fork))];
                 }
             }
         }
@@ -1599,13 +1710,17 @@ mod tests {
         );
         assert!(StringTheory::type_iib().ir_package().is_none());
         assert!(StringTheory::type_iia().ir_package().is_none());
-        assert!(StringTheory::type_i().ir_package().is_none());
         assert!(StringTheory::bosonic().ir_package().is_none());
         assert!(StringTheory::m_theory().ir_package().is_none());
         assert!(StringTheory::heterotic_e8().ir_package().is_some());
+        assert!(StringTheory::type_i().ir_package().is_some());
         assert!(
             probes.iter().all(|(label, _)| label != "add-so16"),
             "heterotic-e8e8 must not grow add-so16"
+        );
+        assert!(
+            probes.iter().all(|(label, _)| label != "add-chan-paton-16"),
+            "heterotic-e8e8 must not grow add-chan-paton-16"
         );
 
         let gs_claim = live
@@ -1839,11 +1954,15 @@ mod tests {
         );
         assert!(StringTheory::type_iib().ir_package().is_none());
         assert!(StringTheory::type_iia().ir_package().is_none());
-        assert!(StringTheory::type_i().ir_package().is_none());
         assert!(StringTheory::bosonic().ir_package().is_none());
         assert!(StringTheory::m_theory().ir_package().is_none());
         assert!(StringTheory::heterotic_so32().ir_package().is_some());
         assert!(StringTheory::heterotic_e8().ir_package().is_some());
+        assert!(StringTheory::type_i().ir_package().is_some());
+        assert!(
+            probes.iter().all(|(label, _)| label != "add-chan-paton-16"),
+            "heterotic-so32 must not grow add-chan-paton-16"
+        );
 
         let gs_claim = live
             .claims()
@@ -1875,14 +1994,33 @@ mod tests {
             .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
             .unwrap();
         assert!(
-            type_i_gs.domain().is_encoding_wide(),
-            "Type I Green-Schwarz stays encoding-wide: {:?}",
+            !type_i_gs.domain().is_encoding_wide(),
+            "Type I Green-Schwarz names Chan-Paton SO(32): {:?}",
+            type_i_gs.domain()
+        );
+        assert!(
+            type_i_gs
+                .domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("Chan-Paton SO(32)")),
+            "Type I GS regime: {:?}",
             type_i_gs.domain()
         );
         assert_ne!(
             gs_claim.statement_hash(),
             type_i_gs.statement_hash(),
             "heterotic-so32 GS is a distinct FormalClaim from Type I"
+        );
+        let iib_gs = StringTheory::type_iib()
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+            .unwrap();
+        assert!(
+            iib_gs.domain().is_encoding_wide(),
+            "Type II Green-Schwarz stays encoding-wide: {:?}",
+            iib_gs.domain()
         );
         let e8e8_gs = StringTheory::heterotic_e8()
             .claims()
@@ -1893,6 +2031,259 @@ mod tests {
             gs_claim.statement_hash(),
             e8e8_gs.statement_hash(),
             "heterotic-so32 GS is a distinct FormalClaim from heterotic-e8e8"
+        );
+    }
+
+    #[test]
+    fn chan_paton_16_is_ir_not_a_knob() {
+        assert!(
+            StringTheory::type_i()
+                .set("chan_paton_16", KnobValue::Bool(true))
+                .is_err(),
+            "Chan-Paton SO(16) is an IR mutation, not a knob"
+        );
+        assert!(
+            StringTheory::type_i()
+                .set("chan-paton-16", KnobValue::Bool(true))
+                .is_err(),
+            "chan-paton-16 is not a knob"
+        );
+        assert!(
+            StringTheory::type_i()
+                .set("add-chan-paton-16", KnobValue::Bool(true))
+                .is_err(),
+            "add-chan-paton-16 is not a knob"
+        );
+        let het = StringTheory::type_i();
+        assert!(!het.chan_paton_16);
+        let src = render_package(&het.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(pkg.equations.len(), 1, "live package must stay complete");
+        assert_eq!(pkg.equations[0], CHAN_PATON_SO32_EQ);
+        assert_eq!(
+            StringTheory::from_package(&pkg).unwrap(),
+            het,
+            "IR round-trip must preserve Chan-Paton SO(32)"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(StringTheory::chan_paton_16_equation()),
+        );
+        let parsed = StringTheory::from_package(&mutated).unwrap();
+        assert!(parsed.chan_paton_16);
+        let mut fork = het.clone();
+        fork.chan_paton_16 = true;
+        assert_eq!(fork.id(), "type-i");
+        let gs = fork.evaluate(
+            &fork
+                .claims()
+                .into_iter()
+                .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+                .unwrap(),
+        );
+        assert_eq!(gs.kind, VerdictKind::Fails);
+        assert!(
+            gs.summary.contains("Chan-Paton SO(16)") && gs.summary.contains("120"),
+            "Chan-Paton SO(16) must name dimension 120: {}",
+            gs.summary
+        );
+        assert!(
+            !gs.summary.contains("kind")
+                && !gs.summary.contains("total_dim")
+                && !gs.summary.contains("supersymmetry")
+                && !gs.summary.contains("euler_number")
+                && !gs.summary.contains("flux")
+                && !gs.summary.contains("Higgs"),
+            "Chan-Paton SO(16) is not a knob: {}",
+            gs.summary
+        );
+        assert_eq!(kind(&fork, claims::SM_GAUGE), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::CRITICAL_DIMENSION), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::NO_TACHYON), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::GRAVITY), VerdictKind::Holds);
+        assert_eq!(kind(&fork, claims::UNIQUE_VACUUM), VerdictKind::Fails);
+        assert_eq!(kind(&het, claims::ANOMALY_CANCELLATION), VerdictKind::Holds);
+        assert_eq!(kind(&het, claims::SM_GAUGE), VerdictKind::Holds);
+
+        let probes = StringTheory::type_i().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-chan-paton-16"),
+            "live type-i must offer add-chan-paton-16: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().all(|(label, _)| label != "add-so16"),
+            "type-i must not grow add-so16"
+        );
+        assert!(
+            probes.iter().all(|(label, _)| label != "add-missing-e8"),
+            "type-i must not grow add-missing-e8"
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-chan-paton-16")
+            .expect("add-chan-paton-16");
+        assert_eq!(
+            kind(probe.1.as_ref(), claims::ANOMALY_CANCELLATION),
+            VerdictKind::Fails
+        );
+        assert_eq!(kind(probe.1.as_ref(), claims::SM_GAUGE), VerdictKind::Holds);
+        assert_eq!(
+            kind(probe.1.as_ref(), claims::UNIQUE_VACUUM),
+            VerdictKind::Fails
+        );
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "chan-paton-16 fork must not re-offer add-chan-paton-16"
+        );
+        let live = StringTheory::type_i();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed = parse_package(&canonical).unwrap();
+        let mut nine = StringTheory::type_i();
+        nine.set("total_dim", KnobValue::UInt(9)).unwrap();
+        let rebuilt = nine.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            rebuilt.get("total_dim").unwrap(),
+            KnobValue::UInt(9),
+            "reparse must overlay Chan-Paton IR onto live knobs"
+        );
+        assert_eq!(
+            kind(rebuilt.as_ref(), claims::ANOMALY_CANCELLATION),
+            VerdictKind::Undecidable,
+            "off-critical live Chan-Paton SO(32) stays Undecidable for Green-Schwarz"
+        );
+        let live_rebuilt = live.reparse_package(&parsed).unwrap();
+        assert_eq!(
+            kind(live_rebuilt.as_ref(), claims::ANOMALY_CANCELLATION),
+            VerdictKind::Holds
+        );
+        assert!(
+            StringTheory::type_iib()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "type-iib must not grow add-chan-paton-16"
+        );
+        assert!(
+            StringTheory::heterotic_so32()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "heterotic-so32 must not grow add-chan-paton-16"
+        );
+        assert!(
+            StringTheory::heterotic_e8()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "heterotic-e8e8 must not grow add-chan-paton-16"
+        );
+        assert!(
+            crate::gut::Su5Gut::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "su5-gut must not grow add-chan-paton-16"
+        );
+        assert!(
+            crate::standard_model::StandardModel::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "standard-model must not grow add-chan-paton-16"
+        );
+        assert!(
+            crate::solid::EinsteinSolid::debye()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "debye-solid must not grow add-chan-paton-16"
+        );
+        assert!(
+            crate::solid::EinsteinSolid::dulong_petit()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "dulong-petit must not grow add-chan-paton-16"
+        );
+        assert!(
+            crate::geometry::ObserverGeometry::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-chan-paton-16"),
+            "observer-geometry must not grow add-chan-paton-16"
+        );
+        assert!(
+            StringTheory::type_i()
+                .set("kind", KnobValue::Choice("bosonic".into()))
+                .is_ok(),
+            "type-i keeps the kind knob"
+        );
+        assert!(
+            StringTheory::type_i()
+                .set("total_dim", KnobValue::UInt(9))
+                .is_ok(),
+            "type-i keeps the total_dim knob"
+        );
+        assert!(StringTheory::type_iib().ir_package().is_none());
+        assert!(StringTheory::type_iia().ir_package().is_none());
+        assert!(StringTheory::bosonic().ir_package().is_none());
+        assert!(StringTheory::m_theory().ir_package().is_none());
+        assert!(StringTheory::type_i().ir_package().is_some());
+        assert!(StringTheory::heterotic_so32().ir_package().is_some());
+        assert!(StringTheory::heterotic_e8().ir_package().is_some());
+
+        let gs_claim = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+            .unwrap();
+        assert!(
+            !gs_claim.domain().is_encoding_wide(),
+            "type-i GS must name Chan-Paton SO(32): {:?}",
+            gs_claim.domain()
+        );
+        assert!(
+            gs_claim
+                .domain()
+                .regimes
+                .iter()
+                .any(|r| r.contains("Chan-Paton SO(32)")),
+            "type-i GS regime: {:?}",
+            gs_claim.domain()
+        );
+        assert!(
+            !gs_claim.domain().notes.contains("theory "),
+            "type-i GS notes must not split why_theory_block: {:?}",
+            gs_claim.domain()
+        );
+        let iib_gs = StringTheory::type_iib()
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+            .unwrap();
+        assert!(
+            iib_gs.domain().is_encoding_wide(),
+            "Type II Green-Schwarz stays encoding-wide: {:?}",
+            iib_gs.domain()
+        );
+        assert_ne!(
+            gs_claim.statement_hash(),
+            iib_gs.statement_hash(),
+            "type-i GS is a distinct FormalClaim from Type II"
+        );
+        let so32_gs = StringTheory::heterotic_so32()
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == claims::ANOMALY_CANCELLATION)
+            .unwrap();
+        assert_ne!(
+            gs_claim.statement_hash(),
+            so32_gs.statement_hash(),
+            "type-i GS is a distinct FormalClaim from heterotic-so32"
         );
     }
 }

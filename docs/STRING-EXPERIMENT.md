@@ -17,6 +17,7 @@ cargo run -p physis -- set type-iib supersymmetry false
 cargo run -p physis -- set bosonic total_dim 10
 cargo run -p physis -- hypothesize heterotic-e8e8  # add-missing-e8 is IR, not set
 cargo run -p physis -- hypothesize heterotic-so32  # add-so16 is IR, not set
+cargo run -p physis -- hypothesize type-i          # add-chan-paton-16 is IR, not set
 cargo run -p physis -- set observer-geometry unique_vacuum false
 cargo run -p physis -- set observer-geometry derive_gauge false
 cargo run -p physis -- set standard-model generations 2

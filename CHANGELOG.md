@@ -32,6 +32,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Type I Chan-Paton SO(16) is an IR mutation**
+  (`type-i`, `add-chan-paton-16`). Complete `Chan-Paton SO(32)` is the
+  live encoding; appending `Chan-Paton SO(16)` flips
+  `consistency.anomaly-cancellation` holds to fails (dimension 120 is
+  not a Green-Schwarz solution). SM still embeds via SO(10), so that
+  cell is not a unit flag and not the `kind` or `total_dim` knob.
+  Unique-vacuum still fails. Mutants stay `type-i`. Heterotic SO(32)
+  keeps `add-so16` and does not grow this mutation. Type II has no
+  package. Mutants are not installed, not journaled, and not Canonical
+  or P4. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  P3N count stays 4. Verified: IR round-trip; set chan_paton_16 is
+  unknown; hypothesize type-i; live Chan-Paton SO(32) restored; encode
+  pin `87e40657853eb6ccd781d9c69134187f055979177276e4857884741af57e114d`.
+
 - **Heterotic SO(16) is an IR mutation**
   (`heterotic-so32`, `add-so16`). Complete `SO(32)` is the live
   encoding; appending `SO(16)` flips

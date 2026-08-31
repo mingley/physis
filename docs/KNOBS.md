@@ -46,8 +46,8 @@ lists every fitted knob in the lab.
 - `frequency_hz` — operating frequency; lumped model holds while c/f dwarfs the circuit. Topology is not this knob: `add-tline` is an IR mutation. Lumped KVL is not this knob: `add-flux` is an IR mutation
 
 ### string / M constructions (type-iib, type-iia, type-i, heterotic-e8e8, heterotic-so32, bosonic, m-theory)
-- `kind` — chosen. A missing E8 is not this knob: `add-missing-e8` is an IR mutation on `heterotic-e8e8`. SO(16) is not this knob: `add-so16` is an IR mutation on `heterotic-so32`.
-- `total_dim` — chosen (the critical-dimension theorem constrains it). A missing E8 is not this knob: `add-missing-e8` is an IR mutation on `heterotic-e8e8`. SO(16) is not this knob: `add-so16` is an IR mutation on `heterotic-so32`.
+- `kind` — chosen. A missing E8 is not this knob: `add-missing-e8` is an IR mutation on `heterotic-e8e8`. SO(16) is not this knob: `add-so16` is an IR mutation on `heterotic-so32`. Chan-Paton SO(16) is not this knob: `add-chan-paton-16` is an IR mutation on `type-i`.
+- `total_dim` — chosen (the critical-dimension theorem constrains it). A missing E8 is not this knob: `add-missing-e8` is an IR mutation on `heterotic-e8e8`. SO(16) is not this knob: `add-so16` is an IR mutation on `heterotic-so32`. Chan-Paton SO(16) is not this knob: `add-chan-paton-16` is an IR mutation on `type-i`.
 - `observed_dim` — **measured** (empirical target: 4)
 - `compact_radius_planck` — **fitted**; overall Kähler volume (size) modulus, in Planck lengths
 - `supersymmetry` — chosen

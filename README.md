@@ -147,6 +147,7 @@ cargo run -p physis -- hypothesize debye-solid            # add-2d is IR, not se
 cargo run -p physis -- hypothesize dulong-petit           # add-quartic is IR, not set
 cargo run -p physis -- hypothesize heterotic-e8e8         # add-missing-e8 is IR, not set
 cargo run -p physis -- hypothesize heterotic-so32         # add-so16 is IR, not set
+cargo run -p physis -- hypothesize type-i                 # add-chan-paton-16 is IR, not set
 cargo run -p physis -- hypothesize standard-model         # add-missing-eR is IR, not set
 cargo run -p physis -- hypothesize observer-geometry      # add-missing-spin10 is IR, not set
 cargo run -p physis -- experiment gravity
@@ -200,6 +201,7 @@ cargo run -p physis -- hypothesize debye-solid     # add-2d is IR, not set
 cargo run -p physis -- hypothesize dulong-petit    # add-quartic is IR, not set
 cargo run -p physis -- hypothesize heterotic-e8e8  # add-missing-e8 is IR, not set
 cargo run -p physis -- hypothesize heterotic-so32  # add-so16 is IR, not set
+cargo run -p physis -- hypothesize type-i          # add-chan-paton-16 is IR, not set
 cargo run -p physis -- hypothesize standard-model  # add-missing-eR is IR, not set
 cargo run -p physis -- hypothesize observer-geometry  # add-missing-spin10 is IR, not set
 cargo run -p physis -- evidence predictivity.unique-vacuum

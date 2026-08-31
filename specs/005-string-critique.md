@@ -28,7 +28,7 @@ Eric Weinstein’s public critique (string theory as a wrong turn; uniqueness an
 | `general-relativity` | classical gravity control |
 | `type-iib` | Type IIB superstring (chiral N=2, no perturbative GUT group) |
 | `type-iia` | Type IIA superstring (non-chiral N=2, no perturbative GUT group) |
-| `type-i` | Type I superstring (open + closed, SO(32)) |
+| `type-i` | Type I superstring (open + closed, Chan-Paton SO(32); `add-chan-paton-16` is IR) |
 | `heterotic-e8e8` | Heterotic E₈×E₈ (SM embedding is an encoded fact; `add-missing-e8` is IR) |
 | `heterotic-so32` | Heterotic SO(32) (SM embedding is an encoded fact; `add-so16` is IR) |
 | `bosonic` | 26D bosonic string (tachyon, no fermions) |
@@ -65,8 +65,11 @@ not a 10D solution, while SM still embeds in the remaining E8. Complete
 `SO(32)` lives on the IR package of `heterotic-so32`. Appending `SO(16)`
 (`add-so16`) is a package mutation, not those knobs: Green–Schwarz fails
 because dimension 120 is not a 10D solution, while SM still embeds via
-SO(10). Type I shares SO(32) gauge but has no package. Type II, bosonic,
-and M-theory have no package.
+SO(10). Complete `Chan-Paton SO(32)` lives on the IR package of `type-i`.
+Appending `Chan-Paton SO(16)` (`add-chan-paton-16`) is a package mutation,
+not those knobs: Green–Schwarz fails because dimension 120 is not a 10D
+solution, while SM still embeds via SO(10). Type II, bosonic, and M-theory
+have no package.
 
 The Standard Model also carries `sm.hypercharge-derivation`, which goes one step further than checking cancellation: it **solves** the anomaly conditions for the hypercharges themselves in exact `Ratio` arithmetic. Fixing only the normalization `Y_Q = 1/6`, the linear anomalies give `Y_L = −1/2` and `Y_e = 1`, and the `[U(1)]³` cubic then forces `{Y_u, Y_d} = {−2/3, 1/3}` as roots of a quadratic whose discriminant is the square `1` in Q (`Ratio::checked_sqrt`). The measured assignments come out as a *consequence* of consistency, not an input (`derive_hypercharges`). If the discriminant is not a square, the cell Fails and does not mint P3N. This is the mechanized form of "accommodate vs derive": here the SM genuinely *derives* its charges. That overlay is also `CertifiedNumeric` / P3N, not a Lean receipt.
 
