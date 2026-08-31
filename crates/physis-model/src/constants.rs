@@ -186,6 +186,18 @@ pub fn proton_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(2.792_847_344_63)
 }
 
+/// Proton g-factor g_p, CODATA 2018.
+///
+/// This is the recommended signed centre from the proton section, not
+/// electron or muon g-factor and not the proton nuclear-magneton
+/// ratio. This Qty is not a certificate that it equals 2 μp/μN. The
+/// shielded proton g-factor is a later table row and is not stored.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre.
+pub fn proton_g_factor() -> Qty<Dimensionless> {
+    Qty::new(5.585_694_689_3)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -2848,6 +2860,44 @@ mod tests {
         assert!(
             physis_constants::lookup("mu0p").is_none(),
             "shielded proton nuclear-magneton ratio is not stored in this increment"
+        );
+        assert!(
+            physis_constants::lookup("g_p").is_none(),
+            "g_p is not a ledger name; the live name is gp"
+        );
+        let gp = physis_constants::proton_g_factor();
+        let gp_centre = Ratio::new(55_856_946_893, 10i128.pow(10));
+        assert_eq!(
+            proton_g_factor().value(),
+            gp_centre.to_f64(),
+            "gp Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            gp.value.contains(Interval::point(gp_centre)),
+            "gp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            gp.value.lo, gp.value.hi,
+            "ledger gp stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_g_factor().hash,
+            physis_constants::proton_magnetic_moment_to_nuclear_magneton().hash,
+            "gp is not mu_p_muN"
+        );
+        assert_ne!(
+            physis_constants::proton_g_factor().hash,
+            physis_constants::electron_g_factor().hash,
+            "gp is not ge"
+        );
+        assert_ne!(
+            physis_constants::proton_g_factor().hash,
+            physis_constants::muon_g_factor().hash,
+            "gp is not gmu"
+        );
+        assert!(
+            physis_constants::lookup("g0p").is_none(),
+            "shielded proton g-factor is not stored in this increment"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),
