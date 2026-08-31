@@ -246,6 +246,8 @@ identity; a slug-only review line is not P3S.
   is a one-sigma `Interval` `−1.00115965218128(18)` from the same section.
   CODATA 2018 electron magnetic moment to nuclear magneton ratio `μ_e/μ_N`
   is a one-sigma `Interval` `−1838.28197188(11)` from the same section.
+  CODATA 2018 electron magnetic-moment anomaly `ae` is a one-sigma
+  `Interval` `1.15965218128(18)×10^{-3}` from the same section.
   CODATA 2018 `m_p` is a
   one-sigma `Interval` `1.67262192369(51)×10^{-27}` kg (JPCRD table XXXI
   Proton, p); electron mass is not stored (`10^{42}` overflows `i128`). IAU 2012 `au` is an exact
