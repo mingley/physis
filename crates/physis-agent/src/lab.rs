@@ -6516,6 +6516,10 @@ mod tests {
             text.contains("add-sign-flip") && text.contains("ir structural"),
             "{text}"
         );
+        assert!(
+            text.contains("add-down-laplacian"),
+            "add-down-laplacian must still be an IR fork: {text}"
+        );
         let marker = "add-sign-flip: package → add-sign-flip";
         let start = text.find(marker).expect("add-sign-flip hit");
         let rest = &text[start..];
@@ -6565,6 +6569,136 @@ mod tests {
                 && circle.text().contains("holds → fails"),
             "shape still flips Poincaré: {}",
             circle.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "de-rham".into(),
+            knob: "shape".into(),
+            value: "disk".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2b = why_theory_block(&why, "de-rham");
+        assert!(
+            d2b.contains("oriented 2-simplex coboundary over Z"),
+            "catalog d² must keep the coboundary domain: {d2b}"
+        );
+        assert!(
+            !d2b.contains("not yet a machine-checked regime"),
+            "catalog d² must not be encoding-wide: {d2b}"
+        );
+        assert!(
+            d2b.contains("encoding:    none"),
+            "hypothesize must not encode: {d2b}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_de_rham_down_laplacian_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["down_laplacian", "laplacian", "add-down-laplacian"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "de-rham".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("de-rham".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-down-laplacian") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-down-laplacian: package → add-down-laplacian";
+        let start = text.find(marker).expect("add-down-laplacian hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  de-rham  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let down_block = &rest[..end];
+        assert!(
+            down_block.contains("dec.hodge-harmonic") && down_block.contains("holds → fails"),
+            "add-down-laplacian must flip Hodge holds to fails: {down_block}"
+        );
+        assert!(
+            !down_block.contains("dec.d-squared-zero"),
+            "add-down-laplacian is not the coboundary sign flip: {down_block}"
+        );
+        assert!(
+            !down_block.contains("dec.closed-equals-exact"),
+            "add-down-laplacian is not the shape knob: {down_block}"
+        );
+        assert!(
+            down_block.matches("holds → fails").count() == 1,
+            "add-down-laplacian should flip only Hodge: {down_block}"
+        );
+        assert!(
+            text.contains("add-sign-flip"),
+            "add-sign-flip must still be an IR fork: {text}"
+        );
+        assert!(
+            text.contains("shape"),
+            "shape must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert!(!text.contains("receipt"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("de-rham").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "dec.hodge-harmonic" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "dec.d-squared-zero" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("shape").unwrap().display(),
+            "disk",
+            "hypothesize must restore knobs"
+        );
+        let circle = lab.exec(Command::Set {
+            theory: "de-rham".into(),
+            knob: "shape".into(),
+            value: "circle".into(),
+        });
+        assert_eq!(circle.exit_code(), 0, "{}", circle.text());
+        assert!(
+            circle.text().contains("dec.closed-equals-exact")
+                && circle.text().contains("holds → fails"),
+            "shape still flips Poincaré: {}",
+            circle.text()
+        );
+        let live = lab.theory("de-rham").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "dec.hodge-harmonic" && v.kind == VerdictKind::Holds
+            }),
+            "shape still Holds Hodge on the live full Laplacian"
         );
         let _ = lab.exec(Command::Set {
             theory: "de-rham".into(),
@@ -11369,6 +11503,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_derham.contains("add-sign-flip"), "{hypo_derham}");
+        assert!(hypo_derham.contains("add-down-laplacian"), "{hypo_derham}");
         let derham_again = lab
             .exec(Command::Encode {
                 theory: "de-rham".into(),

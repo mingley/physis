@@ -115,7 +115,9 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 ### de-rham
 - `shape` — `disk`, `circle`, `torus`, `klein`, or `sphere` (tetrahedron `S²`).
   `set de-rham shape sphere` flips `dec.fundamental-class` fails → holds
-  without flipping Poincaré (`b₁` stays 0).
+  without flipping Poincaré (`b₁` stays 0). The coboundary identity is not
+  this knob: `add-sign-flip` is an IR mutation. The Hodge Laplacian is not
+  this knob: `add-down-laplacian` is an IR mutation.
 
 ### olbers (`olbers-static`, `olbers-horizon`)
 - `finite_age` — light-travel horizon at `c t`. `set olbers-static finite_age true`

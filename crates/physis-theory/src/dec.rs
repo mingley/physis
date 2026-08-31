@@ -15,6 +15,9 @@
 //!
 //! The coboundary identity lives on the IR package. Flipping the first
 //! minus (`add-sign-flip`) is a package mutation, not the `shape` knob.
+//! Assembling Δ₁ from the gradient term only (`add-down-laplacian`) is a
+//! second package mutation: `dim ker d₀d₀ᵀ ≠ b₁` on a filled disk while
+//! `d² = 0` still holds. That is not the `shape` knob.
 //!
 //! Grade is a type error to mix:
 //!
@@ -45,6 +48,8 @@ use crate::framework::Theory;
 /// Catalog coboundary identity on an oriented 2-simplex, as an IR equation.
 /// This is `d₁(d₀ f)` for vertex values `a,b,c`. Not a kernel proof.
 const COBOUNDARY_EQ: &str = "(b - a) - (c - a) + (c - b)";
+/// Down Laplacian: Δ₁ assembled from `d₀ d₀ᵀ` only (curl term dropped).
+const LAPLACIAN_DOWN: &str = "laplacian down";
 
 /// A type-level differential-form grade.
 pub trait Grade {
@@ -355,6 +360,15 @@ impl Complex {
         let laplacian = matadd(&down, &up);
         n - matrix_rank(laplacian)
     }
+
+    /// Dimension of `ker (d₀ d₀ᵀ)`: the Hodge Laplacian with the curl
+    /// term `d₁ᵀ d₁` dropped. On a filled disk this is 1, not `b₁ = 0`.
+    pub fn harmonic1_dim_down(&self) -> usize {
+        let n = self.edges.len();
+        let d0 = self.d0_matrix();
+        let down = matmul(&d0, &transpose(&d0));
+        n - matrix_rank(down)
+    }
 }
 
 /// Transpose of a real matrix.
@@ -502,13 +516,17 @@ impl Shape {
 ///
 /// The coboundary identity lives on the IR package. Flipping the first
 /// minus (`add-sign-flip`) is a package mutation, not a knob: `d² = 0`
-/// fails. `shape` still selects topology.
+/// fails. Assembling Δ₁ from the gradient term only (`add-down-laplacian`)
+/// is a second package mutation: Hodge fails on a filled disk while
+/// `d² = 0` still holds. `shape` still selects topology.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeRham {
     /// Which simplicial complex to evaluate on.
     shape: Shape,
     /// Whether the coboundary identity has the first minus flipped.
     sign_flip: bool,
+    /// Whether Δ₁ is assembled from `d₀ d₀ᵀ` only.
+    down_laplacian: bool,
 }
 
 impl Default for DeRham {
@@ -517,6 +535,7 @@ impl Default for DeRham {
         Self {
             shape: Shape::Disk,
             sign_flip: false,
+            down_laplacian: false,
         }
     }
 }
@@ -530,8 +549,13 @@ impl DeRham {
         COBOUNDARY_EQ.replacen(" - ", " + ", 1)
     }
 
+    fn down_laplacian_equation() -> String {
+        LAPLACIAN_DOWN.to_string()
+    }
+
     /// IR package for this coboundary encoding. Equations are the catalog
-    /// identity tree, or the first-minus flip. `shape` stays on the struct.
+    /// identity tree, or the first-minus flip, and, when forked,
+    /// `laplacian down`. `shape` stays on the struct.
     pub fn package(&self) -> TheoryPackage {
         let spec = lookup(D_SQUARED_ZERO).expect("d² is a catalog identity");
         let equation = if self.sign_flip {
@@ -539,12 +563,16 @@ impl DeRham {
         } else {
             COBOUNDARY_EQ.to_string()
         };
+        let mut equations = vec![equation];
+        if self.down_laplacian {
+            equations.push(LAPLACIAN_DOWN.to_string());
+        }
         TheoryPackage {
             id: self.id().to_string(),
             name: self.name().to_string(),
             parameters: vec![],
             assumptions: vec!["discrete-coboundary".into()],
-            equations: vec![equation],
+            equations,
             claims: vec![physis_ir::ClaimDecl {
                 id: D_SQUARED_ZERO.into(),
                 statement: spec.statement.into(),
@@ -565,18 +593,33 @@ impl DeRham {
         if pkg.id != "de-rham" {
             return Err(format!("de-rham package id '{}' is not de-rham", pkg.id));
         }
-        if pkg.equations.len() != 1 {
-            return Err(format!(
-                "de-rham package must have one coboundary equation, got {}",
-                pkg.equations.len()
-            ));
+        let (sign_flip, down_laplacian) = parse_derham_encoding(pkg)?;
+        Ok(Self {
+            sign_flip,
+            down_laplacian,
+            ..Self::default()
+        })
+    }
+}
+
+fn parse_derham_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
+    let live = discrete_d2().canonical();
+    let flipped = parse_expr(&DeRham::flipped_coboundary_eq())
+        .map_err(|e| format!("de-rham flipped coboundary: {e}"))?
+        .canonical();
+    let mut coboundary: Option<bool> = None;
+    let mut down_laplacian = false;
+    for eq in &pkg.equations {
+        let t = eq.trim();
+        if t == LAPLACIAN_DOWN {
+            if down_laplacian {
+                return Err(format!("{} package repeats laplacian down", pkg.id));
+            }
+            down_laplacian = true;
+            continue;
         }
-        let tree = parse_expr(&pkg.equations[0])
+        let tree = parse_expr(t)
             .map_err(|e| format!("de-rham coboundary equation: {e}"))?
-            .canonical();
-        let live = discrete_d2().canonical();
-        let flipped = parse_expr(&Self::flipped_coboundary_eq())
-            .map_err(|e| format!("de-rham flipped coboundary: {e}"))?
             .canonical();
         let sign_flip = if tree == live {
             false
@@ -584,15 +627,17 @@ impl DeRham {
             true
         } else {
             return Err(format!(
-                "de-rham equation is not the coboundary identity or its first-minus flip: {}",
-                pkg.equations[0]
+                "de-rham equation is not the coboundary identity, its first-minus flip, or laplacian down: {t}"
             ));
         };
-        Ok(Self {
-            sign_flip,
-            ..Self::default()
-        })
+        if coboundary.is_some() {
+            return Err(format!("{} package has two coboundary equations", pkg.id));
+        }
+        coboundary = Some(sign_flip);
     }
+    let sign_flip =
+        coboundary.ok_or_else(|| format!("{} package has no coboundary identity", pkg.id))?;
+    Ok((sign_flip, down_laplacian))
 }
 
 /// `dec.d-squared-zero`.
@@ -613,7 +658,7 @@ const SHAPE_OPTIONS: &[&str] = &["disk", "circle", "torus", "klein", "sphere"];
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "shape",
     layer: LayerId::Mathematical,
-    doc: "The simplicial complex to evaluate on: disk (b₁=0, b₂=0), circle (b₁=1), torus (b₁=2, b₂=1), klein (Klein bottle, b₁=1, b₂=0), or sphere (S², b₁=0, b₂=1, χ=2). Changing it changes the topology.",
+        doc: "The simplicial complex to evaluate on: disk (b₁=0, b₂=0), circle (b₁=1), torus (b₁=2, b₂=1), klein (Klein bottle, b₁=1, b₂=0), or sphere (S², b₁=0, b₂=1, χ=2). Changing it changes the topology. The coboundary identity is not this knob: add-sign-flip is an IR mutation. The Hodge Laplacian is not this knob: add-down-laplacian is an IR mutation.",
     origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Choice(SHAPE_OPTIONS),
 }];
@@ -661,10 +706,12 @@ impl Theory for DeRham {
     fn summary(&self) -> &'static str {
         "Discrete exterior calculus on a simplicial complex. d²=0 is an exact \
          identity of the coboundary encoding on the IR package; flipping the \
-         first minus is an IR mutation, not the shape knob. Betti numbers, \
-         computed from incidence ranks, count holes and voids; Poincaré \
-         (closed = exact) and the fundamental class (b₂ = 1) detect topology \
-         — flipped by the `shape` knob."
+         first minus is an IR mutation, not the shape knob. Assembling Δ₁ from \
+         the gradient term only is a second IR mutation: Hodge fails on a \
+         filled disk while d² still holds. Betti numbers, computed from \
+         incidence ranks, count holes and voids; Poincaré (closed = exact) \
+         and the fundamental class (b₂ = 1) detect topology — flipped by the \
+         `shape` knob."
     }
     fn world(&self) -> Option<World> {
         None // pure mathematics: no spacetime/gauge/spectrum projection
@@ -843,7 +890,11 @@ impl Theory for DeRham {
                 }
             }
             HODGE_HARMONIC => {
-                let harmonic = c.harmonic1_dim();
+                let harmonic = if self.down_laplacian {
+                    c.harmonic1_dim_down()
+                } else {
+                    c.harmonic1_dim()
+                };
                 let b1 = c.betti1();
                 if harmonic == b1 {
                     Verdict::holds(
@@ -856,6 +907,10 @@ impl Theory for DeRham {
                         "nullity of Δ₁ = d₀d₀ᵀ + d₁ᵀd₁ is {harmonic}, matching b₁ = {b1}"
                     )])
                     .with_cross_checked()
+                } else if self.down_laplacian {
+                    Verdict::fails(claim, "down Laplacian: dim ker Δ⁻ is not b₁").with_evidence([
+                        format!("dim ker d₀d₀ᵀ = {harmonic} vs b₁ = {b1}; curl term d₁ᵀd₁ dropped"),
+                    ])
                 } else {
                     Verdict::fails(claim, format!("harmonic 1-forms dim {harmonic} ≠ b₁ {b1}"))
                 }
@@ -903,25 +958,39 @@ impl Theory for DeRham {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.sign_flip = parsed.sign_flip;
+        fork.down_laplacian = parsed.down_laplacian;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.sign_flip {
-            return Vec::new();
-        }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(&pkg, &PackageMutation::FlipFirstMinus);
-        if let Ok(parsed) = Self::from_package(&mutated) {
-            if parsed.sign_flip {
-                let mut fork = self.clone();
-                fork.sign_flip = true;
-                return vec![("add-sign-flip".into(), Box::new(fork))];
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.sign_flip {
+            let mutated = apply_mutation(&pkg, &PackageMutation::FlipFirstMinus);
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.sign_flip {
+                    let mut fork = self.clone();
+                    fork.sign_flip = true;
+                    out.push(("add-sign-flip".into(), Box::new(fork)));
+                }
             }
         }
-        Vec::new()
+        if !self.down_laplacian {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::down_laplacian_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.down_laplacian {
+                    let mut fork = self.clone();
+                    fork.down_laplacian = true;
+                    out.push(("add-down-laplacian".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -1386,6 +1455,12 @@ mod tests {
             "live de-rham must offer add-sign-flip: {:?}",
             probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
         );
+        assert!(
+            probes
+                .iter()
+                .any(|(label, _)| label == "add-down-laplacian"),
+            "live de-rham must also offer add-down-laplacian"
+        );
         let probe = probes
             .iter()
             .find(|(label, _)| label == "add-sign-flip")
@@ -1397,6 +1472,12 @@ mod tests {
                 .iter()
                 .all(|(label, _)| label != "add-sign-flip"),
             "sign-flip fork must not re-offer add-sign-flip"
+        );
+        assert!(
+            fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-down-laplacian"),
+            "sign-flip fork must still offer add-down-laplacian"
         );
         let live = DeRham::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
@@ -1438,6 +1519,222 @@ mod tests {
                 .iter()
                 .all(|(label, _)| label != "add-sign-flip"),
             "planck must not grow add-sign-flip"
+        );
+    }
+
+    #[test]
+    fn down_laplacian_is_ir_not_a_knob() {
+        let t = DeRham::default();
+        assert!(!t.down_laplacian);
+        assert!(!t.sign_flip);
+        assert_eq!(kind(&t, HODGE_HARMONIC), VerdictKind::Holds);
+        assert_eq!(kind(&t, D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&t, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
+        let live_hash = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == D_SQUARED_ZERO)
+            .unwrap()
+            .statement_hash();
+        assert_eq!(
+            live_hash,
+            lookup(D_SQUARED_ZERO).unwrap().lab_claim().statement_hash(),
+            "IR must not change the catalog FormalClaim identity"
+        );
+
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay the coboundary identity"
+        );
+        assert_eq!(pkg.equations[0], COBOUNDARY_EQ);
+        assert_eq!(DeRham::from_package(&pkg).unwrap(), t);
+        assert!(
+            DeRham::default()
+                .set("down_laplacian", physis_core::knob::KnobValue::Bool(true))
+                .is_err(),
+            "down_laplacian must not be a knob"
+        );
+        assert!(t
+            .clone()
+            .set("laplacian", physis_core::knob::KnobValue::Bool(true))
+            .is_err());
+        assert!(
+            t.clone()
+                .set(
+                    "add-down-laplacian",
+                    physis_core::knob::KnobValue::Bool(true)
+                )
+                .is_err(),
+            "add-down-laplacian is not a knob"
+        );
+
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(DeRham::down_laplacian_equation()),
+        );
+        let parsed = DeRham::from_package(&mutated).unwrap();
+        assert!(parsed.down_laplacian);
+        assert!(
+            !parsed.sign_flip,
+            "down Laplacian mutation must not install the coboundary sign flip"
+        );
+        let mut fork = t.clone();
+        fork.down_laplacian = true;
+        assert_eq!(fork.id(), "de-rham");
+        assert_eq!(kind(&fork, HODGE_HARMONIC), VerdictKind::Fails);
+        assert_eq!(kind(&fork, D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&fork, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
+        assert_eq!(kind(&fork, FIRST_BETTI), VerdictKind::Holds);
+        assert_eq!(kind(&fork, EULER_POINCARE), VerdictKind::Holds);
+        assert_eq!(
+            kind(&t, HODGE_HARMONIC),
+            VerdictKind::Holds,
+            "live Hodge still uses the full Laplacian"
+        );
+        assert_eq!(
+            derivation(&fork, HODGE_HARMONIC),
+            DerivationAssurance::Executed
+        );
+        assert_ne!(
+            derivation(&fork, HODGE_HARMONIC),
+            DerivationAssurance::CertifiedNumeric
+        );
+        assert_eq!(
+            derivation(&t, HODGE_HARMONIC),
+            DerivationAssurance::CrossChecked
+        );
+        let disk = Complex::disk();
+        assert_eq!(disk.harmonic1_dim(), 0);
+        assert_eq!(disk.harmonic1_dim_down(), 1);
+        assert_eq!(disk.betti1(), 0);
+        let cell = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == HODGE_HARMONIC)
+            .unwrap();
+        let v = fork.evaluate(&cell);
+        assert!(
+            !v.summary.contains("shape")
+                && !v.summary.contains("Poincaré")
+                && !v.summary.contains("theory "),
+            "down Laplacian is not the shape knob: {}",
+            v.summary
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("dim ker d₀d₀ᵀ = 1 vs b₁ = 0") && e.contains("curl term")),
+            "got {:?}",
+            v.evidence
+        );
+
+        let mut circled = fork.clone();
+        circled
+            .set("shape", KnobValue::Choice("circle".into()))
+            .unwrap();
+        assert_eq!(kind(&circled, CLOSED_EQUALS_EXACT), VerdictKind::Fails);
+        assert_eq!(
+            kind(&circled, HODGE_HARMONIC),
+            VerdictKind::Holds,
+            "circle has no faces: live Hodge is already down-only, so this is not a unit flag"
+        );
+        assert_eq!(kind(&circled, D_SQUARED_ZERO), VerdictKind::Holds);
+        let circle = Complex::circle();
+        assert_eq!(circle.harmonic1_dim(), 1);
+        assert_eq!(circle.harmonic1_dim_down(), 1);
+        assert_eq!(circle.betti1(), 1);
+
+        let probes = DeRham::default().structural_mutations();
+        assert!(
+            probes
+                .iter()
+                .any(|(label, _)| label == "add-down-laplacian"),
+            "live de-rham must offer add-down-laplacian: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-sign-flip"),
+            "live de-rham must still offer add-sign-flip"
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-down-laplacian")
+            .expect("add-down-laplacian");
+        assert_eq!(kind(probe.1.as_ref(), HODGE_HARMONIC), VerdictKind::Fails);
+        assert_eq!(kind(probe.1.as_ref(), D_SQUARED_ZERO), VerdictKind::Holds);
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-down-laplacian"),
+            "down-Laplacian fork must not re-offer add-down-laplacian"
+        );
+        assert!(
+            fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-sign-flip"),
+            "down-Laplacian fork must still offer add-sign-flip"
+        );
+        let live = DeRham::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed_live = parse_package(&canonical).unwrap();
+        let mut disk_shape = DeRham::default();
+        disk_shape
+            .set("shape", KnobValue::Choice("circle".into()))
+            .unwrap();
+        let rebuilt = disk_shape.reparse_package(&parsed_live).unwrap();
+        assert_eq!(
+            rebuilt.get("shape").unwrap().display(),
+            "circle",
+            "reparse must overlay down-Laplacian IR onto live knobs"
+        );
+        assert_eq!(
+            kind(rebuilt.as_ref(), HODGE_HARMONIC),
+            VerdictKind::Holds,
+            "shape still Holds Hodge on the live full Laplacian"
+        );
+        assert_eq!(
+            kind(rebuilt.as_ref(), CLOSED_EQUALS_EXACT),
+            VerdictKind::Fails
+        );
+        let live_rebuilt = live.reparse_package(&parsed_live).unwrap();
+        assert_eq!(
+            kind(live_rebuilt.as_ref(), HODGE_HARMONIC),
+            VerdictKind::Holds
+        );
+        let d2 = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == D_SQUARED_ZERO)
+            .unwrap();
+        assert!(
+            !d2.domain().is_encoding_wide(),
+            "catalog d² must keep the coboundary domain: {:?}",
+            d2.domain()
+        );
+        assert!(
+            crate::computation::TuringMachine::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-down-laplacian"),
+            "turing-machine must not grow add-down-laplacian"
+        );
+        assert!(
+            crate::blackbody::Blackbody::planck()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-down-laplacian"),
+            "planck must not grow add-down-laplacian"
+        );
+        assert!(
+            crate::em::MaxwellVacuum::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-down-laplacian"),
+            "maxwell-vacuum must not grow add-down-laplacian"
         );
     }
 }

@@ -32,6 +32,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **De Rham down Laplacian is an IR mutation**
+  (`de-rham`, `add-down-laplacian`). The catalog coboundary
+  identity is still the live encoding; appending `laplacian down`
+  assembles Δ₁ from `d₀d₀ᵀ` only and on the disk flips
+  `dec.hodge-harmonic` holds to fails. The residual is
+  `dim ker d₀d₀ᵀ = 1` vs `b₁ = 0`, not a unit flag and not the
+  `shape` knob. The coboundary sign remains a separate IR fork
+  (`add-sign-flip`) that flips `dec.d-squared-zero` while Hodge
+  still holds. On the circle overlay, Hodge still holds (no faces,
+  live Hodge is already down-only). `shape` stays a knob and still
+  flips Poincaré. Mutants stay `de-rham`; they are not a silent
+  Maxwell install. Mutants are not installed, not journaled, and
+  not Canonical or P4. Catalog d² hash unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4. Verified: IR round-trip;
+  set down_laplacian is unknown; hypothesize de-rham; live
+  coboundary restored; encode pin
+  `187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6`.
+
 - **GR Brans-Dicke scalar-tensor is an IR mutation**
   (`general-relativity`, `add-brans-dicke`). Einstein-Hilbert is still
   the live encoding (`action einstein-hilbert`); appending

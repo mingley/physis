@@ -28,7 +28,7 @@ computes topology: the first Betti number counts holes, and whether every closed
 
 | knob | effect |
 |---|---|
-| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`, `b₂ = 0`), `circle` (`b₁ = 1`), `torus` (`b₁ = 2`, `b₂ = 1`), `klein` (Klein bottle: `b₁ = 1`, `b₂ = 0`), or `sphere` (`S²`: `b₁ = 0`, `b₂ = 1`, `χ = 2`). Changing it changes the topology and flips `dec.closed-equals-exact` and/or `dec.fundamental-class`. The coboundary identity is not this knob: `add-sign-flip` is an IR mutation. |
+| `shape` | the complex to evaluate on: `disk` (`b₁ = 0`, `b₂ = 0`), `circle` (`b₁ = 1`), `torus` (`b₁ = 2`, `b₂ = 1`), `klein` (Klein bottle: `b₁ = 1`, `b₂ = 0`), or `sphere` (`S²`: `b₁ = 0`, `b₂ = 1`, `χ = 2`). Changing it changes the topology and flips `dec.closed-equals-exact` and/or `dec.fundamental-class`. The coboundary identity is not this knob: `add-sign-flip` is an IR mutation. The Hodge Laplacian is not this knob: `add-down-laplacian` is an IR mutation. |
 
 ## Claims (all computed theorems)
 
@@ -38,7 +38,7 @@ computes topology: the first Betti number counts holes, and whether every closed
 | `dec.first-betti-number` | the number of holes `b₁` | `b₁ = n_edges − rank(d₁) − rank(d₀)`, ranks by Gaussian elimination |
 | `dec.closed-equals-exact` | every closed 1-form is exact (Poincaré) | holds iff `b₁ = 0` |
 | `dec.euler-poincare` | `V−E+F = b₀−b₁+b₂` | rank-cancellation of these Betti formulas, not a second path. Domain stays encoding-wide |
-| `dec.hodge-harmonic` | `dim(harmonic 1-forms) = b₁` (discrete Hodge) | nullity of the combinatorial Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁`, checked against `b₁`. Domain: finite simplicial 1-cochains, not the smooth Hodge theorem |
+| `dec.hodge-harmonic` | `dim(harmonic 1-forms) = b₁` (discrete Hodge) | nullity of the combinatorial Hodge Laplacian `Δ₁ = d₀d₀ᵀ + d₁ᵀd₁`, checked against `b₁`. `add-down-laplacian` fails this cell on the disk (`dim ker d₀d₀ᵀ ≠ b₁`) while d² and Poincaré stay Holds. Domain: finite simplicial 1-cochains, not the smooth Hodge theorem |
 | `dec.fundamental-class` | `b₂ = 1` over ℝ | computed `b₂`; holds for the torus and the 2-sphere, fails for the disk, circle, and Klein bottle |
 
 `dec.closed-equals-exact` declares a live lemma edge to `dec.d-squared-zero`
@@ -78,7 +78,7 @@ physis run de-rham                # disk: b₁ = 0, closed = exact (Poincaré ho
 physis set de-rham shape circle   # circle: b₁ = 1, closed ≠ exact
 physis set de-rham shape torus    # torus: b₁ = 2, χ = 0, harmonic dim 2
 physis set de-rham shape sphere   # S²: b₁ = 0, b₂ = 1, χ = 2; Poincaré still holds
-physis hypothesize de-rham        # add-sign-flip is IR, not set
+physis hypothesize de-rham        # add-sign-flip and add-down-laplacian are IR, not set
 physis encode de-rham             # coboundary identity; not P3S, not a kernel proof
 ```
 
@@ -106,7 +106,10 @@ Topology is detected mechanically, by linear algebra on the coboundary.
   1-cochains), not the smooth Hodge theorem on a Riemannian manifold.
   Agreement overlays `DerivationAssurance::CrossChecked` (P2),
   not a Lean receipt, not P3N, and not P4. Forgetting the up or down term of
-  `Δ₁` disagrees with `b₁`. A mismatch `fails` and does not mint P2.
+  `Δ₁` disagrees with `b₁`. `add-down-laplacian` is that package mutation:
+  on a filled disk `dim ker d₀d₀ᵀ = 1 ≠ b₁ = 0`, so Hodge fails while d²
+  still holds. On a circle (no faces) live Hodge is already down-only, so
+  Hodge still Holds — not a unit flag. A mismatch `fails` and does not mint P2.
 
 Poincaré (`dec.closed-equals-exact`) stays a single `b₁ = 0` check
 (`executed`); it is not this overlay.
