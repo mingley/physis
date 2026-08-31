@@ -339,6 +339,15 @@ pub fn electron_magnetic_moment_anomaly() -> Qty<Dimensionless> {
     Qty::new(1.159_652_181_28e-3)
 }
 
+/// Electron g-factor g_e, CODATA 2018.
+///
+/// This is the recommended signed centre −2(1 + a_e), not the anomaly
+/// and not the signed Bohr-magneton ratio. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre.
+pub fn electron_g_factor() -> Qty<Dimensionless> {
+    Qty::new(-2.002_319_304_362_56)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -1084,8 +1093,8 @@ mod tests {
             "ledger mu_e stays an Interval; the Qty is not that Interval"
         );
         assert!(
-            physis_constants::lookup("ge").is_none(),
-            "electron g-factor is not stored"
+            physis_constants::lookup("g_e").is_none(),
+            "g_e is not a ledger name; the live name is ge"
         );
         assert!(
             physis_constants::lookup("mue_muB").is_none(),
@@ -1143,6 +1152,21 @@ mod tests {
         assert_ne!(
             ae.value.lo, ae.value.hi,
             "ledger ae stays an Interval; the Qty is not that Interval"
+        );
+        let ge = physis_constants::electron_g_factor();
+        let ge_centre = Ratio::new(-200_231_930_436_256, 10i128.pow(14));
+        assert_eq!(
+            electron_g_factor().value(),
+            ge_centre.to_f64(),
+            "ge Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            ge.value.contains(Interval::point(ge_centre)),
+            "ge Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            ge.value.lo, ge.value.hi,
+            "ledger ge stays an Interval; the Qty is not that Interval"
         );
 
         let mp = physis_constants::proton_mass();
