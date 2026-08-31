@@ -5,7 +5,10 @@
 //! [`physis_numeric::SciExact`] `662607015e-42` J s: the reduced
 //! denominator does not fit in `i128`, so it is not a Ratio. `ħ` is not
 //! a terminating decimal. CODATA 2018 Newtonian `G` is a one-sigma
-//! [`Interval`], not an exact Ratio. The IAU 2012 astronomical unit is
+//! [`Interval`], not an exact Ratio. CODATA 2018 fine-structure `α` is
+//! a one-sigma [`Interval`] `7.2973525693(11)×10^{-3}` (JPCRD table
+//! XXXI, ATOMIC AND NUCLEAR): a measured hull, not an SI defining
+//! Ratio. Inverse-α is not stored. The IAU 2012 astronomical unit is
 //! an exact [`Ratio`] `149597870700` m (BIPM table 8). The parsec is
 //! `(648000/π) au` and is not a Ratio. IAU 2015 `(GM)_☉^N` is an exact
 //! [`Ratio`] `1.3271244×10^20` m³ s⁻² (AJ 152, 41 table 1): a
@@ -173,7 +176,7 @@ pub fn planck_h() -> Constant<SciExact> {
     )
 }
 
-fn codata_2018_g_source() -> SourceRecord {
+fn codata_2018_jpcrd(section: &str, range: &str) -> SourceRecord {
     SourceRecord::new(
         Citation {
             work: "CODATA recommended values of the fundamental physical constants: 2018".into(),
@@ -182,17 +185,25 @@ fn codata_2018_g_source() -> SourceRecord {
         "2018",
         SourceLocator {
             page: None,
-            section: Some("UNIVERSAL".into()),
+            section: Some(section.into()),
             equation: None,
             figure: None,
             table: Some("XXXI".into()),
-            dataset_range: Some("G = 6.67430(15)e-11".into()),
+            dataset_range: Some(range.into()),
             experiment: None,
         },
         ArtifactId::of(b"codata-2018-jpcrd-50-033105"),
         None,
     )
-    .expect("CODATA 2018 G locator names a table and range")
+    .expect("CODATA 2018 JPCRD locator names a table and range")
+}
+
+fn codata_2018_g_source() -> SourceRecord {
+    codata_2018_jpcrd("UNIVERSAL", "G = 6.67430(15)e-11")
+}
+
+fn codata_2018_alpha_source() -> SourceRecord {
+    codata_2018_jpcrd("ATOMIC AND NUCLEAR", "alpha = 7.2973525693(11)e-3")
 }
 
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
@@ -213,6 +224,29 @@ pub fn newtonian_g() -> Constant<Interval> {
         codata_2018_g_interval(),
         "m^3 kg^{-1} s^{-2}",
         codata_2018_g_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 7.2973525693(11)×10⁻³.
+fn codata_2018_alpha_interval() -> Interval {
+    let scale = 10i128.pow(13);
+    let mu = 72_973_525_693;
+    let sigma = 11;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Fine-structure constant α, CODATA 2018 one-sigma enclosure.
+///
+/// This is the zero-momentum recommended hull, not an SI defining
+/// Ratio, not inverse-α, and not P3N. Running with energy is M4.
+/// Theories still use `physis_model` `f64` Qty.
+pub fn fine_structure_constant() -> Constant<Interval> {
+    Constant::new(
+        "alpha",
+        codata_2018_alpha_interval(),
+        "1",
+        codata_2018_alpha_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -372,6 +406,7 @@ pub const LEDGER: &[&str] = &[
     "K_cd",
     "h",
     "G",
+    "alpha",
     "au",
     "eV",
     "GM_sun",
@@ -405,6 +440,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "K_cd" => Some(listing(luminous_efficacy(), "ratio")),
         "h" => Some(listing(planck_h(), "sci-exact")),
         "G" => Some(listing(newtonian_g(), "interval")),
+        "alpha" => Some(listing(fine_structure_constant(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -534,6 +570,7 @@ mod tests {
         assert_eq!(g.unit, "m^3 kg^{-1} s^{-2}");
         assert_eq!(g.release, ConstantRelease::Si2019Codata2018);
         assert_eq!(g.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(g.provenance.locator.section.as_deref(), Some("UNIVERSAL"));
         assert_eq!(
             g.provenance.locator.dataset_range.as_deref(),
             Some("G = 6.67430(15)e-11")
@@ -562,6 +599,67 @@ mod tests {
             "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92"
         );
         assert!(g.provenance.recheck().is_ok());
+    }
+
+    #[test]
+    fn codata_2018_alpha_is_a_one_sigma_interval() {
+        let alpha = fine_structure_constant();
+        let scale = 10i128.pow(13);
+        let lo = Ratio::new(72_973_525_682, scale);
+        let hi = Ratio::new(72_973_525_704, scale);
+        let centre = Ratio::new(72_973_525_693, scale);
+        assert_eq!(alpha.name, "alpha");
+        assert_eq!(alpha.unit, "1");
+        assert_eq!(alpha.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(alpha.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            alpha.provenance.locator.section.as_deref(),
+            Some("ATOMIC AND NUCLEAR")
+        );
+        assert_eq!(
+            alpha.provenance.locator.dataset_range.as_deref(),
+            Some("alpha = 7.2973525693(11)e-3")
+        );
+        assert_eq!(alpha.value, Interval::new(lo, hi));
+        assert_ne!(
+            alpha.value.lo, alpha.value.hi,
+            "alpha is measured, not SI-exact"
+        );
+        assert!(alpha.value.contains(Interval::point(centre)));
+        assert!(!alpha
+            .value
+            .contains(Interval::point(Ratio::new(72_973_000_000, scale))));
+        assert_eq!(alpha.hash, fine_structure_constant().hash);
+        assert_eq!(
+            alpha.hash,
+            Constant::new(
+                "alpha",
+                codata_2018_alpha_interval(),
+                "1",
+                codata_2018_alpha_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(alpha.hash, newtonian_g().hash, "alpha is not G");
+        assert_ne!(alpha.hash, speed_of_light().hash);
+        assert_ne!(
+            alpha.provenance.source_hash,
+            newtonian_g().provenance.source_hash,
+            "alpha range is not the G range"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when alpha is added"
+        );
+        assert_eq!(
+            alpha.hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38"
+        );
+        assert!(alpha.provenance.recheck().is_ok());
+        assert!(lookup("alpha-inv").is_none());
+        assert!(lookup("fine-structure").is_none());
     }
 
     #[test]
@@ -766,7 +864,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 13);
+        assert_eq!(LEDGER.len(), 14);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -786,6 +884,11 @@ mod tests {
             "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92"
         );
         assert_eq!(lookup("G").unwrap().kind, "interval");
+        assert_eq!(lookup("alpha").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("alpha").unwrap().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -813,6 +916,8 @@ mod tests {
             "444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4"
         );
         assert!(lookup("hbar").is_none());
+        assert!(lookup("alpha-inv").is_none());
+        assert!(lookup("fine-structure").is_none());
         assert!(lookup("solar-gm").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());
     }

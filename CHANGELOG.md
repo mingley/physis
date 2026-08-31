@@ -12,6 +12,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 fine-structure constant is a one-sigma Interval.**
+  `physis-constants` versions `alpha` as the CODATA 2018 hull
+  `7.2973525693(11)×10^{-3}` from JPCRD 50, 033105 table XXXI
+  (ATOMIC AND NUCLEAR). That is a measured hull, not an SI defining
+  Ratio, not inverse-α, and not P3N. `physis_model`
+  `fine_structure_constant()` Qty locksteps to the recommended centre
+  inside the hull. Adding `alpha` to LEDGER changes the ledger bundle
+  pin. The `G` hash is unchanged. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `alpha` hash
+  `cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38`;
+  node
+  `b2b54749bb1e674d72e0b1c7ffa688dbd1cabb8a8a481db3f94bfeba9735f073`;
+  ledger node
+  `fad9707080f60d4a4f4d1bf8fbf6060f0d58bc4999aea57af21b9e531fec337a`.
+  `G` hash and node unchanged.
+
 - **SI 2019 electronvolt is an exact Ratio.**
   `physis-constants` versions `eV` as `1.602176634×10^{-19}` J from BIPM
   Brochure 9th ed. table 8. Same SI 2019 decimal as `e`, unit joule not

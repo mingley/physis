@@ -130,7 +130,8 @@ pub fn electron_volt() -> Qty<Energy> {
 /// Fine-structure constant α ≈ 1/137.035999 (dimensionless), CODATA 2018.
 ///
 /// A coupling is a first-class dimensioned quantity here, not a bare float.
-/// Its value is M2 scope; running it with energy is M4.
+/// Its value is M2 scope; running it with energy is M4. The versioned
+/// ledger stores the one-sigma hull; this Qty is the recommended centre.
 pub fn fine_structure_constant() -> Qty<Dimensionless> {
     Qty::new(7.297_352_569_3e-3)
 }
@@ -387,9 +388,29 @@ mod tests {
             g.value.lo, g.value.hi,
             "ledger G stays an Interval; the Qty is not that Interval"
         );
+
+        let alpha = physis_constants::fine_structure_constant();
+        let alpha_centre = Ratio::new(72_973_525_693, 10i128.pow(13));
+        assert_eq!(
+            fine_structure_constant().value(),
+            alpha_centre.to_f64(),
+            "alpha Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            alpha.value.contains(Interval::point(alpha_centre)),
+            "alpha Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            alpha.value.lo, alpha.value.hi,
+            "ledger alpha stays an Interval; the Qty is not that Interval"
+        );
         assert!(
             physis_constants::lookup("hbar").is_none(),
             "ħ is not a terminating decimal and is not a ledger entry"
+        );
+        assert!(
+            physis_constants::lookup("alpha-inv").is_none(),
+            "inverse-alpha is a different recommended value and is not stored"
         );
 
         let au = physis_constants::astronomical_unit();
