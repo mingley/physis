@@ -290,6 +290,18 @@ pub fn compton_wavelength() -> Qty<Length> {
     meters(2.426_310_238_670_000_2e-12)
 }
 
+/// Classical electron radius r_e (m), CODATA 2018.
+///
+/// This is the recommended centre, not a certificate of `α² a₀` and not
+/// the Thomson cross section. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre.
+pub fn classical_electron_radius() -> Qty<Length> {
+    // IEEE value of the reduced centre Ratio 28179403262/10^25, not extra
+    // CODATA digits. The decimal literal 2.817_940_3262e-15 is one ulp
+    // above Ratio::to_f64.
+    meters(2.817_940_326_199_999_6e-15)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -993,8 +1005,27 @@ mod tests {
             "ledger lambda_C stays an Interval; the Qty is not that Interval"
         );
         assert!(
-            physis_constants::lookup("re").is_none(),
-            "classical radius is a different recommended value and is not stored"
+            physis_constants::lookup("r_e").is_none(),
+            "r_e is not a ledger name; the live name is re"
+        );
+        let re = physis_constants::classical_electron_radius();
+        let re_centre = Ratio::new(28_179_403_262, 10i128.pow(25));
+        assert_eq!(
+            classical_electron_radius().value(),
+            re_centre.to_f64(),
+            "re Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            re.value.contains(Interval::point(re_centre)),
+            "re Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            re.value.lo, re.value.hi,
+            "ledger re stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("sigma_e").is_none(),
+            "Thomson cross section is not a Ratio because it contains pi"
         );
 
         let mp = physis_constants::proton_mass();

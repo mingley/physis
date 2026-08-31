@@ -64,8 +64,12 @@
 //! not an SI defining Ratio, and not a certificate of `α a₀`. CODATA 2018
 //! Compton wavelength `λ_C` is a one-sigma [`Interval`]
 //! `2.42631023867(73)×10^{-12}` m from the same section: a measured hull,
-//! not an SI defining Ratio, and not a certificate of `2π ƛ_C`. The
-//! quantum of circulation is not stored: `π` means it is not a Ratio.
+//! not an SI defining Ratio, and not a certificate of `2π ƛ_C`. CODATA 2018
+//! classical electron radius `r_e` is a one-sigma [`Interval`]
+//! `2.8179403262(13)×10^{-15}` m from the same section: a measured hull,
+//! not an SI defining Ratio, and not a certificate of `α² a₀`. The Thomson
+//! cross section and the quantum of circulation are not stored: `π` means
+//! they are not a Ratio.
 //! CODATA 2018 proton mass `m_p` is a
 //! one-sigma [`Interval`] `1.67262192369(51)×10^{-27}` kg (JPCRD table
 //! XXXI, Proton, p): a measured hull, not an SI defining Ratio.
@@ -345,6 +349,10 @@ fn codata_2018_reduced_compton_source() -> SourceRecord {
 
 fn codata_2018_compton_source() -> SourceRecord {
     codata_2018_jpcrd("Electron, e-", "lambda_C = 2.42631023867(73)e-12")
+}
+
+fn codata_2018_classical_radius_source() -> SourceRecord {
+    codata_2018_jpcrd("Electron, e-", "re = 2.8179403262(13)e-15")
 }
 
 fn codata_2018_proton_mass_source() -> SourceRecord {
@@ -874,6 +882,29 @@ pub fn compton_wavelength() -> Constant<Interval> {
     )
 }
 
+/// CODATA 2018 one-sigma hull of 2.8179403262(13)×10⁻¹⁵ m.
+fn codata_2018_classical_radius_interval() -> Interval {
+    let scale = 10i128.pow(25);
+    let mu = 28_179_403_262;
+    let sigma = 13;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Classical electron radius r_e, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in metres, not an SI defining Ratio,
+/// not a certificate that `r_e = α² a₀`, not the Thomson cross section,
+/// and not P3N. Theories still use `physis_model` `f64` Qty.
+pub fn classical_electron_radius() -> Constant<Interval> {
+    Constant::new(
+        "re",
+        codata_2018_classical_radius_interval(),
+        "m",
+        codata_2018_classical_radius_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 /// CODATA 2018 one-sigma hull of 1.67262192369(51)×10⁻²⁷ kg.
 fn codata_2018_proton_mass_interval() -> Interval {
     let scale = 10i128.pow(38);
@@ -1073,6 +1104,7 @@ pub const LEDGER: &[&str] = &[
     "M_e",
     "lambdabar_C",
     "lambda_C",
+    "re",
     "m_p",
     "au",
     "eV",
@@ -1128,6 +1160,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "M_e" => Some(listing(electron_molar_mass(), "interval")),
         "lambdabar_C" => Some(listing(reduced_compton_wavelength(), "interval")),
         "lambda_C" => Some(listing(compton_wavelength(), "interval")),
+        "re" => Some(listing(classical_electron_radius(), "interval")),
         "m_p" => Some(listing(proton_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
@@ -2297,7 +2330,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_mu").is_none());
         assert!(lookup("m_e/m_mu").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -2422,7 +2455,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_p").is_none());
         assert!(lookup("m_e/m_p").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -2555,7 +2588,7 @@ mod tests {
         );
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_n").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -2698,7 +2731,7 @@ mod tests {
         );
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_d").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -2851,7 +2884,7 @@ mod tests {
         );
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_t").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -3014,7 +3047,7 @@ mod tests {
         );
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_h").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -3190,7 +3223,7 @@ mod tests {
         );
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_a").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -3355,7 +3388,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("-e/me").is_none());
         assert!(lookup("e/me").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -3515,7 +3548,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("Me").is_none());
         assert!(lookup("molar_e").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -3682,7 +3715,7 @@ mod tests {
             "0ed48571f065fc19458ea3c8fd493fd00de18a7d196669f81bb93c50779bc625"
         );
         assert!(r.provenance.recheck().is_ok());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("lambdaC").is_none());
         assert!(lookup("rc").is_none());
         assert!(lookup("m_e").is_none());
@@ -3854,8 +3887,184 @@ mod tests {
         );
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("lambdaC").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("rc").is_none());
+        assert!(lookup("m_e").is_none());
+    }
+
+    #[test]
+    fn codata_2018_classical_electron_radius_is_a_one_sigma_interval() {
+        let r = classical_electron_radius();
+        let scale = 10i128.pow(25);
+        let lo = Ratio::new(28_179_403_249, scale);
+        let hi = Ratio::new(28_179_403_275, scale);
+        let centre = Ratio::new(28_179_403_262, scale);
+        assert_eq!(r.name, "re");
+        assert_eq!(r.unit, "m");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("Electron, e-")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("re = 2.8179403262(13)e-15")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "re is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r
+            .value
+            .contains(Interval::point(Ratio::new(28_000_000_000, scale))));
+        assert_eq!(r.hash, classical_electron_radius().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "re",
+                codata_2018_classical_radius_interval(),
+                "m",
+                codata_2018_classical_radius_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, compton_wavelength().hash, "re is not lambda_C");
+        assert_ne!(
+            r.hash,
+            reduced_compton_wavelength().hash,
+            "re is not lambdabar_C"
+        );
+        assert_ne!(r.hash, bohr_radius().hash, "re is not a0");
+        assert_ne!(r.hash, proton_mass().hash, "re is not m_p");
+        assert_ne!(
+            r.provenance.source_hash,
+            compton_wavelength().provenance.source_hash,
+            "re range is not the lambda_C range"
+        );
+        assert_eq!(
+            compton_wavelength().hash.to_hex(),
+            "6280f2b2f61adf3ae0fa3e65f3b12cfb4982f6601027d98552f541246198c3d8",
+            "lambda_C hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            reduced_compton_wavelength().hash.to_hex(),
+            "0ed48571f065fc19458ea3c8fd493fd00de18a7d196669f81bb93c50779bc625",
+            "lambdabar_C hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_molar_mass().hash.to_hex(),
+            "0a8b3285a4969854567b59db2ebf9449268df86ffdbb461e3b9c1db0955eb804",
+            "M_e hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_charge_to_mass().hash.to_hex(),
+            "bfe24e8de43e90dbc8a28472f99ed206f07566fa1a4fa6c6d14356adf4e89b22",
+            "e_me hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_alpha_mass_ratio().hash.to_hex(),
+            "3407529f38a47a2cf983c5418482d3d9bab5243e08258bbe88c06a2f42e0baa3",
+            "me_malpha hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_helion_mass_ratio().hash.to_hex(),
+            "0fb8f5fde9e76fcf2c24d73267f36cd3a5b40ca9f27f24e47d9807ec4206055e",
+            "me_mh hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_triton_mass_ratio().hash.to_hex(),
+            "2f8187d744269836cf0fbc123f8cb7d60107215e65be109daf2ae67c8116afd1",
+            "me_mt hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_deuteron_mass_ratio().hash.to_hex(),
+            "2aa5fe69f8cdd03f44e77b006a3b6ea90d48e1b8aec71275e184c4e529f0f76c",
+            "me_md hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_neutron_mass_ratio().hash.to_hex(),
+            "e271d2015c7b39491daebf2a1d532ebe4c4dacf8228b3f7fc4d258be7b79ecba",
+            "me_mn hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_proton_mass_ratio().hash.to_hex(),
+            "b573fa37eb0080e54bc71e3bf41170421c2bae2911609e1d11ffc129448a2e7b",
+            "me_mp hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            electron_muon_mass_ratio().hash.to_hex(),
+            "d57979e61fa03bae0a3b0dc5e2cff20df53cdcb76b772cf6ea2589e77c9c3cb2",
+            "me_mmu hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            hartree_energy().hash.to_hex(),
+            "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a",
+            "Eh hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            rydberg_energy_equivalent().hash.to_hex(),
+            "0d0308e874e54cb3d02570c972232b0d26c2d1d64b493880a1bb7ce4ff7827b2",
+            "hcRinf hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            rydberg_frequency().hash.to_hex(),
+            "c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969",
+            "cRinf hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            rydberg_constant().hash.to_hex(),
+            "fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090",
+            "Rinf hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            bohr_radius().hash.to_hex(),
+            "5d5098fcd983d3db221e4b4047e73de5061985c31a91ccdf12cd122b620eaf29",
+            "a0 hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            inverse_fine_structure_constant().hash.to_hex(),
+            "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482",
+            "inv_alpha hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            vacuum_impedance().hash.to_hex(),
+            "6f72c1c5833dc722ac6fb5223f982879499ff412157c6e6c9851d77088991316",
+            "Z0 hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            vacuum_permittivity().hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80",
+            "epsilon0 hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when re is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "1b8dfc7aa2f90183fd50dab61cf3361f57c3c906e6a221ffa3b2ef17302a38d4"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("r_e").is_none());
+        assert!(lookup("rc").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
     }
 
@@ -4131,7 +4340,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 35);
+        assert_eq!(LEDGER.len(), 36);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -4256,6 +4465,11 @@ mod tests {
             lookup("lambda_C").unwrap().hash.to_hex(),
             "6280f2b2f61adf3ae0fa3e65f3b12cfb4982f6601027d98552f541246198c3d8"
         );
+        assert_eq!(lookup("re").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("re").unwrap().hash.to_hex(),
+            "1b8dfc7aa2f90183fd50dab61cf3361f57c3c906e6a221ffa3b2ef17302a38d4"
+        );
         assert_eq!(lookup("m_p").unwrap().kind, "interval");
         assert_eq!(
             lookup("m_p").unwrap().hash.to_hex(),
@@ -4290,7 +4504,7 @@ mod tests {
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_none());
         assert!(lookup("me/m_mu").is_none());
-        assert!(lookup("re").is_none());
+        assert!(lookup("sigma_e").is_none());
         assert!(lookup("Y0").is_none());
         assert!(lookup("Z_0").is_none());
         assert!(lookup("epsilon_0").is_none());
