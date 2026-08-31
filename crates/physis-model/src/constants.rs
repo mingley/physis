@@ -122,7 +122,7 @@ pub fn planck_time() -> Qty<Time> {
     seconds(5.391_247e-44)
 }
 
-/// Electron-volt in joules, as energy.
+/// Electron-volt in joules, as energy (SI 2019 exact, BIPM table 8).
 pub fn electron_volt() -> Qty<Energy> {
     Qty::new(1.602_176_634e-19)
 }
@@ -454,6 +454,25 @@ mod tests {
             solar_luminosity().value(),
             3.828e26,
             "IAU 2015 L_sun^N is the exact conversion ruler"
+        );
+
+        let ev = physis_constants::electron_volt();
+        assert_eq!(
+            ev.value,
+            Ratio::new(1_602_176_634, 10i128.pow(28)),
+            "ledger eV is the SI 2019 fraction"
+        );
+        assert_eq!(ev.value, physis_constants::elementary_charge().value);
+        assert_eq!(SciExact::new(1_602_176_634, -28).to_ratio(), Some(ev.value));
+        assert_eq!(
+            electron_volt().value(),
+            SciExact::new(1_602_176_634, -28).to_f64(),
+            "eV Qty is the IEEE rounding of the SI decimal, not Ratio::to_f64 of the reduced fraction"
+        );
+        assert_eq!(
+            electron_volt().value(),
+            e_charge().value(),
+            "1 eV is e * 1 V numerically"
         );
     }
 }

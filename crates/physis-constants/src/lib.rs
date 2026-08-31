@@ -13,7 +13,9 @@
 //! exact [`Ratio`] `695700000` m from the same table: also a conversion
 //! ruler, not a measured photospheric radius. IAU 2015 `L_☉^N` is an
 //! exact [`Ratio`] `3.828×10^26` W from the same table: a conversion
-//! ruler, not a measured solar luminosity. Theories still use
+//! ruler, not a measured solar luminosity. The electronvolt is an exact
+//! [`Ratio`] `1.602176634×10^{-19}` J (BIPM table 8), the same SI 2019
+//! decimal as `e` with unit joule, not coulomb. Theories still use
 //! `physis_model` `f64` Qty constants. This crate does not mint a kernel
 //! proof. Overlapping `physis_model` Qty floats are lockstepped in
 //! `physis-model` tests; theories still evaluate with those Qty.
@@ -215,7 +217,7 @@ pub fn newtonian_g() -> Constant<Interval> {
     )
 }
 
-fn si_brochure_table_8() -> SourceRecord {
+fn si_brochure_table_8(range: &str) -> SourceRecord {
     SourceRecord::new(
         Citation {
             work: "BIPM SI Brochure".into(),
@@ -228,7 +230,7 @@ fn si_brochure_table_8() -> SourceRecord {
             equation: None,
             figure: None,
             table: Some("8".into()),
-            dataset_range: Some("1 au = 149 597 870 700 m".into()),
+            dataset_range: Some(range.into()),
             experiment: None,
         },
         ArtifactId::of(b"si-brochure-9"),
@@ -247,7 +249,22 @@ pub fn astronomical_unit() -> Constant<Ratio> {
         "au",
         Ratio::int(149_597_870_700),
         "m",
-        si_brochure_table_8(),
+        si_brochure_table_8("1 au = 149 597 870 700 m"),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Electronvolt, exact, SI 2019 / BIPM table 8.
+///
+/// `1 eV = 1.602176634×10^{-19} J` exactly, from the SI defining charge.
+/// Same Ratio as [`elementary_charge`], different unit and locator.
+/// Theories still evaluate with the `physis_model` Qty.
+pub fn electron_volt() -> Constant<Ratio> {
+    Constant::new(
+        "eV",
+        Ratio::new(1_602_176_634, 10i128.pow(28)),
+        "J",
+        si_brochure_table_8("1 eV = 1.602176634e-19 J"),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -356,6 +373,7 @@ pub const LEDGER: &[&str] = &[
     "h",
     "G",
     "au",
+    "eV",
     "GM_sun",
     "R_sun",
     "L_sun",
@@ -388,6 +406,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "h" => Some(listing(planck_h(), "sci-exact")),
         "G" => Some(listing(newtonian_g(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
+        "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
         "R_sun" => Some(listing(solar_radius(), "ratio")),
         "L_sun" => Some(listing(solar_luminosity(), "ratio")),
@@ -568,7 +587,7 @@ mod tests {
                 "au",
                 Ratio::int(149_597_870_700),
                 "m",
-                si_brochure_table_8(),
+                si_brochure_table_8("1 au = 149 597 870 700 m"),
                 ConstantRelease::Si2019Codata2018,
             )
             .hash
@@ -586,6 +605,46 @@ mod tests {
             si_brochure().source_hash,
             "table 8 is not table 1"
         );
+    }
+
+    #[test]
+    fn si2019_electronvolt_is_an_exact_ratio() {
+        let ev = electron_volt();
+        let value = Ratio::new(1_602_176_634, 10i128.pow(28));
+        assert_eq!(ev.name, "eV");
+        assert_eq!(ev.unit, "J");
+        assert_eq!(ev.value, value);
+        assert_eq!(ev.value, elementary_charge().value);
+        assert_eq!(ev.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(ev.provenance.locator.table.as_deref(), Some("8"));
+        assert_eq!(
+            ev.provenance.locator.dataset_range.as_deref(),
+            Some("1 eV = 1.602176634e-19 J")
+        );
+        assert_eq!(ev.hash, electron_volt().hash);
+        assert_eq!(
+            ev.hash,
+            Constant::new(
+                "eV",
+                value,
+                "J",
+                si_brochure_table_8("1 eV = 1.602176634e-19 J"),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(ev.hash, elementary_charge().hash, "eV is not e");
+        assert_ne!(ev.hash, astronomical_unit().hash);
+        assert_ne!(
+            ev.provenance.source_hash,
+            astronomical_unit().provenance.source_hash,
+            "eV range is not the au range"
+        );
+        assert_eq!(
+            ev.hash.to_hex(),
+            "d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f"
+        );
+        assert!(ev.provenance.recheck().is_ok());
     }
 
     #[test]
@@ -707,7 +766,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 12);
+        assert_eq!(LEDGER.len(), 13);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -732,6 +791,11 @@ mod tests {
         assert_eq!(
             lookup("au").unwrap().hash.to_hex(),
             "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b"
+        );
+        assert_eq!(lookup("eV").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("eV").unwrap().hash.to_hex(),
+            "d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f"
         );
         assert_eq!(lookup("GM_sun").unwrap().kind, "ratio");
         assert_eq!(

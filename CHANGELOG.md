@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **SI 2019 electronvolt is an exact Ratio.**
+  `physis-constants` versions `eV` as `1.602176634×10^{-19}` J from BIPM
+  Brochure 9th ed. table 8. Same SI 2019 decimal as `e`, unit joule not
+  coulomb. Qty locksteps via IEEE rounding of the SI decimal, not
+  `Ratio::to_f64` of the reduced fraction. Adding `eV` to LEDGER
+  changes the ledger bundle pin. The `au` hash is unchanged. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `eV` hash
+  `d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f`;
+  node
+  `94271807b581af8f9842b3022f06dd8282ec141b9d2a5519d33885d76335e66f`;
+  ledger node
+  `56663fe60a0706f1bc17046451b4aeca4c6443810be420d8a75c0f6bae474034`.
+  `au` hash and node unchanged.
+
 - **IAU 2015 nominal solar luminosity is an exact Ratio.**
   `physis-constants` versions `L_sun` as `3.828×10^26` W from Prša et
   al., Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a
