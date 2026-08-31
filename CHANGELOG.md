@@ -22,6 +22,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 vacuum permittivity is a one-sigma Interval.**
+  `physis-constants` versions `epsilon0` as the CODATA 2018 hull
+  `8.8541878128(13)×10^{-12}` F m⁻¹ from JPCRD 50, 033105 table XXXI
+  (UNIVERSAL). After SI 2019 this is the derived hull `1/(μ₀ c²)`, not
+  an SI defining Ratio, not `Z₀`, and not P3N. `physis_model`
+  `epsilon0()` Qty locksteps to the recommended centre inside the hull.
+  Adding `epsilon0` to LEDGER changes the ledger bundle pin. The `G`,
+  `mu0`, `alpha`, and `m_p` hashes are unchanged. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: `epsilon0` hash
+  `fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80`;
+  node
+  `0b2262eee35047174ebb10962a4aaf06481a8e18e9b44a3873a129f91873a8b7`;
+  ledger node
+  `6e6fbf4591060aee4df351393fdc5fd5050537371de589268d4dece3e65ff31b`.
+  `G`, `mu0`, `alpha`, and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 vacuum permeability is a one-sigma Interval.**
   `physis-constants` versions `mu0` as the CODATA 2018 hull
   `1.25663706212(19)×10^{-6}` N A⁻² from JPCRD 50, 033105 table XXXI

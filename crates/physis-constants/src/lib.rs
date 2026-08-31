@@ -8,7 +8,10 @@
 //! [`Interval`], not an exact Ratio. CODATA 2018 vacuum permeability
 //! `μ₀` is a one-sigma [`Interval`] `1.25663706212(19)×10^{-6}` N A⁻²
 //! (JPCRD table XXXI, UNIVERSAL): measured after SI 2019, not an
-//! exact Ratio. `ε₀` is not stored. CODATA 2018 fine-structure `α` is
+//! exact Ratio. CODATA 2018 vacuum permittivity `ε₀` is a one-sigma
+//! [`Interval`] `8.8541878128(13)×10^{-12}` F m⁻¹ (JPCRD table XXXI,
+//! UNIVERSAL): `1/(μ₀ c²)` after SI 2019, not an exact Ratio. `Z₀` is
+//! not stored. CODATA 2018 fine-structure `α` is
 //! a one-sigma [`Interval`] `7.2973525693(11)×10^{-3}` (JPCRD table
 //! XXXI, ATOMIC AND NUCLEAR): a measured hull, not an SI defining
 //! Ratio. Inverse-α is not stored. CODATA 2018 proton mass `m_p` is a
@@ -212,6 +215,10 @@ fn codata_2018_mu0_source() -> SourceRecord {
     codata_2018_jpcrd("UNIVERSAL", "mu0 = 1.25663706212(19)e-6")
 }
 
+fn codata_2018_epsilon0_source() -> SourceRecord {
+    codata_2018_jpcrd("UNIVERSAL", "epsilon0 = 8.8541878128(13)e-12")
+}
+
 fn codata_2018_alpha_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "alpha = 7.2973525693(11)e-3")
 }
@@ -253,7 +260,7 @@ fn codata_2018_mu0_interval() -> Interval {
 /// Vacuum magnetic permeability μ₀, CODATA 2018 one-sigma enclosure.
 ///
 /// After SI 2019 this is a measured hull, not an exact `4π×10^{-7}`
-/// Ratio and not P3N. `ε₀ = 1/(μ₀ c²)` is not stored. Theories still
+/// Ratio and not P3N. `Z₀ = μ₀ c` is not stored. Theories still
 /// use `physis_model` `f64` Qty.
 pub fn vacuum_permeability() -> Constant<Interval> {
     Constant::new(
@@ -261,6 +268,29 @@ pub fn vacuum_permeability() -> Constant<Interval> {
         codata_2018_mu0_interval(),
         "N A^{-2}",
         codata_2018_mu0_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 8.8541878128(13)×10⁻¹² F m⁻¹.
+fn codata_2018_epsilon0_interval() -> Interval {
+    let scale = 10i128.pow(22);
+    let mu = 88_541_878_128;
+    let sigma = 13;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Vacuum electric permittivity ε₀, CODATA 2018 one-sigma enclosure.
+///
+/// After SI 2019 this is the derived hull `1/(μ₀ c²)`, not an SI
+/// defining Ratio and not P3N. `Z₀` is not stored. Theories still
+/// use `physis_model` `f64` Qty.
+pub fn vacuum_permittivity() -> Constant<Interval> {
+    Constant::new(
+        "epsilon0",
+        codata_2018_epsilon0_interval(),
+        "F m^{-1}",
+        codata_2018_epsilon0_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -467,6 +497,7 @@ pub const LEDGER: &[&str] = &[
     "h",
     "G",
     "mu0",
+    "epsilon0",
     "alpha",
     "m_p",
     "au",
@@ -503,6 +534,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "h" => Some(listing(planck_h(), "sci-exact")),
         "G" => Some(listing(newtonian_g(), "interval")),
         "mu0" => Some(listing(vacuum_permeability(), "interval")),
+        "epsilon0" => Some(listing(vacuum_permittivity(), "interval")),
         "alpha" => Some(listing(fine_structure_constant(), "interval")),
         "m_p" => Some(listing(proton_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
@@ -727,9 +759,89 @@ mod tests {
             "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7"
         );
         assert!(mu0.provenance.recheck().is_ok());
-        assert!(lookup("epsilon0").is_none());
+        assert!(lookup("Z0").is_none());
         assert!(lookup("mu_0").is_none());
         assert!(lookup("vacuum-permeability").is_none());
+    }
+
+    #[test]
+    fn codata_2018_epsilon0_is_a_one_sigma_interval() {
+        let eps = vacuum_permittivity();
+        let scale = 10i128.pow(22);
+        let lo = Ratio::new(88_541_878_115, scale);
+        let hi = Ratio::new(88_541_878_141, scale);
+        let centre = Ratio::new(88_541_878_128, scale);
+        assert_eq!(eps.name, "epsilon0");
+        assert_eq!(eps.unit, "F m^{-1}");
+        assert_eq!(eps.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(eps.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(eps.provenance.locator.section.as_deref(), Some("UNIVERSAL"));
+        assert_eq!(
+            eps.provenance.locator.dataset_range.as_deref(),
+            Some("epsilon0 = 8.8541878128(13)e-12")
+        );
+        assert_eq!(eps.value, Interval::new(lo, hi));
+        assert_ne!(
+            eps.value.lo, eps.value.hi,
+            "epsilon0 is measured, not SI-exact"
+        );
+        assert!(eps.value.contains(Interval::point(centre)));
+        assert!(!eps
+            .value
+            .contains(Interval::point(Ratio::new(88_541_000_000, scale))));
+        assert_eq!(eps.hash, vacuum_permittivity().hash);
+        assert_eq!(
+            eps.hash,
+            Constant::new(
+                "epsilon0",
+                codata_2018_epsilon0_interval(),
+                "F m^{-1}",
+                codata_2018_epsilon0_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(eps.hash, vacuum_permeability().hash, "epsilon0 is not mu0");
+        assert_ne!(eps.hash, newtonian_g().hash, "epsilon0 is not G");
+        assert_ne!(
+            eps.hash,
+            fine_structure_constant().hash,
+            "epsilon0 is not alpha"
+        );
+        assert_ne!(
+            eps.provenance.source_hash,
+            vacuum_permeability().provenance.source_hash,
+            "epsilon0 range is not the mu0 range"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when epsilon0 is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when epsilon0 is added"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when epsilon0 is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when epsilon0 is added"
+        );
+        assert_eq!(
+            eps.hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80"
+        );
+        assert!(eps.provenance.recheck().is_ok());
+        assert!(lookup("Z0").is_none());
+        assert!(lookup("Z_0").is_none());
+        assert!(lookup("epsilon_0").is_none());
+        assert!(lookup("eps0").is_none());
     }
 
     #[test]
@@ -1065,7 +1177,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 16);
+        assert_eq!(LEDGER.len(), 17);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -1089,6 +1201,11 @@ mod tests {
         assert_eq!(
             lookup("mu0").unwrap().hash.to_hex(),
             "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7"
+        );
+        assert_eq!(lookup("epsilon0").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("epsilon0").unwrap().hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80"
         );
         assert_eq!(lookup("alpha").unwrap().kind, "interval");
         assert_eq!(
@@ -1128,7 +1245,10 @@ mod tests {
         );
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_none());
-        assert!(lookup("epsilon0").is_none());
+        assert!(lookup("Z0").is_none());
+        assert!(lookup("Z_0").is_none());
+        assert!(lookup("epsilon_0").is_none());
+        assert!(lookup("eps0").is_none());
         assert!(lookup("mu_0").is_none());
         assert!(lookup("alpha-inv").is_none());
         assert!(lookup("fine-structure").is_none());

@@ -192,6 +192,10 @@ pub fn planck_energy_density(temperature: Qty<physis_core::Temperature>) -> Qty<
 }
 
 /// Vacuum permittivity ε₀ (F/m), CODATA. Units: A²·s⁴·kg⁻¹·m⁻³.
+///
+/// After SI 2019 this is the derived value `1/(μ₀ c²)`, not exact.
+/// The versioned ledger stores the one-sigma hull; this Qty is the
+/// recommended centre. `Z₀` is not a ledger entry.
 pub fn epsilon0() -> Qty<physis_core::SI<typenum::N1, typenum::N3, typenum::P4, typenum::P2>> {
     Qty::new(8.854_187_812_8e-12)
 }
@@ -200,7 +204,7 @@ pub fn epsilon0() -> Qty<physis_core::SI<typenum::N1, typenum::N3, typenum::P4, 
 ///
 /// After SI 2019 this is a measured value, not exact `4π×10^{-7}`.
 /// The versioned ledger stores the one-sigma hull; this Qty is the
-/// recommended centre. `ε₀` is not a ledger entry.
+/// recommended centre.
 pub fn mu0() -> Qty<physis_core::SI<typenum::P1, typenum::P1, typenum::N2, typenum::N2>> {
     Qty::new(1.256_637_062_12e-6)
 }
@@ -412,12 +416,32 @@ mod tests {
             "ledger mu0 stays an Interval; the Qty is not that Interval"
         );
         assert!(
-            physis_constants::lookup("epsilon0").is_none(),
-            "epsilon0 is a different recommended value and is not stored"
-        );
-        assert!(
             physis_constants::lookup("mu_0").is_none(),
             "mu_0 is not a ledger name; the live name is mu0"
+        );
+
+        let eps = physis_constants::vacuum_permittivity();
+        let eps_centre = Ratio::new(88_541_878_128, 10i128.pow(22));
+        assert_eq!(
+            epsilon0().value(),
+            eps_centre.to_f64(),
+            "epsilon0 Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            eps.value.contains(Interval::point(eps_centre)),
+            "epsilon0 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            eps.value.lo, eps.value.hi,
+            "ledger epsilon0 stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("Z0").is_none(),
+            "Z0 is a different recommended value and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("epsilon_0").is_none(),
+            "epsilon_0 is not a ledger name; the live name is epsilon0"
         );
 
         let alpha = physis_constants::fine_structure_constant();
