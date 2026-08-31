@@ -22,6 +22,39 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 muon magnetic-moment anomaly is a one-sigma Interval.**
+  `physis-constants` versions `amu` as the CODATA 2018 hull
+  `1.16592089(63)×10^{-3}` from JPCRD 50, 033105 table XXXI
+  (Muon, mu-). This is not electron anomaly `ae`, not the muon
+  g-factor, not muon Bohr-magneton ratio `mu_mu_muB`, not muon
+  magnetic moment `mu_mu`, not muon nuclear-magneton ratio
+  `mu_mu_muN`, not an SI defining Ratio, not the Thomson cross
+  section, and not P3N. Reduced muon Compton remains unstored (`ħ`).
+  Electron mass is still not stored (`10^{42}` overflows `i128`).
+  `physis_model` `muon_magnetic_moment_anomaly()` Qty locksteps to
+  the recommended centre inside the hull. Adding `amu` to LEDGER
+  changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`,
+  `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, and `m_p` hashes are unchanged.
+  Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `amu` hash `972c93982e6cd84f054db85605b9e7d106d124bd52bac104bb447d788cdc64c4`; node
+  `8eeb79c20e0bd0766d4afb682a885a006a867378e21dced5d1b485c9a52b06ad`; ledger node `044a027898acd4fbe72cfb6f012d248e24f95be834da6c9f5598cabc268a52c1`. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`,
+  `lambda_C_mu`, `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, and `m_p` hashes
+  and nodes unchanged.
+
 - **CODATA 2018 muon magnetic moment to nuclear magneton ratio is a
   one-sigma Interval.**
   `physis-constants` versions `mu_mu_muN` as the CODATA 2018 hull

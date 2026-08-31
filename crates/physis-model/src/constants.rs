@@ -169,6 +169,15 @@ pub fn muon_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(-8.890_597_03)
 }
 
+/// Muon magnetic-moment anomaly a_μ, CODATA 2018.
+///
+/// This is the recommended centre, not electron anomaly and not the
+/// signed Bohr-magneton ratio. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn muon_magnetic_moment_anomaly() -> Qty<Dimensionless> {
+    Qty::new(1.165_920_89e-3)
+}
+
 /// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
 /// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
@@ -1988,6 +1997,60 @@ mod tests {
             physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
             physis_constants::proton_mass().hash,
             "mu_mu_muN is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("a_mu").is_none(),
+            "a_mu is not a ledger name; the live name is amu"
+        );
+        let amu = physis_constants::muon_magnetic_moment_anomaly();
+        let amu_centre = Ratio::new(116_592_089, 10i128.pow(11));
+        assert_eq!(
+            muon_magnetic_moment_anomaly().value(),
+            amu_centre.to_f64(),
+            "amu Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            amu.value.contains(Interval::point(amu_centre)),
+            "amu Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            amu.value.lo, amu.value.hi,
+            "ledger amu stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            physis_constants::electron_magnetic_moment_anomaly().hash,
+            "amu is not ae"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            physis_constants::electron_g_factor().hash,
+            "amu is not ge"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            physis_constants::muon_magnetic_moment_to_bohr_magneton().hash,
+            "amu is not mu_mu_muB"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
+            "amu is not mu_mu_muN"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            physis_constants::muon_magnetic_moment().hash,
+            "amu is not mu_mu"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            physis_constants::vacuum_permeability().hash,
+            "amu is not mu0"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            physis_constants::proton_mass().hash,
+            "amu is not m_p"
         );
 
         let mp = physis_constants::proton_mass();
