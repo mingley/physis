@@ -79,7 +79,7 @@ physis set de-rham shape circle   # circle: b₁ = 1, closed ≠ exact
 physis set de-rham shape torus    # torus: b₁ = 2, χ = 0, harmonic dim 2
 physis set de-rham shape sphere   # S²: b₁ = 0, b₂ = 1, χ = 2; Poincaré still holds
 physis hypothesize de-rham        # add-sign-flip and add-down-laplacian are IR, not set
-physis encode de-rham             # coboundary identity; not P3S, not a kernel proof
+physis encode de-rham             # coboundary identity tree; not P3S, not a kernel proof
 ```
 
 Changing the `shape` changes the topology. The first Betti number, computed from

@@ -10,6 +10,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Encoding
+
+- **Live encode binds `lean_ref` to the catalog identity tree.**
+  `physis encode` still stores the package hash of the canonical IR
+  bytes. A live package with `lean_ref` must parse an equation whose
+  canonical tree is the catalog identity named by that type. Token
+  packages (Lorentz boost, Planck–Bose, Einstein–Hilbert, …) have no
+  `lean_ref` and skip. A catalog type without the tree, or a Physlib
+  pointer that is not a catalog type, fails closed. That is not a
+  kernel proof, not P3S, not Canonical, not P4. Encode pins unchanged.
+  Verified: de-rham prints `catalog identity tree  ok`;
+  special-relativity and planck do not; pin
+  `187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6`.
+
 ### Validated numerics
 
 - **GQW mixing-angle enclosure is sourced PDG input σ.**

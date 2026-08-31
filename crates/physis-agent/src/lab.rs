@@ -13,7 +13,7 @@ use physis_core::judgment::{
 use physis_core::knob::{KnobDomain, KnobValue};
 use physis_core::AxiomLedger;
 use physis_numeric::Ratio;
-use physis_proof::{lookup_matching, Challenge, UntrustedProof, CATALOG};
+use physis_proof::{catalog_tree_binding, lookup_matching, Challenge, UntrustedProof, CATALOG};
 use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
 use physis_theory::blackbody::Blackbody;
@@ -1348,8 +1348,9 @@ impl Lab {
     }
 
     /// Independently parse, round-trip, and reconstruct a live theory
-    /// IR package. Does not raise P3S, does not install mutants, and
-    /// does not mint a kernel receipt, Canonical, or P4.
+    /// IR package. A `lean_ref` must bind the catalog identity tree;
+    /// token packages skip. Does not raise P3S, does not install
+    /// mutants, and does not mint a kernel receipt, Canonical, or P4.
     fn encode_theory(&mut self, theory_id: &str) -> Response {
         match self.build_encoding(theory_id) {
             Ok((out, id)) => {
@@ -1410,6 +1411,8 @@ impl Lab {
                 "encode {theory_id}: reconstructed package does not match the live package"
             ));
         }
+        let catalog_tree = catalog_tree_binding(parsed.lean_ref.as_deref(), &parsed.equations)
+            .map_err(|e| format!("encode {theory_id}: {e}"))?;
         let node = self.store.insert(Node::new(
             NodeKind::EncodingPackage,
             vec![],
@@ -1421,6 +1424,9 @@ impl Lab {
         text.push_str(&format!("  claims     {}\n", parsed.claims.len()));
         text.push_str("  round-trip canonical\n");
         text.push_str("  reconstruct  ok\n");
+        if catalog_tree.is_some() {
+            text.push_str("  catalog identity tree  ok\n");
+        }
         text.push_str("  not P3S; not a kernel proof; not P4; not Canonical\n");
         Ok((text, node))
     }
@@ -10935,6 +10941,10 @@ mod tests {
         assert!(sr.contains("round-trip canonical"), "{sr}");
         assert!(sr.contains("not P3S"), "{sr}");
         assert!(!sr.contains("receipt"), "{sr}");
+        assert!(
+            !sr.contains("catalog identity tree"),
+            "token Lorentz boost must skip the catalog tree: {sr}"
+        );
         let sr_id = encoding_package_id(&sr);
         assert_eq!(
             sr_id.to_hex(),
@@ -10953,6 +10963,10 @@ mod tests {
         assert!(planck.contains("round-trip canonical"), "{planck}");
         assert!(planck.contains("not P3S"), "{planck}");
         assert!(!planck.contains("receipt"), "{planck}");
+        assert!(
+            !planck.contains("catalog identity tree"),
+            "token Planck-Bose must skip the catalog tree: {planck}"
+        );
         let planck_id = encoding_package_id(&planck);
         assert_eq!(
             planck_id.to_hex(),
@@ -10969,6 +10983,7 @@ mod tests {
             .to_string();
         assert!(derham.contains("equations  1"), "{derham}");
         assert!(derham.contains("round-trip canonical"), "{derham}");
+        assert!(derham.contains("catalog identity tree  ok"), "{derham}");
         assert!(derham.contains("not P3S"), "{derham}");
         assert!(!derham.contains("receipt"), "{derham}");
         let derham_id = encoding_package_id(&derham);

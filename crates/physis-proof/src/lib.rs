@@ -21,7 +21,7 @@ pub mod parse;
 pub mod physlib;
 
 pub use artifact::{scan_lean_source, ScanReport, UntrustedProof};
-pub use catalog::{lookup, lookup_matching, IdentitySpec, CATALOG};
+pub use catalog::{catalog_tree_binding, lookup, lookup_matching, IdentitySpec, CATALOG};
 pub use challenge::Challenge;
 pub use expand::{identity_is_zero, Poly};
 pub use expr::Expr;

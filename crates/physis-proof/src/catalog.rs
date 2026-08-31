@@ -12,6 +12,7 @@ use physis_core::id::LayerId;
 use physis_core::{AxiomId, AxiomLedger};
 
 use crate::expr::{add, mul, pow, sub, Expr};
+use crate::parse::parse_expr;
 
 /// Catalog row: the FormalClaim identity this polynomial / Lean type is
 /// about, plus the trusted obligation. A matching slug with different
@@ -274,6 +275,37 @@ pub fn lookup_matching(claim: &FormalClaim) -> Option<&'static IdentitySpec> {
     CATALOG.iter().find(|s| s.matches(claim))
 }
 
+/// Bind a live IR `lean_ref` to a catalog identity tree.
+///
+/// Token packages omit `lean_ref` and skip (`Ok(None)`). A catalog Lean
+/// type must appear as an equation whose canonical tree is that row's
+/// identity. Extra unparsed token equations are ignored when one equation
+/// matches. A Physlib pointer that is not a catalog type, or a catalog
+/// type without the tree, fails closed. This is not a kernel proof.
+pub fn catalog_tree_binding(
+    lean_ref: Option<&str>,
+    equations: &[impl AsRef<str>],
+) -> Result<Option<&'static IdentitySpec>, String> {
+    let Some(lean_ref) = lean_ref else {
+        return Ok(None);
+    };
+    let spec = CATALOG
+        .iter()
+        .find(|s| s.lean_type == lean_ref)
+        .ok_or_else(|| "lean_ref is not a catalog identity type".to_string())?;
+    let catalog = (spec.identity)().canonical();
+    let matched = equations.iter().any(|eq| {
+        parse_expr(eq.as_ref())
+            .ok()
+            .is_some_and(|e| e.canonical() == catalog)
+    });
+    if matched {
+        Ok(Some(spec))
+    } else {
+        Err("lean_ref names a catalog identity whose tree is not in the equations".into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,5 +394,71 @@ mod tests {
                 spec.claim_id
             );
         }
+    }
+
+    #[test]
+    fn catalog_tree_binds_coboundary() {
+        let spec = lookup("dec.d-squared-zero").unwrap();
+        let bound = catalog_tree_binding(Some(spec.lean_type), &["(b - a) - (c - a) + (c - b)"])
+            .unwrap()
+            .expect("coboundary tree must bind");
+        assert_eq!(bound.claim_id, spec.claim_id);
+        let with_token = catalog_tree_binding(
+            Some(spec.lean_type),
+            &["(b - a) - (c - a) + (c - b)", "laplacian down"],
+        )
+        .unwrap()
+        .expect("token equations must not block a matching tree");
+        assert_eq!(with_token.claim_id, spec.claim_id);
+    }
+
+    #[test]
+    fn catalog_tree_skips_missing_lean_ref() {
+        assert!(catalog_tree_binding(None, &["(b - a) - (c - a) + (c - b)"])
+            .unwrap()
+            .is_none());
+        assert!(catalog_tree_binding(None, &["boost lorentz"])
+            .unwrap()
+            .is_none());
+    }
+
+    #[test]
+    fn catalog_lean_ref_without_tree_is_closed() {
+        let spec = lookup("dec.d-squared-zero").unwrap();
+        let vacuous = catalog_tree_binding(Some(spec.lean_type), &["0"]).unwrap_err();
+        assert!(
+            vacuous.contains("catalog identity whose tree is not in the equations"),
+            "{vacuous}"
+        );
+        assert!(!vacuous.contains("receipt"), "{vacuous}");
+        let flipped = catalog_tree_binding(Some(spec.lean_type), &["(b + a) - (c - a) + (c - b)"])
+            .unwrap_err();
+        assert!(
+            flipped.contains("catalog identity whose tree is not in the equations"),
+            "{flipped}"
+        );
+        let interval = lookup("sr.invariant-interval").unwrap();
+        let wrong_tree =
+            catalog_tree_binding(Some(interval.lean_type), &["(b - a) - (c - a) + (c - b)"])
+                .unwrap_err();
+        assert!(
+            wrong_tree.contains("catalog identity whose tree is not in the equations"),
+            "{wrong_tree}"
+        );
+    }
+
+    #[test]
+    fn unknown_lean_ref_is_closed() {
+        let err = catalog_tree_binding(
+            Some("Physlib.Exterior.d_squared"),
+            &["(b - a) - (c - a) + (c - b)"],
+        )
+        .unwrap_err();
+        assert!(
+            err.contains("lean_ref is not a catalog identity type"),
+            "{err}"
+        );
+        assert!(!err.contains("receipt"), "{err}");
+        assert!(!err.contains("theorem"), "{err}");
     }
 }
