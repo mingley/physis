@@ -22,6 +22,40 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 proton-muon mass ratio is a one-sigma Interval.**
+  `physis-constants` versions `mp_mmu` as the CODATA 2018 hull
+  `8.88024337(20)` from JPCRD 50, 033105 table XXXI (Proton, p).
+  This is not the muon-proton ratio `mmu_mp`, not a certificate that
+  the stored centres invert, not proton-electron `mp_me`, not an SI
+  defining Ratio, not the Thomson cross section, and not P3N. The
+  proton-tau ratio is a PDG reprint (footnote e) and is not stored.
+  Reduced proton Compton remains unstored (`ħ`). Electron mass is still
+  not stored (`10^{42}` overflows `i128`). `physis_model`
+  `proton_muon_mass_ratio()` Qty locksteps to the recommended
+  centre inside the hull. Adding `mp_mmu` to LEDGER changes the ledger
+  bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`,
+  `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`,
+  `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`,
+  `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`,
+  `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`,
+  `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`,
+  `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`,
+  `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`,
+  `m_p_c2`, `m_p_c2_MeV`, and `mp_me` hashes are unchanged. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `mp_mmu` hash `f94b9bc09239d4e20d3f7e4b9f07f39cc5f820c334fe269635d2f80c0dd88bc3`; node
+  `25ce5aab6c87db67ab59a27319ed6dc0e5958ade65afad70a977c9fa43049634`; ledger node `c1f098de34b6262323f9febd878f3cf5c5ff1db3c2db9722e51583873a2ae774`. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`,
+  `lambda_C_mu`, `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`,
+  `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, and `mp_me`
+  hashes and nodes unchanged.
+
 - **CODATA 2018 proton-electron mass ratio is a one-sigma Interval.**
   `physis-constants` versions `mp_me` as the CODATA 2018 hull
   `1836.15267343(11)` from JPCRD 50, 033105 table XXXI (Proton, p).
