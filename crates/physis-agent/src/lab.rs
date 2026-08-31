@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  1495a6849044b17c1a4eb72cd5b73b53ca66891a3fae30e26226c219c1bc6791"),
+            text.contains("constant  ledger  6965348c0aadf4196452389d29af9ebd19f8db028e1355903dc48319b9376703"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -12717,6 +12717,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let mp_me = lab
+            .exec(Command::Constant {
+                name: Some("mp_me".into()),
+            })
+            .text()
+            .to_string();
+        assert!(mp_me.contains("constant  mp_me  node "), "{mp_me}");
+        assert!(
+            mp_me.contains(
+                "hash     8b8047d3ebeca5e157da8e85248892e5731d87114960e63335d74a49631f27b6"
+            ),
+            "{mp_me}"
+        );
+        assert!(mp_me.contains("kind     interval"), "{mp_me}");
+        assert!(mp_me.contains("table    XXXI"), "{mp_me}");
+        assert!(
+            mp_me.contains("range    mp/me = 1836.15267343(11)"),
+            "{mp_me}"
+        );
+        assert!(mp_me.contains("unit     1"), "{mp_me}");
+        assert!(
+            mp_me.contains("value    [45903816833/25000000, 91807633677/50000000]"),
+            "{mp_me}"
+        );
+        assert!(mp_me.contains("rebuild  ok"), "{mp_me}");
+        assert!(mp_me.contains("not P3N"), "{mp_me}");
+        assert!(!mp_me.contains("receipt"), "{mp_me}");
+        assert!(!mp_me.contains("theorem"), "{mp_me}");
+        let mp_me_id = constant_node_id(&mp_me);
+        assert_eq!(
+            mp_me_id.to_hex(),
+            "b26d54036d2d6b10bf50cda5ef46746fba7a7a0edeb71569428e895ee0a81dc0",
+            "journaling must not change the mp_me constant payload"
+        );
+        assert_eq!(
+            lab.store.get(mp_me_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -13918,6 +13957,50 @@ mod tests {
             unknown_m_p_hyphen_c2_mev.text()
         );
 
+        let unknown_m_p_me = lab.exec(Command::Constant {
+            name: Some("m_p_me".into()),
+        });
+        assert_eq!(unknown_m_p_me.exit_code(), 1, "{}", unknown_m_p_me.text());
+        assert!(
+            unknown_m_p_me.text().contains("unknown constant 'm_p_me'"),
+            "{}",
+            unknown_m_p_me.text()
+        );
+
+        let unknown_mp_slash_me = lab.exec(Command::Constant {
+            name: Some("mp/me".into()),
+        });
+        assert_eq!(
+            unknown_mp_slash_me.exit_code(),
+            1,
+            "{}",
+            unknown_mp_slash_me.text()
+        );
+        assert!(
+            unknown_mp_slash_me
+                .text()
+                .contains("unknown constant 'mp/me'"),
+            "{}",
+            unknown_mp_slash_me.text()
+        );
+
+        let unknown_m_p_hyphen_me = lab.exec(Command::Constant {
+            name: Some("m-p-me".into()),
+        });
+        assert_eq!(
+            unknown_m_p_hyphen_me.exit_code(),
+            1,
+            "{}",
+            unknown_m_p_hyphen_me.text()
+        );
+        assert!(
+            unknown_m_p_hyphen_me
+                .text()
+                .contains("unknown constant 'm-p-me'"),
+            "{}",
+            unknown_m_p_hyphen_me.text()
+        );
+
         let unknown_mue = lab.exec(Command::Constant {
             name: Some("mue".into()),
         });
@@ -13956,7 +14039,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "1495a6849044b17c1a4eb72cd5b73b53ca66891a3fae30e26226c219c1bc6791",
+            "6965348c0aadf4196452389d29af9ebd19f8db028e1355903dc48319b9376703",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -14448,6 +14531,16 @@ mod tests {
             "{ledger}"
         );
         assert!(
+            ledger.contains("range    mp/me = 1836.15267343(11)"),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains(
+                "hash     8b8047d3ebeca5e157da8e85248892e5731d87114960e63335d74a49631f27b6"
+            ),
+            "{ledger}"
+        );
+        assert!(
             ledger.contains(
                 "hash     fe91682af8608f3a6117790109cc0cbb09c709fb7cc1a778d6c6be39efea1c5e"
             ),
@@ -14634,7 +14727,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "1495a6849044b17c1a4eb72cd5b73b53ca66891a3fae30e26226c219c1bc6791",
+            "6965348c0aadf4196452389d29af9ebd19f8db028e1355903dc48319b9376703",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -15066,6 +15159,14 @@ mod tests {
         .expect("pinned m_p_c2_MeV node");
         assert_eq!(
             lab2.store.get(m_p_c2_mev).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let mp_me = physis_core::artifact::ArtifactId::from_hex(
+            "b26d54036d2d6b10bf50cda5ef46746fba7a7a0edeb71569428e895ee0a81dc0",
+        )
+        .expect("pinned mp_me node");
+        assert_eq!(
+            lab2.store.get(mp_me).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -16619,7 +16720,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  1495a6849044b17c1a4eb72cd5b73b53ca66891a3fae30e26226c219c1bc6791"),
+            text.contains("constant  ledger  6965348c0aadf4196452389d29af9ebd19f8db028e1355903dc48319b9376703"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

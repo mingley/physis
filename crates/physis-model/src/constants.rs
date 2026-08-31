@@ -76,6 +76,16 @@ pub fn proton_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
     Qty::new(938.272_088_16)
 }
 
+/// Proton-electron mass ratio m_p/m_e, CODATA 2018.
+///
+/// This is the recommended centre from the proton section, not the
+/// electron-proton mass ratio and not a certificate that the stored
+/// centres invert. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre.
+pub fn proton_electron_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(1_836.152_673_43)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -2336,6 +2346,40 @@ mod tests {
             physis_constants::proton_mass_energy_equivalent_in_mev().hash,
             physis_constants::electron_volt().hash,
             "m_p_c2_MeV is not eV"
+        );
+        assert!(
+            physis_constants::lookup("m_p_me").is_none(),
+            "m_p_me is not a ledger name; the live name is mp_me"
+        );
+        let mp_me = physis_constants::proton_electron_mass_ratio();
+        let mp_me_centre = Ratio::new(183_615_267_343, 10i128.pow(8));
+        assert_eq!(
+            proton_electron_mass_ratio().value(),
+            mp_me_centre.to_f64(),
+            "mp_me Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mp_me.value.contains(Interval::point(mp_me_centre)),
+            "mp_me Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mp_me.value.lo, mp_me.value.hi,
+            "ledger mp_me stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_electron_mass_ratio().hash,
+            physis_constants::electron_proton_mass_ratio().hash,
+            "mp_me is not me_mp"
+        );
+        assert_ne!(
+            physis_constants::proton_electron_mass_ratio().hash,
+            physis_constants::muon_electron_mass_ratio().hash,
+            "mp_me is not mmu_me"
+        );
+        assert_ne!(
+            physis_constants::proton_electron_mass_ratio().hash,
+            physis_constants::proton_mass().hash,
+            "mp_me is not m_p"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),
