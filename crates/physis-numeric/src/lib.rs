@@ -2,6 +2,8 @@
 //!
 //! [`SciExact`] is a terminating decimal `significand × 10^{exp10}` for
 //! SI-exact values whose [`Ratio`] denominator does not fit in `i128`.
+//! [`Ratio`] order uses a 256-bit product when `i128` cross-multiply
+//! overflows, so a CODATA-scale mass hull is independently checkable.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -516,9 +518,48 @@ impl std::fmt::Display for Interval {
 
 fn cmp_ratio(a: Ratio, b: Ratio) -> std::cmp::Ordering {
     // a.num/a.den ? b.num/b.den  →  a.num*b.den ? b.num*a.den
-    let left = a.num.saturating_mul(b.den);
-    let right = b.num.saturating_mul(a.den);
-    left.cmp(&right)
+    // dens are positive. Saturation would collapse CODATA-scale masses
+    // (m_p uses 10^38) into a false equality.
+    match (a.num.checked_mul(b.den), b.num.checked_mul(a.den)) {
+        (Some(left), Some(right)) => left.cmp(&right),
+        _ => cmp_cross_wide(a.num, b.den, b.num, a.den),
+    }
+}
+
+/// Compare `p * q` against `r * s` when the `i128` products overflow.
+fn cmp_cross_wide(p: i128, q: i128, r: i128, s: i128) -> std::cmp::Ordering {
+    let left_neg = (p < 0) != (q < 0);
+    let right_neg = (r < 0) != (s < 0);
+    match (left_neg, right_neg) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => {
+            let mag = mul_u128(p.unsigned_abs(), q.unsigned_abs())
+                .cmp(&mul_u128(r.unsigned_abs(), s.unsigned_abs()));
+            if left_neg {
+                mag.reverse()
+            } else {
+                mag
+            }
+        }
+    }
+}
+
+/// 256-bit product of two `u128` values as `(hi, lo)`.
+fn mul_u128(a: u128, b: u128) -> (u128, u128) {
+    const MASK: u128 = 0xffff_ffff_ffff_ffff;
+    let a_lo = a & MASK;
+    let a_hi = a >> 64;
+    let b_lo = b & MASK;
+    let b_hi = b >> 64;
+    let p0 = a_lo * b_lo;
+    let p1 = a_lo * b_hi;
+    let p2 = a_hi * b_lo;
+    let p3 = a_hi * b_hi;
+    let mid = (p0 >> 64) + (p1 & MASK) + (p2 & MASK);
+    let lo = (p0 & MASK) | ((mid & MASK) << 64);
+    let hi = p3 + (p1 >> 64) + (p2 >> 64) + (mid >> 64);
+    (hi, lo)
 }
 
 fn add_ratio(a: Ratio, b: Ratio) -> Ratio {
@@ -739,5 +780,27 @@ mod tests {
             1.602_176_634e-19
         );
         assert_eq!(SciExact::new(1_380_649, -29).to_f64(), 1.380_649e-23);
+    }
+
+    #[test]
+    fn ratio_order_does_not_saturate_on_codata_mass_scale() {
+        let scale = 10i128.pow(38);
+        let lo = Ratio::new(167_262_192_318, scale);
+        let hi = Ratio::new(167_262_192_420, scale);
+        let centre = Ratio::new(167_262_192_369, scale);
+        let below = Ratio::new(167_262_000_000, scale);
+        assert!(lo < centre, "saturating mul would collapse this order");
+        assert!(centre < hi);
+        assert!(below < lo);
+        let hull = Interval::new(lo, hi);
+        assert!(hull.contains(Interval::point(centre)));
+        assert!(!hull.contains(Interval::point(below)));
+        assert!(Ratio::new(-hi.num, hi.den) < Ratio::new(-lo.num, lo.den));
+        assert!(Ratio::new(3, 8) > Ratio::new(23122, 100000));
+        assert_eq!(
+            mul_u128(1u128 << 100, 1u128 << 100),
+            mul_u128(1u128 << 90, 1u128 << 110),
+            "2^200 == 2^200 across the 128-bit limb"
+        );
     }
 }
