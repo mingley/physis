@@ -238,11 +238,25 @@ pub fn shielded_proton_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> 
 /// This is the recommended signed centre for the proton in spherical
 /// H2O at 25 °C, not the free proton nuclear-magneton ratio and not the
 /// shielded Bohr-magneton ratio. This Qty is not a certificate that it
-/// equals gp/2. The shielding correction and shielded g-factor are later
-/// table rows and are not stored. The versioned ledger stores the
+/// equals gp/2. Gyromagnetic ratios cite ħ and are not stored. Shielded
+/// g-factor g0p is a glossary identity, not a table XXXI recommended
+/// hull, and is not stored. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre.
 pub fn shielded_proton_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(2.792_775_599)
+}
+
+/// Proton magnetic shielding correction σ₀p, CODATA 2018.
+///
+/// This is the recommended signed centre for the proton in spherical
+/// H2O at 25 °C, not the shielded proton moment and not vacuum
+/// permeability. This Qty is not a certificate of the reconstruction
+/// 1 − μ′_p/μ_p from sibling moments. Gyromagnetic ratios cite ħ and
+/// are not stored. Shielded g-factor g0p is a glossary identity, not a
+/// table XXXI recommended hull, and is not stored. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre.
+pub fn proton_magnetic_shielding_correction() -> Qty<Dimensionless> {
+    Qty::new(2.568_9e-5)
 }
 
 /// Muon mass.
@@ -3085,8 +3099,47 @@ mod tests {
             "mu0p_muN is not gp"
         );
         assert!(
+            physis_constants::lookup("sigma_p").is_none(),
+            "sigma_p is not a ledger name; the live name is sigma0p"
+        );
+        let sigma0p = physis_constants::proton_magnetic_shielding_correction();
+        let sigma0p_centre = Ratio::new(25_689, 10i128.pow(9));
+        assert_eq!(
+            proton_magnetic_shielding_correction().value(),
+            sigma0p_centre.to_f64(),
+            "sigma0p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            sigma0p.value.contains(Interval::point(sigma0p_centre)),
+            "sigma0p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            sigma0p.value.lo, sigma0p.value.hi,
+            "ledger sigma0p stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_magnetic_shielding_correction().hash,
+            physis_constants::shielded_proton_magnetic_moment().hash,
+            "sigma0p is not mu0p"
+        );
+        assert_ne!(
+            physis_constants::proton_magnetic_shielding_correction().hash,
+            physis_constants::proton_magnetic_moment().hash,
+            "sigma0p is not mu_p"
+        );
+        assert_ne!(
+            physis_constants::proton_magnetic_shielding_correction().hash,
+            physis_constants::vacuum_permeability().hash,
+            "sigma0p is not mu0"
+        );
+        assert_ne!(
+            physis_constants::proton_magnetic_shielding_correction().hash,
+            physis_constants::shielded_proton_magnetic_moment_to_nuclear_magneton().hash,
+            "sigma0p is not mu0p_muN"
+        );
+        assert!(
             physis_constants::lookup("g0p").is_none(),
-            "shielded proton g-factor is not stored in this increment"
+            "g0p is a glossary identity, not a table XXXI recommended hull"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),

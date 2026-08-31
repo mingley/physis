@@ -22,6 +22,51 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 proton magnetic shielding correction is a one-sigma Interval.**
+  `physis-constants` versions `sigma0p` as the CODATA 2018 hull
+  `2.5689(11)×10^{-5}` from JPCRD 50, 033105 table XXXI
+  (Proton, p; `1 − μ′_p/μ_p` in spherical H2O, 25 °C). This is not
+  shielded proton magnetic moment `mu0p`, not free proton magnetic
+  moment `mu_p`, not vacuum permeability `mu0`, not a certificate of
+  the reconstruction `1 − μ′_p/μ_p`, not an SI defining Ratio, not the
+  Thomson cross section, and not P3N. Gyromagnetic ratios cite ħ and
+  are not stored. Shielded g-factor `g0p` is a glossary identity, not
+  a table XXXI recommended hull, and is not stored. The proton-tau
+  ratio is a PDG reprint (footnote e) and is not stored. Electron
+  mass is still not stored (`10^{42}` overflows `i128`).
+  `physis_model`
+  `proton_magnetic_shielding_correction()` Qty locksteps to the
+  recommended centre inside the hull. Adding `sigma0p` to LEDGER
+  changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`,
+  `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`,
+  `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`,
+  `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`,
+  `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`,
+  `gp`, `mu_p_mun`, `mu0p`, `mu0p_muB`, and `mu0p_muN` hashes are
+  unchanged. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `sigma0p` hash 2bd71c8a0c870e0f41ca7ec9ceada123c78583e8af24c97e5ad1918069bf1bd1; node 5750e14f1d96e1d0a29d15f26fab1bc146ff8fbcc345daaea980d499198050b3; ledger
+  node 9d2f1cfac1c59106c9987fd1d06f37b1f3f8fc68957909ca7d5c7be2fa62f913. `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`,
+  `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`,
+  `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`,
+  `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`,
+  `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`,
+  `gp`, `mu_p_mun`, `mu0p`, `mu0p_muB`, and `mu0p_muN` hashes and
+  nodes unchanged.
+
 - **CODATA 2018 shielded proton nuclear-magneton ratio is a one-sigma Interval.**
   `physis-constants` versions `mu0p_muN` as the CODATA 2018 hull
   `2.792775599(30)` from JPCRD 50, 033105 table XXXI
