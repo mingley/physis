@@ -43,7 +43,7 @@ This repository does **not** decide whether string theory is false. It makes the
 | `physis-ir` | declarative theory packages and constrained mutations |
 | `physis-audit` | red-team corpus |
 | `physis-semantic` | encoding review from evidence; no `Canonical` variant |
-| `physis-constants` | versioned SI 2019 defining constants (`Ratio` / `SciExact` for `h`) and CODATA `G`/`mu0`/`epsilon0`/`Z0`/`alpha`/`inv_alpha`/`cRinf`/`hcRinf`/`Rinf`/`a0`/`Eh`/`me_mmu`/`me_mp`/`me_mn`/`me_md`/`me_mt`/`me_mh`/`me_malpha`/`e_me`/`M_e`/`lambdabar_C`/`lambda_C`/`re`/`mu_e`/`mu_e_muB`/`mu_e_muN`/`ae`/`ge`/`mu_e_mmu`/`mu_e_mup`/`mu_e_mu0p`/`mu_e_mun`/`mu_e_mud`/`mu_e_mu0h`/`m_p` (`Interval`); `physis constant [name]` rebuilds; omitted name rebuilds the full LEDGER; overlapping `physis_model` Qty floats lockstep the ledger (e/k via SI decimal, not reduced Ratio::to_f64) |
+| `physis-constants` | versioned SI 2019 defining constants (`Ratio` / `SciExact` for `h`) and CODATA `G`/`mu0`/`epsilon0`/`Z0`/`alpha`/`inv_alpha`/`cRinf`/`hcRinf`/`Rinf`/`a0`/`Eh`/`me_mmu`/`me_mp`/`me_mn`/`me_md`/`me_mt`/`me_mh`/`me_malpha`/`e_me`/`M_e`/`lambdabar_C`/`lambda_C`/`re`/`mu_e`/`mu_e_muB`/`mu_e_muN`/`ae`/`ge`/`mu_e_mmu`/`mu_e_mup`/`mu_e_mu0p`/`mu_e_mun`/`mu_e_mud`/`mu_e_mu0h`/`m_mu`/`m_p` (`Interval`); `physis constant [name]` rebuilds; omitted name rebuilds the full LEDGER; overlapping `physis_model` Qty floats lockstep the ledger (e/k via SI decimal, not reduced Ratio::to_f64) |
 | `physis-agent` | Lab, protocol v2, hash-linked journal |
 | `physis` | Facade + CLI |
 

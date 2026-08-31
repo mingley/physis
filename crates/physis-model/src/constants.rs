@@ -48,6 +48,15 @@ pub fn proton_mass() -> Qty<Mass> {
     kg(1.672_621_923_69e-27)
 }
 
+/// Muon mass.
+///
+/// CODATA 2018 recommended centre. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. This is not the
+/// electron-muon mass ratio.
+pub fn muon_mass() -> Qty<Mass> {
+    kg(1.883_531_627e-28)
+}
+
 /// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
 /// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
@@ -1381,6 +1390,35 @@ mod tests {
             physis_constants::electron_to_shielded_helion_magnetic_moment_ratio().hash,
             physis_constants::vacuum_permeability().hash,
             "mu_e_mu0h is not mu0"
+        );
+        assert!(
+            physis_constants::lookup("mmu").is_none(),
+            "mmu is not a ledger name; the live name is m_mu"
+        );
+        let m_mu = physis_constants::muon_mass();
+        let m_mu_centre = Ratio::new(1_883_531_627, 10i128.pow(37));
+        assert_eq!(
+            muon_mass().value(),
+            m_mu_centre.to_f64(),
+            "m_mu Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_mu.value.contains(Interval::point(m_mu_centre)),
+            "m_mu Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_mu.value.lo, m_mu.value.hi,
+            "ledger m_mu stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::muon_mass().hash,
+            physis_constants::electron_muon_mass_ratio().hash,
+            "m_mu is not me_mmu"
+        );
+        assert_ne!(
+            physis_constants::muon_mass().hash,
+            physis_constants::proton_mass().hash,
+            "m_mu is not m_p"
         );
 
         let mp = physis_constants::proton_mass();

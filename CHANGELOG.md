@@ -22,6 +22,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 muon mass is a one-sigma Interval.**
+  `physis-constants` versions `m_mu` as the CODATA 2018 hull
+  `1.883531627(42)×10^{-28}` kg from JPCRD 50, 033105 table XXXI
+  (Muon, mu-). This is not the electron-muon mass ratio `me_mmu`, not
+  the proton mass, not the u-row, not an SI defining Ratio, not the
+  Thomson cross section, and not P3N. Electron mass is still not stored
+  (`10^{42}` overflows `i128`). `physis_model` `muon_mass()` Qty
+  locksteps to the recommended centre inside the hull. Adding `m_mu` to
+  LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, and `m_p` hashes are unchanged.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `m_mu` hash
+  `b1e0e67d46205c048709815e1215184c1b77afbcb0f197099085fbfc7d3bb016`;
+  node
+  `3cf58d635727710c293a539a68c0bce2aeadc9d41fa8a8dd43c238dfa58ad890`;
+  ledger node
+  `fd04fd5ac4d0c95aef6040eaf7b8837c2409763d0472aeaaf51581ea41080644`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`,
+  `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, and `m_p` hashes
+  and nodes unchanged.
+
 - **CODATA 2018 electron to shielded-helion magnetic-moment ratio is a one-sigma Interval.**
   `physis-constants` versions `mu_e_mu0h` as the CODATA 2018 hull
   `864.058257(10)` from JPCRD 50, 033105 table XXXI (Electron, e-).
