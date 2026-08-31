@@ -255,6 +255,17 @@ pub fn electron_charge_to_mass(
     Qty::new(-1.758_820_010_76e11)
 }
 
+/// Electron molar mass M_e (kg mol⁻¹), CODATA 2018.
+///
+/// This is the recommended centre in kg mol⁻¹, not electron mass in kg
+/// and not the mass-in-u row. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn electron_molar_mass() -> Qty<
+    physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(5.485_799_088_8e-7)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -904,9 +915,28 @@ mod tests {
             physis_constants::lookup("-e/me").is_none(),
             "-e/me is not a ledger name; the live name is e_me"
         );
+        let molar = physis_constants::electron_molar_mass();
+        let molar_centre = Ratio::new(54_857_990_888, 10i128.pow(17));
+        assert_eq!(
+            electron_molar_mass().value(),
+            molar_centre.to_f64(),
+            "M_e Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("M_e").is_none(),
-            "electron molar mass is a different recommended value and is not stored"
+            molar.value.contains(Interval::point(molar_centre)),
+            "M_e Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            molar.value.lo, molar.value.hi,
+            "ledger M_e stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("Me").is_none(),
+            "Me is not a ledger name; the live name is M_e"
+        );
+        assert!(
+            physis_constants::lookup("lambdabar_C").is_none(),
+            "reduced Compton wavelength is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
