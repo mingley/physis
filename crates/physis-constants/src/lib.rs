@@ -7,9 +7,11 @@
 //! a terminating decimal. CODATA 2018 Newtonian `G` is a one-sigma
 //! [`Interval`], not an exact Ratio. The IAU 2012 astronomical unit is
 //! an exact [`Ratio`] `149597870700` m (BIPM table 8). The parsec is
-//! `(648000/π) au` and is not a Ratio. Theories still use `physis_model`
-//! `f64` Qty constants. This crate does not mint a kernel proof.
-//! Overlapping `physis_model` Qty floats are lockstepped in
+//! `(648000/π) au` and is not a Ratio. IAU 2015 `(GM)_☉^N` is an exact
+//! [`Ratio`] `1.3271244×10^20` m³ s⁻² (AJ 152, 41 table 1): a
+//! conversion ruler, not a measured solar mass. Theories still use
+//! `physis_model` `f64` Qty constants. This crate does not mint a kernel
+//! proof. Overlapping `physis_model` Qty floats are lockstepped in
 //! `physis-model` tests; theories still evaluate with those Qty.
 
 #![forbid(unsafe_code)]
@@ -26,6 +28,8 @@ use serde::{Deserialize, Serialize};
 pub enum ConstantRelease {
     /// SI 2019 exact values plus CODATA 2018 estimates where still measured.
     Si2019Codata2018,
+    /// IAU 2015 nominal solar and planetary conversion constants (B3).
+    Iau2015,
 }
 
 impl ConstantRelease {
@@ -33,6 +37,7 @@ impl ConstantRelease {
     pub const fn as_str(self) -> &'static str {
         match self {
             ConstantRelease::Si2019Codata2018 => "si-2019-codata-2018",
+            ConstantRelease::Iau2015 => "iau-2015",
         }
     }
 }
@@ -243,6 +248,45 @@ pub fn astronomical_unit() -> Constant<Ratio> {
     )
 }
 
+fn iau2015_b3_table_1() -> SourceRecord {
+    SourceRecord::new(
+        Citation {
+            work:
+                "Nominal values for selected solar and planetary quantities: IAU 2015 Resolution B3"
+                    .into(),
+            edition: "Astron. J. 152, 41".into(),
+        },
+        "2015",
+        SourceLocator {
+            page: None,
+            section: Some("Nominal Solar and Planetary Conversion Constants".into()),
+            equation: None,
+            figure: None,
+            table: Some("1".into()),
+            dataset_range: Some("(GM)_sun^N = 1.3271244e20".into()),
+            experiment: None,
+        },
+        ArtifactId::of(b"iau-2015-b3-aj-152-41"),
+        None,
+    )
+    .expect("IAU 2015 B3 table 1 locator is precise")
+}
+
+/// Nominal solar mass parameter (GM)_☉^N, exact, IAU 2015 Resolution B3.
+///
+/// `1.3271244×10^20 m³ s⁻²` is a conversion ruler, not a measured solar
+/// mass and not CODATA `G`. Newtonian-gravity still evaluates with the
+/// `physis_model` Qty. `R_☉^N` and `L_☉^N` are not stored here.
+pub fn solar_gm() -> Constant<Ratio> {
+    Constant::new(
+        "GM_sun",
+        Ratio::int(13_271_244i128 * 10i128.pow(13)),
+        "m^3 s^{-2}",
+        iau2015_b3_table_1(),
+        ConstantRelease::Iau2015,
+    )
+}
+
 /// Independently reconstructable listing of a versioned constant.
 ///
 /// The stored [`Constant::hash`] is not authority: rebuild via [`lookup`].
@@ -269,7 +313,18 @@ pub struct ConstantListing {
 }
 
 /// Ledger names in catalog order.
-pub const LEDGER: &[&str] = &["c", "delta-nu-Cs", "e", "k", "N_A", "K_cd", "h", "G", "au"];
+pub const LEDGER: &[&str] = &[
+    "c",
+    "delta-nu-Cs",
+    "e",
+    "k",
+    "N_A",
+    "K_cd",
+    "h",
+    "G",
+    "au",
+    "GM_sun",
+];
 
 fn listing<T: std::fmt::Display>(c: Constant<T>, kind: &'static str) -> ConstantListing {
     ConstantListing {
@@ -298,6 +353,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "h" => Some(listing(planck_h(), "sci-exact")),
         "G" => Some(listing(newtonian_g(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
+        "GM_sun" => Some(listing(solar_gm(), "ratio")),
         _ => None,
     }
 }
@@ -496,8 +552,48 @@ mod tests {
     }
 
     #[test]
+    fn iau2015_solar_gm_is_an_exact_ratio() {
+        let gm = solar_gm();
+        let value = Ratio::int(13_271_244i128 * 10i128.pow(13));
+        assert_eq!(gm.name, "GM_sun");
+        assert_eq!(gm.unit, "m^3 s^{-2}");
+        assert_eq!(gm.value, value);
+        assert_eq!(gm.release, ConstantRelease::Iau2015);
+        assert_eq!(gm.provenance.locator.table.as_deref(), Some("1"));
+        assert_eq!(
+            gm.provenance.locator.dataset_range.as_deref(),
+            Some("(GM)_sun^N = 1.3271244e20")
+        );
+        assert_eq!(gm.hash, solar_gm().hash);
+        assert_eq!(
+            gm.hash,
+            Constant::new(
+                "GM_sun",
+                value,
+                "m^3 s^{-2}",
+                iau2015_b3_table_1(),
+                ConstantRelease::Iau2015,
+            )
+            .hash
+        );
+        assert_ne!(gm.hash, astronomical_unit().hash);
+        assert_ne!(gm.hash, newtonian_g().hash);
+        assert_ne!(gm.hash, speed_of_light().hash);
+        assert_eq!(
+            gm.hash.to_hex(),
+            "636001001c4ed9cd5e6661241e5ad5e5db09c8419a3fe79790143162b7af3a58"
+        );
+        assert!(gm.provenance.recheck().is_ok());
+        assert_ne!(
+            gm.release,
+            ConstantRelease::Si2019Codata2018,
+            "GM_sun is IAU 2015, not an SI defining constant"
+        );
+    }
+
+    #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 9);
+        assert_eq!(LEDGER.len(), 10);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -523,7 +619,13 @@ mod tests {
             lookup("au").unwrap().hash.to_hex(),
             "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b"
         );
+        assert_eq!(lookup("GM_sun").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("GM_sun").unwrap().hash.to_hex(),
+            "636001001c4ed9cd5e6661241e5ad5e5db09c8419a3fe79790143162b7af3a58"
+        );
         assert!(lookup("hbar").is_none());
+        assert!(lookup("solar-gm").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());
     }
 }

@@ -45,10 +45,11 @@ pub fn proton_mass() -> Qty<Mass> {
     kg(1.672_621_923_69e-27)
 }
 
-/// Solar standard gravitational parameter GM_☉ (IAU 2015), m³ s⁻².
+/// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
-/// Using `GM` rather than `G · M_☉` keeps the solar-system theorems free of
-/// the relatively large uncertainty on `G`.
+/// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
+/// mass and not `G · M_☉`. Using `GM` rather than `G · M_☉` keeps the
+/// solar-system theorems free of the relatively large uncertainty on `G`.
 pub fn solar_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>> {
     Qty::new(1.327_124_4e20)
 }
@@ -398,6 +399,31 @@ mod tests {
             astronomical_unit().value(),
             149_597_870_700.0,
             "IAU 2012 au is the exact metre count"
+        );
+
+        let gm = physis_constants::solar_gm();
+        assert_eq!(
+            gm.value,
+            Ratio::int(13_271_244i128 * 10i128.pow(13)),
+            "ledger GM_sun is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            solar_gm().value(),
+            gm.value.to_f64(),
+            "GM_sun is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            solar_gm().value(),
+            1.327_124_4e20,
+            "IAU 2015 (GM)_sun^N is the exact conversion ruler"
+        );
+        assert!(
+            physis_constants::lookup("R_sun").is_none(),
+            "nominal solar radius is not this increment"
+        );
+        assert!(
+            physis_constants::lookup("L_sun").is_none(),
+            "nominal solar luminosity is not this increment"
         );
     }
 }
