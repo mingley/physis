@@ -22,6 +22,25 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Bohr radius is a one-sigma Interval.**
+  `physis-constants` versions `a0` as the CODATA 2018 hull
+  `5.29177210903(80)×10^{-11}` m from JPCRD 50, 033105 table XXXI
+  (ATOMIC AND NUCLEAR). This is not an SI defining Ratio, not the
+  Hartree energy, and not P3N. `physis_model` `bohr_radius()` Qty
+  locksteps to the recommended centre inside the hull. Adding `a0` to
+  LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `Z0`, `alpha`, `inv_alpha`, `Rinf`, and `m_p` hashes are unchanged.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.   Verified: `a0` hash
+  `5d5098fcd983d3db221e4b4047e73de5061985c31a91ccdf12cd122b620eaf29`;
+  node
+  `01663e8bd28309970cefc37bd3dc5023c54a70ded784fb04d94ace095abdd475`;
+  ledger node
+  `9e68d473306527e7724874f9afbf9f2d8271c1b71fa650c85766fcf34ffd2ffc`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `Rinf`, and `m_p`
+  hashes and nodes unchanged.
+
 - **CODATA 2018 Rydberg constant is a one-sigma Interval.**
   `physis-constants` versions `Rinf` as the CODATA 2018 hull
   `10973731.568160(21)` m⁻¹ from JPCRD 50, 033105 table XXXI

@@ -150,11 +150,18 @@ pub fn inv_alpha() -> Qty<Dimensionless> {
 
 /// Rydberg constant R∞ (m⁻¹), CODATA 2018.
 ///
-/// This is the recommended centre in inverse metres, not `c R∞` and not
-/// the Bohr radius. The versioned ledger stores the one-sigma hull;
-/// this Qty is that centre.
+/// This is the recommended centre in inverse metres, not `c R∞`.
+/// The versioned ledger stores the one-sigma hull; this Qty is that centre.
 pub fn rydberg() -> Qty<physis_core::SI<typenum::Z0, typenum::N1, typenum::Z0>> {
     Qty::new(10_973_731.568_160)
+}
+
+/// Bohr radius a₀ (m), CODATA 2018.
+///
+/// This is the recommended centre, not the Hartree energy. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn bohr_radius() -> Qty<Length> {
+    meters(5.291_772_109_03e-11)
 }
 
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
@@ -559,9 +566,29 @@ mod tests {
             physis_constants::lookup("R_inf").is_none(),
             "R_inf is not a ledger name; the live name is Rinf"
         );
+
+        let a0_c = physis_constants::bohr_radius();
+        let a0_centre = Ratio::new(529_177_210_903, 10i128.pow(22));
+        assert_eq!(
+            bohr_radius().value(),
+            a0_centre.to_f64(),
+            "a0 Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("a0").is_none(),
-            "Bohr radius is a different recommended value and is not stored"
+            a0_c.value.contains(Interval::point(a0_centre)),
+            "a0 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            a0_c.value.lo, a0_c.value.hi,
+            "ledger a0 stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("a_0").is_none(),
+            "a_0 is not a ledger name; the live name is a0"
+        );
+        assert!(
+            physis_constants::lookup("Eh").is_none(),
+            "Hartree energy is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
