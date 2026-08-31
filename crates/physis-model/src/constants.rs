@@ -133,6 +133,17 @@ pub fn proton_molar_mass() -> Qty<
     Qty::new(1.007_276_466_27e-3)
 }
 
+/// Proton Compton wavelength λ_{C,p} (m), CODATA 2018.
+///
+/// This is the recommended centre in metres from the proton section, not
+/// electron Compton, not muon Compton, and not a certificate of `2π`
+/// times a reduced proton Compton wavelength. The reduced proton Compton
+/// row is ħ/m_p c and is not stored. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn proton_compton_wavelength() -> Qty<Length> {
+    meters(1.321_409_855_39e-15)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -2572,6 +2583,52 @@ mod tests {
             physis_constants::proton_molar_mass().hash,
             physis_constants::proton_mass().hash,
             "M_p is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("lambdabar_C_p").is_none(),
+            "reduced proton Compton is hbar/m_p c and is not stored"
+        );
+        let lambda_c_p = physis_constants::proton_compton_wavelength();
+        let lambda_c_p_centre = Ratio::new(132_140_985_539, 10i128.pow(26));
+        assert_eq!(
+            proton_compton_wavelength().value(),
+            lambda_c_p_centre.to_f64(),
+            "lambda_C_p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            lambda_c_p
+                .value
+                .contains(Interval::point(lambda_c_p_centre)),
+            "lambda_C_p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            lambda_c_p.value.lo, lambda_c_p.value.hi,
+            "ledger lambda_C_p stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_compton_wavelength().hash,
+            physis_constants::compton_wavelength().hash,
+            "lambda_C_p is not lambda_C"
+        );
+        assert_ne!(
+            physis_constants::proton_compton_wavelength().hash,
+            physis_constants::muon_compton_wavelength().hash,
+            "lambda_C_p is not lambda_C_mu"
+        );
+        assert_ne!(
+            physis_constants::proton_compton_wavelength().hash,
+            physis_constants::reduced_compton_wavelength().hash,
+            "lambda_C_p is not lambdabar_C"
+        );
+        assert_ne!(
+            physis_constants::proton_compton_wavelength().hash,
+            physis_constants::proton_molar_mass().hash,
+            "lambda_C_p is not M_p"
+        );
+        assert_ne!(
+            physis_constants::proton_compton_wavelength().hash,
+            physis_constants::proton_mass().hash,
+            "lambda_C_p is not m_p"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),
