@@ -22,6 +22,28 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron-helion mass ratio is a one-sigma Interval.**
+  `physis-constants` versions `me_mh` as the CODATA 2018 hull
+  `1.819543074573(79)×10^{-4}` from JPCRD 50, 033105 table XXXI
+  (Electron, e-). This is not an SI defining Ratio, not electron mass,
+  and not P3N. `physis_model` `electron_helion_mass_ratio()` Qty
+  locksteps to the recommended centre inside the hull. Adding `me_mh`
+  to LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, and `m_p` hashes are
+  unchanged. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `me_mh` hash
+  `0fb8f5fde9e76fcf2c24d73267f36cd3a5b40ca9f27f24e47d9807ec4206055e`;
+  node
+  `b55534bac40b377d7b8c6123de509a2b65cde4d75fe280d46aefa30f83e72890`;
+  ledger node
+  `0e012902475c0c0e7118efdb898c447dc748e3b584ef5f1765947662cb141f29`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, and
+  `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 electron-triton mass ratio is a one-sigma Interval.**
   `physis-constants` versions `me_mt` as the CODATA 2018 hull
   `1.819200062251(90)×10^{-4}` from JPCRD 50, 033105 table XXXI
