@@ -63,11 +63,17 @@ pub fn solar_luminosity() -> Qty<Power> {
     Qty::new(3.828e26)
 }
 
+/// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
+pub fn astronomical_unit() -> Qty<Length> {
+    meters(149_597_870_700.0)
+}
+
 /// Parsec, metres. IAU 2015: `(648 000 / π)` astronomical units, with the AU exact.
+///
+/// π means this is not a Ratio. The versioned ledger stores `au`, not `pc`.
 pub fn parsec() -> Qty<Length> {
     use std::f64::consts::PI;
-    const AU_M: f64 = 149_597_870_700.0;
-    meters((648_000.0 / PI) * AU_M)
+    meters((648_000.0 / PI) * astronomical_unit().value())
 }
 
 /// Hubble constant H₀ ≈ 70 km s⁻¹ Mpc⁻¹, as a frequency (s⁻¹).
@@ -379,6 +385,19 @@ mod tests {
         assert!(
             physis_constants::lookup("hbar").is_none(),
             "ħ is not a terminating decimal and is not a ledger entry"
+        );
+
+        let au = physis_constants::astronomical_unit();
+        assert_eq!(au.value, Ratio::int(149_597_870_700), "ledger au is exact");
+        assert_eq!(
+            astronomical_unit().value(),
+            au.value.to_f64(),
+            "au is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            astronomical_unit().value(),
+            149_597_870_700.0,
+            "IAU 2012 au is the exact metre count"
         );
     }
 }

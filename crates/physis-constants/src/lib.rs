@@ -5,7 +5,9 @@
 //! [`physis_numeric::SciExact`] `662607015e-42` J s: the reduced
 //! denominator does not fit in `i128`, so it is not a Ratio. `ħ` is not
 //! a terminating decimal. CODATA 2018 Newtonian `G` is a one-sigma
-//! [`Interval`], not an exact Ratio. Theories still use `physis_model`
+//! [`Interval`], not an exact Ratio. The IAU 2012 astronomical unit is
+//! an exact [`Ratio`] `149597870700` m (BIPM table 8). The parsec is
+//! `(648000/π) au` and is not a Ratio. Theories still use `physis_model`
 //! `f64` Qty constants. This crate does not mint a kernel proof.
 //! Overlapping `physis_model` Qty floats are lockstepped in
 //! `physis-model` tests; theories still evaluate with those Qty.
@@ -204,6 +206,43 @@ pub fn newtonian_g() -> Constant<Interval> {
     )
 }
 
+fn si_brochure_table_8() -> SourceRecord {
+    SourceRecord::new(
+        Citation {
+            work: "BIPM SI Brochure".into(),
+            edition: "9th".into(),
+        },
+        "2019",
+        SourceLocator {
+            page: None,
+            section: Some("Non-SI units accepted for use with the SI".into()),
+            equation: None,
+            figure: None,
+            table: Some("8".into()),
+            dataset_range: Some("1 au = 149 597 870 700 m".into()),
+            experiment: None,
+        },
+        ArtifactId::of(b"si-brochure-9"),
+        None,
+    )
+    .expect("SI Brochure table 8 locator is precise")
+}
+
+/// Astronomical unit, exact, IAU 2012 Resolution B2 / BIPM table 8.
+///
+/// `1 au = 149 597 870 700 m` exactly. This is a conventional length,
+/// not an SI defining constant. The parsec is `(648 000 / π) au` and
+/// is not stored here: π means it is not a Ratio.
+pub fn astronomical_unit() -> Constant<Ratio> {
+    Constant::new(
+        "au",
+        Ratio::int(149_597_870_700),
+        "m",
+        si_brochure_table_8(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 /// Independently reconstructable listing of a versioned constant.
 ///
 /// The stored [`Constant::hash`] is not authority: rebuild via [`lookup`].
@@ -230,7 +269,7 @@ pub struct ConstantListing {
 }
 
 /// Ledger names in catalog order.
-pub const LEDGER: &[&str] = &["c", "delta-nu-Cs", "e", "k", "N_A", "K_cd", "h", "G"];
+pub const LEDGER: &[&str] = &["c", "delta-nu-Cs", "e", "k", "N_A", "K_cd", "h", "G", "au"];
 
 fn listing<T: std::fmt::Display>(c: Constant<T>, kind: &'static str) -> ConstantListing {
     ConstantListing {
@@ -258,6 +297,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "K_cd" => Some(listing(luminous_efficacy(), "ratio")),
         "h" => Some(listing(planck_h(), "sci-exact")),
         "G" => Some(listing(newtonian_g(), "interval")),
+        "au" => Some(listing(astronomical_unit(), "ratio")),
         _ => None,
     }
 }
@@ -413,8 +453,51 @@ mod tests {
     }
 
     #[test]
+    fn iau2012_au_is_an_exact_ratio() {
+        let au = astronomical_unit();
+        assert_eq!(au.name, "au");
+        assert_eq!(au.unit, "m");
+        assert_eq!(au.value, Ratio::int(149_597_870_700));
+        assert_eq!(au.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(au.provenance.locator.table.as_deref(), Some("8"));
+        assert_eq!(
+            au.provenance.locator.dataset_range.as_deref(),
+            Some("1 au = 149 597 870 700 m")
+        );
+        assert_eq!(
+            au.provenance.locator.section.as_deref(),
+            Some("Non-SI units accepted for use with the SI")
+        );
+        assert_eq!(au.hash, astronomical_unit().hash);
+        assert_eq!(
+            au.hash,
+            Constant::new(
+                "au",
+                Ratio::int(149_597_870_700),
+                "m",
+                si_brochure_table_8(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(au.hash, speed_of_light().hash);
+        assert_ne!(au.hash, newtonian_g().hash);
+        assert_ne!(au.hash, planck_h().hash);
+        assert_eq!(
+            au.hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b"
+        );
+        assert!(au.provenance.recheck().is_ok());
+        assert_ne!(
+            au.provenance.source_hash,
+            si_brochure().source_hash,
+            "table 8 is not table 1"
+        );
+    }
+
+    #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 8);
+        assert_eq!(LEDGER.len(), 9);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -435,6 +518,11 @@ mod tests {
         );
         assert_eq!(lookup("G").unwrap().kind, "interval");
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
+        assert_eq!(lookup("au").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("au").unwrap().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b"
+        );
         assert!(lookup("hbar").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());
     }

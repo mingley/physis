@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2012 astronomical unit is an exact Ratio.**
+  `physis-constants` versions `au` as `149597870700` m from BIPM
+  Brochure 9th ed. table 8 (IAU 2012 Resolution B2). That is a
+  conventional length, not an SI defining constant and not P3N. The
+  parsec stays `(648000/π) au` and is not a Ratio. `physis_model`
+  exposes `astronomical_unit()` Qty and locksteps it via integer
+  `to_f64`. Adding `au` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `au` hash
+  `d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b`;
+  node
+  `9e736e474a9756cc084b206154d675e3f984376d9ecc07d7e1894ed470d5235d`;
+  ledger node
+  `ca85a4448a25c85f99edd17b65d11c8723c62c6cafe5710c86ef09def921930c`.
+
 - **`physis_model` Qty floats lockstep the versioned ledger.**
   `c`, `e`, `k`, and `h` `f64` Qty values lockstep the versioned
   ledger. `c` is an integer `Ratio` (`to_f64`). `e` and `k` match

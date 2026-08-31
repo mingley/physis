@@ -180,7 +180,7 @@ those tools; a local checkout without them still mints
 | trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
 | roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove or score. Proof-searcher cannot remint. Replication-agent remints (not P4). Empirical-analyst scores. Numerical-verifier encloses. Provenance-auditor cites and independently rebuilds versioned constants (`physis constant`). Encoding-auditor round-trips live IR packages. Judge rebuilds `from_lab` (JSON cannot mint `logical proved`). Budget is a cap, not a proof |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus, bound to the catalog FormalClaim; never `Canonical` |
-| constants | `physis-constants`, `physis constant` | Versioned SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`, `K_cd` as exact `Ratio`. Planck `h` is SI-exact `SciExact` `662607015e-42` (not a `Ratio`: `i128` denominator overflow). `ħ` is not stored. CODATA 2018 `G` is a one-sigma `Interval` (JPCRD table XXXI). `physis constant [name]` independently rebuilds those hashes (`provenance-auditor`; not P3N). Omitted name rebuilds the full LEDGER into one VersionedConstant bundle. Overlapping `physis_model` Qty floats lockstep the ledger: `c` via integer `to_f64`; `e`/`k` via IEEE rounding of the SI decimal (`SciExact::to_f64`, not reduced `Ratio::to_f64`); `h` via `SciExact::to_f64`; `G`'s Qty is the CODATA centre inside the hull. Theories still evaluate with `f64` Qty |
+| constants | `physis-constants`, `physis constant` | Versioned SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`, `K_cd` as exact `Ratio`. Planck `h` is SI-exact `SciExact` `662607015e-42` (not a `Ratio`: `i128` denominator overflow). `ħ` is not stored. CODATA 2018 `G` is a one-sigma `Interval` (JPCRD table XXXI). IAU 2012 `au` is an exact `Ratio` `149597870700` m (BIPM table 8). The parsec is `(648000/π) au` and is not a Ratio. `physis constant [name]` independently rebuilds those hashes (`provenance-auditor`; not P3N). Omitted name rebuilds the full LEDGER into one VersionedConstant bundle. Overlapping `physis_model` Qty floats lockstep the ledger: `c` and `au` via integer `to_f64`; `e`/`k` via IEEE rounding of the SI decimal (`SciExact::to_f64`, not reduced `Ratio::to_f64`); `h` via `SciExact::to_f64`; `G`'s Qty is the CODATA centre inside the hull. Theories still evaluate with `f64` Qty |
 
 Journal events are hash-linked in memory (`Journal::tip`). Journal
 restore of a `prove` event remints through `verify` (never Deserialize)
@@ -197,11 +197,13 @@ identity; a slug-only review line is not P3S.
 - Versioned constants: SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`,
   `K_cd` are exact `Ratio`. Planck `h` is SI-exact `SciExact`
   `662607015e-42` (not a `Ratio`). `ħ` is not a terminating decimal.
-  CODATA 2018 `G` is a one-sigma `Interval`. `physis constant [name]`
+  CODATA 2018 `G` is a one-sigma `Interval`. IAU 2012 `au` is an exact
+  `Ratio` `149597870700` m (BIPM table 8). The parsec is
+  `(648000/π) au` and is not a Ratio. `physis constant [name]`
   rebuilds those hashes independently; omitted name rebuilds the full
   LEDGER. Overlapping `physis_model` Qty floats lockstep the ledger:
-  `c` via integer `to_f64`; `e`/`k` via IEEE rounding of the SI decimal
-  (`SciExact::to_f64`, not reduced `Ratio::to_f64`); `h` via
+  `c` and `au` via integer `to_f64`; `e`/`k` via IEEE rounding of the SI
+  decimal (`SciExact::to_f64`, not reduced `Ratio::to_f64`); `h` via
   `SciExact::to_f64`; `G`'s Qty is the CODATA centre inside the hull.
   Theories still evaluate with `physis_model` `f64` Qty constants
 - Community-canonical encodings (review tops out at
