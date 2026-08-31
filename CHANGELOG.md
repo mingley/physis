@@ -22,6 +22,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron-deuteron magnetic-moment ratio is a one-sigma Interval.**
+  `physis-constants` versions `mu_e_mud` as the CODATA 2018 hull
+  `−2143.9234915(56)` from JPCRD 50, 033105 table XXXI (Electron, e-).
+  This is not the electron-deuteron mass ratio `me_md`, not an SI defining
+  Ratio, not the Thomson cross section, and not P3N. `physis_model`
+  `electron_deuteron_magnetic_moment_ratio()` Qty locksteps to the
+  recommended signed centre inside the hull. Adding `mu_e_mud` to LEDGER
+  changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, and `m_p` hashes are unchanged. Theories still evaluate
+  with `f64` Qty. That is not a kernel proof, not Canonical, not P4.
+  Encode pins unchanged. Unique-vacuum graph id unchanged. P3N count
+  stays 4. Verified: `mu_e_mud` hash
+  `7db59dc912a6c2a301f669f52d7353b27672a07b917e2f8b92b03c1f9acaaa64`;
+  node
+  `7a29b2b885a9c1ec2491ac30d0f7408fc89c2d7319e3bb511ab7a3892fef4d33`;
+  ledger node
+  `32eb3a5730a680353318d4e91154a1fb78d576c6645f6878aa6605e80c2f9487`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`,
+  `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 electron-neutron magnetic-moment ratio is a one-sigma Interval.**
   `physis-constants` versions `mu_e_mun` as the CODATA 2018 hull
   `960.92050(23)` from JPCRD 50, 033105 table XXXI (Electron, e-).
