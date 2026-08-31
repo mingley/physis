@@ -22,6 +22,30 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Compton wavelength is a one-sigma Interval.**
+  `physis-constants` versions `lambda_C` as the CODATA 2018 hull
+  `2.42631023867(73)×10^{-12}` m from JPCRD 50, 033105 table XXXI
+  (Electron, e-). This is not an SI defining Ratio, not a certificate
+  of `2π ƛ_C`, not the reduced Compton wavelength, and not P3N.
+  `physis_model` `compton_wavelength()` Qty locksteps to the recommended
+  centre inside the hull. Adding `lambda_C` to LEDGER changes the ledger
+  bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`,
+  `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`,
+  `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`,
+  and `m_p` hashes are unchanged. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `lambda_C` hash
+  `6280f2b2f61adf3ae0fa3e65f3b12cfb4982f6601027d98552f541246198c3d8`;
+  node
+  `4c83c25a7c4f517afc2e092809b141dffc97ae12307b4676cb01da5ab73716e3`;
+  ledger node
+  `ca37826403917e2efb979285209a2b4befd41bb0bdcd0118ce5470649babe0c4`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`,
+  `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, and `m_p` hashes
+  and nodes unchanged.
+
 - **CODATA 2018 reduced Compton wavelength is a one-sigma Interval.**
   `physis-constants` versions `lambdabar_C` as the CODATA 2018 hull
   `3.8615926796(12)×10^{-13}` m from JPCRD 50, 033105 table XXXI

@@ -278,6 +278,18 @@ pub fn reduced_compton_wavelength() -> Qty<Length> {
     meters(3.861_592_679_600_000_3e-13)
 }
 
+/// Compton wavelength λ_C (m), CODATA 2018.
+///
+/// This is the recommended centre, not a certificate of `2π ƛ_C` and not
+/// the reduced Compton wavelength. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn compton_wavelength() -> Qty<Length> {
+    // IEEE value of the reduced centre Ratio 242631023867/10^23, not extra
+    // CODATA digits. The decimal literal 2.426_310_238_67e-12 is one ulp
+    // below Ratio::to_f64.
+    meters(2.426_310_238_670_000_2e-12)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -962,8 +974,27 @@ mod tests {
             "ledger lambdabar_C stays an Interval; the Qty is not that Interval"
         );
         assert!(
-            physis_constants::lookup("lambda_C").is_none(),
-            "Compton wavelength is a different recommended value and is not stored"
+            physis_constants::lookup("lambdaC").is_none(),
+            "lambdaC is not a ledger name; the live name is lambda_C"
+        );
+        let rc = physis_constants::compton_wavelength();
+        let rc_centre = Ratio::new(242_631_023_867, 10i128.pow(23));
+        assert_eq!(
+            compton_wavelength().value(),
+            rc_centre.to_f64(),
+            "lambda_C Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            rc.value.contains(Interval::point(rc_centre)),
+            "lambda_C Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            rc.value.lo, rc.value.hi,
+            "ledger lambda_C stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("re").is_none(),
+            "classical radius is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
