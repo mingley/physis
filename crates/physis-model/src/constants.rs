@@ -108,6 +108,18 @@ pub fn proton_neutron_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(0.998_623_478_12)
 }
 
+/// Proton charge to mass quotient e/m_p (C kg⁻¹), CODATA 2018.
+///
+/// This is the recommended centre from the proton section, not the
+/// electron quotient and not a certificate that this equals e/m_p
+/// from the SI-exact charge and the proton-mass hull. The proton-tau
+/// ratio is a PDG reprint and is not stored. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre.
+pub fn proton_charge_to_mass(
+) -> Qty<physis_core::SI<typenum::N1, typenum::Z0, typenum::P1, typenum::P1>> {
+    Qty::new(9.578_833_156_0e7)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -2474,6 +2486,40 @@ mod tests {
             physis_constants::proton_neutron_mass_ratio().hash,
             physis_constants::proton_muon_mass_ratio().hash,
             "mp_mn is not mp_mmu"
+        );
+        assert!(
+            physis_constants::lookup("e/mp").is_none(),
+            "e/mp is not a ledger name; the live name is e_mp"
+        );
+        let e_mp = physis_constants::proton_charge_to_mass();
+        let e_mp_centre = Ratio::new(95_788_331_560, 10i128.pow(3));
+        assert_eq!(
+            proton_charge_to_mass().value(),
+            e_mp_centre.to_f64(),
+            "e_mp Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            e_mp.value.contains(Interval::point(e_mp_centre)),
+            "e_mp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            e_mp.value.lo, e_mp.value.hi,
+            "ledger e_mp stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_charge_to_mass().hash,
+            physis_constants::electron_charge_to_mass().hash,
+            "e_mp is not e_me"
+        );
+        assert_ne!(
+            physis_constants::proton_charge_to_mass().hash,
+            physis_constants::proton_neutron_mass_ratio().hash,
+            "e_mp is not mp_mn"
+        );
+        assert_ne!(
+            physis_constants::proton_charge_to_mass().hash,
+            physis_constants::elementary_charge().hash,
+            "e_mp is not the SI-exact elementary charge"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),

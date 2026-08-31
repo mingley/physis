@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  f8d4769794c674fcffd490fdc3b04d4ff852925e9967c5413973e82bf8359834"),
+            text.contains("constant  ledger  3aefb12abc2eab15f87d8126f17e1bd25f343713b5e7d4337e75ab1dd907f9b9"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -12834,6 +12834,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let e_mp = lab
+            .exec(Command::Constant {
+                name: Some("e_mp".into()),
+            })
+            .text()
+            .to_string();
+        assert!(e_mp.contains("constant  e_mp  node "), "{e_mp}");
+        assert!(
+            e_mp.contains(
+                "hash     e0404fef33540ecdef40b36cb1e14112b9e91713cccab65bb6a920fa44106611"
+            ),
+            "{e_mp}"
+        );
+        assert!(e_mp.contains("kind     interval"), "{e_mp}");
+        assert!(e_mp.contains("table    XXXI"), "{e_mp}");
+        assert!(
+            e_mp.contains("range    e/mp = 9.5788331560(29)e7"),
+            "{e_mp}"
+        );
+        assert!(e_mp.contains("unit     C kg^{-1}"), "{e_mp}");
+        assert!(
+            e_mp.contains("value    [95788331531/1000, 95788331589/1000]"),
+            "{e_mp}"
+        );
+        assert!(e_mp.contains("rebuild  ok"), "{e_mp}");
+        assert!(e_mp.contains("not P3N"), "{e_mp}");
+        assert!(!e_mp.contains("receipt"), "{e_mp}");
+        assert!(!e_mp.contains("theorem"), "{e_mp}");
+        let e_mp_id = constant_node_id(&e_mp);
+        assert_eq!(
+            e_mp_id.to_hex(),
+            "297019b19da4904272c51a8e04b72e02d384fc15dd567e0d888d9edbc3ac5097",
+            "journaling must not change the e_mp constant payload"
+        );
+        assert_eq!(
+            lab.store.get(e_mp_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -14181,6 +14220,57 @@ mod tests {
             unknown_m_p_hyphen_mn.text()
         );
 
+        let unknown_e_slash_mp = lab.exec(Command::Constant {
+            name: Some("e/mp".into()),
+        });
+        assert_eq!(
+            unknown_e_slash_mp.exit_code(),
+            1,
+            "{}",
+            unknown_e_slash_mp.text()
+        );
+        assert!(
+            unknown_e_slash_mp
+                .text()
+                .contains("unknown constant 'e/mp'"),
+            "{}",
+            unknown_e_slash_mp.text()
+        );
+
+        let unknown_e_hyphen_mp = lab.exec(Command::Constant {
+            name: Some("e-mp".into()),
+        });
+        assert_eq!(
+            unknown_e_hyphen_mp.exit_code(),
+            1,
+            "{}",
+            unknown_e_hyphen_mp.text()
+        );
+        assert!(
+            unknown_e_hyphen_mp
+                .text()
+                .contains("unknown constant 'e-mp'"),
+            "{}",
+            unknown_e_hyphen_mp.text()
+        );
+
+        let unknown_minus_e_mp = lab.exec(Command::Constant {
+            name: Some("-e/mp".into()),
+        });
+        assert_eq!(
+            unknown_minus_e_mp.exit_code(),
+            1,
+            "{}",
+            unknown_minus_e_mp.text()
+        );
+        assert!(
+            unknown_minus_e_mp
+                .text()
+                .contains("unknown constant '-e/mp'"),
+            "{}",
+            unknown_minus_e_mp.text()
+        );
+
         let unknown_mue = lab.exec(Command::Constant {
             name: Some("mue".into()),
         });
@@ -14219,7 +14309,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "f8d4769794c674fcffd490fdc3b04d4ff852925e9967c5413973e82bf8359834",
+            "3aefb12abc2eab15f87d8126f17e1bd25f343713b5e7d4337e75ab1dd907f9b9",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -14724,6 +14814,16 @@ mod tests {
         );
         assert!(
             ledger.contains(
+                "hash     e0404fef33540ecdef40b36cb1e14112b9e91713cccab65bb6a920fa44106611"
+            ),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains("range    e/mp = 9.5788331560(29)e7"),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains(
                 "hash     fd6d15f0f9cd99a1889486d78f316d0e3299c3b9ff8db13d6429bcb47cccb465"
             ),
             "{ledger}"
@@ -14927,7 +15027,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "f8d4769794c674fcffd490fdc3b04d4ff852925e9967c5413973e82bf8359834",
+            "3aefb12abc2eab15f87d8126f17e1bd25f343713b5e7d4337e75ab1dd907f9b9",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -15383,6 +15483,14 @@ mod tests {
         .expect("pinned mp_mn node");
         assert_eq!(
             lab2.store.get(mp_mn).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let e_mp = physis_core::artifact::ArtifactId::from_hex(
+            "297019b19da4904272c51a8e04b72e02d384fc15dd567e0d888d9edbc3ac5097",
+        )
+        .expect("pinned e_mp node");
+        assert_eq!(
+            lab2.store.get(e_mp).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -16936,7 +17044,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  f8d4769794c674fcffd490fdc3b04d4ff852925e9967c5413973e82bf8359834"),
+            text.contains("constant  ledger  3aefb12abc2eab15f87d8126f17e1bd25f343713b5e7d4337e75ab1dd907f9b9"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
