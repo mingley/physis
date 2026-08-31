@@ -345,8 +345,12 @@ impl Lab {
                 }
                 JournalEvent::Constant { name, .. } => {
                     // Rebuild from live constructors. The recorded node
-                    // hash is not deserialized.
-                    let _ = self.build_constant(&name);
+                    // hash is not deserialized. Empty name is the ledger.
+                    if name.is_empty() {
+                        let _ = self.build_constant_ledger();
+                    } else {
+                        let _ = self.build_constant(&name);
+                    }
                 }
                 JournalEvent::Encode { theory, .. } => {
                     // Rebuild from the live IR package. The recorded
@@ -808,7 +812,7 @@ impl Lab {
             Command::Gaps => self.gaps(),
             Command::Enclose { claim } => self.enclose_claim(&claim),
             Command::Cite { claim } => self.cite_claim(&claim),
-            Command::Constant { name } => self.constant_entry(&name),
+            Command::Constant { name } => self.constant_entry(name.as_deref()),
             Command::Encode { theory } => self.encode_theory(&theory),
             Command::Judge { claim } => self.judge_claim(&claim),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
@@ -1359,12 +1363,16 @@ impl Lab {
 
     /// Independently rebuild a versioned physical constant from live
     /// constructors. Does not raise P3N or P3S, does not mint a kernel
-    /// receipt, Canonical, or P4.
-    fn constant_entry(&mut self, name: &str) -> Response {
-        match self.build_constant(name) {
-            Ok((out, id)) => {
+    /// receipt, Canonical, or P4. Omitted name rebuilds the full ledger.
+    fn constant_entry(&mut self, name: Option<&str>) -> Response {
+        let result = match name.filter(|n| !n.is_empty()) {
+            Some(name) => self.build_constant(name).map(|(out, id)| (out, id, name)),
+            None => self.build_constant_ledger().map(|(out, id)| (out, id, "")),
+        };
+        match result {
+            Ok((out, id, journal_name)) => {
                 self.journal
-                    .record(JournalEvent::constant(name, id.to_hex()));
+                    .record(JournalEvent::constant(journal_name, id.to_hex()));
                 Response::ok(out)
             }
             Err(e) => Response::err(e),
@@ -1418,6 +1426,31 @@ impl Lab {
         text.push_str("  rebuild  ok\n");
         text.push_str("  not P3S; not P3N; not a kernel proof; not P4; not Canonical\n");
         Ok((text, node))
+    }
+
+    /// Rebuild every [`physis_constants::LEDGER`] entry and bundle the
+    /// VersionedConstant nodes. Does not journal and does not deserialize
+    /// a recorded node hash. Not P3N, not Canonical, not P4.
+    fn build_constant_ledger(
+        &mut self,
+    ) -> Result<(String, physis_core::artifact::ArtifactId), String> {
+        let mut payload = String::new();
+        let mut blocks = String::new();
+        let mut parents = Vec::new();
+        for name in physis_constants::LEDGER {
+            let (block, node) = self.build_constant(name)?;
+            payload.push_str(&format!("{name} {}\n", node.to_hex()));
+            parents.push(node);
+            blocks.push_str(&block);
+        }
+        let bundle = self.store.insert(Node::new(
+            NodeKind::VersionedConstant,
+            parents,
+            payload.as_bytes(),
+        ));
+        let mut text = format!("constant  ledger  node {}\n", bundle.to_hex());
+        text.push_str(&blocks);
+        Ok((text, bundle))
     }
 
     /// Independently parse, round-trip, and reconstruct a live theory
@@ -10700,16 +10733,27 @@ mod tests {
     fn provenance_auditor_rebuilds_versioned_constants_and_cannot_review() {
         let mut lab = Lab::standard();
         lab.set_role(Role::Explorer);
-        let blocked = lab.exec(Command::Constant { name: "G".into() });
+        let blocked = lab.exec(Command::Constant {
+            name: Some("G".into()),
+        });
         assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
         assert!(
             blocked.text().contains("explorer cannot constant"),
             "{}",
             blocked.text()
         );
+        let blocked_ledger = lab.exec(Command::Constant { name: None });
+        assert_eq!(blocked_ledger.exit_code(), 1, "{}", blocked_ledger.text());
+        assert!(
+            blocked_ledger.text().contains("explorer cannot constant"),
+            "{}",
+            blocked_ledger.text()
+        );
 
         lab.set_role(Role::Reviewer);
-        let blocked_rev = lab.exec(Command::Constant { name: "G".into() });
+        let blocked_rev = lab.exec(Command::Constant {
+            name: Some("G".into()),
+        });
         assert!(
             blocked_rev.text().contains("reviewer cannot constant"),
             "{}",
@@ -10717,7 +10761,9 @@ mod tests {
         );
 
         lab.set_role(Role::NumericalVerifier);
-        let blocked_nv = lab.exec(Command::Constant { name: "G".into() });
+        let blocked_nv = lab.exec(Command::Constant {
+            name: Some("G".into()),
+        });
         assert!(
             blocked_nv
                 .text()
@@ -10737,7 +10783,9 @@ mod tests {
         );
 
         let g = lab
-            .exec(Command::Constant { name: "G".into() })
+            .exec(Command::Constant {
+                name: Some("G".into()),
+            })
             .text()
             .to_string();
         assert!(g.contains("constant  G  node "), "{g}");
@@ -10759,7 +10807,9 @@ mod tests {
         );
 
         let c = lab
-            .exec(Command::Constant { name: "c".into() })
+            .exec(Command::Constant {
+                name: Some("c".into()),
+            })
             .text()
             .to_string();
         assert!(
@@ -10770,7 +10820,9 @@ mod tests {
         assert!(c.contains("table    1"), "{c}");
 
         let h = lab
-            .exec(Command::Constant { name: "h".into() })
+            .exec(Command::Constant {
+                name: Some("h".into()),
+            })
             .text()
             .to_string();
         assert!(
@@ -10781,13 +10833,64 @@ mod tests {
         assert!(h.contains("662607015e-42"), "{h}");
 
         let unknown = lab.exec(Command::Constant {
-            name: "hbar".into(),
+            name: Some("hbar".into()),
         });
         assert_eq!(unknown.exit_code(), 1, "{}", unknown.text());
         assert!(
             unknown.text().contains("unknown constant 'hbar'"),
             "{}",
             unknown.text()
+        );
+
+        let ledger = lab
+            .exec(Command::Constant { name: None })
+            .text()
+            .to_string();
+        assert!(ledger.starts_with("constant  ledger  node "), "{ledger}");
+        let ledger_id = constant_node_id(&ledger);
+        assert_eq!(
+            ledger_id.to_hex(),
+            "2a2ad9dc2e70d8f1505206d605876242fe6ba8665146376a4a370ed6a74bab84",
+            "journaling must not change the LEDGER bundle payload"
+        );
+        assert_eq!(
+            lab.store.get(ledger_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        for name in physis_constants::LEDGER {
+            assert!(
+                ledger.contains(&format!("constant  {name}  node ")),
+                "ledger missing {name}: {ledger}"
+            );
+        }
+        assert!(
+            ledger.contains(
+                "hash     ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92"
+            ),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains(
+                "hash     691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1"
+            ),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains(
+                "hash     50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef"
+            ),
+            "{ledger}"
+        );
+        assert!(ledger.contains("kind     interval"), "{ledger}");
+        assert!(ledger.contains("kind     ratio"), "{ledger}");
+        assert!(ledger.contains("kind     sci-exact"), "{ledger}");
+        assert!(ledger.contains("662607015e-42"), "{ledger}");
+        assert!(!ledger.contains("receipt"), "{ledger}");
+        assert!(!ledger.contains("theorem"), "{ledger}");
+        assert_eq!(
+            ledger.matches("constant  ").count(),
+            1 + physis_constants::LEDGER.len(),
+            "{ledger}"
         );
 
         let p3n = lab
@@ -10816,7 +10919,9 @@ mod tests {
     fn versioned_constant_restores_by_rebuild_not_deserialize() {
         let mut lab1 = Lab::standard();
         let first = lab1
-            .exec(Command::Constant { name: "G".into() })
+            .exec(Command::Constant {
+                name: Some("G".into()),
+            })
             .text()
             .to_string();
         let live = constant_node_id(&first);
@@ -10845,6 +10950,66 @@ mod tests {
         let forged_hex = "0".repeat(64);
         let tampered =
             format!(r#"{{"event":"constant","t":1,"name":"G","node_hash":"{forged_hex}"}}"#);
+        let mut lab3 = Lab::standard();
+        *lab3.journal_mut() = Journal::from_jsonl(&tampered);
+        lab3.restore_from_journal();
+        assert_eq!(
+            lab3.store.get(live).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
+            .expect("64 hex zeros is an ArtifactId");
+        assert!(lab3.store.get(forged).is_none());
+    }
+
+    #[test]
+    fn versioned_constant_ledger_restores_by_rebuild_not_deserialize() {
+        let mut lab1 = Lab::standard();
+        let first = lab1
+            .exec(Command::Constant { name: None })
+            .text()
+            .to_string();
+        let live = constant_node_id(&first);
+        assert_eq!(
+            live.to_hex(),
+            "2a2ad9dc2e70d8f1505206d605876242fe6ba8665146376a4a370ed6a74bab84",
+            "journaling must not change the LEDGER bundle payload"
+        );
+        assert!(first.starts_with("constant  ledger  node "), "{first}");
+        assert_eq!(
+            lab1.store.get(live).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let jsonl = lab1.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"constant\""), "{jsonl}");
+        assert!(jsonl.contains("\"name\":\"\""), "{jsonl}");
+        assert!(
+            jsonl.contains(&format!("\"node_hash\":\"{}\"", live.to_hex())),
+            "{jsonl}"
+        );
+        assert!(!jsonl.contains("receipt"), "{jsonl}");
+
+        let mut lab2 = Lab::standard();
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        let journal_len = lab2.journal().len();
+        lab2.restore_from_journal();
+        assert_eq!(lab2.journal().len(), journal_len);
+        assert_eq!(
+            lab2.store.get(live).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let g = physis_core::artifact::ArtifactId::from_hex(
+            "f320ea2da0141f16c191acd3001a6fe0b5074fc73d4768fa91f42d8e85abc52c",
+        )
+        .expect("pinned G node");
+        assert_eq!(
+            lab2.store.get(g).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
+        let forged_hex = "0".repeat(64);
+        let tampered =
+            format!(r#"{{"event":"constant","t":1,"name":"","node_hash":"{forged_hex}"}}"#);
         let mut lab3 = Lab::standard();
         *lab3.journal_mut() = Journal::from_jsonl(&tampered);
         lab3.restore_from_journal();

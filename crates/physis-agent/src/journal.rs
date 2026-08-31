@@ -140,10 +140,11 @@ pub enum JournalEvent {
     /// An independent versioned-constant rebuild. Restore rebuilds from
     /// live constructors. The recorded node hash is not deserialized as
     /// authority, is not P3N, is not P3S, and is not Canonical or P4.
+    /// An empty `name` is the full [`physis_constants::LEDGER`] bundle.
     Constant {
         /// Unix millis.
         t: u64,
-        /// Ledger name (`c`, `G`, `h`, …).
+        /// Ledger name (`c`, `G`, `h`, …). Empty means the full ledger.
         name: String,
         /// Content-addressed VersionedConstant node hex. Restore
         /// rebuilds; a forged hash cannot mint the node.
@@ -613,6 +614,15 @@ mod tests {
                 assert_eq!(name, "G");
                 assert_eq!(node_hash, "deadbeef");
             }
+            other => panic!("{other:?}"),
+        }
+        let ledger = JournalEvent::constant("", "deadbeef");
+        let s = serde_json::to_string(&ledger).unwrap();
+        assert!(s.contains("\"name\":\"\""), "{s}");
+        assert!(!s.contains("receipt"), "{s}");
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Constant { name, .. } => assert!(name.is_empty(), "{name}"),
             other => panic!("{other:?}"),
         }
     }

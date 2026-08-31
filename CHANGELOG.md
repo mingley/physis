@@ -12,6 +12,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Protocol
 
+- **`physis constant` with no name rebuilds the full LEDGER.**
+  `provenance-auditor` independently reconstructs every versioned
+  constant in catalog order, stores each `VersionedConstant` node, and
+  bundles them under one ledger node whose payload is `name nodehex`
+  lines. An empty journal `name` is that bundle; a recorded
+  `node_hash` is not deserialized. Named `physis constant G` is
+  unchanged. That is not P3N, not P3S, not a kernel proof, not
+  Canonical, not P4. Theories still use `physis_model` `f64` Qty.
+  Encode pins unchanged. Unique-vacuum graph id unchanged. P3N count
+  stays 4. Verified: explorer blocked; restore rebuilds; G node
+  `f320ea2da0141f16c191acd3001a6fe0b5074fc73d4768fa91f42d8e85abc52c`;
+  ledger node
+  `2a2ad9dc2e70d8f1505206d605876242fe6ba8665146376a4a370ed6a74bab84`.
+
 - **`physis constant` independently rebuilds the versioned ledger.**
   `provenance-auditor` reconstructs SI 2019 `Ratio` / `SciExact` entries
   and CODATA 2018 `G` from live constructors, stores a

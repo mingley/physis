@@ -244,10 +244,9 @@ fn parse(args: &[String]) -> Result<Command, String> {
             let claim = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Cite { claim })
         }
-        "constant" => {
-            let name = args.get(1).ok_or_else(usage)?.clone();
-            Ok(Command::Constant { name })
-        }
+        "constant" => Ok(Command::Constant {
+            name: args.get(1).cloned(),
+        }),
         "encode" => {
             let theory = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Encode { theory })
@@ -280,7 +279,7 @@ USAGE:
     physis gaps
     physis enclose <claim-id>
     physis cite <claim-id>
-    physis constant <name>
+    physis constant [name]
     physis encode <theory>
     physis judge <claim-id>
     physis falsify <claim-id>

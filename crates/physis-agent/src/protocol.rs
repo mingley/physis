@@ -166,10 +166,12 @@ pub enum Command {
     },
     /// Independently rebuild a versioned physical constant from live
     /// constructors. Not P3N, not P3S, not a kernel receipt, not
-    /// Canonical, and not P4.
+    /// Canonical, and not P4. `name: None` rebuilds the full ledger.
     Constant {
-        /// Ledger name (`c`, `G`, `h`, …).
-        name: String,
+        /// Ledger name (`c`, `G`, `h`, …). `None` rebuilds every
+        /// [`physis_constants::LEDGER`] entry into one bundle node.
+        #[serde(default)]
+        name: Option<String>,
     },
     /// Independently parse, round-trip, and reconstruct a live theory
     /// IR package. Stores a content-addressed EncodingPackage. Not P3S,

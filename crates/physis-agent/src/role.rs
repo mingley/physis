@@ -21,7 +21,8 @@ use crate::protocol::Command;
 /// cannot independently rehash a `SourceRecord`: that is
 /// [`Role::ProvenanceAuditor`] (not P3S). A reviewer cannot independently
 /// rebuild a versioned Constant: that is [`Role::ProvenanceAuditor`]
-/// (`physis constant`; not P3N, not P3S). A reviewer cannot independently
+/// (`physis constant [name]`; omitted name rebuilds the full LEDGER;
+/// not P3N, not P3S). A reviewer cannot independently
 /// round-trip a live theory IR package: that is [`Role::EncodingAuditor`]
 /// (not P3S). An explorer cannot independently rebuild a `from_lab`
 /// judgment: that is [`Role::Judge`] (JSON cannot mint `logical proved`).
@@ -381,12 +382,17 @@ mod tests {
         assert!(!Role::Explorer.permits(&cite));
         assert!(!Role::Reviewer.permits(&cite));
         assert!(!Role::NumericalVerifier.permits(&cite));
-        let constant = Command::Constant { name: "G".into() };
+        let constant = Command::Constant {
+            name: Some("G".into()),
+        };
         assert!(Role::ProvenanceAuditor.permits(&constant));
         assert!(!Role::Explorer.permits(&constant));
         assert!(!Role::Reviewer.permits(&constant));
         assert!(!Role::NumericalVerifier.permits(&constant));
         assert!(!Role::EncodingAuditor.permits(&constant));
+        let ledger = Command::Constant { name: None };
+        assert!(Role::ProvenanceAuditor.permits(&ledger));
+        assert!(!Role::Explorer.permits(&ledger));
         assert!(Role::Lab.permits(&cite));
         assert!(Role::parse("provenance-auditor") == Some(Role::ProvenanceAuditor));
     }
