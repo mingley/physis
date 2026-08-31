@@ -393,6 +393,16 @@ pub fn electron_deuteron_magnetic_moment_ratio() -> Qty<Dimensionless> {
     Qty::new(-2_143.923_491_5)
 }
 
+/// Electron to shielded-helion magnetic-moment ratio μ_e/μ′_h, CODATA 2018.
+///
+/// This is the recommended centre for the helion in spherical gas at
+/// 25 °C, not the electron-helion mass ratio and not the
+/// shielded-proton moment ratio. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn electron_to_shielded_helion_magnetic_moment_ratio() -> Qty<Dimensionless> {
+    Qty::new(864.058_257)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -1337,6 +1347,40 @@ mod tests {
             physis_constants::electron_deuteron_magnetic_moment_ratio().hash,
             physis_constants::electron_deuteron_mass_ratio().hash,
             "mu_e_mud is not me_md"
+        );
+        assert!(
+            physis_constants::lookup("mue_mu0h").is_none(),
+            "mue_mu0h is not a ledger name; the live name is mu_e_mu0h"
+        );
+        let mu_e_mu0h = physis_constants::electron_to_shielded_helion_magnetic_moment_ratio();
+        let mu_e_mu0h_centre = Ratio::new(864_058_257, 10i128.pow(6));
+        assert_eq!(
+            electron_to_shielded_helion_magnetic_moment_ratio().value(),
+            mu_e_mu0h_centre.to_f64(),
+            "mu_e_mu0h Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_e_mu0h.value.contains(Interval::point(mu_e_mu0h_centre)),
+            "mu_e_mu0h Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_e_mu0h.value.lo, mu_e_mu0h.value.hi,
+            "ledger mu_e_mu0h stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::electron_to_shielded_helion_magnetic_moment_ratio().hash,
+            physis_constants::electron_helion_mass_ratio().hash,
+            "mu_e_mu0h is not me_mh"
+        );
+        assert_ne!(
+            physis_constants::electron_to_shielded_helion_magnetic_moment_ratio().hash,
+            physis_constants::electron_to_shielded_proton_magnetic_moment_ratio().hash,
+            "mu_e_mu0h is not mu_e_mu0p"
+        );
+        assert_ne!(
+            physis_constants::electron_to_shielded_helion_magnetic_moment_ratio().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_e_mu0h is not mu0"
         );
 
         let mp = physis_constants::proton_mass();

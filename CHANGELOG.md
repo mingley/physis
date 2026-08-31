@@ -22,6 +22,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron to shielded-helion magnetic-moment ratio is a one-sigma Interval.**
+  `physis-constants` versions `mu_e_mu0h` as the CODATA 2018 hull
+  `864.058257(10)` from JPCRD 50, 033105 table XXXI (Electron, e-).
+  This is the shielded helion in spherical gas at 25 °C, not the
+  electron-helion mass ratio `me_mh`, not the shielded-proton ratio
+  `mu_e_mu0p`, not vacuum permeability `mu0`, not an SI defining Ratio,
+  not the Thomson cross section, and not P3N. `physis_model`
+  `electron_to_shielded_helion_magnetic_moment_ratio()` Qty locksteps to
+  the recommended centre inside the hull. Adding `mu_e_mu0h` to LEDGER
+  changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, and `m_p` hashes are unchanged. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: `mu_e_mu0h` hash
+  `3e3e29f0ac633705b8d8467b80b0cd229b07f4d7ba44fe32b84730261c576a9b`;
+  node
+  `f6b2ab92d421f6139a457f76b4898616573c38cef1e29d29941e0eb41c795e30`;
+  ledger node
+  `a9e7c73c18ae73364cc76cb9f38fa07c5351bde758c7dbbd59c221dae27ad4be`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`,
+  `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, and `m_p` hashes and nodes
+  unchanged.
+
 - **CODATA 2018 electron-deuteron magnetic-moment ratio is a one-sigma Interval.**
   `physis-constants` versions `mu_e_mud` as the CODATA 2018 hull
   `−2143.9234915(56)` from JPCRD 50, 033105 table XXXI (Electron, e-).
