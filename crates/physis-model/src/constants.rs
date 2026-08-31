@@ -366,6 +366,15 @@ pub fn electron_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
     Qty::new(-658.210_687_89)
 }
 
+/// Electron to shielded-proton magnetic-moment ratio μ_e/μ′_p, CODATA 2018.
+///
+/// This is the recommended signed centre for the proton in spherical
+/// H2O at 25 °C, not the free-proton moment ratio. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn electron_to_shielded_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
+    Qty::new(-658.227_597_1)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -1233,6 +1242,35 @@ mod tests {
             physis_constants::electron_proton_magnetic_moment_ratio().hash,
             physis_constants::electron_proton_mass_ratio().hash,
             "mu_e_mup is not me_mp"
+        );
+        assert!(
+            physis_constants::lookup("mue_mu0p").is_none(),
+            "mue_mu0p is not a ledger name; the live name is mu_e_mu0p"
+        );
+        let mu_e_mu0p = physis_constants::electron_to_shielded_proton_magnetic_moment_ratio();
+        let mu_e_mu0p_centre = Ratio::new(-6_582_275_971, 10i128.pow(7));
+        assert_eq!(
+            electron_to_shielded_proton_magnetic_moment_ratio().value(),
+            mu_e_mu0p_centre.to_f64(),
+            "mu_e_mu0p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_e_mu0p.value.contains(Interval::point(mu_e_mu0p_centre)),
+            "mu_e_mu0p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_e_mu0p.value.lo, mu_e_mu0p.value.hi,
+            "ledger mu_e_mu0p stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::electron_to_shielded_proton_magnetic_moment_ratio().hash,
+            physis_constants::electron_proton_magnetic_moment_ratio().hash,
+            "mu_e_mu0p is not mu_e_mup"
+        );
+        assert_ne!(
+            physis_constants::electron_to_shielded_proton_magnetic_moment_ratio().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_e_mu0p is not mu0"
         );
 
         let mp = physis_constants::proton_mass();
