@@ -23,7 +23,10 @@ expression would not compile.
 |---|---|
 | `special-relativity` | flat Minkowski kinematics with a Galilean-toggle knob |
 
-The Lorentz boost lives on the IR package (`boost lorentz`).
+The Lorentz boost lives on the IR package (`boost lorentz`) together
+with the catalog interval identity tree. `lean_ref` is that catalog
+type, not a Physlib pointer without the tree. A token-only Lorentz
+package fails closed. That is not a kernel proof.
 `add-binomial-gamma` appends `boost binomial-gamma` and is an IR
 mutation: truncated γ = 1 + β²/2 fails interval and mass-shell
 invariance. Velocity composition stays Einstein on that fork.

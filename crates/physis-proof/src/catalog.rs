@@ -413,6 +413,27 @@ mod tests {
     }
 
     #[test]
+    fn catalog_tree_binds_interval_beside_lorentz_token() {
+        let interval = lookup("sr.invariant-interval").unwrap();
+        let bound = catalog_tree_binding(
+            Some(interval.lean_type),
+            &[
+                "boost lorentz",
+                "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * (t^2 - x^2)",
+            ],
+        )
+        .unwrap()
+        .expect("interval tree must bind beside the Lorentz token");
+        assert_eq!(bound.claim_id, interval.claim_id);
+        let token_only =
+            catalog_tree_binding(Some(interval.lean_type), &["boost lorentz"]).unwrap_err();
+        assert!(
+            token_only.contains("catalog identity whose tree is not in the equations"),
+            "{token_only}"
+        );
+    }
+
+    #[test]
     fn catalog_tree_skips_missing_lean_ref() {
         assert!(catalog_tree_binding(None, &["(b - a) - (c - a) + (c - b)"])
             .unwrap()

@@ -10923,6 +10923,10 @@ mod tests {
         assert!(gr.contains("round-trip canonical"), "{gr}");
         assert!(gr.contains("not P3S"), "{gr}");
         assert!(!gr.contains("receipt"), "{gr}");
+        assert!(
+            !gr.contains("catalog identity tree"),
+            "Einstein-Hilbert must skip the catalog tree: {gr}"
+        );
         let gr_id = encoding_package_id(&gr);
         assert_eq!(
             gr_id.to_hex(),
@@ -10937,18 +10941,15 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(sr.contains("equations  1"), "{sr}");
+        assert!(sr.contains("equations  2"), "{sr}");
         assert!(sr.contains("round-trip canonical"), "{sr}");
+        assert!(sr.contains("catalog identity tree  ok"), "{sr}");
         assert!(sr.contains("not P3S"), "{sr}");
         assert!(!sr.contains("receipt"), "{sr}");
-        assert!(
-            !sr.contains("catalog identity tree"),
-            "token Lorentz boost must skip the catalog tree: {sr}"
-        );
         let sr_id = encoding_package_id(&sr);
         assert_eq!(
             sr_id.to_hex(),
-            "4e8c15ecdfc2a60f3bf481898c7cb3e852d22ab9884f377b7728662c3f830c1e"
+            "91f188d526d4190ba611631b2f41818ee9a46c3e924fe8297d26592b9819691e"
         );
         assert_ne!(sr_id, gr_id);
         assert_ne!(sr_id, nand_id);

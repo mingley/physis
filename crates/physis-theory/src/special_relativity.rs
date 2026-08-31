@@ -8,14 +8,15 @@
 //! - the energy–momentum invariant `E² − (pc)² = (mc²)²` is frame-independent,
 //!   built from *typed* quantities so `pc` and `mc²` are forced to be energies.
 //!
-//! The Lorentz boost lives on the IR package. A truncated binomial γ
-//! (`add-binomial-gamma`) is a package mutation, not the `absolute_time`
-//! knob: interval and mass-shell fail on that fork. Velocity composition
-//! stays Einstein on that fork. A minus-uv collinear composition
-//! (`add-minus-uv`) is a second package mutation: `w = (u+v)/(1−uv)`
-//! exceeds `c` while Lorentz boosts still hold the interval and mass
-//! shell. That is not Galilean `u+v` and not the `absolute_time` knob.
-//! `absolute_time` still switches exact Lorentz to Galilean.
+//! The Lorentz boost and the catalog interval identity tree live on the
+//! IR package. A truncated binomial γ (`add-binomial-gamma`) is a
+//! package mutation, not the `absolute_time` knob: interval and
+//! mass-shell fail on that fork. Velocity composition stays Einstein on
+//! that fork. A minus-uv collinear composition (`add-minus-uv`) is a
+//! second package mutation: `w = (u+v)/(1−uv)` exceeds `c` while Lorentz
+//! boosts still hold the interval and mass shell. That is not Galilean
+//! `u+v` and not the `absolute_time` knob. `absolute_time` still
+//! switches exact Lorentz to Galilean.
 
 use physis_core::claim::{Claim, Verdict};
 use physis_core::error::CoreError;
@@ -26,7 +27,8 @@ use physis_core::{Energy, Momentum, Qty};
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{electron_mass, C};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
-use physis_proof::lookup;
+use physis_proof::catalog::lorentz_interval;
+use physis_proof::{lookup, parse_expr};
 
 use crate::framework::Theory;
 
@@ -44,6 +46,8 @@ const BETA: f64 = 0.6;
 const BETA_VANISHING: f64 = 1.0e-6;
 /// Exact Lorentz boost on the live SR package.
 const BOOST_LORENTZ: &str = "boost lorentz";
+/// Catalog interval identity tree (c = 1). Not a kernel proof.
+const INTERVAL_EQ: &str = "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * (t^2 - x^2)";
 /// Truncated binomial γ = 1 + β²/2.
 const BOOST_BINOMIAL: &str = "boost binomial-gamma";
 /// Collinear Einstein addition with the denominator sign flipped.
@@ -53,19 +57,40 @@ const COMPOSE_U: f64 = 0.8;
 const COMPOSE_V: f64 = 0.7;
 
 fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
+    let live = lorentz_interval().canonical();
     let mut lorentz = false;
     let mut binomial = false;
     let mut minus_uv = false;
+    let mut interval_tree = false;
     for eq in &pkg.equations {
         match eq.trim() {
             BOOST_LORENTZ => lorentz = true,
             BOOST_BINOMIAL => binomial = true,
             COMPOSE_MINUS_UV => minus_uv = true,
-            _ => {}
+            t => {
+                let tree = parse_expr(t)
+                    .map_err(|e| format!("special-relativity interval equation: {e}"))?
+                    .canonical();
+                if tree != live {
+                    return Err(format!(
+                        "special-relativity equation is not the Lorentz boost, the interval identity tree, binomial-gamma, or minus-uv: {t}"
+                    ));
+                }
+                if interval_tree {
+                    return Err(format!(
+                        "{} package has two interval identity trees",
+                        pkg.id
+                    ));
+                }
+                interval_tree = true;
+            }
         }
     }
     if !lorentz {
         return Err(format!("{} package has no Lorentz boost", pkg.id));
+    }
+    if !interval_tree {
+        return Err(format!("{} package has no interval identity tree", pkg.id));
     }
     Ok((binomial, minus_uv))
 }
@@ -119,11 +144,14 @@ pub struct SpecialRelativity {
 }
 
 impl SpecialRelativity {
-    /// IR package for this boost encoding. Equations are `boost lorentz`
-    /// and, when forked, `boost binomial-gamma` and/or `compose minus-uv`.
-    /// `absolute_time` stays on the struct.
+    /// IR package for this boost encoding. Equations are `boost lorentz`,
+    /// the catalog interval identity tree, and, when forked,
+    /// `boost binomial-gamma` and/or `compose minus-uv`. `absolute_time`
+    /// stays on the struct. `lean_ref` is the catalog interval type, not
+    /// a Physlib pointer without the tree.
     pub fn package(&self) -> TheoryPackage {
-        let mut equations = vec![BOOST_LORENTZ.to_string()];
+        let spec = lookup(SR_INVARIANT_INTERVAL).expect("interval is a catalog identity");
+        let mut equations = vec![BOOST_LORENTZ.to_string(), INTERVAL_EQ.to_string()];
         if self.binomial_gamma {
             equations.push(BOOST_BINOMIAL.to_string());
         }
@@ -138,12 +166,11 @@ impl SpecialRelativity {
             equations,
             claims: vec![physis_ir::ClaimDecl {
                 id: SR_INVARIANT_INTERVAL.into(),
-                statement: "The spacetime interval s² = (cΔt)² − Δx² is invariant under a boost."
-                    .into(),
+                statement: spec.statement.into(),
                 layer: "spacetime".into(),
                 class: "model-internal".into(),
             }],
-            lean_ref: None,
+            lean_ref: Some(spec.lean_type.into()),
         }
     }
 
@@ -435,6 +462,26 @@ mod tests {
     }
 
     #[test]
+    fn live_package_binds_the_interval_identity_tree() {
+        let pkg = SpecialRelativity::default().package();
+        let bound = physis_proof::catalog_tree_binding(pkg.lean_ref.as_deref(), &pkg.equations)
+            .unwrap()
+            .expect("live SR must bind the interval tree");
+        assert_eq!(bound.claim_id, SR_INVARIANT_INTERVAL);
+        assert_eq!(pkg.equations[0], BOOST_LORENTZ);
+        assert_eq!(pkg.equations[1], INTERVAL_EQ);
+    }
+
+    #[test]
+    fn token_boost_without_the_interval_tree_is_closed() {
+        let mut pkg = SpecialRelativity::default().package();
+        pkg.equations = vec![BOOST_LORENTZ.to_string()];
+        let err = SpecialRelativity::from_package(&pkg).unwrap_err();
+        assert!(err.contains("no interval identity tree"), "{err}");
+        assert!(!err.contains("receipt"), "{err}");
+    }
+
+    #[test]
     fn absolute_time_knob_breaks_every_invariant() {
         // The Galilean→Einstein revolution as one knob turn: flipping to
         // absolute time makes all three relativistic theorems fail.
@@ -668,10 +715,15 @@ mod tests {
         let pkg = parse_package(&src).unwrap();
         assert_eq!(
             pkg.equations.len(),
-            1,
-            "live package must stay boost lorentz"
+            2,
+            "live package must stay boost lorentz plus the interval identity tree"
         );
         assert_eq!(pkg.equations[0], BOOST_LORENTZ);
+        assert_eq!(pkg.equations[1], INTERVAL_EQ);
+        assert_eq!(
+            pkg.lean_ref.as_deref(),
+            Some(lookup(SR_INVARIANT_INTERVAL).unwrap().lean_type)
+        );
         assert_eq!(
             SpecialRelativity::from_package(&pkg).unwrap(),
             t,

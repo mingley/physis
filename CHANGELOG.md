@@ -12,16 +12,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Encoding
 
+- **Special relativity live package carries the catalog interval tree.**
+  `boost lorentz` stays the evaluator encoding. The package also lists
+  the interval identity polynomial and `lean_ref` is the catalog type,
+  so live `encode` binds the tree. A token-only Lorentz package fails
+  closed. That is not a Physlib pointer without the tree, not a kernel
+  proof, not P3S, not Canonical, not P4. GR and Planck stay token
+  packages. de-rham coboundary pin unchanged. Verified: encode
+  special-relativity prints `catalog identity tree  ok` and
+  `equations  2`; pin
+  `91f188d526d4190ba611631b2f41818ee9a46c3e924fe8297d26592b9819691e`.
+
 - **Live encode binds `lean_ref` to the catalog identity tree.**
   `physis encode` still stores the package hash of the canonical IR
   bytes. A live package with `lean_ref` must parse an equation whose
   canonical tree is the catalog identity named by that type. Token
-  packages (Lorentz boost, Planck–Bose, Einstein–Hilbert, …) have no
-  `lean_ref` and skip. A catalog type without the tree, or a Physlib
-  pointer that is not a catalog type, fails closed. That is not a
-  kernel proof, not P3S, not Canonical, not P4. Encode pins unchanged.
-  Verified: de-rham prints `catalog identity tree  ok`;
-  special-relativity and planck do not; pin
+  packages (Planck–Bose, Einstein–Hilbert, …) have no `lean_ref` and
+  skip. A catalog type without the tree, or a Physlib pointer that is
+  not a catalog type, fails closed. That is not a kernel proof, not
+  P3S, not Canonical, not P4. de-rham pin unchanged. Verified: de-rham
+  prints `catalog identity tree  ok`; planck does not; pin
   `187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6`.
 
 ### Validated numerics
