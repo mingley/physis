@@ -12,6 +12,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Encoding
 
+- **Encode lists each bound catalog identity by claim id.**
+  Live encode still hashes the canonical IR bytes. After reconstruct
+  it prints one `catalog identity tree  <claim-id>` line per catalog
+  tree in the equations, in catalog order. `lean_ref` still fails
+  closed if it names a catalog type whose tree is missing. Token
+  packages print no such line. That is not a kernel proof, not P3S,
+  not Canonical, not P4. Encode pins unchanged. Verified: de-rham
+  prints `dec.d-squared-zero`; special-relativity prints interval,
+  composition, and mass-shell; GR and Planck skip; pins
+  `187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6`
+  and
+  `faecac5791ad5650337c61dcb10e45d5eb36ca24c0423df51891673ba3da3ef6`.
+
 - **Special relativity live package carries all three catalog identity trees.**
   `boost lorentz` stays the evaluator encoding. The package lists the
   interval, Einstein composition, and mass-shell polynomials. `lean_ref`
@@ -20,8 +33,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   is not a Physlib pointer without the tree, not a kernel proof, not
   P3S, not Canonical, not P4. GR and Planck stay token packages.
   de-rham coboundary pin unchanged. Verified: encode special-relativity
-  prints `catalog identity tree  ok`, `equations  4`, and `claims     3`;
-  pin `faecac5791ad5650337c61dcb10e45d5eb36ca24c0423df51891673ba3da3ef6`.
+  `equations  4` and `claims     3`; pin
+  `faecac5791ad5650337c61dcb10e45d5eb36ca24c0423df51891673ba3da3ef6`.
 
 - **Special relativity live package carries the catalog interval tree.**
   `boost lorentz` stays the evaluator encoding. The package also lists
@@ -30,8 +43,7 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   closed. That is not a Physlib pointer without the tree, not a kernel
   proof, not P3S, not Canonical, not P4. GR and Planck stay token
   packages. de-rham coboundary pin unchanged. Verified: encode
-  special-relativity prints `catalog identity tree  ok` and
-  `equations  2`; pin
+  special-relativity bound the interval tree and `equations  2`; pin
   `91f188d526d4190ba611631b2f41818ee9a46c3e924fe8297d26592b9819691e`.
 
 - **Live encode binds `lean_ref` to the catalog identity tree.**
@@ -42,7 +54,7 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   skip. A catalog type without the tree, or a Physlib pointer that is
   not a catalog type, fails closed. That is not a kernel proof, not
   P3S, not Canonical, not P4. de-rham pin unchanged. Verified: de-rham
-  prints `catalog identity tree  ok`; planck does not; pin
+  bound the coboundary tree; planck does not; pin
   `187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6`.
 
 ### Validated numerics

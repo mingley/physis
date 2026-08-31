@@ -306,6 +306,24 @@ pub fn catalog_tree_binding(
     }
 }
 
+/// Catalog identities whose trees appear in `equations`.
+///
+/// Token equations that do not parse are skipped. Order follows
+/// [`CATALOG`]. This is not a kernel proof.
+pub fn catalog_trees_in(equations: &[impl AsRef<str>]) -> Vec<&'static IdentitySpec> {
+    let parsed: Vec<String> = equations
+        .iter()
+        .filter_map(|eq| parse_expr(eq.as_ref()).ok().map(|e| e.canonical()))
+        .collect();
+    CATALOG
+        .iter()
+        .filter(|spec| {
+            let catalog = (spec.identity)().canonical();
+            parsed.iter().any(|t| t == &catalog)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -456,6 +474,19 @@ mod tests {
             .unwrap()
             .expect("interval tree must still bind among the three identities");
         assert_eq!(bound_i.claim_id, interval.claim_id);
+        let listed: Vec<_> = catalog_trees_in(&eqs)
+            .into_iter()
+            .map(|s| s.claim_id)
+            .collect();
+        assert_eq!(
+            listed,
+            vec![
+                "sr.invariant-interval",
+                "sr.subluminal-composition",
+                "sr.energy-momentum-invariant",
+            ]
+        );
+        assert!(catalog_trees_in(&["boost lorentz"]).is_empty());
     }
 
     #[test]

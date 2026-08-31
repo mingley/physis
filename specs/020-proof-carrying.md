@@ -236,7 +236,8 @@ identity; a slug-only review line is not P3S.
   not P3S). A reviewer cannot independently round-trip a live theory
   IR package; that is `encoding-auditor` (`physis encode`; combinational
   NAND, Klein–Gordon stencil, and Wilson U(1) plaquettes; a package with
-  `lean_ref` must bind the catalog identity tree, not a kernel proof;
+  `lean_ref` must bind the catalog identity tree; encode lists each
+  bound identity by claim id, not a kernel proof;
   not P3S). An explorer cannot
   independently rebuild a `from_lab` judgment; that is `judge`
   (`physis judge`; unique-vacuum stays heuristic failed; JSON cannot
