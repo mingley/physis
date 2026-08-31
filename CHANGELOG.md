@@ -22,6 +22,43 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 proton rms charge radius is a one-sigma Interval.**
+  `physis-constants` versions `rp` as the CODATA 2018 hull
+  `8.414(19)×10^{-16}` m from JPCRD 50, 033105 table XXXI
+  (Proton, p). This is not classical electron radius `re`, not
+  electron Compton, not a certificate of the deuteron rms radius,
+  not an SI defining Ratio, not the Thomson cross section, and not
+  P3N. The reduced proton Compton wavelength remains unstored
+  (`ħ`). The proton-tau ratio is a PDG reprint (footnote e) and is
+  not stored. Electron mass is still not stored (`10^{42}`
+  overflows `i128`). `physis_model` `proton_rms_charge_radius()` Qty
+  locksteps to the recommended centre inside the hull. Adding `rp`
+  to LEDGER changes the ledger bundle pin. The `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`,
+  `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`,
+  `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`,
+  `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`,
+  `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`,
+  `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`,
+  `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, and `lambda_C_p` hashes are unchanged. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `rp` hash 722e45d219142c882b4475408333d68c48c5952af08680c0a16bed5af1bfc944;
+  node 1cae30455d7ad0da2a7cee5aea88b53749b93936a1d209c3e4bb514f1d9c3058; ledger node 26a30d95e3b9db4a83335f23999d2da6f24f20a49099362283a02174c3774494. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`,
+  `lambda_C_mu`, `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`,
+  `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`,
+  `mp_mmu`, `mp_mn`, `e_mp`, `M_p`, and `lambda_C_p` hashes and
+  nodes unchanged.
+
 - **CODATA 2018 proton Compton wavelength is a one-sigma Interval.**
   `physis-constants` versions `lambda_C_p` as the CODATA 2018 hull
   `1.32140985539(40)×10^{-15}` m from JPCRD 50, 033105 table XXXI

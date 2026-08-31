@@ -144,6 +144,15 @@ pub fn proton_compton_wavelength() -> Qty<Length> {
     meters(1.321_409_855_39e-15)
 }
 
+/// Proton rms charge radius r_p (m), CODATA 2018.
+///
+/// This is the recommended centre in metres from the proton section, not
+/// classical electron radius and not a deuteron radius. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn proton_rms_charge_radius() -> Qty<Length> {
+    meters(8.414e-16)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -2629,6 +2638,49 @@ mod tests {
             physis_constants::proton_compton_wavelength().hash,
             physis_constants::proton_mass().hash,
             "lambda_C_p is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("r_p").is_none(),
+            "r_p is not a ledger name; the live name is rp"
+        );
+        let rp = physis_constants::proton_rms_charge_radius();
+        let rp_centre = Ratio::new(8414, 10i128.pow(19));
+        assert_eq!(
+            proton_rms_charge_radius().value(),
+            rp_centre.to_f64(),
+            "rp Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            rp.value.contains(Interval::point(rp_centre)),
+            "rp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            rp.value.lo, rp.value.hi,
+            "ledger rp stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_rms_charge_radius().hash,
+            physis_constants::classical_electron_radius().hash,
+            "rp is not re"
+        );
+        assert_ne!(
+            physis_constants::proton_rms_charge_radius().hash,
+            physis_constants::proton_compton_wavelength().hash,
+            "rp is not lambda_C_p"
+        );
+        assert_ne!(
+            physis_constants::proton_rms_charge_radius().hash,
+            physis_constants::compton_wavelength().hash,
+            "rp is not lambda_C"
+        );
+        assert_ne!(
+            physis_constants::proton_rms_charge_radius().hash,
+            physis_constants::proton_mass().hash,
+            "rp is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("rd").is_none(),
+            "deuteron rms charge radius is not stored in this increment"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),

@@ -509,6 +509,10 @@ fn codata_2018_proton_compton_wavelength_source() -> SourceRecord {
     codata_2018_jpcrd("Proton, p", "lambda_C_p = 1.32140985539(40)e-15")
 }
 
+fn codata_2018_proton_rms_charge_radius_source() -> SourceRecord {
+    codata_2018_jpcrd("Proton, p", "rp = 8.414(19)e-16")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -1974,6 +1978,34 @@ pub fn proton_compton_wavelength() -> Constant<Interval> {
     )
 }
 
+/// CODATA 2018 one-sigma hull of 8.414(19)×10⁻¹⁶ m.
+fn codata_2018_proton_rms_charge_radius_interval() -> Interval {
+    let scale = 10i128.pow(19);
+    let mu = 8414i128;
+    let sigma = 19;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Proton rms charge radius r_p, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in metres from the proton section, not
+/// classical electron radius `re`, not electron Compton, not a
+/// certificate of the deuteron radius, not an SI defining Ratio, and
+/// not P3N. The reduced proton Compton wavelength is ħ/m_p c and is
+/// not stored. The proton-tau ratio is a PDG reprint of `m_τc²`
+/// (JPCRD table XXXI footnote e) and is not stored. Electron mass is
+/// not stored: `10^{42}` overflows `i128`. Theories still use
+/// `physis_model` `f64` Qty.
+pub fn proton_rms_charge_radius() -> Constant<Interval> {
+    Constant::new(
+        "rp",
+        codata_2018_proton_rms_charge_radius_interval(),
+        "m",
+        codata_2018_proton_rms_charge_radius_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 fn si_brochure_table_8(range: &str) -> SourceRecord {
     SourceRecord::new(
         Citation {
@@ -2187,6 +2219,7 @@ pub const LEDGER: &[&str] = &[
     "e_mp",
     "M_p",
     "lambda_C_p",
+    "rp",
     "au",
     "eV",
     "GM_sun",
@@ -2299,6 +2332,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "e_mp" => Some(listing(proton_charge_to_mass(), "interval")),
         "M_p" => Some(listing(proton_molar_mass(), "interval")),
         "lambda_C_p" => Some(listing(proton_compton_wavelength(), "interval")),
+        "rp" => Some(listing(proton_rms_charge_radius(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -9923,6 +9957,118 @@ mod tests {
         assert!(lookup("lambda_C_mu").is_some());
         assert!(lookup("M_p").is_some());
         assert!(lookup("m_p").is_some());
+        assert!(lookup("rp").is_some());
+    }
+
+    #[test]
+    fn codata_2018_proton_rms_charge_radius_is_a_one_sigma_interval() {
+        let r = proton_rms_charge_radius();
+        let scale = 10i128.pow(19);
+        let lo = Ratio::new(8395, scale);
+        let hi = Ratio::new(8433, scale);
+        let centre = Ratio::new(8414, scale);
+        assert_eq!(r.name, "rp");
+        assert_eq!(r.unit, "m");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Proton, p"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("rp = 8.414(19)e-16")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "rp is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA rp is a positive charge-radius hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[1679/2000000000000000000, 8433/10000000000000000000]"
+        );
+        assert_eq!(r.hash, proton_rms_charge_radius().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "rp",
+                codata_2018_proton_rms_charge_radius_interval(),
+                "m",
+                codata_2018_proton_rms_charge_radius_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, classical_electron_radius().hash, "rp is not re");
+        assert_ne!(
+            r.hash,
+            proton_compton_wavelength().hash,
+            "rp is not lambda_C_p"
+        );
+        assert_ne!(r.hash, compton_wavelength().hash, "rp is not lambda_C");
+        assert_ne!(r.hash, proton_mass().hash, "rp is not m_p");
+        assert_ne!(r.hash, proton_molar_mass().hash, "rp is not M_p");
+        assert_ne!(r.hash, newtonian_g().hash, "rp is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            classical_electron_radius().provenance.source_hash,
+            "rp range is not the re range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            proton_compton_wavelength().provenance.source_hash,
+            "rp range is not the lambda_C_p range"
+        );
+        assert_eq!(
+            classical_electron_radius().hash.to_hex(),
+            "1b8dfc7aa2f90183fd50dab61cf3361f57c3c906e6a221ffa3b2ef17302a38d4",
+            "re hash must stay pinned when rp is added"
+        );
+        assert_eq!(
+            proton_compton_wavelength().hash.to_hex(),
+            "439c5267d7664a8bd5c359b40f5a2291b0b364e0a915c57378abd6787b9d5a08",
+            "lambda_C_p hash must stay pinned when rp is added"
+        );
+        assert_eq!(
+            compton_wavelength().hash.to_hex(),
+            "6280f2b2f61adf3ae0fa3e65f3b12cfb4982f6601027d98552f541246198c3d8",
+            "lambda_C hash must stay pinned when rp is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when rp is added"
+        );
+        assert_eq!(
+            proton_molar_mass().hash.to_hex(),
+            "6ca2722d15970d11783522598ee8879e560019865477f1735041e1c9c8180149",
+            "M_p hash must stay pinned when rp is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when rp is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "722e45d219142c882b4475408333d68c48c5952af08680c0a16bed5af1bfc944"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("r_p").is_none());
+        assert!(lookup("r-p").is_none());
+        assert!(lookup("Rp").is_none());
+        assert!(lookup("rd").is_none());
+        assert!(lookup("lambdabar_C_p").is_none());
+        assert!(lookup("mp_mtau").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("rp").is_some());
+        assert!(lookup("lambda_C_p").is_some());
+        assert!(lookup("lambda_C").is_some());
+        assert!(lookup("re").is_some());
+        assert!(lookup("m_p").is_some());
     }
 
     #[test]
@@ -10127,7 +10273,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 71);
+        assert_eq!(LEDGER.len(), 72);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -10437,6 +10583,11 @@ mod tests {
             lookup("lambda_C_p").unwrap().hash.to_hex(),
             "439c5267d7664a8bd5c359b40f5a2291b0b364e0a915c57378abd6787b9d5a08"
         );
+        assert_eq!(lookup("rp").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("rp").unwrap().hash.to_hex(),
+            "722e45d219142c882b4475408333d68c48c5952af08680c0a16bed5af1bfc944"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -10579,6 +10730,10 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("lambdaCp").is_none());
         assert!(lookup("lambda_C,p").is_none());
+        assert!(lookup("r_p").is_none());
+        assert!(lookup("r-p").is_none());
+        assert!(lookup("Rp").is_none());
+        assert!(lookup("rd").is_none());
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
