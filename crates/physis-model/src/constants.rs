@@ -371,6 +371,18 @@ pub fn neutron_proton_mass_difference_energy_equivalent() -> Qty<Energy> {
     joule(2.072_146_89e-13)
 }
 
+/// Neutron-proton mass difference energy equivalent in MeV, CODATA 2018.
+///
+/// This is the recommended centre in MeV from the neutron section, not
+/// the joule hull, not neutron or proton MeV, and not the exact
+/// electronvolt Ratio. This Qty is not a certificate of a
+/// reconstruction from sibling masses. Ledger unit is MeV; this Qty is
+/// dimensionless, not SI joule. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn neutron_proton_mass_difference_energy_equivalent_in_mev() -> Qty<Dimensionless> {
+    Qty::new(1.293_332_36)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -3636,6 +3648,43 @@ mod tests {
             physis_constants::neutron_proton_mass_difference_energy_equivalent().hash,
             physis_constants::proton_mass_energy_equivalent().hash,
             "mn_minus_mp_c2 is not m_p_c2"
+        );
+        assert!(
+            physis_constants::lookup("mn-mp_c2_MeV").is_none(),
+            "mn-mp_c2_MeV is not a ledger name; the live name is mn_minus_mp_c2_MeV"
+        );
+        let mn_minus_mp_c2_mev =
+            physis_constants::neutron_proton_mass_difference_energy_equivalent_in_mev();
+        let mn_minus_mp_c2_mev_centre = Ratio::new(129_333_236, 10i128.pow(8));
+        assert_eq!(
+            neutron_proton_mass_difference_energy_equivalent_in_mev().value(),
+            mn_minus_mp_c2_mev_centre.to_f64(),
+            "mn_minus_mp_c2_MeV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mn_minus_mp_c2_mev
+                .value
+                .contains(Interval::point(mn_minus_mp_c2_mev_centre)),
+            "mn_minus_mp_c2_MeV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mn_minus_mp_c2_mev.value.lo, mn_minus_mp_c2_mev.value.hi,
+            "ledger mn_minus_mp_c2_MeV stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_difference_energy_equivalent_in_mev().hash,
+            physis_constants::neutron_proton_mass_difference_energy_equivalent().hash,
+            "mn_minus_mp_c2_MeV is not mn_minus_mp_c2"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_difference_energy_equivalent_in_mev().hash,
+            physis_constants::neutron_mass_energy_equivalent_in_mev().hash,
+            "mn_minus_mp_c2_MeV is not m_n_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_difference_energy_equivalent_in_mev().hash,
+            physis_constants::proton_mass_energy_equivalent_in_mev().hash,
+            "mn_minus_mp_c2_MeV is not m_p_c2_MeV"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
