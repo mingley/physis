@@ -107,6 +107,17 @@ pub fn muon_proton_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(0.112_609_526_4)
 }
 
+/// Muon-neutron mass ratio m_μ/m_n, CODATA 2018.
+///
+/// This is the recommended centre from the muon section, not the
+/// electron-neutron mass ratio and not a certificate that the stored
+/// centres divide. The muon-tau ratio is a PDG reprint and is not
+/// stored. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre.
+pub fn muon_neutron_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(0.112_454_517_0)
+}
+
 /// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
 /// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
@@ -1655,6 +1666,40 @@ mod tests {
             physis_constants::muon_proton_mass_ratio().hash,
             physis_constants::proton_mass().hash,
             "mmu_mp is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("m_mu_mn").is_none(),
+            "m_mu_mn is not a ledger name; the live name is mmu_mn"
+        );
+        let mmu_mn = physis_constants::muon_neutron_mass_ratio();
+        let mmu_mn_centre = Ratio::new(1_124_545_170, 10i128.pow(10));
+        assert_eq!(
+            muon_neutron_mass_ratio().value(),
+            mmu_mn_centre.to_f64(),
+            "mmu_mn Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mmu_mn.value.contains(Interval::point(mmu_mn_centre)),
+            "mmu_mn Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mmu_mn.value.lo, mmu_mn.value.hi,
+            "ledger mmu_mn stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::muon_neutron_mass_ratio().hash,
+            physis_constants::electron_neutron_mass_ratio().hash,
+            "mmu_mn is not me_mn"
+        );
+        assert_ne!(
+            physis_constants::muon_neutron_mass_ratio().hash,
+            physis_constants::muon_proton_mass_ratio().hash,
+            "mmu_mn is not mmu_mp"
+        );
+        assert_ne!(
+            physis_constants::muon_neutron_mass_ratio().hash,
+            physis_constants::proton_mass().hash,
+            "mmu_mn is not m_p"
         );
 
         let mp = physis_constants::proton_mass();
