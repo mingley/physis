@@ -325,6 +325,17 @@ pub fn neutron_muon_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(8.892_484_06)
 }
 
+/// Neutron-proton mass ratio m_n/m_p, CODATA 2018.
+///
+/// This is the recommended centre from the neutron section, not the
+/// proton-neutron mass ratio and not a certificate that the stored
+/// centres invert. The neutron-tau ratio is a PDG reprint and is not
+/// stored. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre.
+pub fn neutron_proton_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(1.001_378_419_31)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -3443,6 +3454,45 @@ mod tests {
             physis_constants::neutron_muon_mass_ratio().hash,
             physis_constants::muon_proton_mass_ratio().hash,
             "mn_mmu is not mmu_mp"
+        );
+        assert!(
+            physis_constants::lookup("mn/mp").is_none(),
+            "mn/mp is not a ledger name; the live name is mn_mp"
+        );
+        let mn_mp = physis_constants::neutron_proton_mass_ratio();
+        let mn_mp_centre = Ratio::new(100_137_841_931, 10i128.pow(11));
+        assert_eq!(
+            neutron_proton_mass_ratio().value(),
+            mn_mp_centre.to_f64(),
+            "mn_mp Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mn_mp.value.contains(Interval::point(mn_mp_centre)),
+            "mn_mp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mn_mp.value.lo, mn_mp.value.hi,
+            "ledger mn_mp stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_ratio().hash,
+            physis_constants::proton_neutron_mass_ratio().hash,
+            "mn_mp is not mp_mn"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_ratio().hash,
+            physis_constants::electron_neutron_mass_ratio().hash,
+            "mn_mp is not me_mn"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_ratio().hash,
+            physis_constants::muon_neutron_mass_ratio().hash,
+            "mn_mp is not mmu_mn"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_ratio().hash,
+            physis_constants::neutron_muon_mass_ratio().hash,
+            "mn_mp is not mn_mmu"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
