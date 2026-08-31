@@ -266,6 +266,18 @@ pub fn electron_molar_mass() -> Qty<
     Qty::new(5.485_799_088_8e-7)
 }
 
+/// Reduced Compton wavelength ƛ_C (m), CODATA 2018.
+///
+/// This is the recommended centre, not a certificate of `α a₀` and not
+/// the Compton wavelength. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre.
+pub fn reduced_compton_wavelength() -> Qty<Length> {
+    // IEEE value of the reduced centre Ratio 38615926796/10^23, not extra
+    // CODATA digits. The decimal literal 3.861_592_679_6e-13 is one ulp
+    // below Ratio::to_f64.
+    meters(3.861_592_679_600_000_3e-13)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -934,9 +946,24 @@ mod tests {
             physis_constants::lookup("Me").is_none(),
             "Me is not a ledger name; the live name is M_e"
         );
+        let rcbar = physis_constants::reduced_compton_wavelength();
+        let rcbar_centre = Ratio::new(38_615_926_796, 10i128.pow(23));
+        assert_eq!(
+            reduced_compton_wavelength().value(),
+            rcbar_centre.to_f64(),
+            "lambdabar_C Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("lambdabar_C").is_none(),
-            "reduced Compton wavelength is a different recommended value and is not stored"
+            rcbar.value.contains(Interval::point(rcbar_centre)),
+            "lambdabar_C Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            rcbar.value.lo, rcbar.value.hi,
+            "ledger lambdabar_C stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("lambda_C").is_none(),
+            "Compton wavelength is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
