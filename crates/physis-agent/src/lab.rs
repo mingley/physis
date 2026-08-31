@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  4151f860aa94985ff9ee005181906e1ea8f8685f7c6e1440f153dc3d6d7e3d30"),
+            text.contains("constant  ledger  e903796f74e02d5737f7ddb390e96a8d4d531e48b1c27e0818bdbde65cbe1931"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -12521,6 +12521,48 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let mu_mu_mup = lab
+            .exec(Command::Constant {
+                name: Some("mu_mu_mup".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            mu_mu_mup.contains("constant  mu_mu_mup  node "),
+            "{mu_mu_mup}"
+        );
+        assert!(
+            mu_mu_mup.contains(
+                "hash     495228cd39ae86738938efec2d2639f9a0c198fdc4cb75ed4968321672b7df84"
+            ),
+            "{mu_mu_mup}"
+        );
+        assert!(mu_mu_mup.contains("kind     interval"), "{mu_mu_mup}");
+        assert!(mu_mu_mup.contains("table    XXXI"), "{mu_mu_mup}");
+        assert!(
+            mu_mu_mup.contains("range    mu_mu/mup = -3.183345142(71)"),
+            "{mu_mu_mup}"
+        );
+        assert!(mu_mu_mup.contains("unit     1"), "{mu_mu_mup}");
+        assert!(
+            mu_mu_mup.contains("value    [-3183345213/1000000000, -3183345071/1000000000]"),
+            "{mu_mu_mup}"
+        );
+        assert!(mu_mu_mup.contains("rebuild  ok"), "{mu_mu_mup}");
+        assert!(mu_mu_mup.contains("not P3N"), "{mu_mu_mup}");
+        assert!(!mu_mu_mup.contains("receipt"), "{mu_mu_mup}");
+        assert!(!mu_mu_mup.contains("theorem"), "{mu_mu_mup}");
+        let mu_mu_mup_id = constant_node_id(&mu_mu_mup);
+        assert_eq!(
+            mu_mu_mup_id.to_hex(),
+            "6468f3033806b2fdcf78e2fbc7dfc7921b14f98b7a61b88127e4302c4d7fabff",
+            "journaling must not change the mu_mu_mup constant payload"
+        );
+        assert_eq!(
+            lab.store.get(mu_mu_mup_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mp = lab
             .exec(Command::Constant {
                 name: Some("m_p".into()),
@@ -13554,6 +13596,57 @@ mod tests {
             unknown_gmu_e.text()
         );
 
+        let unknown_mumu_mup = lab.exec(Command::Constant {
+            name: Some("mumu_mup".into()),
+        });
+        assert_eq!(
+            unknown_mumu_mup.exit_code(),
+            1,
+            "{}",
+            unknown_mumu_mup.text()
+        );
+        assert!(
+            unknown_mumu_mup
+                .text()
+                .contains("unknown constant 'mumu_mup'"),
+            "{}",
+            unknown_mumu_mup.text()
+        );
+
+        let unknown_mu_mu_slash_mup = lab.exec(Command::Constant {
+            name: Some("mu_mu/mup".into()),
+        });
+        assert_eq!(
+            unknown_mu_mu_slash_mup.exit_code(),
+            1,
+            "{}",
+            unknown_mu_mu_slash_mup.text()
+        );
+        assert!(
+            unknown_mu_mu_slash_mup
+                .text()
+                .contains("unknown constant 'mu_mu/mup'"),
+            "{}",
+            unknown_mu_mu_slash_mup.text()
+        );
+
+        let unknown_mu_dash_mu_mup = lab.exec(Command::Constant {
+            name: Some("mu-mu-mup".into()),
+        });
+        assert_eq!(
+            unknown_mu_dash_mu_mup.exit_code(),
+            1,
+            "{}",
+            unknown_mu_dash_mu_mup.text()
+        );
+        assert!(
+            unknown_mu_dash_mu_mup
+                .text()
+                .contains("unknown constant 'mu-mu-mup'"),
+            "{}",
+            unknown_mu_dash_mu_mup.text()
+        );
+
         let unknown_mue = lab.exec(Command::Constant {
             name: Some("mue".into()),
         });
@@ -13592,7 +13685,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "4151f860aa94985ff9ee005181906e1ea8f8685f7c6e1440f153dc3d6d7e3d30",
+            "e903796f74e02d5737f7ddb390e96a8d4d531e48b1c27e0818bdbde65cbe1931",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -14052,6 +14145,16 @@ mod tests {
             "{ledger}"
         );
         assert!(
+            ledger.contains("range    mu_mu/mup = -3.183345142(71)"),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains(
+                "hash     495228cd39ae86738938efec2d2639f9a0c198fdc4cb75ed4968321672b7df84"
+            ),
+            "{ledger}"
+        );
+        assert!(
             ledger.contains(
                 "hash     ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8"
             ),
@@ -14230,7 +14333,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "4151f860aa94985ff9ee005181906e1ea8f8685f7c6e1440f153dc3d6d7e3d30",
+            "e903796f74e02d5737f7ddb390e96a8d4d531e48b1c27e0818bdbde65cbe1931",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -14630,6 +14733,14 @@ mod tests {
         .expect("pinned gmu node");
         assert_eq!(
             lab2.store.get(gmu).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let mu_mu_mup = physis_core::artifact::ArtifactId::from_hex(
+            "6468f3033806b2fdcf78e2fbc7dfc7921b14f98b7a61b88127e4302c4d7fabff",
+        )
+        .expect("pinned mu_mu_mup node");
+        assert_eq!(
+            lab2.store.get(mu_mu_mup).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -16183,7 +16294,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  4151f860aa94985ff9ee005181906e1ea8f8685f7c6e1440f153dc3d6d7e3d30"),
+            text.contains("constant  ledger  e903796f74e02d5737f7ddb390e96a8d4d531e48b1c27e0818bdbde65cbe1931"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

@@ -187,6 +187,16 @@ pub fn muon_g_factor() -> Qty<Dimensionless> {
     Qty::new(-2.002_331_841_8)
 }
 
+/// Muon-proton magnetic-moment ratio μ_μ/μ_p, CODATA 2018.
+///
+/// This is the recommended signed centre, not electron-proton
+/// magnetic-moment ratio and not the muon-proton mass ratio. The
+/// versioned ledger stores the one-sigma hull; this Qty is that
+/// centre.
+pub fn muon_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
+    Qty::new(-3.183_345_142)
+}
+
 /// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
 /// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
@@ -2119,6 +2129,60 @@ mod tests {
             physis_constants::muon_g_factor().hash,
             physis_constants::proton_mass().hash,
             "gmu is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("mumu_mup").is_none(),
+            "mumu_mup is not a ledger name; the live name is mu_mu_mup"
+        );
+        let mu_mu_mup = physis_constants::muon_proton_magnetic_moment_ratio();
+        let mu_mu_mup_centre = Ratio::new(-3_183_345_142, 10i128.pow(9));
+        assert_eq!(
+            muon_proton_magnetic_moment_ratio().value(),
+            mu_mu_mup_centre.to_f64(),
+            "mu_mu_mup Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_mu_mup.value.contains(Interval::point(mu_mu_mup_centre)),
+            "mu_mu_mup Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_mu_mup.value.lo, mu_mu_mup.value.hi,
+            "ledger mu_mu_mup stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::muon_proton_magnetic_moment_ratio().hash,
+            physis_constants::electron_proton_magnetic_moment_ratio().hash,
+            "mu_mu_mup is not mu_e_mup"
+        );
+        assert_ne!(
+            physis_constants::muon_proton_magnetic_moment_ratio().hash,
+            physis_constants::muon_proton_mass_ratio().hash,
+            "mu_mu_mup is not mmu_mp"
+        );
+        assert_ne!(
+            physis_constants::muon_proton_magnetic_moment_ratio().hash,
+            physis_constants::muon_g_factor().hash,
+            "mu_mu_mup is not gmu"
+        );
+        assert_ne!(
+            physis_constants::muon_proton_magnetic_moment_ratio().hash,
+            physis_constants::muon_magnetic_moment_anomaly().hash,
+            "mu_mu_mup is not amu"
+        );
+        assert_ne!(
+            physis_constants::muon_proton_magnetic_moment_ratio().hash,
+            physis_constants::muon_magnetic_moment().hash,
+            "mu_mu_mup is not mu_mu"
+        );
+        assert_ne!(
+            physis_constants::muon_proton_magnetic_moment_ratio().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_mu_mup is not mu0"
+        );
+        assert_ne!(
+            physis_constants::muon_proton_magnetic_moment_ratio().hash,
+            physis_constants::proton_mass().hash,
+            "mu_mu_mup is not m_p"
         );
 
         let mp = physis_constants::proton_mass();

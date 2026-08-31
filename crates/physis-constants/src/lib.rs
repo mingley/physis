@@ -465,6 +465,10 @@ fn codata_2018_muon_g_factor_source() -> SourceRecord {
     codata_2018_jpcrd("Muon, mu-", "gmu = -2.0023318418(13)")
 }
 
+fn codata_2018_muon_proton_magnetic_moment_ratio_source() -> SourceRecord {
+    codata_2018_jpcrd("Muon, mu-", "mu_mu/mup = -3.183345142(71)")
+}
+
 fn codata_2018_proton_mass_source() -> SourceRecord {
     codata_2018_jpcrd("Proton, p", "mp = 1.67262192369(51)e-27")
 }
@@ -1644,6 +1648,33 @@ pub fn muon_g_factor() -> Constant<Interval> {
     )
 }
 
+/// CODATA 2018 one-sigma hull of −3.183345142(71).
+fn codata_2018_muon_proton_magnetic_moment_ratio_interval() -> Interval {
+    let scale = 10i128.pow(9);
+    let mu = -3_183_345_142i128;
+    let sigma = 71;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Muon-proton magnetic-moment ratio μ_μ/μ_p, CODATA 2018 one-sigma
+/// enclosure.
+///
+/// This is the recommended signed dimensionless hull from the muon
+/// section, not electron-proton ratio `mu_e_mup`, not muon-proton mass
+/// ratio `mmu_mp`, not muon g-factor `gmu`, not muon anomaly `amu`,
+/// not an SI defining Ratio, and not P3N. Electron mass is not stored:
+/// `10^{42}` overflows `i128`. Theories still use `physis_model`
+/// `f64` Qty.
+pub fn muon_proton_magnetic_moment_ratio() -> Constant<Interval> {
+    Constant::new(
+        "mu_mu_mup",
+        codata_2018_muon_proton_magnetic_moment_ratio_interval(),
+        "1",
+        codata_2018_muon_proton_magnetic_moment_ratio_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 /// CODATA 2018 one-sigma hull of 1.67262192369(51)×10⁻²⁷ kg.
 fn codata_2018_proton_mass_interval() -> Interval {
     let scale = 10i128.pow(38);
@@ -1869,6 +1900,7 @@ pub const LEDGER: &[&str] = &[
     "mu_mu_muN",
     "amu",
     "gmu",
+    "mu_mu_mup",
     "m_p",
     "au",
     "eV",
@@ -1971,6 +2003,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         )),
         "amu" => Some(listing(muon_magnetic_moment_anomaly(), "interval")),
         "gmu" => Some(listing(muon_g_factor(), "interval")),
+        "mu_mu_mup" => Some(listing(muon_proton_magnetic_moment_ratio(), "interval")),
         "m_p" => Some(listing(proton_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
@@ -8342,6 +8375,154 @@ mod tests {
     }
 
     #[test]
+    fn codata_2018_muon_proton_magnetic_moment_ratio_is_a_one_sigma_interval() {
+        let r = muon_proton_magnetic_moment_ratio();
+        let scale = 10i128.pow(9);
+        let lo = Ratio::new(-3_183_345_213, scale);
+        let hi = Ratio::new(-3_183_345_071, scale);
+        let centre = Ratio::new(-3_183_345_142, scale);
+        assert_eq!(r.name, "mu_mu_mup");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Muon, mu-"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("mu_mu/mup = -3.183345142(71)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(
+            r.value.lo, r.value.hi,
+            "mu_mu_mup is measured, not SI-exact"
+        );
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(!r.value.contains(Interval::point(Ratio::int(-3))));
+        assert!(
+            r.value.hi < Ratio::int(0),
+            "CODATA mu_mu/mup is the signed moment ratio, not |mu_mu/mup|"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[-3183345213/1000000000, -3183345071/1000000000]"
+        );
+        assert_eq!(r.hash, muon_proton_magnetic_moment_ratio().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "mu_mu_mup",
+                codata_2018_muon_proton_magnetic_moment_ratio_interval(),
+                "1",
+                codata_2018_muon_proton_magnetic_moment_ratio_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            electron_proton_magnetic_moment_ratio().hash,
+            "mu_mu_mup is not mu_e_mup"
+        );
+        assert_ne!(
+            r.hash,
+            muon_proton_mass_ratio().hash,
+            "mu_mu_mup is not mmu_mp"
+        );
+        assert_ne!(r.hash, muon_g_factor().hash, "mu_mu_mup is not gmu");
+        assert_ne!(
+            r.hash,
+            muon_magnetic_moment_anomaly().hash,
+            "mu_mu_mup is not amu"
+        );
+        assert_ne!(
+            r.hash,
+            muon_magnetic_moment().hash,
+            "mu_mu_mup is not mu_mu"
+        );
+        assert_ne!(r.hash, vacuum_permeability().hash, "mu_mu_mup is not mu0");
+        assert_ne!(r.hash, proton_mass().hash, "mu_mu_mup is not m_p");
+        assert_ne!(r.hash, newtonian_g().hash, "mu_mu_mup is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            electron_proton_magnetic_moment_ratio()
+                .provenance
+                .source_hash,
+            "mu_mu_mup range is not the mu_e_mup range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            muon_proton_mass_ratio().provenance.source_hash,
+            "mu_mu_mup range is not the mmu_mp range"
+        );
+        assert_eq!(
+            electron_proton_magnetic_moment_ratio().hash.to_hex(),
+            "13a0d90f76fb16f948196cf56fb9d54e90ccc43ad4ff613f27873de735ba7b5b",
+            "mu_e_mup hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            muon_proton_mass_ratio().hash.to_hex(),
+            "1527aa21236682ad99206cf1ef6b6267d7432a5a1975bcc2315af9a510e147d2",
+            "mmu_mp hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            muon_g_factor().hash.to_hex(),
+            "0a3447871c2dc78e3fa0c69d9134b7ee2852cbf55a0c570452a9118d9c747ded",
+            "gmu hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            muon_magnetic_moment_anomaly().hash.to_hex(),
+            "972c93982e6cd84f054db85605b9e7d106d124bd52bac104bb447d788cdc64c4",
+            "amu hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            muon_magnetic_moment().hash.to_hex(),
+            "3344549ca18b2db388cfff366cc63079f3d3b0b094cac6de12e318fe8531c3e0",
+            "mu_mu hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            electron_g_factor().hash.to_hex(),
+            "8e1daf3628381ffa7dce3fafc5e65038038eb74b5537cf7adb95702f5d0e0050",
+            "ge hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when mu_mu_mup is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "495228cd39ae86738938efec2d2639f9a0c198fdc4cb75ed4968321672b7df84"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("mumu_mup").is_none());
+        assert!(lookup("mu_mu/mup").is_none());
+        assert!(lookup("mu-mu-mup").is_none());
+        assert!(lookup("lambdabar_C_mu").is_none());
+        assert!(lookup("mmu_mt").is_none());
+        assert!(lookup("mmu_mtau").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("mu_e_mup").is_some());
+        assert!(lookup("mmu_mp").is_some());
+        assert!(lookup("gmu").is_some());
+        assert!(lookup("amu").is_some());
+        assert!(lookup("mu_mu").is_some());
+        assert!(lookup("g_e").is_none());
+        assert!(lookup("g_mu").is_none());
+    }
+
+    #[test]
     fn codata_2018_proton_mass_is_a_one_sigma_interval() {
         let mp = proton_mass();
         let scale = 10i128.pow(38);
@@ -8613,7 +8794,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 61);
+        assert_eq!(LEDGER.len(), 62);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -8868,6 +9049,11 @@ mod tests {
             lookup("gmu").unwrap().hash.to_hex(),
             "0a3447871c2dc78e3fa0c69d9134b7ee2852cbf55a0c570452a9118d9c747ded"
         );
+        assert_eq!(lookup("mu_mu_mup").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("mu_mu_mup").unwrap().hash.to_hex(),
+            "495228cd39ae86738938efec2d2639f9a0c198fdc4cb75ed4968321672b7df84"
+        );
         assert_eq!(lookup("m_p").unwrap().kind, "interval");
         assert_eq!(
             lookup("m_p").unwrap().hash.to_hex(),
@@ -8982,6 +9168,9 @@ mod tests {
         assert!(lookup("g_mu").is_none());
         assert!(lookup("g-mu").is_none());
         assert!(lookup("gmu_e").is_none());
+        assert!(lookup("mumu_mup").is_none());
+        assert!(lookup("mu_mu/mup").is_none());
+        assert!(lookup("mu-mu-mup").is_none());
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
