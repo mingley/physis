@@ -22,6 +22,51 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 proton-neutron magnetic-moment ratio is a one-sigma Interval.**
+  `physis-constants` versions `mu_p_mun` as the CODATA 2018 hull
+  `−1.45989805(34)` from JPCRD 50, 033105 table XXXI
+  (Proton, p). This is not electron-neutron magnetic-moment ratio
+  `mu_e_mun`, not proton-neutron mass ratio `mp_mn`, not proton
+  g-factor `gp`, not proton magnetic moment `mu_p`, not a
+  certificate that this equals a reconstructed `μp/μn` from
+  sibling moments, not vacuum permeability `mu0`, not an SI
+  defining Ratio, not the Thomson cross section, and not P3N.
+  The neutron-proton magnetic-moment ratio is a later Neutron-
+  section row and is not stored. The shielded proton moment is a
+  later table row and is not stored. Gyromagnetic ratios cite ħ
+  and are not stored. The proton-tau ratio is a PDG reprint
+  (footnote e) and is not stored. Electron mass is still not
+  stored (`10^{42}` overflows `i128`). `physis_model`
+  `proton_neutron_magnetic_moment_ratio()` Qty locksteps to the
+  recommended centre inside the hull. Adding `mu_p_mun` to LEDGER
+  changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`,
+  `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`,
+  `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`,
+  `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`,
+  `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, and
+  `gp` hashes are unchanged. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count
+  stays 4. Verified: `mu_p_mun` hash 962ad1f4f5a18ff54eb9bb0acff22f5fa8b96537291568c387b82f8bd41abd98; node
+  865524beff711d79dbcb0c655d6494882c2a63f8988d1476a15c03d34daa29ce; ledger node 923f11376ba6c2bd5a5516e491653cde95f5d8589e365b713aed1fcf8ec4a3fc. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`,
+  `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`,
+  `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`,
+  `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`,
+  `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`,
+  `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`,
+  `e_mp`, `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`,
+  `mu_p_muN`, and `gp` hashes and nodes unchanged.
+
 - **CODATA 2018 proton g-factor is a one-sigma Interval.**
   `physis-constants` versions `gp` as the CODATA 2018 hull
   `5.5856946893(16)` from JPCRD 50, 033105 table XXXI

@@ -198,6 +198,20 @@ pub fn proton_g_factor() -> Qty<Dimensionless> {
     Qty::new(5.585_694_689_3)
 }
 
+/// Proton-neutron magnetic-moment ratio μ_p/μ_n, CODATA 2018.
+///
+/// This is the recommended signed centre from the proton section, not
+/// the electron-neutron magnetic-moment ratio and not the
+/// proton-neutron mass ratio. This Qty is not a certificate that it
+/// equals a reconstructed μp/μn from sibling moments. The
+/// neutron-proton magnetic-moment ratio is a later Neutron-section row
+/// and is not stored. The shielded proton moment is a later table row
+/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre.
+pub fn proton_neutron_magnetic_moment_ratio() -> Qty<Dimensionless> {
+    Qty::new(-1.459_898_05)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -2898,6 +2912,44 @@ mod tests {
         assert!(
             physis_constants::lookup("g0p").is_none(),
             "shielded proton g-factor is not stored in this increment"
+        );
+        assert!(
+            physis_constants::lookup("mup_mun").is_none(),
+            "mup_mun is not a ledger name; the live name is mu_p_mun"
+        );
+        let mu_p_mun = physis_constants::proton_neutron_magnetic_moment_ratio();
+        let mu_p_mun_centre = Ratio::new(-145_989_805, 10i128.pow(8));
+        assert_eq!(
+            proton_neutron_magnetic_moment_ratio().value(),
+            mu_p_mun_centre.to_f64(),
+            "mu_p_mun Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_p_mun.value.contains(Interval::point(mu_p_mun_centre)),
+            "mu_p_mun Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_p_mun.value.lo, mu_p_mun.value.hi,
+            "ledger mu_p_mun stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_neutron_magnetic_moment_ratio().hash,
+            physis_constants::electron_neutron_magnetic_moment_ratio().hash,
+            "mu_p_mun is not mu_e_mun"
+        );
+        assert_ne!(
+            physis_constants::proton_neutron_magnetic_moment_ratio().hash,
+            physis_constants::proton_neutron_mass_ratio().hash,
+            "mu_p_mun is not mp_mn"
+        );
+        assert_ne!(
+            physis_constants::proton_neutron_magnetic_moment_ratio().hash,
+            physis_constants::proton_g_factor().hash,
+            "mu_p_mun is not gp"
+        );
+        assert!(
+            physis_constants::lookup("mu0p").is_none(),
+            "shielded proton moment is not stored in this increment"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),
