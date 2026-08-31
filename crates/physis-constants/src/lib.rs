@@ -621,6 +621,10 @@ fn codata_2018_neutron_electron_magnetic_moment_ratio_source() -> SourceRecord {
     codata_2018_jpcrd("Neutron, n", "mu_n/mue = 1.04066882(25)e-3")
 }
 
+fn codata_2018_neutron_proton_magnetic_moment_ratio_source() -> SourceRecord {
+    codata_2018_jpcrd("Neutron, n", "mu_n/mup = -0.68497934(16)")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -2248,8 +2252,8 @@ fn codata_2018_proton_neutron_magnetic_moment_ratio_interval() -> Interval {
 /// proton-neutron mass ratio `mp_mn`, not proton g-factor `gp`, not
 /// proton magnetic moment `mu_p`, not a certificate that this equals
 /// a reconstructed `μp/μn` from sibling moments, not an SI defining
-/// Ratio, and not P3N. The neutron-proton magnetic-moment ratio is a
-/// later Neutron-section row and is not stored. The shielded proton
+/// Ratio, and not P3N. The neutron-proton magnetic-moment ratio is
+/// `mu_n_mup`. The shielded proton
 /// moment is a later table row and is not stored. Gyromagnetic ratios
 /// cite ħ and are not stored. The proton-tau ratio is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Electron
@@ -2968,8 +2972,8 @@ fn codata_2018_neutron_electron_magnetic_moment_ratio_interval() -> Interval {
 /// g-factor `gn`, not electron-proton magnetic-moment ratio `mu_e_mup`,
 /// not neutron-electron mass ratio `mn_me`, not a certificate that this
 /// equals the inverse of `mu_e_mun`, not an SI defining Ratio, and not
-/// P3N. Neutron-proton and shielded-proton moment-ratio rows are later
-/// table rows and are not stored. Neutron-tau is a PDG reprint of
+/// P3N. The neutron-proton magnetic-moment ratio is `mu_n_mup`.
+/// Shielded-proton moment-ratio is a later table row and is not stored. Neutron-tau is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Gyromagnetic
 /// ratios cite ħ and are not stored. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
@@ -2981,6 +2985,40 @@ pub fn neutron_electron_magnetic_moment_ratio() -> Constant<Interval> {
         codata_2018_neutron_electron_magnetic_moment_ratio_interval(),
         "1",
         codata_2018_neutron_electron_magnetic_moment_ratio_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of −0.68497934(16).
+fn codata_2018_neutron_proton_magnetic_moment_ratio_interval() -> Interval {
+    let scale = 10i128.pow(8);
+    let mu = -68_497_934i128;
+    let sigma = 16;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Neutron-proton magnetic-moment ratio μ_n/μ_p, CODATA 2018 one-sigma
+/// enclosure.
+///
+/// This is the recommended signed dimensionless hull from the neutron
+/// section, not proton-neutron magnetic-moment ratio `mu_p_mun`, not
+/// neutron-electron magnetic-moment ratio `mu_n_mue`, not electron-proton
+/// magnetic-moment ratio `mu_e_mup`, not neutron-proton mass ratio
+/// `mn_mp`, not a certificate that this equals the inverse of
+/// `mu_p_mun`, not an SI defining Ratio, and not P3N. The shielded-proton
+/// moment-ratio is a later table row and is not stored. Neutron-tau is a
+/// PDG reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not
+/// stored. Gyromagnetic ratios cite ħ and are not stored. Electron mass
+/// is not stored: `10^{42}` overflows `i128`. This is not the CODATA
+/// 2022 last-digit `35`. The decade is `10^{8}`; `10^{7}` is the 10×
+/// trap (`μ` would not be an integer). Theories still use `physis_model`
+/// `f64` Qty.
+pub fn neutron_proton_magnetic_moment_ratio() -> Constant<Interval> {
+    Constant::new(
+        "mu_n_mup",
+        codata_2018_neutron_proton_magnetic_moment_ratio_interval(),
+        "1",
+        codata_2018_neutron_proton_magnetic_moment_ratio_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -3226,6 +3264,7 @@ pub const LEDGER: &[&str] = &[
     "mu_n_muN",
     "gn",
     "mu_n_mue",
+    "mu_n_mup",
     "au",
     "eV",
     "GM_sun",
@@ -3393,6 +3432,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             neutron_electron_magnetic_moment_ratio(),
             "interval",
         )),
+        "mu_n_mup" => Some(listing(neutron_proton_magnetic_moment_ratio(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -14569,6 +14609,129 @@ mod tests {
         assert!(lookup("mu_e_mup").is_some());
         assert!(lookup("mn_me").is_some());
         assert!(lookup("G").is_some());
+        assert!(lookup("mu_n_mup").is_some());
+    }
+
+    #[test]
+    fn codata_2018_neutron_proton_magnetic_moment_ratio_is_a_one_sigma_interval() {
+        let r = neutron_proton_magnetic_moment_ratio();
+        let scale = 10i128.pow(8);
+        let lo = Ratio::new(-68_497_950, scale);
+        let hi = Ratio::new(-68_497_918, scale);
+        let centre = Ratio::new(-68_497_934, scale);
+        assert_eq!(r.name, "mu_n_mup");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Neutron, n"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("mu_n/mup = -0.68497934(16)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "mu_n_mup is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.hi < Ratio::int(0),
+            "CODATA mu_n_mup is the signed neutron-proton ratio, not +mu_n/mup"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[-1369959/2000000, -34248959/50000000]"
+        );
+        assert_eq!(r.hash, neutron_proton_magnetic_moment_ratio().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "mu_n_mup",
+                codata_2018_neutron_proton_magnetic_moment_ratio_interval(),
+                "1",
+                codata_2018_neutron_proton_magnetic_moment_ratio_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            proton_neutron_magnetic_moment_ratio().hash,
+            "mu_n_mup is not mu_p_mun"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_electron_magnetic_moment_ratio().hash,
+            "mu_n_mup is not mu_n_mue"
+        );
+        assert_ne!(
+            r.hash,
+            electron_proton_magnetic_moment_ratio().hash,
+            "mu_n_mup is not mu_e_mup"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_proton_mass_ratio().hash,
+            "mu_n_mup is not mn_mp"
+        );
+        assert_ne!(r.hash, newtonian_g().hash, "mu_n_mup is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            proton_neutron_magnetic_moment_ratio()
+                .provenance
+                .source_hash,
+            "mu_n_mup range is not the mu_p_mun range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            neutron_electron_magnetic_moment_ratio()
+                .provenance
+                .source_hash,
+            "mu_n_mup range is not the mu_n_mue range"
+        );
+        assert_eq!(
+            neutron_electron_magnetic_moment_ratio().hash.to_hex(),
+            "6373ed28fe84cda2c7b3eb096b4db0662e477f295ff05247eafedc9aa61707bc",
+            "mu_n_mue hash must stay pinned when mu_n_mup is added"
+        );
+        assert_eq!(
+            proton_neutron_magnetic_moment_ratio().hash.to_hex(),
+            "962ad1f4f5a18ff54eb9bb0acff22f5fa8b96537291568c387b82f8bd41abd98",
+            "mu_p_mun hash must stay pinned when mu_n_mup is added"
+        );
+        assert_eq!(
+            electron_proton_magnetic_moment_ratio().hash.to_hex(),
+            "13a0d90f76fb16f948196cf56fb9d54e90ccc43ad4ff613f27873de735ba7b5b",
+            "mu_e_mup hash must stay pinned when mu_n_mup is added"
+        );
+        assert_eq!(
+            neutron_proton_mass_ratio().hash.to_hex(),
+            "4a1cc9e1870d573594b4de7b64f6ec1667f13da26f6cb8b72ae351eed5c89eb4",
+            "mn_mp hash must stay pinned when mu_n_mup is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when mu_n_mup is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "75b137c205d9297127a1955dc686acc1c0206fb92d7a7e4751a63addbef18942"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("mun_mup").is_none());
+        assert!(lookup("mu_n/mup").is_none());
+        assert!(lookup("mu-n-mup").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("rd").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("mu_n_mup").is_some());
+        assert!(lookup("mu_n_mue").is_some());
+        assert!(lookup("mu_p_mun").is_some());
+        assert!(lookup("mu_e_mup").is_some());
+        assert!(lookup("mn_mp").is_some());
+        assert!(lookup("G").is_some());
     }
 
     #[test]
@@ -14773,7 +14936,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 99);
+        assert_eq!(LEDGER.len(), 100);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -15223,6 +15386,11 @@ mod tests {
             lookup("mu_n_mue").unwrap().hash.to_hex(),
             "6373ed28fe84cda2c7b3eb096b4db0662e477f295ff05247eafedc9aa61707bc"
         );
+        assert_eq!(lookup("mu_n_mup").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("mu_n_mup").unwrap().hash.to_hex(),
+            "75b137c205d9297127a1955dc686acc1c0206fb92d7a7e4751a63addbef18942"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -15340,6 +15508,9 @@ mod tests {
         assert!(lookup("mun_mue").is_none());
         assert!(lookup("mu_n/mue").is_none());
         assert!(lookup("mu-n-mue").is_none());
+        assert!(lookup("mun_mup").is_none());
+        assert!(lookup("mu_n/mup").is_none());
+        assert!(lookup("mu-n-mup").is_none());
         assert!(lookup("mue_mun").is_none());
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());
