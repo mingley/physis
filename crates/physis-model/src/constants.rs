@@ -441,11 +441,23 @@ pub fn neutron_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
 /// This is the recommended signed centre from the neutron section, not
 /// proton, electron, or muon nuclear-magneton ratio and not the neutron
 /// Bohr-magneton ratio or magnetic moment. This Qty is not a certificate
-/// that it equals 2 μ_n/μ_N (the g-factor). G-factor and moment-ratio
-/// rows are later table rows and are not stored. The versioned ledger
-/// stores the one-sigma hull; this Qty is that centre.
+/// that it equals 2 μ_n/μ_N (the g-factor). The g-factor is `gn`.
+/// Moment-ratio rows are later table rows and are not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
 pub fn neutron_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(-1.913_042_73)
+}
+
+/// Neutron g-factor g_n, CODATA 2018.
+///
+/// This is the recommended signed centre from the neutron section, not
+/// electron, muon, or proton g-factor and not the neutron
+/// nuclear-magneton ratio. This Qty is not a certificate that it equals
+/// 2 μ_n/μ_N. Moment-ratio rows are later table rows and are not stored.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 52.
+pub fn neutron_g_factor() -> Qty<Dimensionless> {
+    Qty::new(-3.826_085_45)
 }
 
 /// Muon mass.
@@ -3942,6 +3954,45 @@ mod tests {
             physis_constants::neutron_magnetic_moment_to_nuclear_magneton().hash,
             physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
             "mu_n_muN is not mu_mu_muN"
+        );
+        assert!(
+            physis_constants::lookup("g_n").is_none(),
+            "g_n is not a ledger name; the live name is gn"
+        );
+        let gn = physis_constants::neutron_g_factor();
+        let gn_centre = Ratio::new(-382_608_545, 10i128.pow(8));
+        assert_eq!(
+            neutron_g_factor().value(),
+            gn_centre.to_f64(),
+            "gn Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            gn.value.contains(Interval::point(gn_centre)),
+            "gn Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            gn.value.lo, gn.value.hi,
+            "ledger gn stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_g_factor().hash,
+            physis_constants::neutron_magnetic_moment_to_nuclear_magneton().hash,
+            "gn is not mu_n_muN"
+        );
+        assert_ne!(
+            physis_constants::neutron_g_factor().hash,
+            physis_constants::electron_g_factor().hash,
+            "gn is not ge"
+        );
+        assert_ne!(
+            physis_constants::neutron_g_factor().hash,
+            physis_constants::muon_g_factor().hash,
+            "gn is not gmu"
+        );
+        assert_ne!(
+            physis_constants::neutron_g_factor().hash,
+            physis_constants::proton_g_factor().hash,
+            "gn is not gp"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
