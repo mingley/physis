@@ -213,6 +213,14 @@ pub fn electron_neutron_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(5.438_673_442_4e-4)
 }
 
+/// Electron-deuteron mass ratio m_e/m_d, CODATA 2018.
+///
+/// This is the recommended centre, not electron mass. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn electron_deuteron_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(2.724_437_107_462e-4)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -767,9 +775,28 @@ mod tests {
             physis_constants::lookup("me/m_n").is_none(),
             "me/m_n is not a ledger name; the live name is me_mn"
         );
+        let me_md = physis_constants::electron_deuteron_mass_ratio();
+        let me_md_centre = Ratio::new(2_724_437_107_462, 10i128.pow(16));
+        assert_eq!(
+            electron_deuteron_mass_ratio().value(),
+            me_md_centre.to_f64(),
+            "me_md Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("me_md").is_none(),
-            "electron-deuteron mass ratio is a different recommended value and is not stored"
+            me_md.value.contains(Interval::point(me_md_centre)),
+            "me_md Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            me_md.value.lo, me_md.value.hi,
+            "ledger me_md stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("me/m_d").is_none(),
+            "me/m_d is not a ledger name; the live name is me_md"
+        );
+        assert!(
+            physis_constants::lookup("me_mt").is_none(),
+            "electron-triton mass ratio is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
