@@ -330,6 +330,15 @@ pub fn electron_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(-1_838.281_971_88)
 }
 
+/// Electron magnetic-moment anomaly a_e, CODATA 2018.
+///
+/// This is the recommended centre |μ_e|/μ_B − 1, not the signed
+/// Bohr-magneton ratio and not the g-factor. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre.
+pub fn electron_magnetic_moment_anomaly() -> Qty<Dimensionless> {
+    Qty::new(1.159_652_181_28e-3)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -1075,8 +1084,8 @@ mod tests {
             "ledger mu_e stays an Interval; the Qty is not that Interval"
         );
         assert!(
-            physis_constants::lookup("ae").is_none(),
-            "electron magnetic-moment anomaly is not stored"
+            physis_constants::lookup("ge").is_none(),
+            "electron g-factor is not stored"
         );
         assert!(
             physis_constants::lookup("mue_muB").is_none(),
@@ -1115,6 +1124,25 @@ mod tests {
         assert_ne!(
             mu_e_mu_n.value.lo, mu_e_mu_n.value.hi,
             "ledger mu_e_muN stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("a_e").is_none(),
+            "a_e is not a ledger name; the live name is ae"
+        );
+        let ae = physis_constants::electron_magnetic_moment_anomaly();
+        let ae_centre = Ratio::new(115_965_218_128, 10i128.pow(14));
+        assert_eq!(
+            electron_magnetic_moment_anomaly().value(),
+            ae_centre.to_f64(),
+            "ae Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            ae.value.contains(Interval::point(ae_centre)),
+            "ae Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            ae.value.lo, ae.value.hi,
+            "ledger ae stays an Interval; the Qty is not that Interval"
         );
 
         let mp = physis_constants::proton_mass();
