@@ -22,6 +22,37 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 muon-proton mass ratio is a one-sigma Interval.**
+  `physis-constants` versions `mmu_mp` as the CODATA 2018 hull
+  `0.1126095264(25)` from JPCRD 50, 033105 table XXXI (Muon, mu-).
+  This is not the electron-proton ratio `me_mp`, not the muon-electron
+  ratio `mmu_me`, not a certificate that the stored centres divide, not
+  the proton mass, not an SI defining Ratio, not the Thomson cross
+  section, and not P3N. The muon-tau ratio is a PDG reprint of
+  `m_tau c^2` (JPCRD table XXXI footnote e) and is not stored.
+  Electron mass is still not stored (`10^{42}` overflows `i128`).
+  `physis_model` `muon_proton_mass_ratio()` Qty locksteps to the
+  recommended centre inside the hull. Adding `mmu_mp` to LEDGER
+  changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, and `m_p` hashes are unchanged. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `mmu_mp` hash `1527aa21236682ad99206cf1ef6b6267d7432a5a1975bcc2315af9a510e147d2`; node
+  `71390580bc3deae9e30e53f10b832a03e64680879ce3f0f076695e3f41024915`; ledger node `33962066edede73526b23ddaab8cb39498878522b2e2e4200de23c226e4c6d29`. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, and `m_p` hashes and nodes
+  unchanged.
+
 - **CODATA 2018 muon-electron mass ratio is a one-sigma Interval.**
   `physis-constants` versions `mmu_me` as the CODATA 2018 hull
   `206.7682830(46)` from JPCRD 50, 033105 table XXXI (Muon, mu-).
