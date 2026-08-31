@@ -22,6 +22,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 characteristic impedance is a one-sigma Interval.**
+  `physis-constants` versions `Z0` as the CODATA 2018 hull
+  `376.730313668(57)` ohm from JPCRD 50, 033105 table XXXI
+  (UNIVERSAL). After SI 2019 this is the derived hull `μ₀ c`, not an
+  SI defining Ratio, not `Y₀`, and not P3N. `physis_model` `z0()` Qty
+  locksteps to the recommended centre inside the hull. Adding `Z0` to
+  LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `alpha`, and `m_p` hashes are unchanged. Theories still evaluate
+  with `f64` Qty. That is not a kernel proof, not Canonical, not P4.
+  Encode pins unchanged. Unique-vacuum graph id unchanged. P3N count
+  stays 4. Verified: `Z0` hash
+  `6f72c1c5833dc722ac6fb5223f982879499ff412157c6e6c9851d77088991316`;
+  node
+  `e7ebeaa7b1b18ebed7aa269cd7b4b322842d5f674106efb8b1ad1cda4d4ac77e`;
+  ledger node
+  `e3ea0ddd0afbc14654fba101f73e66c80bfd3985a66e419d58a752e342a2a40a`.
+  `G`, `mu0`, `epsilon0`, `alpha`, and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 vacuum permittivity is a one-sigma Interval.**
   `physis-constants` versions `epsilon0` as the CODATA 2018 hull
   `8.8541878128(13)×10^{-12}` F m⁻¹ from JPCRD 50, 033105 table XXXI
