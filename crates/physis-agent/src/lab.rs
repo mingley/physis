@@ -5811,6 +5811,10 @@ mod tests {
             !r2_block.contains("gr.newton-half-deflection"),
             "add-r-squared is not the inverse-square Binet fork: {r2_block}"
         );
+        assert!(
+            text.contains("add-brans-dicke"),
+            "add-brans-dicke must still be an IR fork: {text}"
+        );
         assert!(!text.contains("theorem"), "{text}");
         assert_eq!(lab.journal().len(), journal_len);
         let live = lab.theory("general-relativity").unwrap();
@@ -5851,6 +5855,140 @@ mod tests {
         assert!(
             dim.text().contains("empirical.observed-4d") && dim.text().contains("holds → fails"),
             "{}",
+            dim.text()
+        );
+        let live = lab.theory("general-relativity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "predictivity.unique-vacuum" && v.kind == VerdictKind::Holds
+            }),
+            "dim still Holds uniqueness on the live Einstein-Hilbert encoding"
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "general-relativity".into(),
+            knob: "dim".into(),
+            value: "4".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "predictivity.unique-vacuum".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            why.contains("classical Einstein-Hilbert plus Λ"),
+            "GR unique-vacuum must name Einstein-Hilbert: {why}"
+        );
+        assert!(
+            !why.contains("not yet a machine-checked regime"),
+            "unique-vacuum encodings name regimes: {why}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_general_relativity_brans_dicke_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["brans_dicke", "omega", "add-brans-dicke"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "general-relativity".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("general-relativity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-brans-dicke") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-brans-dicke: package → add-brans-dicke";
+        let start = text.find(marker).expect("add-brans-dicke hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  general-relativity  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let bd_block = &rest[..end];
+        assert!(
+            bd_block.contains("predictivity.unique-vacuum") && bd_block.contains("holds → fails"),
+            "add-brans-dicke must flip unique-vacuum holds to fails: {bd_block}"
+        );
+        assert!(
+            bd_block.contains("gr.eddington-deflection") && bd_block.contains("holds → fails"),
+            "add-brans-dicke must flip Eddington holds to fails: {bd_block}"
+        );
+        assert!(
+            bd_block.contains("gr.mercury-perihelion") && bd_block.contains("holds → fails"),
+            "add-brans-dicke must flip Mercury holds to fails: {bd_block}"
+        );
+        assert!(
+            !bd_block.contains("empirical.observed-4d"),
+            "add-brans-dicke is not the dim knob: {bd_block}"
+        );
+        assert!(
+            !bd_block.contains("gr.newton-half-deflection"),
+            "add-brans-dicke is not the Newton half-angle fork: {bd_block}"
+        );
+        assert!(
+            bd_block.matches("holds → fails").count() == 3,
+            "add-brans-dicke should flip uniqueness, Eddington, and Mercury: {bd_block}"
+        );
+        assert!(
+            text.contains("add-r-squared"),
+            "add-r-squared must still be an IR fork: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert!(!text.contains("receipt"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("general-relativity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "predictivity.unique-vacuum" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "gr.eddington-deflection" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("dim").unwrap().display(),
+            "4",
+            "hypothesize must restore knobs"
+        );
+        let newton = lab.theory("newtonian-gravity").unwrap();
+        assert_eq!(
+            newton.id(),
+            "newtonian-gravity",
+            "GR IR must not convert Newton"
+        );
+        let dim = lab.exec(Command::Set {
+            theory: "general-relativity".into(),
+            knob: "dim".into(),
+            value: "5".into(),
+        });
+        assert_eq!(dim.exit_code(), 0, "{}", dim.text());
+        assert!(
+            dim.text().contains("empirical.observed-4d") && dim.text().contains("holds → fails"),
+            "dim still flips observed-4d: {}",
             dim.text()
         );
         let live = lab.theory("general-relativity").unwrap();
@@ -11171,6 +11309,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_gr.contains("add-r-squared"), "{hypo_gr}");
+        assert!(hypo_gr.contains("add-brans-dicke"), "{hypo_gr}");
         let gr_again = lab
             .exec(Command::Encode {
                 theory: "general-relativity".into(),

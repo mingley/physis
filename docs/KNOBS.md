@@ -26,7 +26,7 @@ lists every fitted knob in the lab.
 - `absolute_time` — Galilean vs Lorentz boosts. The Lorentz boost is not this knob: `add-binomial-gamma` is an IR mutation. Collinear composition is not this knob: `add-minus-uv` is an IR mutation
 
 ### general-relativity
-- `dim` — solar-system tests (Eddington, Mercury) are 4D; other values make them inapplicable. The Einstein–Hilbert action is not this knob: `add-r-squared` is an IR mutation
+- `dim` — solar-system tests (Eddington, Mercury) are 4D; other values make them inapplicable. The Einstein–Hilbert action is not this knob: `add-r-squared` is an IR mutation. Brans–Dicke is not this knob: `add-brans-dicke` is an IR mutation
 - `cosmological_constant` (Planck units, order-of-magnitude)
 
 ### newtonian-gravity

@@ -37,9 +37,11 @@ not a silent GR install. `general-relativity` keeps `dim` and
 `cosmological_constant`. The Einstein–Hilbert action is a live IR
 package (`action einstein-hilbert`). `add-r-squared` appends
 `action r-squared` and is an IR mutation: uniqueness of Einstein
-gravity plus Λ fails. That is still `general-relativity`, not a
-silent Newton install. The solar tests are 4D; `set general-relativity
-dim 5` makes them **inapplicable**.
+gravity plus Λ fails. `add-brans-dicke` appends `action brans-dicke`
+and is a second IR mutation: PPN `γ = (ω+1)/(ω+2)` at `ω = 1` is not
+1, so Eddington and Mercury fail while uniqueness also fails. That is
+still `general-relativity`, not a silent Newton install. The solar
+tests are 4D; `set general-relativity dim 5` makes them **inapplicable**.
 
 ## Claims
 
@@ -81,7 +83,7 @@ physis experiment gravity
 physis run newtonian-gravity
 physis run general-relativity
 physis hypothesize newtonian-gravity   # add-schwarzschild and add-yukawa are IR, not set
-physis hypothesize general-relativity  # add-r-squared is IR, not set
+physis hypothesize general-relativity  # add-r-squared and add-brans-dicke are IR, not set
 physis set general-relativity dim 5   # solar tests become inapplicable
 ```
 
@@ -99,6 +101,8 @@ physis set general-relativity dim 5   # solar tests become inapplicable
   mutation: it is not GR (Eddington / Mercury still fail). GR remains the
   separate 1915 object. Quadratic curvature on GR is an IR mutation of
   the Einstein–Hilbert action, not a Newton Binet term and not `dim`.
+  Brans–Dicke on GR is a second IR mutation: PPN `γ` is not 1, so
+  Eddington and Mercury fail. That is not Soldner and not `dim`.
 
 ## Related
 

@@ -59,9 +59,9 @@ pub fn gravity_rows() -> [&'static str; 3] {
 
 const ARCSEC_PER_RAD: f64 = 180.0 / PI * 3600.0;
 /// Eddington's GR target, arcseconds (grazing Sun).
-const EDDINGTON_ARCSEC: f64 = 1.75;
+pub(crate) const EDDINGTON_ARCSEC: f64 = 1.75;
 /// Observed GR perihelion remainder for Mercury, arcseconds per century.
-const MERCURY_ARCSEC_PER_CENTURY: f64 = 42.98;
+pub(crate) const MERCURY_ARCSEC_PER_CENTURY: f64 = 42.98;
 /// Inverse-square Binet rhs on the live Newton package.
 const BINET_INVERSE_SQUARE: &str = "binet inverse-square";
 /// Schwarzschild Binet term `3 (GM/c²) u²`.
@@ -575,7 +575,7 @@ pub fn gravity() -> ExperimentReport {
             "`gr.newton-half-deflection` is the standing Soldner/1911 claim: it holds for Newton and fails for GR (spatial curvature doubles the angle).".into(),
             "`gr.eddington-deflection` and `gr.mercury-perihelion` are the observations Newtonian gravity fails.".into(),
             "`hypothesize newtonian-gravity`: add-schwarzschild and add-yukawa are IR, not set. GR stays a separate object.".into(),
-            "`hypothesize general-relativity`: add-r-squared is IR, not set. dim stays on GR.".into(),
+            "`hypothesize general-relativity`: add-r-squared and add-brans-dicke are IR, not set. dim stays on GR.".into(),
             "`set general-relativity dim 5` makes the 4D solar tests inapplicable.".into(),
             "GM_☉ is the IAU standard gravitational parameter, so GM/c² is a typed length.".into(),
         ],

@@ -32,6 +32,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **GR Brans-Dicke scalar-tensor is an IR mutation**
+  (`general-relativity`, `add-brans-dicke`). Einstein-Hilbert is still
+  the live encoding (`action einstein-hilbert`); appending
+  `action brans-dicke` uses PPN `γ = (ω+1)/(ω+2)` at `ω = 1` and flips
+  `predictivity.unique-vacuum`, `gr.eddington-deflection`, and
+  `gr.mercury-perihelion` holds to fails. The residual is the PPN
+  light factor `(1+γ)/2 = 5/6` times the GR Schwarzschild integral, not
+  a unit flag and not Soldner `2GM/(c²R)`. Quadratic curvature remains
+  a separate IR fork (`add-r-squared`) that flips uniqueness while
+  Eddington and Mercury still hold. `dim` stays a knob and still makes
+  the 4D solar tests inapplicable. Mutants stay `general-relativity`;
+  they are not a silent Newton install. Mutants are not installed, not
+  journaled, and not Canonical or P4. Catalog d² hash unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: IR
+  round-trip; set brans_dicke is unknown; hypothesize
+  general-relativity; live Einstein-Hilbert restored; encode pin
+  `8e99553456fa93c2774e4021eb87bb4dd0547f457cf549ec4bf11859313f7be0`.
+
 - **Planck zero-point vacuum is an IR mutation**
   (`planck`, `add-zero-point`). Planck–Bose is still the live encoding
   (`mode planck-bose`); appending `mode zero-point` uses
