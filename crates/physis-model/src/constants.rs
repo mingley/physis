@@ -410,6 +410,19 @@ pub fn neutron_compton_wavelength() -> Qty<Length> {
     meters(1.319_590_905_81e-15)
 }
 
+/// Neutron magnetic moment μ_n (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended signed centre from the neutron section, not
+/// proton, electron, or muon magnetic moment and not vacuum
+/// permeability. This Qty is not a certificate that it equals
+/// g_n μ_N / 2. Bohr, nuclear, g-factor, and moment-ratio rows are
+/// later table rows and are not stored. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre.
+pub fn neutron_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(-9.662_365_1e-27)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -3782,6 +3795,45 @@ mod tests {
             physis_constants::neutron_compton_wavelength().hash,
             physis_constants::muon_compton_wavelength().hash,
             "lambda_C_n is not lambda_C_mu"
+        );
+        assert!(
+            physis_constants::lookup("mun").is_none(),
+            "mun is not a ledger name; the live name is mu_n"
+        );
+        let mu_n = physis_constants::neutron_magnetic_moment();
+        let mu_n_centre = Ratio::new(-96_623_651, 10i128.pow(34));
+        assert_eq!(
+            neutron_magnetic_moment().value(),
+            mu_n_centre.to_f64(),
+            "mu_n Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_n.value.contains(Interval::point(mu_n_centre)),
+            "mu_n Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_n.value.lo, mu_n.value.hi,
+            "ledger mu_n stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_magnetic_moment().hash,
+            physis_constants::proton_magnetic_moment().hash,
+            "mu_n is not mu_p"
+        );
+        assert_ne!(
+            physis_constants::neutron_magnetic_moment().hash,
+            physis_constants::electron_magnetic_moment().hash,
+            "mu_n is not mu_e"
+        );
+        assert_ne!(
+            physis_constants::neutron_magnetic_moment().hash,
+            physis_constants::muon_magnetic_moment().hash,
+            "mu_n is not mu_mu"
+        );
+        assert_ne!(
+            physis_constants::neutron_magnetic_moment().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_n is not mu0"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
