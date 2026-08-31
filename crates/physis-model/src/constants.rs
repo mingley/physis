@@ -349,6 +349,17 @@ pub fn neutron_proton_mass_difference() -> Qty<Mass> {
     kg(2.305_574_35e-30)
 }
 
+/// Neutron-proton mass difference in unified atomic mass units, CODATA 2018.
+///
+/// This is the recommended centre in u from the neutron section, not
+/// the kg hull and not neutron or proton mass in u. This Qty is not a
+/// certificate of a reconstruction from sibling masses. Ledger unit is
+/// u; this Qty is dimensionless, not kg. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre.
+pub fn neutron_proton_mass_difference_in_u() -> Qty<Dimensionless> {
+    Qty::new(1.388_449_33e-3)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -3542,6 +3553,42 @@ mod tests {
             physis_constants::neutron_proton_mass_difference().hash,
             physis_constants::neutron_proton_mass_ratio().hash,
             "mn_minus_mp is not mn_mp"
+        );
+        assert!(
+            physis_constants::lookup("mn-mp_u").is_none(),
+            "mn-mp_u is not a ledger name; the live name is mn_minus_mp_u"
+        );
+        let mn_minus_mp_u = physis_constants::neutron_proton_mass_difference_in_u();
+        let mn_minus_mp_u_centre = Ratio::new(138_844_933, 10i128.pow(11));
+        assert_eq!(
+            neutron_proton_mass_difference_in_u().value(),
+            mn_minus_mp_u_centre.to_f64(),
+            "mn_minus_mp_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mn_minus_mp_u
+                .value
+                .contains(Interval::point(mn_minus_mp_u_centre)),
+            "mn_minus_mp_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mn_minus_mp_u.value.lo, mn_minus_mp_u.value.hi,
+            "ledger mn_minus_mp_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_difference_in_u().hash,
+            physis_constants::neutron_proton_mass_difference().hash,
+            "mn_minus_mp_u is not mn_minus_mp"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_difference_in_u().hash,
+            physis_constants::neutron_mass_in_u().hash,
+            "mn_minus_mp_u is not m_n_u"
+        );
+        assert_ne!(
+            physis_constants::neutron_proton_mass_difference_in_u().hash,
+            physis_constants::proton_mass_in_u().hash,
+            "mn_minus_mp_u is not m_p_u"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
