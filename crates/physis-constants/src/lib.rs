@@ -1,4 +1,10 @@
 //! Versioned physical constants. Never scatter magic floats in theories.
+//!
+//! SI 2019 defining constants that fit in [`physis_numeric::Ratio`] are
+//! `c`, `Δν_Cs`, `e`, `k`, `N_A`, and `K_cd`. Planck's `h` is SI-exact
+//! but is not a Ratio here: the reduced denominator does not fit in
+//! `i128`. Theories still use `physis_model` `f64` Qty constants. This
+//! crate does not mint a kernel proof.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -92,15 +98,48 @@ fn si_brochure() -> SourceRecord {
     .expect("si brochure locator is precise")
 }
 
-/// Speed of light, exact, SI 2019.
-pub fn speed_of_light() -> Constant<Ratio> {
+fn si2019_exact(name: impl Into<String>, value: Ratio, unit: impl Into<String>) -> Constant<Ratio> {
     Constant::new(
-        "c",
-        Ratio::int(299_792_458),
-        "m/s",
+        name,
+        value,
+        unit,
         si_brochure(),
         ConstantRelease::Si2019Codata2018,
     )
+}
+
+/// Speed of light, exact, SI 2019.
+pub fn speed_of_light() -> Constant<Ratio> {
+    si2019_exact("c", Ratio::int(299_792_458), "m/s")
+}
+
+/// Caesium hyperfine frequency Δν_Cs, exact, SI 2019.
+pub fn caesium_hyperfine() -> Constant<Ratio> {
+    si2019_exact("delta-nu-Cs", Ratio::int(9_192_631_770), "Hz")
+}
+
+/// Elementary charge, exact, SI 2019.
+pub fn elementary_charge() -> Constant<Ratio> {
+    si2019_exact("e", Ratio::new(1_602_176_634, 10i128.pow(28)), "C")
+}
+
+/// Boltzmann constant, exact, SI 2019.
+pub fn boltzmann() -> Constant<Ratio> {
+    si2019_exact("k", Ratio::new(1_380_649, 10i128.pow(29)), "J/K")
+}
+
+/// Avogadro constant, exact, SI 2019.
+pub fn avogadro() -> Constant<Ratio> {
+    si2019_exact(
+        "N_A",
+        Ratio::int(602_214_076i128 * 1_000_000_000_000_000i128),
+        "1/mol",
+    )
+}
+
+/// Luminous efficacy of 540 THz radiation K_cd, exact, SI 2019.
+pub fn luminous_efficacy() -> Constant<Ratio> {
+    si2019_exact("K_cd", Ratio::int(683), "lm/W")
 }
 
 #[cfg(test)]
@@ -114,5 +153,70 @@ mod tests {
         assert_eq!(c.release, ConstantRelease::Si2019Codata2018);
         let c2 = speed_of_light();
         assert_eq!(c.hash, c2.hash);
+        assert_eq!(
+            c.hash.to_hex(),
+            "691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1"
+        );
+    }
+
+    #[test]
+    fn si2019_defining_constants_that_fit_are_exact() {
+        assert_eq!(caesium_hyperfine().value, Ratio::int(9_192_631_770));
+        assert_eq!(
+            elementary_charge().value,
+            Ratio::new(1_602_176_634, 10i128.pow(28))
+        );
+        assert_eq!(boltzmann().value, Ratio::new(1_380_649, 10i128.pow(29)));
+        assert_eq!(
+            avogadro().value,
+            Ratio::int(602_214_076i128 * 1_000_000_000_000_000i128)
+        );
+        assert_eq!(luminous_efficacy().value, Ratio::int(683));
+        for c in [
+            speed_of_light(),
+            caesium_hyperfine(),
+            elementary_charge(),
+            boltzmann(),
+            avogadro(),
+            luminous_efficacy(),
+        ] {
+            assert_eq!(c.release, ConstantRelease::Si2019Codata2018);
+            assert_eq!(c.provenance.locator.table.as_deref(), Some("1"));
+            assert_eq!(c.hash, si2019_exact(&c.name, c.value, &c.unit).hash);
+        }
+        assert_ne!(elementary_charge().hash, speed_of_light().hash);
+        assert_ne!(boltzmann().hash, avogadro().hash);
+        assert_eq!(
+            speed_of_light().hash.to_hex(),
+            "691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1"
+        );
+        assert_eq!(
+            caesium_hyperfine().hash.to_hex(),
+            "92d2278bbaa885fdb3b752b828d8e13c3cb65971f3b4a9a367be830d35b6e0a0"
+        );
+        assert_eq!(
+            elementary_charge().hash.to_hex(),
+            "412cb379a6bf6cca245ba89fc43539399942e644fa08000cd30bd1d9b25372a5"
+        );
+        assert_eq!(
+            boltzmann().hash.to_hex(),
+            "0d6156b1dea5afb156a9bbdcde78709fcfbac53df129a27698ea3fd76e812061"
+        );
+        assert_eq!(
+            avogadro().hash.to_hex(),
+            "410e2191c8cf7c074a32f621413239e74a7fefe735cacfaad4f503c47c9351dc"
+        );
+        assert_eq!(
+            luminous_efficacy().hash.to_hex(),
+            "236a02d738fe3bd59dd4e16a15175aefca53d9d2dfa1a906d2a52d31204ca9b7"
+        );
+    }
+
+    #[test]
+    fn planck_h_denominator_does_not_fit_i128() {
+        assert!(
+            10i128.checked_pow(42).is_none(),
+            "h = 6.62607015e-34 is 662607015/10^42; that denominator overflows i128"
+        );
     }
 }

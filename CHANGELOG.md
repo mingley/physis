@@ -10,6 +10,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Constants
+
+- **SI 2019 defining constants that fit in Ratio.**
+  `physis-constants` versions `c`, `Δν_Cs`, `e`, `k`, `N_A`, and
+  `K_cd` as exact SI 2019 `Ratio` values with BIPM Brochure 9th ed.
+  table 1 locators. Planck's `h` is SI-exact but is not a `Ratio`
+  here: `10^42` overflows `i128`. Theories still use `physis_model`
+  `f64` Qty constants. That is not a kernel proof, not Canonical, not
+  P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: exact fractions; hashes stable; `10^42`
+  does not fit.
+
 ### Encoding
 
 - **Encode lists each bound catalog identity by claim id.**
