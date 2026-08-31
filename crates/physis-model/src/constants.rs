@@ -197,6 +197,10 @@ pub fn epsilon0() -> Qty<physis_core::SI<typenum::N1, typenum::N3, typenum::P4, 
 }
 
 /// Vacuum permeability μ₀ (H/m), CODATA. Units: kg·m·s⁻²·A⁻².
+///
+/// After SI 2019 this is a measured value, not exact `4π×10^{-7}`.
+/// The versioned ledger stores the one-sigma hull; this Qty is the
+/// recommended centre. `ε₀` is not a ledger entry.
 pub fn mu0() -> Qty<physis_core::SI<typenum::P1, typenum::P1, typenum::N2, typenum::N2>> {
     Qty::new(1.256_637_062_12e-6)
 }
@@ -390,6 +394,30 @@ mod tests {
         assert_ne!(
             g.value.lo, g.value.hi,
             "ledger G stays an Interval; the Qty is not that Interval"
+        );
+
+        let mu0_c = physis_constants::vacuum_permeability();
+        let mu0_centre = Ratio::new(125_663_706_212, 10i128.pow(17));
+        assert_eq!(
+            mu0().value(),
+            mu0_centre.to_f64(),
+            "mu0 Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu0_c.value.contains(Interval::point(mu0_centre)),
+            "mu0 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu0_c.value.lo, mu0_c.value.hi,
+            "ledger mu0 stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("epsilon0").is_none(),
+            "epsilon0 is a different recommended value and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("mu_0").is_none(),
+            "mu_0 is not a ledger name; the live name is mu0"
         );
 
         let alpha = physis_constants::fine_structure_constant();
