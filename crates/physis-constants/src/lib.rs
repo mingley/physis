@@ -501,6 +501,10 @@ fn codata_2018_proton_charge_to_mass_source() -> SourceRecord {
     codata_2018_jpcrd("Proton, p", "e/mp = 9.5788331560(29)e7")
 }
 
+fn codata_2018_proton_molar_mass_source() -> SourceRecord {
+    codata_2018_jpcrd("Proton, p", "Mp = 1.00727646627(31)e-3")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -1910,6 +1914,34 @@ pub fn proton_charge_to_mass() -> Constant<Interval> {
     )
 }
 
+/// CODATA 2018 one-sigma hull of 1.00727646627(31)×10⁻³ kg mol⁻¹.
+fn codata_2018_proton_molar_mass_interval() -> Interval {
+    let scale = 10i128.pow(14);
+    let mu = 100_727_646_627i128;
+    let sigma = 31;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Proton molar mass M_p, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in kg mol⁻¹ from the proton section,
+/// not electron molar mass `M_e`, not muon molar mass `M_mu`, not the
+/// mass-in-u row `m_p_u`, not a certificate that this equals
+/// `N_A × m_p`, not an SI defining Ratio, and not P3N. Reduced proton
+/// Compton remains unstored (`ħ`). The proton-tau ratio is a PDG
+/// reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not stored.
+/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// still use `physis_model` `f64` Qty.
+pub fn proton_molar_mass() -> Constant<Interval> {
+    Constant::new(
+        "M_p",
+        codata_2018_proton_molar_mass_interval(),
+        "kg mol^{-1}",
+        codata_2018_proton_molar_mass_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 fn si_brochure_table_8(range: &str) -> SourceRecord {
     SourceRecord::new(
         Citation {
@@ -2121,6 +2153,7 @@ pub const LEDGER: &[&str] = &[
     "mp_mmu",
     "mp_mn",
     "e_mp",
+    "M_p",
     "au",
     "eV",
     "GM_sun",
@@ -2231,6 +2264,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "mp_mmu" => Some(listing(proton_muon_mass_ratio(), "interval")),
         "mp_mn" => Some(listing(proton_neutron_mass_ratio(), "interval")),
         "e_mp" => Some(listing(proton_charge_to_mass(), "interval")),
+        "M_p" => Some(listing(proton_molar_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -9620,6 +9654,118 @@ mod tests {
         assert!(lookup("m_p").is_some());
         assert!(lookup("e").is_some());
         assert!(lookup("e_mp").is_some());
+        assert!(lookup("M_p").is_some());
+        assert!(lookup("M_e").is_some());
+        assert!(lookup("M_mu").is_some());
+        assert!(lookup("m_p").is_some());
+        assert!(lookup("m_p_u").is_some());
+    }
+
+    #[test]
+    fn codata_2018_proton_molar_mass_is_a_one_sigma_interval() {
+        let r = proton_molar_mass();
+        let scale = 10i128.pow(14);
+        let lo = Ratio::new(100_727_646_596, scale);
+        let hi = Ratio::new(100_727_646_658, scale);
+        let centre = Ratio::new(100_727_646_627, scale);
+        assert_eq!(r.name, "M_p");
+        assert_eq!(r.unit, "kg mol^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Proton, p"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("Mp = 1.00727646627(31)e-3")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "M_p is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA M_p is a positive molar-mass hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[25181911649/25000000000000, 50363823329/50000000000000]"
+        );
+        assert_eq!(r.hash, proton_molar_mass().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "M_p",
+                codata_2018_proton_molar_mass_interval(),
+                "kg mol^{-1}",
+                codata_2018_proton_molar_mass_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, electron_molar_mass().hash, "M_p is not M_e");
+        assert_ne!(r.hash, muon_molar_mass().hash, "M_p is not M_mu");
+        assert_ne!(r.hash, proton_mass_in_u().hash, "M_p is not m_p_u");
+        assert_ne!(r.hash, proton_mass().hash, "M_p is not m_p");
+        assert_ne!(r.hash, proton_charge_to_mass().hash, "M_p is not e_mp");
+        assert_ne!(r.hash, newtonian_g().hash, "M_p is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            electron_molar_mass().provenance.source_hash,
+            "M_p range is not the M_e range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            proton_mass_in_u().provenance.source_hash,
+            "M_p range is not the m_p_u range"
+        );
+        assert_eq!(
+            electron_molar_mass().hash.to_hex(),
+            "0a8b3285a4969854567b59db2ebf9449268df86ffdbb461e3b9c1db0955eb804",
+            "M_e hash must stay pinned when M_p is added"
+        );
+        assert_eq!(
+            muon_molar_mass().hash.to_hex(),
+            "b53efc5e339708317e98c92c02ae506bf5b90c6d847e586d716d1631d902c81a",
+            "M_mu hash must stay pinned when M_p is added"
+        );
+        assert_eq!(
+            proton_mass_in_u().hash.to_hex(),
+            "244a086710c746078b5de6d5f2c5f896dd01a8469448035eadbc63c49fff6435",
+            "m_p_u hash must stay pinned when M_p is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when M_p is added"
+        );
+        assert_eq!(
+            proton_charge_to_mass().hash.to_hex(),
+            "e0404fef33540ecdef40b36cb1e14112b9e91713cccab65bb6a920fa44106611",
+            "e_mp hash must stay pinned when M_p is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when M_p is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "6ca2722d15970d11783522598ee8879e560019865477f1735041e1c9c8180149"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("Mp").is_none());
+        assert!(lookup("M-p").is_none());
+        assert!(lookup("M_p/mol").is_none());
+        assert!(lookup("mp_mtau").is_none());
+        assert!(lookup("mp").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("M_e").is_some());
+        assert!(lookup("M_mu").is_some());
+        assert!(lookup("m_p").is_some());
+        assert!(lookup("m_p_u").is_some());
+        assert!(lookup("e_mp").is_some());
+        assert!(lookup("M_p").is_some());
     }
 
     #[test]
@@ -9824,7 +9970,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 69);
+        assert_eq!(LEDGER.len(), 70);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -10124,6 +10270,11 @@ mod tests {
             lookup("e_mp").unwrap().hash.to_hex(),
             "e0404fef33540ecdef40b36cb1e14112b9e91713cccab65bb6a920fa44106611"
         );
+        assert_eq!(lookup("M_p").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("M_p").unwrap().hash.to_hex(),
+            "6ca2722d15970d11783522598ee8879e560019865477f1735041e1c9c8180149"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -10260,6 +10411,9 @@ mod tests {
         assert!(lookup("e/mp").is_none());
         assert!(lookup("-e/mp").is_none());
         assert!(lookup("e-mp").is_none());
+        assert!(lookup("Mp").is_none());
+        assert!(lookup("M-p").is_none());
+        assert!(lookup("M_p/mol").is_none());
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
