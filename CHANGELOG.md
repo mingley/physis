@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Newtonian G is a one-sigma Interval.**
+  `physis-constants` versions `G` as the recommended hull
+  `6.67430(15)×10⁻¹¹` from JPCRD 50, 033105 table XXXI, not an SI
+  defining `Ratio` and not P3N. Planck's `h` is still not a `Ratio`.
+  Theories still use `physis_model` `f64` Qty constants. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  one-sigma hull; hash
+  `ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92`.
+
 - **SI 2019 defining constants that fit in Ratio.**
   `physis-constants` versions `c`, `Δν_Cs`, `e`, `k`, `N_A`, and
   `K_cd` as exact SI 2019 `Ratio` values with BIPM Brochure 9th ed.

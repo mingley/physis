@@ -3,14 +3,15 @@
 //! SI 2019 defining constants that fit in [`physis_numeric::Ratio`] are
 //! `c`, `Δν_Cs`, `e`, `k`, `N_A`, and `K_cd`. Planck's `h` is SI-exact
 //! but is not a Ratio here: the reduced denominator does not fit in
-//! `i128`. Theories still use `physis_model` `f64` Qty constants. This
-//! crate does not mint a kernel proof.
+//! `i128`. CODATA 2018 Newtonian `G` is a one-sigma [`Interval`], not an
+//! exact Ratio. Theories still use `physis_model` `f64` Qty constants.
+//! This crate does not mint a kernel proof.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 use physis_core::artifact::ArtifactId;
-use physis_numeric::Ratio;
+use physis_numeric::{Interval, Ratio};
 use physis_provenance::{Citation, SourceLocator, SourceRecord};
 use serde::{Deserialize, Serialize};
 
@@ -142,6 +143,50 @@ pub fn luminous_efficacy() -> Constant<Ratio> {
     si2019_exact("K_cd", Ratio::int(683), "lm/W")
 }
 
+fn codata_2018_g_source() -> SourceRecord {
+    SourceRecord::new(
+        Citation {
+            work: "CODATA recommended values of the fundamental physical constants: 2018".into(),
+            edition: "J. Phys. Chem. Ref. Data 50, 033105".into(),
+        },
+        "2018",
+        SourceLocator {
+            page: None,
+            section: Some("UNIVERSAL".into()),
+            equation: None,
+            figure: None,
+            table: Some("XXXI".into()),
+            dataset_range: Some("G = 6.67430(15)e-11".into()),
+            experiment: None,
+        },
+        ArtifactId::of(b"codata-2018-jpcrd-50-033105"),
+        None,
+    )
+    .expect("CODATA 2018 G locator names a table and range")
+}
+
+/// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
+fn codata_2018_g_interval() -> Interval {
+    let scale = 10i128.pow(16);
+    let mu = 667_430;
+    let sigma = 15;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Newtonian gravitational constant, CODATA 2018 one-sigma enclosure.
+///
+/// This is a measured hull, not an SI defining Ratio and not P3N.
+/// Theories still use `physis_model` `f64` Qty.
+pub fn newtonian_g() -> Constant<Interval> {
+    Constant::new(
+        "G",
+        codata_2018_g_interval(),
+        "m^3 kg^{-1} s^{-2}",
+        codata_2018_g_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -218,5 +263,46 @@ mod tests {
             10i128.checked_pow(42).is_none(),
             "h = 6.62607015e-34 is 662607015/10^42; that denominator overflows i128"
         );
+    }
+
+    #[test]
+    fn codata_2018_g_is_a_one_sigma_interval() {
+        let g = newtonian_g();
+        let scale = 10i128.pow(16);
+        let lo = Ratio::new(667_415, scale);
+        let hi = Ratio::new(667_445, scale);
+        let centre = Ratio::new(667_430, scale);
+        assert_eq!(g.name, "G");
+        assert_eq!(g.unit, "m^3 kg^{-1} s^{-2}");
+        assert_eq!(g.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(g.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            g.provenance.locator.dataset_range.as_deref(),
+            Some("G = 6.67430(15)e-11")
+        );
+        assert_eq!(g.value, Interval::new(lo, hi));
+        assert_ne!(g.value.lo, g.value.hi, "G is measured, not SI-exact");
+        assert!(g.value.contains(Interval::point(centre)));
+        assert!(!g
+            .value
+            .contains(Interval::point(Ratio::new(667_000, scale))));
+        assert_eq!(g.hash, newtonian_g().hash);
+        assert_eq!(
+            g.hash,
+            Constant::new(
+                "G",
+                codata_2018_g_interval(),
+                "m^3 kg^{-1} s^{-2}",
+                codata_2018_g_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(g.hash, speed_of_light().hash);
+        assert_eq!(
+            g.hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92"
+        );
+        assert!(g.provenance.recheck().is_ok());
     }
 }
