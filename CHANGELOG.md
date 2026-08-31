@@ -22,6 +22,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 muon mass energy equivalent in MeV is a one-sigma Interval.**
+  `physis-constants` versions `m_mu_c2_MeV` as the CODATA 2018 hull
+  `105.6583755(23)` MeV from JPCRD 50, 033105 table XXXI (Muon, mu-).
+  This is not the joule hull `m_mu_c2`, not the exact electronvolt
+  `eV`, not Hartree `Eh`, not Rydberg energy equivalent `hcRinf`, not
+  an SI defining Ratio, not the Thomson cross section, and not P3N.
+  Electron mass is still not stored (`10^{42}` overflows `i128`).
+  `physis_model` `muon_mass_energy_equivalent_in_mev()` Qty locksteps
+  to the recommended centre inside the hull. Adding `m_mu_c2_MeV` to
+  LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  and `m_p` hashes are unchanged. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `m_mu_c2_MeV` hash `292b0524e0f1a160403fe1a2a4998cd4c2690f5d3b344a5f8ba31e9248be0416`; node
+  `b0d03e5dcc8f9174cfebf4d35d2ad0ab0836c6cde6d615cbdc21dd4e720d5dd4`; ledger node `1cf386b90e98059144cd17048cc9598ec27c2d9e01929cacaf37f9a8c041c5c6`. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  `m_mu_c2`, and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 muon mass energy equivalent is a one-sigma Interval.**
   `physis-constants` versions `m_mu_c2` as the CODATA 2018 hull
   `1.692833804(38)×10^{-11}` J from JPCRD 50, 033105 table XXXI

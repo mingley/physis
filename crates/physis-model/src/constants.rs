@@ -76,6 +76,16 @@ pub fn muon_mass_energy_equivalent() -> Qty<Energy> {
     joule(1.692_833_804e-11)
 }
 
+/// Muon mass energy equivalent in MeV, CODATA 2018.
+///
+/// This is the recommended centre in MeV, not the joule hull and not
+/// the exact electronvolt Ratio. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. Ledger unit is MeV; this
+/// Qty is dimensionless, not SI joule.
+pub fn muon_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
+    Qty::new(105.658_375_5)
+}
+
 /// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
 /// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
@@ -1516,6 +1526,42 @@ mod tests {
             physis_constants::muon_mass_energy_equivalent().hash,
             physis_constants::hartree_energy().hash,
             "m_mu_c2 is not Eh"
+        );
+        assert!(
+            physis_constants::lookup("mmuc2_MeV").is_none(),
+            "mmuc2_MeV is not a ledger name; the live name is m_mu_c2_MeV"
+        );
+        let m_mu_c2_mev = physis_constants::muon_mass_energy_equivalent_in_mev();
+        let m_mu_c2_mev_centre = Ratio::new(1_056_583_755, 10i128.pow(7));
+        assert_eq!(
+            muon_mass_energy_equivalent_in_mev().value(),
+            m_mu_c2_mev_centre.to_f64(),
+            "m_mu_c2_MeV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_mu_c2_mev
+                .value
+                .contains(Interval::point(m_mu_c2_mev_centre)),
+            "m_mu_c2_MeV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_mu_c2_mev.value.lo, m_mu_c2_mev.value.hi,
+            "ledger m_mu_c2_MeV stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::muon_mass_energy_equivalent_in_mev().hash,
+            physis_constants::muon_mass_energy_equivalent().hash,
+            "m_mu_c2_MeV is not m_mu_c2"
+        );
+        assert_ne!(
+            physis_constants::muon_mass_energy_equivalent_in_mev().hash,
+            physis_constants::electron_volt().hash,
+            "m_mu_c2_MeV is not eV"
+        );
+        assert_ne!(
+            physis_constants::muon_mass_energy_equivalent_in_mev().hash,
+            physis_constants::hartree_energy().hash,
+            "m_mu_c2_MeV is not Eh"
         );
 
         let mp = physis_constants::proton_mass();
