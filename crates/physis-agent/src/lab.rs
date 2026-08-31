@@ -10941,7 +10941,8 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(sr.contains("equations  2"), "{sr}");
+        assert!(sr.contains("equations  4"), "{sr}");
+        assert!(sr.contains("claims     3"), "{sr}");
         assert!(sr.contains("round-trip canonical"), "{sr}");
         assert!(sr.contains("catalog identity tree  ok"), "{sr}");
         assert!(sr.contains("not P3S"), "{sr}");
@@ -10949,7 +10950,7 @@ mod tests {
         let sr_id = encoding_package_id(&sr);
         assert_eq!(
             sr_id.to_hex(),
-            "91f188d526d4190ba611631b2f41818ee9a46c3e924fe8297d26592b9819691e"
+            "faecac5791ad5650337c61dcb10e45d5eb36ca24c0423df51891673ba3da3ef6"
         );
         assert_ne!(sr_id, gr_id);
         assert_ne!(sr_id, nand_id);

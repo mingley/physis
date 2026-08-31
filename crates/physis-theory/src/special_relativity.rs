@@ -8,15 +8,16 @@
 //! - the energy–momentum invariant `E² − (pc)² = (mc²)²` is frame-independent,
 //!   built from *typed* quantities so `pc` and `mc²` are forced to be energies.
 //!
-//! The Lorentz boost and the catalog interval identity tree live on the
-//! IR package. A truncated binomial γ (`add-binomial-gamma`) is a
-//! package mutation, not the `absolute_time` knob: interval and
-//! mass-shell fail on that fork. Velocity composition stays Einstein on
-//! that fork. A minus-uv collinear composition (`add-minus-uv`) is a
-//! second package mutation: `w = (u+v)/(1−uv)` exceeds `c` while Lorentz
-//! boosts still hold the interval and mass shell. That is not Galilean
-//! `u+v` and not the `absolute_time` knob. `absolute_time` still
-//! switches exact Lorentz to Galilean.
+//! The Lorentz boost and the catalog interval, composition, and
+//! mass-shell identity trees live on the IR package. A truncated
+//! binomial γ (`add-binomial-gamma`) is a package mutation, not the
+//! `absolute_time` knob: interval and mass-shell fail on that fork.
+//! Velocity composition stays Einstein on that fork. A minus-uv
+//! collinear composition (`add-minus-uv`) is a second package mutation:
+//! `w = (u+v)/(1−uv)` exceeds `c` while Lorentz boosts still hold the
+//! interval and mass shell. That is not Galilean `u+v` and not the
+//! `absolute_time` knob. `absolute_time` still switches exact Lorentz
+//! to Galilean.
 
 use physis_core::claim::{Claim, Verdict};
 use physis_core::error::CoreError;
@@ -27,7 +28,7 @@ use physis_core::{Energy, Momentum, Qty};
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{electron_mass, C};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
-use physis_proof::catalog::lorentz_interval;
+use physis_proof::catalog::{einstein_composition, energy_momentum, lorentz_interval};
 use physis_proof::{lookup, parse_expr};
 
 use crate::framework::Theory;
@@ -48,6 +49,10 @@ const BETA_VANISHING: f64 = 1.0e-6;
 const BOOST_LORENTZ: &str = "boost lorentz";
 /// Catalog interval identity tree (c = 1). Not a kernel proof.
 const INTERVAL_EQ: &str = "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * (t^2 - x^2)";
+/// Catalog Einstein composition identity tree (c = 1). Not a kernel proof.
+const COMPOSITION_EQ: &str = "(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)";
+/// Catalog mass-shell identity tree (c = 1). Not a kernel proof.
+const MASS_SHELL_EQ: &str = "(E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)";
 /// Truncated binomial γ = 1 + β²/2.
 const BOOST_BINOMIAL: &str = "boost binomial-gamma";
 /// Collinear Einstein addition with the denominator sign flipped.
@@ -57,11 +62,15 @@ const COMPOSE_U: f64 = 0.8;
 const COMPOSE_V: f64 = 0.7;
 
 fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
-    let live = lorentz_interval().canonical();
+    let interval = lorentz_interval().canonical();
+    let composition = einstein_composition().canonical();
+    let mass_shell = energy_momentum().canonical();
     let mut lorentz = false;
     let mut binomial = false;
     let mut minus_uv = false;
     let mut interval_tree = false;
+    let mut composition_tree = false;
+    let mut mass_shell_tree = false;
     for eq in &pkg.equations {
         match eq.trim() {
             BOOST_LORENTZ => lorentz = true,
@@ -69,20 +78,37 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
             COMPOSE_MINUS_UV => minus_uv = true,
             t => {
                 let tree = parse_expr(t)
-                    .map_err(|e| format!("special-relativity interval equation: {e}"))?
+                    .map_err(|e| format!("special-relativity catalog identity equation: {e}"))?
                     .canonical();
-                if tree != live {
+                if tree == interval {
+                    if interval_tree {
+                        return Err(format!(
+                            "{} package has two interval identity trees",
+                            pkg.id
+                        ));
+                    }
+                    interval_tree = true;
+                } else if tree == composition {
+                    if composition_tree {
+                        return Err(format!(
+                            "{} package has two composition identity trees",
+                            pkg.id
+                        ));
+                    }
+                    composition_tree = true;
+                } else if tree == mass_shell {
+                    if mass_shell_tree {
+                        return Err(format!(
+                            "{} package has two mass-shell identity trees",
+                            pkg.id
+                        ));
+                    }
+                    mass_shell_tree = true;
+                } else {
                     return Err(format!(
-                        "special-relativity equation is not the Lorentz boost, the interval identity tree, binomial-gamma, or minus-uv: {t}"
+                        "special-relativity equation is not the Lorentz boost, a catalog identity tree, binomial-gamma, or minus-uv: {t}"
                     ));
                 }
-                if interval_tree {
-                    return Err(format!(
-                        "{} package has two interval identity trees",
-                        pkg.id
-                    ));
-                }
-                interval_tree = true;
             }
         }
     }
@@ -91,6 +117,18 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     }
     if !interval_tree {
         return Err(format!("{} package has no interval identity tree", pkg.id));
+    }
+    if !composition_tree {
+        return Err(format!(
+            "{} package has no composition identity tree",
+            pkg.id
+        ));
+    }
+    if !mass_shell_tree {
+        return Err(format!(
+            "{} package has no mass-shell identity tree",
+            pkg.id
+        ));
     }
     Ok((binomial, minus_uv))
 }
@@ -127,7 +165,8 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
 
 /// Special relativity: flat Minkowski kinematics with a Galilean-toggle knob.
 ///
-/// The Lorentz boost lives on the IR package. Truncated binomial γ
+/// The Lorentz boost and the catalog interval, composition, and
+/// mass-shell identity trees live on the IR package. Truncated binomial γ
 /// (`add-binomial-gamma`) is a package mutation, not a knob: interval
 /// and mass-shell fail. Minus-uv collinear composition (`add-minus-uv`)
 /// is a second package mutation, not a knob: subluminal composition
@@ -145,13 +184,21 @@ pub struct SpecialRelativity {
 
 impl SpecialRelativity {
     /// IR package for this boost encoding. Equations are `boost lorentz`,
-    /// the catalog interval identity tree, and, when forked,
-    /// `boost binomial-gamma` and/or `compose minus-uv`. `absolute_time`
-    /// stays on the struct. `lean_ref` is the catalog interval type, not
-    /// a Physlib pointer without the tree.
+    /// the catalog interval, composition, and mass-shell identity trees,
+    /// and, when forked, `boost binomial-gamma` and/or `compose minus-uv`.
+    /// `absolute_time` stays on the struct. `lean_ref` is the catalog
+    /// interval type, not a Physlib pointer without the tree.
     pub fn package(&self) -> TheoryPackage {
-        let spec = lookup(SR_INVARIANT_INTERVAL).expect("interval is a catalog identity");
-        let mut equations = vec![BOOST_LORENTZ.to_string(), INTERVAL_EQ.to_string()];
+        let interval = lookup(SR_INVARIANT_INTERVAL).expect("interval is a catalog identity");
+        let composition =
+            lookup(SR_SUBLUMINAL_COMPOSITION).expect("composition is a catalog identity");
+        let mass_shell = lookup(SR_ENERGY_MOMENTUM).expect("mass shell is a catalog identity");
+        let mut equations = vec![
+            BOOST_LORENTZ.to_string(),
+            INTERVAL_EQ.to_string(),
+            COMPOSITION_EQ.to_string(),
+            MASS_SHELL_EQ.to_string(),
+        ];
         if self.binomial_gamma {
             equations.push(BOOST_BINOMIAL.to_string());
         }
@@ -164,13 +211,27 @@ impl SpecialRelativity {
             parameters: vec![],
             assumptions: vec!["lorentz-boost".into()],
             equations,
-            claims: vec![physis_ir::ClaimDecl {
-                id: SR_INVARIANT_INTERVAL.into(),
-                statement: spec.statement.into(),
-                layer: "spacetime".into(),
-                class: "model-internal".into(),
-            }],
-            lean_ref: Some(spec.lean_type.into()),
+            claims: vec![
+                physis_ir::ClaimDecl {
+                    id: SR_INVARIANT_INTERVAL.into(),
+                    statement: interval.statement.into(),
+                    layer: "spacetime".into(),
+                    class: "model-internal".into(),
+                },
+                physis_ir::ClaimDecl {
+                    id: SR_SUBLUMINAL_COMPOSITION.into(),
+                    statement: composition.statement.into(),
+                    layer: "spacetime".into(),
+                    class: "model-internal".into(),
+                },
+                physis_ir::ClaimDecl {
+                    id: SR_ENERGY_MOMENTUM.into(),
+                    statement: mass_shell.statement.into(),
+                    layer: "particle".into(),
+                    class: "model-internal".into(),
+                },
+            ],
+            lean_ref: Some(interval.lean_type.into()),
         }
     }
 
@@ -462,7 +523,7 @@ mod tests {
     }
 
     #[test]
-    fn live_package_binds_the_interval_identity_tree() {
+    fn live_package_binds_the_catalog_identity_trees() {
         let pkg = SpecialRelativity::default().package();
         let bound = physis_proof::catalog_tree_binding(pkg.lean_ref.as_deref(), &pkg.equations)
             .unwrap()
@@ -470,6 +531,21 @@ mod tests {
         assert_eq!(bound.claim_id, SR_INVARIANT_INTERVAL);
         assert_eq!(pkg.equations[0], BOOST_LORENTZ);
         assert_eq!(pkg.equations[1], INTERVAL_EQ);
+        assert_eq!(pkg.equations[2], COMPOSITION_EQ);
+        assert_eq!(pkg.equations[3], MASS_SHELL_EQ);
+        let composition = lookup(SR_SUBLUMINAL_COMPOSITION).unwrap();
+        let bound_c =
+            physis_proof::catalog_tree_binding(Some(composition.lean_type), &pkg.equations)
+                .unwrap()
+                .expect("live SR must carry the composition tree");
+        assert_eq!(bound_c.claim_id, SR_SUBLUMINAL_COMPOSITION);
+        let mass_shell = lookup(SR_ENERGY_MOMENTUM).unwrap();
+        let bound_m =
+            physis_proof::catalog_tree_binding(Some(mass_shell.lean_type), &pkg.equations)
+                .unwrap()
+                .expect("live SR must carry the mass-shell tree");
+        assert_eq!(bound_m.claim_id, SR_ENERGY_MOMENTUM);
+        assert_eq!(pkg.claims.len(), 3);
     }
 
     #[test]
@@ -478,6 +554,22 @@ mod tests {
         pkg.equations = vec![BOOST_LORENTZ.to_string()];
         let err = SpecialRelativity::from_package(&pkg).unwrap_err();
         assert!(err.contains("no interval identity tree"), "{err}");
+        assert!(!err.contains("receipt"), "{err}");
+    }
+
+    #[test]
+    fn interval_tree_without_composition_or_mass_shell_is_closed() {
+        let mut pkg = SpecialRelativity::default().package();
+        pkg.equations = vec![BOOST_LORENTZ.to_string(), INTERVAL_EQ.to_string()];
+        let err = SpecialRelativity::from_package(&pkg).unwrap_err();
+        assert!(err.contains("no composition identity tree"), "{err}");
+        pkg.equations = vec![
+            BOOST_LORENTZ.to_string(),
+            INTERVAL_EQ.to_string(),
+            COMPOSITION_EQ.to_string(),
+        ];
+        let err = SpecialRelativity::from_package(&pkg).unwrap_err();
+        assert!(err.contains("no mass-shell identity tree"), "{err}");
         assert!(!err.contains("receipt"), "{err}");
     }
 
@@ -715,11 +807,13 @@ mod tests {
         let pkg = parse_package(&src).unwrap();
         assert_eq!(
             pkg.equations.len(),
-            2,
-            "live package must stay boost lorentz plus the interval identity tree"
+            4,
+            "live package must stay boost lorentz plus the catalog identity trees"
         );
         assert_eq!(pkg.equations[0], BOOST_LORENTZ);
         assert_eq!(pkg.equations[1], INTERVAL_EQ);
+        assert_eq!(pkg.equations[2], COMPOSITION_EQ);
+        assert_eq!(pkg.equations[3], MASS_SHELL_EQ);
         assert_eq!(
             pkg.lean_ref.as_deref(),
             Some(lookup(SR_INVARIANT_INTERVAL).unwrap().lean_type)

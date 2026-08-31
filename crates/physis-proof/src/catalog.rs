@@ -434,6 +434,31 @@ mod tests {
     }
 
     #[test]
+    fn catalog_tree_binds_composition_and_mass_shell() {
+        let eqs = [
+            "boost lorentz",
+            "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * (t^2 - x^2)",
+            "(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)",
+            "(E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)",
+        ];
+        let composition = lookup("sr.subluminal-composition").unwrap();
+        let bound_c = catalog_tree_binding(Some(composition.lean_type), &eqs)
+            .unwrap()
+            .expect("composition tree must bind beside the Lorentz token");
+        assert_eq!(bound_c.claim_id, composition.claim_id);
+        let mass_shell = lookup("sr.energy-momentum-invariant").unwrap();
+        let bound_m = catalog_tree_binding(Some(mass_shell.lean_type), &eqs)
+            .unwrap()
+            .expect("mass-shell tree must bind beside the Lorentz token");
+        assert_eq!(bound_m.claim_id, mass_shell.claim_id);
+        let interval = lookup("sr.invariant-interval").unwrap();
+        let bound_i = catalog_tree_binding(Some(interval.lean_type), &eqs)
+            .unwrap()
+            .expect("interval tree must still bind among the three identities");
+        assert_eq!(bound_i.claim_id, interval.claim_id);
+    }
+
+    #[test]
     fn catalog_tree_skips_missing_lean_ref() {
         assert!(catalog_tree_binding(None, &["(b - a) - (c - a) + (c - b)"])
             .unwrap()

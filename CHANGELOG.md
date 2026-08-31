@@ -12,6 +12,17 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Encoding
 
+- **Special relativity live package carries all three catalog identity trees.**
+  `boost lorentz` stays the evaluator encoding. The package lists the
+  interval, Einstein composition, and mass-shell polynomials. `lean_ref`
+  remains the catalog interval type, so live `encode` still binds that
+  tree. A package missing composition or mass-shell fails closed. That
+  is not a Physlib pointer without the tree, not a kernel proof, not
+  P3S, not Canonical, not P4. GR and Planck stay token packages.
+  de-rham coboundary pin unchanged. Verified: encode special-relativity
+  prints `catalog identity tree  ok`, `equations  4`, and `claims     3`;
+  pin `faecac5791ad5650337c61dcb10e45d5eb36ca24c0423df51891673ba3da3ef6`.
+
 - **Special relativity live package carries the catalog interval tree.**
   `boost lorentz` stays the evaluator encoding. The package also lists
   the interval identity polynomial and `lean_ref` is the catalog type,
