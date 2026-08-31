@@ -11,11 +11,12 @@
 //! [`Ratio`] `1.3271244×10^20` m³ s⁻² (AJ 152, 41 table 1): a
 //! conversion ruler, not a measured solar mass. IAU 2015 `R_☉^N` is an
 //! exact [`Ratio`] `695700000` m from the same table: also a conversion
-//! ruler, not a measured photospheric radius. `L_☉^N` is not stored.
-//! Theories still use `physis_model` `f64` Qty constants. This crate
-//! does not mint a kernel proof. Overlapping `physis_model` Qty floats
-//! are lockstepped in `physis-model` tests; theories still evaluate
-//! with those Qty.
+//! ruler, not a measured photospheric radius. IAU 2015 `L_☉^N` is an
+//! exact [`Ratio`] `3.828×10^26` W from the same table: a conversion
+//! ruler, not a measured solar luminosity. Theories still use
+//! `physis_model` `f64` Qty constants. This crate does not mint a kernel
+//! proof. Overlapping `physis_model` Qty floats are lockstepped in
+//! `physis-model` tests; theories still evaluate with those Qty.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -279,7 +280,7 @@ fn iau2015_b3_table_1(range: &str) -> SourceRecord {
 ///
 /// `1.3271244×10^20 m³ s⁻²` is a conversion ruler, not a measured solar
 /// mass and not CODATA `G`. Newtonian-gravity still evaluates with the
-/// `physis_model` Qty. `L_☉^N` is not stored here.
+/// `physis_model` Qty.
 pub fn solar_gm() -> Constant<Ratio> {
     Constant::new(
         "GM_sun",
@@ -294,13 +295,27 @@ pub fn solar_gm() -> Constant<Ratio> {
 ///
 /// `6.957×10^8 m` is a conversion ruler, not a measured photospheric
 /// radius. Newtonian-gravity still evaluates with the `physis_model`
-/// Qty. `L_☉^N` is not stored here.
+/// Qty.
 pub fn solar_radius() -> Constant<Ratio> {
     Constant::new(
         "R_sun",
         Ratio::int(695_700_000),
         "m",
         iau2015_b3_table_1("R_sun^N = 6.957e8"),
+        ConstantRelease::Iau2015,
+    )
+}
+
+/// Nominal solar luminosity L_☉^N, exact, IAU 2015 Resolution B3.
+///
+/// `3.828×10^26 W` is a conversion ruler, not a measured solar
+/// luminosity. Theories still evaluate with the `physis_model` Qty.
+pub fn solar_luminosity() -> Constant<Ratio> {
+    Constant::new(
+        "L_sun",
+        Ratio::int(3_828i128 * 10i128.pow(23)),
+        "W",
+        iau2015_b3_table_1("L_sun^N = 3.828e26"),
         ConstantRelease::Iau2015,
     )
 }
@@ -343,6 +358,7 @@ pub const LEDGER: &[&str] = &[
     "au",
     "GM_sun",
     "R_sun",
+    "L_sun",
 ];
 
 fn listing<T: std::fmt::Display>(c: Constant<T>, kind: &'static str) -> ConstantListing {
@@ -374,6 +390,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
         "R_sun" => Some(listing(solar_radius(), "ratio")),
+        "L_sun" => Some(listing(solar_luminosity(), "ratio")),
         _ => None,
     }
 }
@@ -650,8 +667,47 @@ mod tests {
     }
 
     #[test]
+    fn iau2015_solar_luminosity_is_an_exact_ratio() {
+        let l = solar_luminosity();
+        let value = Ratio::int(3_828i128 * 10i128.pow(23));
+        assert_eq!(l.name, "L_sun");
+        assert_eq!(l.unit, "W");
+        assert_eq!(l.value, value);
+        assert_eq!(l.release, ConstantRelease::Iau2015);
+        assert_eq!(l.provenance.locator.table.as_deref(), Some("1"));
+        assert_eq!(
+            l.provenance.locator.dataset_range.as_deref(),
+            Some("L_sun^N = 3.828e26")
+        );
+        assert_eq!(l.hash, solar_luminosity().hash);
+        assert_eq!(
+            l.hash,
+            Constant::new(
+                "L_sun",
+                value,
+                "W",
+                iau2015_b3_table_1("L_sun^N = 3.828e26"),
+                ConstantRelease::Iau2015,
+            )
+            .hash
+        );
+        assert_ne!(l.hash, solar_gm().hash);
+        assert_ne!(l.hash, solar_radius().hash);
+        assert_ne!(
+            l.provenance.source_hash,
+            solar_radius().provenance.source_hash,
+            "L_sun range is not the R_sun range"
+        );
+        assert_eq!(
+            l.hash.to_hex(),
+            "444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4"
+        );
+        assert!(l.provenance.recheck().is_ok());
+    }
+
+    #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 11);
+        assert_eq!(LEDGER.len(), 12);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -687,9 +743,13 @@ mod tests {
             lookup("R_sun").unwrap().hash.to_hex(),
             "cb7f91f2d0663d2d8ff8b0e3009f6e0772a126220d04ed658fc793db7e5cc6b4"
         );
+        assert_eq!(lookup("L_sun").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("L_sun").unwrap().hash.to_hex(),
+            "444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4"
+        );
         assert!(lookup("hbar").is_none());
         assert!(lookup("solar-gm").is_none());
-        assert!(lookup("L_sun").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());
     }
 }

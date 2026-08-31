@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 nominal solar luminosity is an exact Ratio.**
+  `physis-constants` versions `L_sun` as `3.828×10^26` W from Prša et
+  al., Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a
+  conversion ruler, not a measured solar luminosity and not P3N.
+  `physis_model` `solar_luminosity()` Qty locksteps via integer
+  `to_f64`. Adding `L_sun` to LEDGER changes the ledger bundle pin.
+  The `GM_sun` and `R_sun` hashes are unchanged. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: `L_sun` hash
+  `444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4`;
+  node
+  `1c513225d8721ad42106237a67dc8755fbf7f3449f0585f185820a01ea1d9f17`;
+  ledger node
+  `f8561e25367d90bc433ce45465191f57563ee909cb0635a725a00c386b63d8c3`.
+  `GM_sun` and `R_sun` hashes and nodes unchanged.
+
 - **IAU 2015 nominal solar radius is an exact Ratio.**
   `physis-constants` versions `R_sun` as `695700000` m from Prša et al.,
   Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a

@@ -61,7 +61,9 @@ pub fn solar_radius() -> Qty<Length> {
     meters(6.957e8)
 }
 
-/// Nominal solar luminosity (IAU 2015), watts.
+/// Nominal solar luminosity (IAU 2015 conversion ruler), watts.
+///
+/// This is `L_☉^N`, not a measured solar luminosity.
 pub fn solar_luminosity() -> Qty<Power> {
     Qty::new(3.828e26)
 }
@@ -436,9 +438,22 @@ mod tests {
             6.957e8,
             "IAU 2015 R_sun^N is the exact conversion ruler"
         );
-        assert!(
-            physis_constants::lookup("L_sun").is_none(),
-            "nominal solar luminosity is not this increment"
+
+        let l = physis_constants::solar_luminosity();
+        assert_eq!(
+            l.value,
+            Ratio::int(3_828i128 * 10i128.pow(23)),
+            "ledger L_sun is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            solar_luminosity().value(),
+            l.value.to_f64(),
+            "L_sun is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            solar_luminosity().value(),
+            3.828e26,
+            "IAU 2015 L_sun^N is the exact conversion ruler"
         );
     }
 }
