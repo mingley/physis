@@ -22,6 +22,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Rydberg constant is a one-sigma Interval.**
+  `physis-constants` versions `Rinf` as the CODATA 2018 hull
+  `10973731.568160(21)` m⁻¹ from JPCRD 50, 033105 table XXXI
+  (ATOMIC AND NUCLEAR). This is not an SI defining Ratio, not the
+  Rydberg frequency `c R∞`, not the Bohr radius, and not P3N.
+  `physis_model` `rydberg()` Qty locksteps to the recommended centre
+  inside the hull. Adding `Rinf` to LEDGER changes the ledger bundle
+  pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, and
+  `m_p` hashes are unchanged. Theories still evaluate with `f64` Qty.
+  That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `Rinf` hash
+  `fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090`;
+  node
+  `0fb78b2d6e881df7b19d8a55878f642e27dc4d51a8f74ffe0c1e28e9d93380ac`;
+  ledger node
+  `fa7c94814b87f60480fde342ab6841258d7783831c4d2bf84849999614216b66`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, and `m_p` hashes
+  and nodes unchanged.
+
 - **CODATA 2018 inverse fine-structure is a one-sigma Interval.**
   `physis-constants` versions `inv_alpha` as the CODATA 2018 hull
   `137.035999084(21)` from JPCRD 50, 033105 table XXXI (ATOMIC AND

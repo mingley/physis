@@ -148,6 +148,15 @@ pub fn inv_alpha() -> Qty<Dimensionless> {
     Qty::new(137.035_999_084)
 }
 
+/// Rydberg constant R∞ (m⁻¹), CODATA 2018.
+///
+/// This is the recommended centre in inverse metres, not `c R∞` and not
+/// the Bohr radius. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre.
+pub fn rydberg() -> Qty<physis_core::SI<typenum::Z0, typenum::N1, typenum::Z0>> {
+    Qty::new(10_973_731.568_160)
+}
+
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
 pub fn strong_coupling_mz() -> Qty<Dimensionless> {
     Qty::new(0.1179)
@@ -529,6 +538,30 @@ mod tests {
         assert!(
             physis_constants::lookup("inverse-alpha").is_none(),
             "inverse-alpha is not a ledger name; the live name is inv_alpha"
+        );
+
+        let rinf = physis_constants::rydberg_constant();
+        let rinf_centre = Ratio::new(10_973_731_568_160, 10i128.pow(6));
+        assert_eq!(
+            rydberg().value(),
+            rinf_centre.to_f64(),
+            "Rinf Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            rinf.value.contains(Interval::point(rinf_centre)),
+            "Rinf Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            rinf.value.lo, rinf.value.hi,
+            "ledger Rinf stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("R_inf").is_none(),
+            "R_inf is not a ledger name; the live name is Rinf"
+        );
+        assert!(
+            physis_constants::lookup("a0").is_none(),
+            "Bohr radius is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
