@@ -383,6 +383,20 @@ pub fn neutron_proton_mass_difference_energy_equivalent_in_mev() -> Qty<Dimensio
     Qty::new(1.293_332_36)
 }
 
+/// Neutron molar mass M_n (kg mol⁻¹), CODATA 2018.
+///
+/// This is the recommended centre in kg mol⁻¹ from the neutron section,
+/// not proton, electron, or muon molar mass, not the kg hull, not the
+/// u-row, and not a certificate that this equals N_A times the
+/// neutron-mass hull. The neutron-tau ratio is a PDG reprint and is not
+/// stored. The versioned ledger stores the one-sigma hull; this Qty is
+/// that centre.
+pub fn neutron_molar_mass() -> Qty<
+    physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(1.008_664_915_60e-3)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -3685,6 +3699,40 @@ mod tests {
             physis_constants::neutron_proton_mass_difference_energy_equivalent_in_mev().hash,
             physis_constants::proton_mass_energy_equivalent_in_mev().hash,
             "mn_minus_mp_c2_MeV is not m_p_c2_MeV"
+        );
+        assert!(
+            physis_constants::lookup("Mn").is_none(),
+            "Mn is not a ledger name; the live name is M_n"
+        );
+        let m_n_molar = physis_constants::neutron_molar_mass();
+        let m_n_molar_centre = Ratio::new(100_866_491_560, 10i128.pow(14));
+        assert_eq!(
+            neutron_molar_mass().value(),
+            m_n_molar_centre.to_f64(),
+            "M_n Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_n_molar.value.contains(Interval::point(m_n_molar_centre)),
+            "M_n Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_n_molar.value.lo, m_n_molar.value.hi,
+            "ledger M_n stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_molar_mass().hash,
+            physis_constants::proton_molar_mass().hash,
+            "M_n is not M_p"
+        );
+        assert_ne!(
+            physis_constants::neutron_molar_mass().hash,
+            physis_constants::neutron_mass().hash,
+            "M_n is not m_n"
+        );
+        assert_ne!(
+            physis_constants::neutron_molar_mass().hash,
+            physis_constants::neutron_mass_in_u().hash,
+            "M_n is not m_n_u"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

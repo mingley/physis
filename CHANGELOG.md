@@ -22,7 +22,54 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
-- **CODATA 2018 neutron-proton mass difference energy equivalent in MeV is a one-sigma Interval.**
+- **CODATA 2018 neutron molar mass is a one-sigma Interval.**
+  `physis-constants` versions `M_n` as the CODATA 2018 hull
+  `1.00866491560(57)×10^{-3}` kg mol⁻¹ from JPCRD 50, 033105 table XXXI
+  (Neutron, n). This is not proton molar mass `M_p`, not electron
+  molar mass `M_e`, not muon molar mass `M_mu`, not the kg hull `m_n`,
+  not the u-row `m_n_u`, not a certificate that this equals `N_A` times
+  the neutron-mass hull, not an SI defining Ratio, not the Thomson
+  cross section, and not P3N. Neutron-tau is a PDG reprint (footnote
+  e) and is not stored. Reduced Compton and gyromagnetic ratios cite ħ
+  and are not stored. Electron mass is still not stored (`10^{42}`
+  overflows `i128`). Decade `10^{14}` (`10^{13}` is the 10× trap).
+  `physis_model` `neutron_molar_mass()` Qty locksteps to the recommended
+  centre inside the hull. Adding `M_n` to LEDGER changes the ledger
+  bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`,
+  `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`,
+  `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`,
+  `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`,
+  `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`,
+  `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`, `M_p`,
+  `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`, and
+  `mn_minus_mp_c2_MeV` hashes are unchanged.
+  Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4.
+  Verified: `M_n` hash 503014b9a1cfa5be5f983c7cd8f477ec6fa601225d084f3acd22ab41b88151d5; node 8351e225509b669ee96bf0e8e63baff12e020575065270ef2d54cc77877ed1c0;
+  ledger node ca7a363797c43459d9d47f63d145dd5079825df3eb18cefae0e940985c8052bf. `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`,
+  `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`,
+  `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`,
+  `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`,
+  `e_mp`, `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`,
+  `mu_p_muN`, `gp`, `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`,
+  `sigma0p`, `m_n`, `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`,
+  `mn_mmu`, `mn_mp`, `mn_minus_mp`, `mn_minus_mp_u`,
+  `mn_minus_mp_c2`, and `mn_minus_mp_c2_MeV` hashes and nodes
+  unchanged.
+
   `physis-constants` versions `mn_minus_mp_c2_MeV` as the CODATA 2018 hull
   `1.29333236(46)` MeV from JPCRD 50, 033105 table XXXI
   (Neutron, n). This is not the joule hull `mn_minus_mp_c2`, not
