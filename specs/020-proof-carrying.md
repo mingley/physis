@@ -218,7 +218,9 @@ identity; a slug-only review line is not P3S.
   `4.3597447222071(85)×10^{-18}` J from the same table; the eV
   conversion is not stored. CODATA 2018 electron-muon mass ratio
   `m_e/m_μ` is a one-sigma `Interval` `4.83633169(11)×10^{-3}` (JPCRD
-  table XXXI Electron, e-).
+  table XXXI Electron, e-). CODATA 2018 electron-proton mass ratio
+  `m_e/m_p` is a one-sigma `Interval` `5.44617021487(33)×10^{-4}` from
+  the same section.
   CODATA 2018 `m_p` is a
   one-sigma `Interval` `1.67262192369(51)×10^{-27}` kg (JPCRD table XXXI
   Proton, p); electron mass is not stored (`10^{42}` overflows `i128`). IAU 2012 `au` is an exact
@@ -236,7 +238,7 @@ identity; a slug-only review line is not P3S.
   LEDGER. Overlapping `physis_model` Qty floats lockstep the ledger:
   `c`, `au`, `GM_sun`, `R_sun`, and `L_sun` via integer `to_f64`; `e`/`k`/`eV` via IEEE rounding of the SI
   decimal (`SciExact::to_f64`, not reduced `Ratio::to_f64`); `h` via
-  `SciExact::to_f64`; `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, and `m_p` Qty values are the CODATA centres
+  `SciExact::to_f64`; `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, and `m_p` Qty values are the CODATA centres
   inside the hulls.
   Theories still evaluate with `physis_model` `f64` Qty constants
 - Community-canonical encodings (review tops out at
