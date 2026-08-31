@@ -150,10 +150,19 @@ pub fn inv_alpha() -> Qty<Dimensionless> {
 
 /// Rydberg constant R∞ (m⁻¹), CODATA 2018.
 ///
-/// This is the recommended centre in inverse metres, not `c R∞`.
-/// The versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// This is the recommended centre in inverse metres, not the Rydberg
+/// frequency. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre.
 pub fn rydberg() -> Qty<physis_core::SI<typenum::Z0, typenum::N1, typenum::Z0>> {
     Qty::new(10_973_731.568_160)
+}
+
+/// Rydberg frequency cR∞ (Hz), CODATA 2018.
+///
+/// This is the recommended centre in hertz, not `hcR∞`. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
+pub fn rydberg_frequency() -> Qty<Frequency> {
+    Qty::new(3.289_841_960_250_8e15)
 }
 
 /// Bohr radius a₀ (m), CODATA 2018.
@@ -573,6 +582,30 @@ mod tests {
         assert!(
             physis_constants::lookup("R_inf").is_none(),
             "R_inf is not a ledger name; the live name is Rinf"
+        );
+
+        let crinf = physis_constants::rydberg_frequency();
+        let crinf_centre = Ratio::int(3_289_841_960_250_800);
+        assert_eq!(
+            rydberg_frequency().value(),
+            crinf_centre.to_f64(),
+            "cRinf Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            crinf.value.contains(Interval::point(crinf_centre)),
+            "cRinf Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            crinf.value.lo, crinf.value.hi,
+            "ledger cRinf stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("c_Rinf").is_none(),
+            "c_Rinf is not a ledger name; the live name is cRinf"
+        );
+        assert!(
+            physis_constants::lookup("hcRinf").is_none(),
+            "Rydberg energy equivalent is a different recommended value and is not stored"
         );
 
         let a0_c = physis_constants::bohr_radius();

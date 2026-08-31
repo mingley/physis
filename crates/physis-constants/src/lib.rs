@@ -20,7 +20,10 @@
 //! Ratio. CODATA 2018 inverse fine-structure `α⁻¹` is a one-sigma
 //! [`Interval`] `137.035999084(21)` from the same table: a different
 //! recommended hull, not `1/α` as a derived Ratio. CODATA 2018 Rydberg
-//! constant `R∞` is a one-sigma [`Interval`] `10973731.568160(21)` m⁻¹
+//! frequency `cR∞` is a one-sigma [`Interval`]
+//! `3.2898419602508(64)×10^{15}` Hz from the same table: a measured hull,
+//! not an SI defining Ratio, and not the energy equivalent `hcR∞`.
+//! CODATA 2018 Rydberg constant `R∞` is a one-sigma [`Interval`] `10973731.568160(21)` m⁻¹
 //! from the same table: a measured hull, not an SI defining Ratio.
 //! CODATA 2018 Bohr radius `a₀` is a one-sigma [`Interval`]
 //! `5.29177210903(80)×10^{-11}` m from the same table: a measured hull,
@@ -244,6 +247,10 @@ fn codata_2018_inv_alpha_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "inv_alpha = 137.035999084(21)")
 }
 
+fn codata_2018_rydberg_frequency_source() -> SourceRecord {
+    codata_2018_jpcrd("ATOMIC AND NUCLEAR", "cRinf = 3.2898419602508(64)e15")
+}
+
 fn codata_2018_rydberg_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "Rinf = 10973731.568160(21)")
 }
@@ -399,6 +406,30 @@ pub fn inverse_fine_structure_constant() -> Constant<Interval> {
     )
 }
 
+/// CODATA 2018 one-sigma hull of 3.2898419602508(64)×10¹⁵ Hz.
+fn codata_2018_rydberg_frequency_interval() -> Interval {
+    let mu = 32_898_419_602_508i128 * 100;
+    let sigma = 64i128 * 100;
+    Interval::new(Ratio::int(mu - sigma), Ratio::int(mu + sigma))
+}
+
+/// Rydberg frequency cR∞, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in hertz, not an SI defining Ratio,
+/// not the energy equivalent `hcR∞`, and not P3N. It is a different
+/// recommended value from R∞; the exact SI `c` does not make the
+/// stored centres a certificate that they multiply. Theories still use
+/// `physis_model` `f64` Qty.
+pub fn rydberg_frequency() -> Constant<Interval> {
+    Constant::new(
+        "cRinf",
+        codata_2018_rydberg_frequency_interval(),
+        "Hz",
+        codata_2018_rydberg_frequency_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 /// CODATA 2018 one-sigma hull of 10973731.568160(21) m⁻¹.
 fn codata_2018_rydberg_interval() -> Interval {
     let scale = 10i128.pow(6);
@@ -410,8 +441,7 @@ fn codata_2018_rydberg_interval() -> Interval {
 /// Rydberg constant R∞, CODATA 2018 one-sigma enclosure.
 ///
 /// This is the recommended hull in inverse metres, not an SI defining
-/// Ratio, not the Rydberg frequency `c R∞`, and
-/// not P3N. Theories still use `physis_model` `f64` Qty.
+/// Ratio and not P3N. Theories still use `physis_model` `f64` Qty.
 pub fn rydberg_constant() -> Constant<Interval> {
     Constant::new(
         "Rinf",
@@ -653,6 +683,7 @@ pub const LEDGER: &[&str] = &[
     "Z0",
     "alpha",
     "inv_alpha",
+    "cRinf",
     "Rinf",
     "a0",
     "Eh",
@@ -695,6 +726,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "Z0" => Some(listing(vacuum_impedance(), "interval")),
         "alpha" => Some(listing(fine_structure_constant(), "interval")),
         "inv_alpha" => Some(listing(inverse_fine_structure_constant(), "interval")),
+        "cRinf" => Some(listing(rydberg_frequency(), "interval")),
         "Rinf" => Some(listing(rydberg_constant(), "interval")),
         "a0" => Some(listing(bohr_radius(), "interval")),
         "Eh" => Some(listing(hartree_energy(), "interval")),
@@ -1326,8 +1358,119 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("R_inf").is_none());
         assert!(lookup("Rydberg").is_none());
-        assert!(lookup("cRinf").is_none());
+        assert!(lookup("hcRinf").is_none());
         assert!(lookup("E_h").is_none());
+    }
+
+    #[test]
+    fn codata_2018_rydberg_frequency_is_a_one_sigma_interval() {
+        let f = rydberg_frequency();
+        let mu = 32_898_419_602_508i128 * 100;
+        let sigma = 64i128 * 100;
+        let lo = Ratio::int(mu - sigma);
+        let hi = Ratio::int(mu + sigma);
+        let centre = Ratio::int(mu);
+        assert_eq!(f.name, "cRinf");
+        assert_eq!(f.unit, "Hz");
+        assert_eq!(f.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(f.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            f.provenance.locator.section.as_deref(),
+            Some("ATOMIC AND NUCLEAR")
+        );
+        assert_eq!(
+            f.provenance.locator.dataset_range.as_deref(),
+            Some("cRinf = 3.2898419602508(64)e15")
+        );
+        assert_eq!(f.value, Interval::new(lo, hi));
+        assert_ne!(f.value.lo, f.value.hi, "cRinf is measured, not SI-exact");
+        assert!(f.value.contains(Interval::point(centre)));
+        assert!(!f
+            .value
+            .contains(Interval::point(Ratio::int(3_289_000_000_000_000))));
+        assert_eq!(f.hash, rydberg_frequency().hash);
+        assert_eq!(
+            f.hash,
+            Constant::new(
+                "cRinf",
+                codata_2018_rydberg_frequency_interval(),
+                "Hz",
+                codata_2018_rydberg_frequency_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(f.hash, rydberg_constant().hash, "cRinf is not Rinf");
+        assert_ne!(f.hash, hartree_energy().hash, "cRinf is not Eh");
+        assert_ne!(f.hash, newtonian_g().hash, "cRinf is not G");
+        assert_ne!(
+            f.provenance.source_hash,
+            rydberg_constant().provenance.source_hash,
+            "cRinf range is not the Rinf range"
+        );
+        assert_eq!(
+            rydberg_constant().hash.to_hex(),
+            "fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090",
+            "Rinf hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            hartree_energy().hash.to_hex(),
+            "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a",
+            "Eh hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            bohr_radius().hash.to_hex(),
+            "5d5098fcd983d3db221e4b4047e73de5061985c31a91ccdf12cd122b620eaf29",
+            "a0 hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            inverse_fine_structure_constant().hash.to_hex(),
+            "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482",
+            "inv_alpha hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            vacuum_impedance().hash.to_hex(),
+            "6f72c1c5833dc722ac6fb5223f982879499ff412157c6e6c9851d77088991316",
+            "Z0 hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            vacuum_permittivity().hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80",
+            "epsilon0 hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when cRinf is added"
+        );
+        assert_eq!(
+            f.hash.to_hex(),
+            "c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969"
+        );
+        assert!(f.provenance.recheck().is_ok());
+        assert!(
+            mu < (1i128 << 53),
+            "cRinf centre in Hz fits in the f64 integer range"
+        );
+        assert!(lookup("c_Rinf").is_none());
+        assert!(lookup("Rydberg").is_none());
+        assert!(lookup("hcRinf").is_none());
+        assert!(lookup("cRinf_eV").is_none());
     }
 
     #[test]
@@ -1802,7 +1945,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 22);
+        assert_eq!(LEDGER.len(), 23);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -1846,6 +1989,11 @@ mod tests {
         assert_eq!(
             lookup("inv_alpha").unwrap().hash.to_hex(),
             "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482"
+        );
+        assert_eq!(lookup("cRinf").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("cRinf").unwrap().hash.to_hex(),
+            "c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969"
         );
         assert_eq!(lookup("Rinf").unwrap().kind, "interval");
         assert_eq!(
@@ -1906,7 +2054,8 @@ mod tests {
         assert!(lookup("fine-structure").is_none());
         assert!(lookup("R_inf").is_none());
         assert!(lookup("Rydberg").is_none());
-        assert!(lookup("cRinf").is_none());
+        assert!(lookup("c_Rinf").is_none());
+        assert!(lookup("hcRinf").is_none());
         assert!(lookup("a_0").is_none());
         assert!(lookup("Bohr").is_none());
         assert!(lookup("E_h").is_none());

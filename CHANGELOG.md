@@ -22,6 +22,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Rydberg frequency is a one-sigma Interval.**
+  `physis-constants` versions `cRinf` as the CODATA 2018 hull
+  `3.2898419602508(64)×10^{15}` Hz from JPCRD 50, 033105 table XXXI
+  (ATOMIC AND NUCLEAR). This is not an SI defining Ratio, not the
+  energy equivalent `hcR∞`, and not P3N. `physis_model`
+  `rydberg_frequency()` Qty locksteps to the recommended centre inside
+  the hull. Adding `cRinf` to LEDGER changes the ledger bundle pin.
+  The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `Rinf`, `a0`,
+  `Eh`, and `m_p` hashes are unchanged. Theories still evaluate with
+  `f64` Qty. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `cRinf` hash
+  `c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969`;
+  node
+  `8fca9d435d8a31d1fafdac9a8825ce7f1535bf04eaf82785a1c62f66c900e60e`;
+  ledger node
+  `1ceae7214eccc32fe8f6b6134ec22afb85cd7e2d7a42d8aa7fb0112920505b10`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `Rinf`, `a0`, `Eh`,
+  and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 Hartree energy is a one-sigma Interval.**
   `physis-constants` versions `Eh` as the CODATA 2018 hull
   `4.3597447222071(85)×10^{-18}` J from JPCRD 50, 033105 table XXXI
