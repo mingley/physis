@@ -60,6 +60,7 @@ Level-3 trust
   L3 constant rebuild      ✓ physis constant independently rebuilds versioned SI/CODATA hashes into a VersionedConstant DAG; provenance-auditor unique op with cite; restore rebuilds; not P3N, not Canonical, not P4; P3N count stays 4
   L3 constant ledger       ✓ physis constant with no name independently rebuilds every LEDGER entry into one VersionedConstant bundle; empty journal name; restore rebuilds; not P3N, not Canonical, not P4; P3N count stays 4
   L3 Qty lockstep          ✓ physis_model c Qty matches integer Ratio to_f64; e/k match IEEE rounding of the SI decimal (SciExact::to_f64, not reduced Ratio::to_f64); h matches SciExact to_f64; G Qty is the CODATA 2018 centre inside the one-sigma hull; ħ is not stored; theories still evaluate with f64 Qty; not a kernel proof
+  L3 loop constant         ✓ physis loop rebuilds the full LEDGER VersionedConstant bundle after cite; empty journal name; not P3N, not Canonical, not P4; P3N count stays 4
   L3 judgment projection   ✓ physis judge independently rebuilds Judgment::from_lab into a JudgmentProjection DAG; judge unique op; unique-vacuum stays heuristic failed; JSON cannot mint logical proved; restore rebuilds; not Canonical, not P4
 ```
 

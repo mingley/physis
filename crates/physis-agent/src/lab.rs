@@ -2049,7 +2049,7 @@ impl Lab {
     fn research_loop(&mut self) -> Response {
         let snap = self.snapshot_knobs();
         let mut text = String::from(
-            "loop observe → hypothesize → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review\n",
+            "loop observe → hypothesize → prove → falsify → enclose → cite → constant → encode → judge → replicate → design → audit → review\n",
         );
 
         let mut holds = 0usize;
@@ -2142,6 +2142,14 @@ impl Lab {
                 }
                 Err(e) => text.push_str(&format!("cite  {slug}  {e}\n")),
             }
+        }
+
+        match self.build_constant_ledger() {
+            Ok((_, id)) => {
+                self.journal.record(JournalEvent::constant("", id.to_hex()));
+                text.push_str(&format!("constant  ledger  {}\n", id.to_hex()));
+            }
+            Err(e) => text.push_str(&format!("constant  ledger  {e}\n")),
         }
 
         let mut encode_ids = Vec::new();
@@ -9578,6 +9586,21 @@ mod tests {
             "unique-vacuum has no precise source artifact: {text}"
         );
         assert!(
+            text.contains("cite → constant → encode"),
+            "loop must rebuild the constants ledger after cite: {text}"
+        );
+        assert!(
+            text.contains(
+                "constant  ledger  2a2ad9dc2e70d8f1505206d605876242fe6ba8665146376a4a370ed6a74bab84"
+            ),
+            "loop must independently rebuild the LEDGER bundle: {text}"
+        );
+        assert!(
+            !text.contains("constant  hbar"),
+            "loop must not invent ħ: {text}"
+        );
+
+        assert!(
             text.contains("encode  combinational-circuit"),
             "loop must independently round-trip the NAND netlist: {text}"
         );
@@ -9726,6 +9749,17 @@ mod tests {
             "10"
         );
         assert!(lab.journal().len() > journal_len);
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p3n.contains("count 4"),
+            "loop constant rebuild must not mint P3N: {p3n}"
+        );
         let why = lab
             .exec(Command::Why {
                 claim: "sr.invariant-interval".into(),
@@ -12539,6 +12573,12 @@ mod tests {
         assert!(
             text.contains("review  dec.d-squared-zero  trust P3F required"),
             "{text}"
+        );
+        assert!(
+            text.contains(
+                "constant  ledger  2a2ad9dc2e70d8f1505206d605876242fe6ba8665146376a4a370ed6a74bab84"
+            ),
+            "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
             .exec(Command::Inspect {

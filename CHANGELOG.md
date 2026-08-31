@@ -25,6 +25,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Protocol
 
+- **`physis loop` rebuilds the versioned constants ledger.**
+  After cite, the lab independently reconstructs every LEDGER entry
+  into the same VersionedConstant bundle as `physis constant` with no
+  name, and journals an empty `name`. That is not P3N, not P3S, not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  loop line `constant  ledger
+  2a2ad9dc2e70d8f1505206d605876242fe6ba8665146376a4a370ed6a74bab84`.
+
 - **`physis constant` with no name rebuilds the full LEDGER.**
   `provenance-auditor` independently reconstructs every versioned
   constant in catalog order, stores each `VersionedConstant` node, and

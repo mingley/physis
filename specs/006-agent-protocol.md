@@ -31,7 +31,7 @@ Layer: agent
 | `cite <claim>` | independently rebuild a live `SourceRecord` (PDG/Super-K datasets or catalog dossiers). Not P3S, not a kernel receipt, not Canonical, not P4. Unique-vacuum and GUT-scale 3/8 refuse (no precise source artifact). Restore rebuilds from live fields |
 | `encode <theory>` | independently parse, round-trip, and reconstruct a live theory IR package (`combinational-circuit`, `klein-gordon`, `wilson-u1`, `wilson-su2`, `wilson-su3`, `ohm-circuit`, `bell-test`, `newtonian-gravity`, `linear-medium`, `maxwell-vacuum`, `ideal-gas`, `landauer-engine`, `dirac-fermion`, `general-relativity`, `special-relativity`, `planck`, `de-rham`, `turing-machine`, `olbers-static`, `su5-gut`, `debye-solid`, `standard-model`, `observer-geometry`, `dulong-petit`, `heterotic-e8e8`, `heterotic-so32`, `type-i`). A package with `lean_ref` must bind the catalog identity tree (de-rham coboundary, special-relativity interval); the live SR package also carries the composition and mass-shell trees. Encode lists each bound identity by claim id. Token packages skip. A catalog type without the tree, or a Physlib pointer that is not a catalog type, fails closed. Stores a content-addressed EncodingPackage. Refuses theories with no package. Not P3S, not a kernel receipt, not Canonical, not P4. Restore rebuilds from the live package |
 | `judge <claim>` | independently rebuild `Judgment::from_lab` from live evaluator axes and receipts. Stores a content-addressed JudgmentProjection. Unique-vacuum is heuristic failed (JSON cannot mint `logical proved`). Super-K is empirical excluded. GQW NLL is statistical computed. Not Canonical, not P4. Restore rebuilds from live `from_lab` |
-| `loop` | one research cycle: observe → hypothesize (chosen/fitted knobs and IR package forks; measured frozen) → prove → falsify → enclose → cite → encode → judge → replicate → design → audit → review |
+| `loop` | one research cycle: observe → hypothesize (chosen/fitted knobs and IR package forks; measured frozen) → prove → falsify → enclose → cite → constant → encode → judge → replicate → design → audit → review |
 | `audit` | red-team corpus must not promote |
 | `experiments` | list the available experiments |
 | `experiment <id>` | canonical experiment (fresh defaults) |
@@ -49,7 +49,9 @@ cannot score the empirical target; that is `empirical-analyst`. A
 proof-searcher cannot independently parse a Ratio enclosure; that is
 `numerical-verifier` (not a kernel receipt, not P4). A reviewer cannot
 independently rehash a `SourceRecord`; that is `provenance-auditor`
-(not P3S). A reviewer cannot independently round-trip a live theory IR
+(`physis cite`; not P3S). A reviewer cannot independently rebuild a
+versioned Constant; that is `provenance-auditor` (`physis constant`;
+not P3N). A reviewer cannot independently round-trip a live theory IR
 package; that is `encoding-auditor` (not P3S). An explorer cannot
 independently rebuild a `from_lab` judgment; that is `judge` (JSON
 cannot mint `logical proved`). None of
