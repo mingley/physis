@@ -22,6 +22,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 muon mass energy equivalent is a one-sigma Interval.**
+  `physis-constants` versions `m_mu_c2` as the CODATA 2018 hull
+  `1.692833804(38)×10^{-11}` J from JPCRD 50, 033105 table XXXI
+  (Muon, mu-). This is not the kg hull `m_mu`, not the u-row `m_mu_u`,
+  not the MeV conversion, not Rydberg energy equivalent `hcRinf`, not
+  Hartree `Eh`, not an SI defining Ratio, not the Thomson cross
+  section, and not P3N. Electron mass is still not stored (`10^{42}`
+  overflows `i128`). `physis_model` `muon_mass_energy_equivalent()` Qty
+  locksteps to the recommended centre inside the hull. Adding
+  `m_mu_c2` to LEDGER changes the ledger bundle pin. The `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  and `m_p` hashes are unchanged. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `m_mu_c2` hash `d83a5072b8cb4fe869a2aa076aff9c4cd0d8f9f613a41eef52117124acde5854`; node `a451ddc9cfd85f74fc32ddaa156c25b2d60003cac9c3a2c7c60b17d3c2a2544a`;
+  ledger node `0743d43662f2ecf9543e6a8e2375b730d04dfa0e832c2b2c9741fcff9f7051c6`. `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, and `m_p`
+  hashes and nodes unchanged.
+
 - **CODATA 2018 muon mass in u is a one-sigma Interval.**
   `physis-constants` versions `m_mu_u` as the CODATA 2018 hull
   `0.1134289259(25)` u from JPCRD 50, 033105 table XXXI (Muon, mu-).
