@@ -22,6 +22,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 muon magnetic moment is a one-sigma Interval.**
+  `physis-constants` versions `mu_mu` as the CODATA 2018 hull
+  `−4.49044830(10)×10^{-26}` J T⁻¹ from JPCRD 50, 033105 table XXXI
+  (Muon, mu-). This is not electron magnetic moment `mu_e`, not the
+  electron-muon magnetic-moment ratio `mu_e_mmu`, not vacuum
+  permeability `mu0`, not an SI defining Ratio, not the Thomson cross
+  section, and not P3N. Reduced muon Compton remains unstored (`ħ`).
+  Electron mass is still not stored (`10^{42}` overflows `i128`).
+  `physis_model` `muon_magnetic_moment()` Qty locksteps to the
+  recommended centre inside the hull. Adding `mu_mu` to LEDGER changes
+  the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`,
+  `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`,
+  `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`,
+  `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, and `m_p` hashes are
+  unchanged. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `mu_mu` hash `3344549ca18b2db388cfff366cc63079f3d3b0b094cac6de12e318fe8531c3e0`; node
+  `dbdd3710096e4ae7679dc5238012cec06c3ecc8242e3727978c5c15023b4abb8`; ledger node `4d4415b6f176ea2d6cb08dc62a38ab9f6dea218fc0c61fb5f61fcdba60482423`. `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`,
+  `lambda_C_mu`, and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 muon Compton wavelength is a one-sigma Interval.**
   `physis-constants` versions `lambda_C_mu` as the CODATA 2018 hull
   `1.173444110(26)×10^{-14}` m from JPCRD 50, 033105 table XXXI

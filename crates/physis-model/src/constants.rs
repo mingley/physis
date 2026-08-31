@@ -141,6 +141,16 @@ pub fn muon_compton_wavelength() -> Qty<Length> {
     meters(1.173_444_110e-14)
 }
 
+/// Muon magnetic moment μ_μ (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended signed centre, not electron magnetic moment
+/// and not vacuum permeability. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
+pub fn muon_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(-449_044_830.0 / 1e34)
+}
+
 /// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
 /// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
@@ -1819,6 +1829,50 @@ mod tests {
         assert!(
             physis_constants::lookup("lambdabar_C_mu").is_none(),
             "reduced muon Compton is hbar/m_mu c and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("mumu").is_none(),
+            "mumu is not a ledger name; the live name is mu_mu"
+        );
+        let mu_mu = physis_constants::muon_magnetic_moment();
+        let mu_mu_centre = Ratio::new(-449_044_830, 10i128.pow(34));
+        assert_eq!(
+            muon_magnetic_moment().value(),
+            mu_mu_centre.to_f64(),
+            "mu_mu Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_mu.value.contains(Interval::point(mu_mu_centre)),
+            "mu_mu Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_mu.value.lo, mu_mu.value.hi,
+            "ledger mu_mu stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment().hash,
+            physis_constants::electron_magnetic_moment().hash,
+            "mu_mu is not mu_e"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment().hash,
+            physis_constants::electron_muon_magnetic_moment_ratio().hash,
+            "mu_mu is not mu_e_mmu"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_mu is not mu0"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment().hash,
+            physis_constants::muon_compton_wavelength().hash,
+            "mu_mu is not lambda_C_mu"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment().hash,
+            physis_constants::proton_mass().hash,
+            "mu_mu is not m_p"
         );
 
         let mp = physis_constants::proton_mass();
