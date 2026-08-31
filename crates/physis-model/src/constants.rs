@@ -263,11 +263,21 @@ pub fn proton_magnetic_shielding_correction() -> Qty<Dimensionless> {
 ///
 /// This is the recommended kg centre from the neutron section, not
 /// proton mass and not muon mass. This Qty is not a certificate of a
-/// reconstruction from sibling masses or mass ratios. The u-row is a
-/// later table row and is not stored. The versioned ledger stores the
-/// one-sigma hull; this Qty is that centre.
+/// reconstruction from sibling masses or mass ratios. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre.
 pub fn neutron_mass() -> Qty<Mass> {
     kg(1.674_927_498_04e-27)
+}
+
+/// Neutron mass in unified atomic mass units, CODATA 2018.
+///
+/// This is the recommended centre in u from the neutron section, not
+/// the kg hull and not proton or muon mass in u. This Qty is not a
+/// certificate of a reconstruction from sibling masses. Ledger unit is
+/// u; this Qty is dimensionless, not kg. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre.
+pub fn neutron_mass_in_u() -> Qty<Dimensionless> {
+    Qty::new(1.008_664_915_95)
 }
 
 /// Muon mass.
@@ -3191,6 +3201,45 @@ mod tests {
             physis_constants::neutron_mass().hash,
             physis_constants::proton_magnetic_shielding_correction().hash,
             "m_n is not sigma0p"
+        );
+        assert!(
+            physis_constants::lookup("mn_u").is_none(),
+            "mn_u is not a ledger name; the live name is m_n_u"
+        );
+        let m_n_u = physis_constants::neutron_mass_in_u();
+        let m_n_u_centre = Ratio::new(100_866_491_595, 10i128.pow(11));
+        assert_eq!(
+            neutron_mass_in_u().value(),
+            m_n_u_centre.to_f64(),
+            "m_n_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_n_u.value.contains(Interval::point(m_n_u_centre)),
+            "m_n_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_n_u.value.lo, m_n_u.value.hi,
+            "ledger m_n_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_in_u().hash,
+            physis_constants::neutron_mass().hash,
+            "m_n_u is not m_n"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_in_u().hash,
+            physis_constants::proton_mass_in_u().hash,
+            "m_n_u is not m_p_u"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_in_u().hash,
+            physis_constants::muon_mass_in_u().hash,
+            "m_n_u is not m_mu_u"
+        );
+        assert_ne!(
+            physis_constants::neutron_mass_in_u().hash,
+            physis_constants::electron_molar_mass().hash,
+            "m_n_u is not M_e"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
