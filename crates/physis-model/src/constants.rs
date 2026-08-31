@@ -43,9 +43,18 @@ pub fn electron_mass() -> Qty<Mass> {
 /// Proton mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
-/// one-sigma hull; this Qty is that centre.
+/// one-sigma hull; this Qty is that centre. This is not the mass in u.
 pub fn proton_mass() -> Qty<Mass> {
     kg(1.672_621_923_69e-27)
+}
+
+/// Proton mass in unified atomic mass units, CODATA 2018.
+///
+/// This is the recommended centre in u, not the kg hull and not muon
+/// mass in u. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre. Ledger unit is u; this Qty is dimensionless, not kg.
+pub fn proton_mass_in_u() -> Qty<Dimensionless> {
+    Qty::new(1.007_276_466_621)
 }
 
 /// Muon mass.
@@ -2199,6 +2208,40 @@ mod tests {
         assert_ne!(
             mp.value.lo, mp.value.hi,
             "ledger m_p stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("mp_u").is_none(),
+            "mp_u is not a ledger name; the live name is m_p_u"
+        );
+        let m_p_u = physis_constants::proton_mass_in_u();
+        let m_p_u_centre = Ratio::new(1_007_276_466_621, 10i128.pow(12));
+        assert_eq!(
+            proton_mass_in_u().value(),
+            m_p_u_centre.to_f64(),
+            "m_p_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_p_u.value.contains(Interval::point(m_p_u_centre)),
+            "m_p_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_p_u.value.lo, m_p_u.value.hi,
+            "ledger m_p_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::proton_mass_in_u().hash,
+            physis_constants::proton_mass().hash,
+            "m_p_u is not m_p"
+        );
+        assert_ne!(
+            physis_constants::proton_mass_in_u().hash,
+            physis_constants::muon_mass_in_u().hash,
+            "m_p_u is not m_mu_u"
+        );
+        assert_ne!(
+            physis_constants::proton_mass_in_u().hash,
+            physis_constants::electron_molar_mass().hash,
+            "m_p_u is not M_e"
         );
         assert!(
             physis_constants::lookup("m_e").is_none(),
