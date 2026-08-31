@@ -12,3 +12,7 @@ description = "Layered mechanical model of reality: spacetime, quantum, particle
 physis-core.workspace = true
 typenum.workspace = true
 serde.workspace = true
+
+[dev-dependencies]
+physis-constants.workspace = true
+physis-numeric.workspace = true

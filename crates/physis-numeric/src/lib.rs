@@ -238,6 +238,17 @@ impl SciExact {
             Some(Ratio::new(self.significand, p))
         }
     }
+
+    /// IEEE-754 rounding of this terminating decimal. Not a certificate.
+    ///
+    /// Multiplying `significand as f64` by `10f64.powi(exp10)` double-rounds
+    /// (Planck `h` becomes a ulp below the decimal literal). This parses
+    /// the decimal, matching `6.62607015e-34`.
+    pub fn to_f64(self) -> f64 {
+        format!("{self}")
+            .parse()
+            .expect("a SciExact decimal is a finite f64")
+    }
 }
 
 impl std::fmt::Display for SciExact {
@@ -712,5 +723,21 @@ mod tests {
         );
         assert_eq!(SciExact::new(662_607_015, -42).to_ratio(), None);
         assert!(10i128.checked_pow(42).is_none());
+        assert_ne!(
+            662_607_015f64 * 10f64.powi(-42),
+            6.626_070_15e-34,
+            "significand as f64 times 10^exp10 double-rounds h"
+        );
+        assert_eq!(
+            SciExact::new(662_607_015, -42).to_f64(),
+            6.626_070_15e-34,
+            "IEEE-754 projection of h; not a Ratio and not a certificate"
+        );
+        assert_eq!(SciExact::new(299_792_458, 0).to_f64(), 299_792_458.0);
+        assert_eq!(
+            SciExact::new(1_602_176_634, -28).to_f64(),
+            1.602_176_634e-19
+        );
+        assert_eq!(SciExact::new(1_380_649, -29).to_f64(), 1.380_649e-23);
     }
 }

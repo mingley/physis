@@ -3,6 +3,8 @@
 //! Values are 2018/2019 SI exact or CODATA 2018 point estimates.
 //! They are *knobs of nature* in a deeper theory; here they are constants
 //! so that theories can be compared against the same measuring sticks.
+//! Overlapping SI/CODATA floats lockstep the versioned constants ledger
+//! in tests; evaluators still use these `f64` Qty values, not that ledger.
 
 use physis_core::dim::{
     Action, Dimensionless, Energy, EnergyDensity, Frequency, HeatCapacity, Length,
@@ -313,5 +315,70 @@ mod tests {
         assert!(f.value() > 0.0 && f.value().is_finite());
         let h = hubble_constant().value();
         assert!((h - 2.27e-18).abs() / 2.27e-18 < 0.05, "H₀ = {h} /s");
+    }
+
+    #[test]
+    fn overlapping_qty_floats_lockstep_the_versioned_ledger() {
+        use physis_numeric::{Interval, Ratio, SciExact};
+
+        assert_eq!(
+            C.value(),
+            physis_constants::speed_of_light().value.to_f64(),
+            "c is an integer Ratio; Qty matches to_f64"
+        );
+
+        let e = physis_constants::elementary_charge();
+        assert_eq!(
+            e.value,
+            Ratio::new(1_602_176_634, 10i128.pow(28)),
+            "ledger e is the SI 2019 fraction"
+        );
+        assert_eq!(
+            SciExact::new(1_602_176_634, -28).to_ratio(),
+            Some(e.value),
+            "e fits in i128; SciExact and Ratio are the same decimal"
+        );
+        assert_eq!(
+            e_charge().value(),
+            SciExact::new(1_602_176_634, -28).to_f64(),
+            "e Qty is the IEEE rounding of the SI decimal, not Ratio::to_f64 of the reduced fraction"
+        );
+
+        let k = physis_constants::boltzmann();
+        assert_eq!(k.value, Ratio::new(1_380_649, 10i128.pow(29)));
+        assert_eq!(SciExact::new(1_380_649, -29).to_ratio(), Some(k.value));
+        assert_eq!(
+            k_boltzmann().value(),
+            SciExact::new(1_380_649, -29).to_f64(),
+            "k Qty is the IEEE rounding of the SI decimal"
+        );
+
+        let h = physis_constants::planck_h();
+        assert_eq!(h.value.to_ratio(), None, "h still does not fit in i128");
+        assert_eq!(
+            planck_h().value(),
+            h.value.to_f64(),
+            "h Qty must match the SI 2019 SciExact decimal float"
+        );
+
+        let g = physis_constants::newtonian_g();
+        let centre = Ratio::new(667_430, 10i128.pow(16));
+        assert_eq!(
+            g_newton().value(),
+            centre.to_f64(),
+            "G Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            g.value.contains(Interval::point(centre)),
+            "G Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            g.value.lo, g.value.hi,
+            "ledger G stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("hbar").is_none(),
+            "ħ is not a terminating decimal and is not a ledger entry"
+        );
     }
 }

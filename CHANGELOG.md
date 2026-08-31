@@ -10,6 +10,19 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Constants
+
+- **`physis_model` Qty floats lockstep the versioned ledger.**
+  `c`, `e`, `k`, and `h` `f64` Qty values lockstep the versioned
+  ledger. `c` is an integer `Ratio` (`to_f64`). `e` and `k` match
+  IEEE rounding of the SI decimal (`SciExact::to_f64`), not
+  `Ratio::to_f64` of the reduced fraction. `h` matches `SciExact`
+  `to_f64` (still not a `Ratio`). CODATA 2018 `G`'s Qty is the
+  recommended centre inside the one-sigma hull, not an exact `Ratio`.
+  `ħ` is not a ledger entry. Theories still evaluate with `f64` Qty.
+  That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+
 ### Protocol
 
 - **`physis constant` with no name rebuilds the full LEDGER.**

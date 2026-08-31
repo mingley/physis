@@ -7,6 +7,8 @@
 //! a terminating decimal. CODATA 2018 Newtonian `G` is a one-sigma
 //! [`Interval`], not an exact Ratio. Theories still use `physis_model`
 //! `f64` Qty constants. This crate does not mint a kernel proof.
+//! Overlapping `physis_model` Qty floats are lockstepped in
+//! `physis-model` tests; theories still evaluate with those Qty.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
