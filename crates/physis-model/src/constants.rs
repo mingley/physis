@@ -54,7 +54,9 @@ pub fn solar_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>>
     Qty::new(1.327_124_4e20)
 }
 
-/// Nominal solar radius (IAU 2015), metres.
+/// Nominal solar radius (IAU 2015 conversion ruler), metres.
+///
+/// This is `R_☉^N`, not a measured photospheric radius.
 pub fn solar_radius() -> Qty<Length> {
     meters(6.957e8)
 }
@@ -417,9 +419,22 @@ mod tests {
             1.327_124_4e20,
             "IAU 2015 (GM)_sun^N is the exact conversion ruler"
         );
-        assert!(
-            physis_constants::lookup("R_sun").is_none(),
-            "nominal solar radius is not this increment"
+
+        let r = physis_constants::solar_radius();
+        assert_eq!(
+            r.value,
+            Ratio::int(695_700_000),
+            "ledger R_sun is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            solar_radius().value(),
+            r.value.to_f64(),
+            "R_sun is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            solar_radius().value(),
+            6.957e8,
+            "IAU 2015 R_sun^N is the exact conversion ruler"
         );
         assert!(
             physis_constants::lookup("L_sun").is_none(),

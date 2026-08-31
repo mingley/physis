@@ -9,10 +9,13 @@
 //! an exact [`Ratio`] `149597870700` m (BIPM table 8). The parsec is
 //! `(648000/π) au` and is not a Ratio. IAU 2015 `(GM)_☉^N` is an exact
 //! [`Ratio`] `1.3271244×10^20` m³ s⁻² (AJ 152, 41 table 1): a
-//! conversion ruler, not a measured solar mass. Theories still use
-//! `physis_model` `f64` Qty constants. This crate does not mint a kernel
-//! proof. Overlapping `physis_model` Qty floats are lockstepped in
-//! `physis-model` tests; theories still evaluate with those Qty.
+//! conversion ruler, not a measured solar mass. IAU 2015 `R_☉^N` is an
+//! exact [`Ratio`] `695700000` m from the same table: also a conversion
+//! ruler, not a measured photospheric radius. `L_☉^N` is not stored.
+//! Theories still use `physis_model` `f64` Qty constants. This crate
+//! does not mint a kernel proof. Overlapping `physis_model` Qty floats
+//! are lockstepped in `physis-model` tests; theories still evaluate
+//! with those Qty.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -248,7 +251,7 @@ pub fn astronomical_unit() -> Constant<Ratio> {
     )
 }
 
-fn iau2015_b3_table_1() -> SourceRecord {
+fn iau2015_b3_table_1(range: &str) -> SourceRecord {
     SourceRecord::new(
         Citation {
             work:
@@ -263,7 +266,7 @@ fn iau2015_b3_table_1() -> SourceRecord {
             equation: None,
             figure: None,
             table: Some("1".into()),
-            dataset_range: Some("(GM)_sun^N = 1.3271244e20".into()),
+            dataset_range: Some(range.into()),
             experiment: None,
         },
         ArtifactId::of(b"iau-2015-b3-aj-152-41"),
@@ -276,13 +279,28 @@ fn iau2015_b3_table_1() -> SourceRecord {
 ///
 /// `1.3271244×10^20 m³ s⁻²` is a conversion ruler, not a measured solar
 /// mass and not CODATA `G`. Newtonian-gravity still evaluates with the
-/// `physis_model` Qty. `R_☉^N` and `L_☉^N` are not stored here.
+/// `physis_model` Qty. `L_☉^N` is not stored here.
 pub fn solar_gm() -> Constant<Ratio> {
     Constant::new(
         "GM_sun",
         Ratio::int(13_271_244i128 * 10i128.pow(13)),
         "m^3 s^{-2}",
-        iau2015_b3_table_1(),
+        iau2015_b3_table_1("(GM)_sun^N = 1.3271244e20"),
+        ConstantRelease::Iau2015,
+    )
+}
+
+/// Nominal solar radius R_☉^N, exact, IAU 2015 Resolution B3.
+///
+/// `6.957×10^8 m` is a conversion ruler, not a measured photospheric
+/// radius. Newtonian-gravity still evaluates with the `physis_model`
+/// Qty. `L_☉^N` is not stored here.
+pub fn solar_radius() -> Constant<Ratio> {
+    Constant::new(
+        "R_sun",
+        Ratio::int(695_700_000),
+        "m",
+        iau2015_b3_table_1("R_sun^N = 6.957e8"),
         ConstantRelease::Iau2015,
     )
 }
@@ -324,6 +342,7 @@ pub const LEDGER: &[&str] = &[
     "G",
     "au",
     "GM_sun",
+    "R_sun",
 ];
 
 fn listing<T: std::fmt::Display>(c: Constant<T>, kind: &'static str) -> ConstantListing {
@@ -354,6 +373,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "G" => Some(listing(newtonian_g(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
+        "R_sun" => Some(listing(solar_radius(), "ratio")),
         _ => None,
     }
 }
@@ -571,7 +591,7 @@ mod tests {
                 "GM_sun",
                 value,
                 "m^3 s^{-2}",
-                iau2015_b3_table_1(),
+                iau2015_b3_table_1("(GM)_sun^N = 1.3271244e20"),
                 ConstantRelease::Iau2015,
             )
             .hash
@@ -592,8 +612,46 @@ mod tests {
     }
 
     #[test]
+    fn iau2015_solar_radius_is_an_exact_ratio() {
+        let r = solar_radius();
+        assert_eq!(r.name, "R_sun");
+        assert_eq!(r.unit, "m");
+        assert_eq!(r.value, Ratio::int(695_700_000));
+        assert_eq!(r.release, ConstantRelease::Iau2015);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("1"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("R_sun^N = 6.957e8")
+        );
+        assert_eq!(r.hash, solar_radius().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "R_sun",
+                Ratio::int(695_700_000),
+                "m",
+                iau2015_b3_table_1("R_sun^N = 6.957e8"),
+                ConstantRelease::Iau2015,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, solar_gm().hash);
+        assert_ne!(r.hash, astronomical_unit().hash);
+        assert_ne!(
+            r.provenance.source_hash,
+            solar_gm().provenance.source_hash,
+            "R_sun range is not the GM_sun range"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "cb7f91f2d0663d2d8ff8b0e3009f6e0772a126220d04ed658fc793db7e5cc6b4"
+        );
+        assert!(r.provenance.recheck().is_ok());
+    }
+
+    #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 10);
+        assert_eq!(LEDGER.len(), 11);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -624,8 +682,14 @@ mod tests {
             lookup("GM_sun").unwrap().hash.to_hex(),
             "636001001c4ed9cd5e6661241e5ad5e5db09c8419a3fe79790143162b7af3a58"
         );
+        assert_eq!(lookup("R_sun").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("R_sun").unwrap().hash.to_hex(),
+            "cb7f91f2d0663d2d8ff8b0e3009f6e0772a126220d04ed658fc793db7e5cc6b4"
+        );
         assert!(lookup("hbar").is_none());
         assert!(lookup("solar-gm").is_none());
+        assert!(lookup("L_sun").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());
     }
 }

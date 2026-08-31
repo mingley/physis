@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 nominal solar radius is an exact Ratio.**
+  `physis-constants` versions `R_sun` as `695700000` m from Prša et al.,
+  Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a
+  conversion ruler, not a measured photospheric radius and not P3N.
+  `L_☉^N` is not stored. `physis_model` `solar_radius()` Qty locksteps
+  via integer `to_f64`. Adding `R_sun` to LEDGER changes the ledger
+  bundle pin. The `GM_sun` hash is unchanged. Theories still evaluate
+  with `f64` Qty. That is not a kernel proof, not Canonical, not P4.
+  Encode pins unchanged. Unique-vacuum graph id unchanged. P3N count
+  stays 4. Verified: `R_sun` hash
+  `cb7f91f2d0663d2d8ff8b0e3009f6e0772a126220d04ed658fc793db7e5cc6b4`;
+  node
+  `ee886ab3541dcb83a8cb4dc11d66a476cfe0c747b177cd85b2f00a7a3921ef5c`;
+  ledger node
+  `23bb7b95e12a0d9ae62b137b978b80777da39b979f0808439f1d46207355dd93`.
+  `GM_sun` hash and node unchanged.
+
 - **IAU 2015 nominal solar GM is an exact Ratio.**
   `physis-constants` versions `GM_sun` as `1.3271244×10^20` m³ s⁻² from
   Prša et al., Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3).
@@ -27,6 +44,8 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   `3889862dda7c8968970b169e5e32e8c555c9d2eaada8f9f1ef93e17cd82965d2`;
   ledger node
   `a58016890420407b870fdd77ac7aedcc793a135846e434ec13a8656a753d6b45`.
+
+- **IAU 2012 astronomical unit is an exact Ratio.**
   `physis-constants` versions `au` as `149597870700` m from BIPM
   Brochure 9th ed. table 8 (IAU 2012 Resolution B2). That is a
   conventional length, not an SI defining constant and not P3N. The
