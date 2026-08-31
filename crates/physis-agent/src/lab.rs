@@ -5935,6 +5935,10 @@ mod tests {
             "add-binomial-gamma is not the Galilean composition fork: {bin_block}"
         );
         assert!(
+            text.contains("add-minus-uv"),
+            "add-minus-uv must still be an IR fork: {text}"
+        );
+        assert!(
             text.contains("absolute_time"),
             "absolute_time must still be a knob probe: {text}"
         );
@@ -5983,6 +5987,129 @@ mod tests {
         assert!(
             !sr.contains("not yet a machine-checked regime"),
             "interval must not be encoding-wide: {sr}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_special_relativity_minus_uv_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["minus_uv", "compose", "add-minus-uv"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "special-relativity".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("special-relativity".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-minus-uv") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-minus-uv: package → add-minus-uv";
+        let start = text.find(marker).expect("add-minus-uv hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  special-relativity  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let minus_block = &rest[..end];
+        assert!(
+            minus_block.contains("sr.subluminal-composition")
+                && minus_block.contains("holds → fails"),
+            "add-minus-uv must flip composition holds to fails: {minus_block}"
+        );
+        assert!(
+            !minus_block.contains("sr.invariant-interval"),
+            "add-minus-uv is not the binomial γ interval fork: {minus_block}"
+        );
+        assert!(
+            !minus_block.contains("sr.energy-momentum-invariant"),
+            "add-minus-uv is not the binomial γ mass-shell fork: {minus_block}"
+        );
+        assert!(
+            minus_block.matches("holds → fails").count() == 1,
+            "add-minus-uv should flip only composition: {minus_block}"
+        );
+        assert!(
+            text.contains("add-binomial-gamma"),
+            "add-binomial-gamma must still be an IR fork: {text}"
+        );
+        assert!(
+            text.contains("absolute_time"),
+            "absolute_time must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert!(!text.contains("receipt"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("special-relativity").unwrap();
+        assert!(
+            live.evaluate_all().iter().any(|(c, v)| {
+                c.id_str() == "sr.subluminal-composition" && v.kind == VerdictKind::Holds
+            }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("absolute_time").unwrap().display(),
+            "false",
+            "hypothesize must restore knobs"
+        );
+        let gal = lab.exec(Command::Set {
+            theory: "special-relativity".into(),
+            knob: "absolute_time".into(),
+            value: "true".into(),
+        });
+        assert_eq!(gal.exit_code(), 0, "{}", gal.text());
+        assert!(
+            gal.text().contains("sr.subluminal-composition")
+                && gal.text().contains("holds → fails"),
+            "absolute_time still flips composition: {}",
+            gal.text()
+        );
+        assert!(
+            gal.text().contains("sr.invariant-interval") && gal.text().contains("holds → fails"),
+            "absolute_time still flips interval: {}",
+            gal.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "special-relativity".into(),
+            knob: "absolute_time".into(),
+            value: "false".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "sr.subluminal-composition".into(),
+            })
+            .text()
+            .to_string();
+        let sr = why_theory_block(&why, "special-relativity");
+        assert!(
+            sr.contains("collinear Einstein") || sr.contains("|u| < 1"),
+            "composition must keep the catalog domain: {sr}"
+        );
+        assert!(
+            !sr.contains("not yet a machine-checked regime"),
+            "composition must not be encoding-wide: {sr}"
+        );
+        assert!(
+            !sr.contains("theory "),
+            "why none-lines must not split why_theory_block: {sr}"
         );
     }
 
@@ -10933,6 +11060,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_sr.contains("add-binomial-gamma"), "{hypo_sr}");
+        assert!(hypo_sr.contains("add-minus-uv"), "{hypo_sr}");
         let sr_again = lab
             .exec(Command::Encode {
                 theory: "special-relativity".into(),

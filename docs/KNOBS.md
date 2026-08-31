@@ -23,7 +23,7 @@ lists every fitted knob in the lab.
 - `neutrino_masses` — chosen; minimal SM stores them as 0; oscillations show they are nonzero (`empirical.neutrino-masses`)
 
 ### special-relativity
-- `absolute_time` — Galilean vs Lorentz boosts. The Lorentz boost is not this knob: `add-binomial-gamma` is an IR mutation
+- `absolute_time` — Galilean vs Lorentz boosts. The Lorentz boost is not this knob: `add-binomial-gamma` is an IR mutation. Collinear composition is not this knob: `add-minus-uv` is an IR mutation
 
 ### general-relativity
 - `dim` — solar-system tests (Eddington, Mercury) are 4D; other values make them inapplicable. The Einstein–Hilbert action is not this knob: `add-r-squared` is an IR mutation

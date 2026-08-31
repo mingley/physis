@@ -32,6 +32,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **SR minus-uv composition is an IR mutation**
+  (`special-relativity`, `add-minus-uv`). Exact Lorentz is still the
+  live encoding (`boost lorentz`); appending `compose minus-uv` uses
+  `w = (u+v)/(1−uv)` and flips `sr.subluminal-composition` holds to
+  fails. The residual is the mismatch with Einstein addition
+  `(u+v)/(1+uv)` at `0.8c ⊕ 0.7c` and is evidence, not the encoding:
+  tiny speeds stay subluminal and the composition cell still fails.
+  Interval and mass-shell still hold (Lorentz boosts). That is not a
+  knob and not Galilean `u+v`. Truncated binomial γ remains a separate
+  IR fork (`add-binomial-gamma`) that flips interval and mass-shell
+  while composition still holds. `absolute_time` stays a knob and still
+  flips all three claims. Composition keeps the catalog collinear
+  domain. Mutants stay `special-relativity`; they are not a silent
+  Galilean install. Mutants are not installed, not journaled, and not
+  Canonical or P4. Catalog d² hash unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: IR round-trip; set minus_uv
+  is unknown; hypothesize special-relativity; live Lorentz restored;
+  encode pin
+  `4e8c15ecdfc2a60f3bf481898c7cb3e852d22ab9884f377b7728662c3f830c1e`.
+
 - **Type I Chan-Paton SO(16) is an IR mutation**
   (`type-i`, `add-chan-paton-16`). Complete `Chan-Paton SO(32)` is the
   live encoding; appending `Chan-Paton SO(16)` flips

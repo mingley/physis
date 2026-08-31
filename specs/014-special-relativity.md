@@ -26,16 +26,19 @@ expression would not compile.
 The Lorentz boost lives on the IR package (`boost lorentz`).
 `add-binomial-gamma` appends `boost binomial-gamma` and is an IR
 mutation: truncated γ = 1 + β²/2 fails interval and mass-shell
-invariance. That is still `special-relativity`, not a silent
-`absolute_time` turn. Velocity composition stays Einstein on that
-fork. `absolute_time` still switches exact Lorentz to Galilean and
+invariance. Velocity composition stays Einstein on that fork.
+`add-minus-uv` appends `compose minus-uv` and is a second IR
+mutation: `w = (u+v)/(1−uv)` fails subluminal composition while
+Lorentz boosts still hold the interval and mass shell. That is still
+`special-relativity`, not a silent `absolute_time` turn.
+`absolute_time` still switches exact Lorentz to Galilean and
 flips all three claims.
 
 ## Knob
 
 | knob | effect |
 |---|---|
-| `absolute_time` | If `true`, boosts are Galilean (time is absolute) instead of Lorentzian. Flips all three claims `holds → fails`. Boost topology is not this knob: `add-binomial-gamma` is an IR mutation. |
+| `absolute_time` | If `true`, boosts are Galilean (time is absolute) instead of Lorentzian. Flips all three claims `holds → fails`. Boost topology is not this knob: `add-binomial-gamma` is an IR mutation. Collinear composition is not this knob: `add-minus-uv` is an IR mutation. |
 
 ## Claims (all computed theorems)
 
@@ -69,7 +72,8 @@ Lorentz by default, Galilean under the knob:
   Lorentz, `s²` is unchanged (holds); under a Galilean boost `x' = x − βct` with
   `t` absolute, `s²` changes (fails).
 - **Velocity composition**: `0.8c ⊕ 0.7c`. Relativistic `(u+v)/(1+uv/c²) ≈
-  0.9615c < c` (holds); Galilean `u+v = 1.5c ≥ c` (fails).
+  0.9615c < c` (holds); Galilean `u+v = 1.5c ≥ c` (fails). Minus-uv
+  composition `(u+v)/(1−uv) ≈ 3.41c ≥ c` is an IR mutation, not this knob.
 - **Mass shell**: a particle at rest has `(E, pc) = (mc², 0)`, with `mc²` a typed
   `Qty<Energy>` built from the electron mass and `c`. Boosting the 4-momentum
   and checking `E² − (pc)²` against `(mc²)²` holds under Lorentz and fails under
@@ -79,7 +83,7 @@ Lorentz by default, Galilean under the knob:
 
 ```
 physis run special-relativity            # all three: holds
-physis hypothesize special-relativity    # add-binomial-gamma is IR, not set
+physis hypothesize special-relativity    # add-binomial-gamma and add-minus-uv are IR, not set
 physis set special-relativity absolute_time true
 ```
 

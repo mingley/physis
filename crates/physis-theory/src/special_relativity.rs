@@ -10,9 +10,12 @@
 //!
 //! The Lorentz boost lives on the IR package. A truncated binomial γ
 //! (`add-binomial-gamma`) is a package mutation, not the `absolute_time`
-//! knob: interval and mass-shell fail on that fork. `absolute_time` still
-//! switches exact Lorentz to Galilean. Velocity composition stays Einstein
-//! on the binomial fork.
+//! knob: interval and mass-shell fail on that fork. Velocity composition
+//! stays Einstein on that fork. A minus-uv collinear composition
+//! (`add-minus-uv`) is a second package mutation: `w = (u+v)/(1−uv)`
+//! exceeds `c` while Lorentz boosts still hold the interval and mass
+//! shell. That is not Galilean `u+v` and not the `absolute_time` knob.
+//! `absolute_time` still switches exact Lorentz to Galilean.
 
 use physis_core::claim::{Claim, Verdict};
 use physis_core::error::CoreError;
@@ -43,21 +46,28 @@ const BETA_VANISHING: f64 = 1.0e-6;
 const BOOST_LORENTZ: &str = "boost lorentz";
 /// Truncated binomial γ = 1 + β²/2.
 const BOOST_BINOMIAL: &str = "boost binomial-gamma";
+/// Collinear Einstein addition with the denominator sign flipped.
+const COMPOSE_MINUS_UV: &str = "compose minus-uv";
+/// Composition probe used by the evaluator (`0.8c ⊕ 0.7c`).
+const COMPOSE_U: f64 = 0.8;
+const COMPOSE_V: f64 = 0.7;
 
-fn parse_sr_boost(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut lorentz = false;
     let mut binomial = false;
+    let mut minus_uv = false;
     for eq in &pkg.equations {
         match eq.trim() {
             BOOST_LORENTZ => lorentz = true,
             BOOST_BINOMIAL => binomial = true,
+            COMPOSE_MINUS_UV => minus_uv = true,
             _ => {}
         }
     }
     if !lorentz {
         return Err(format!("{} package has no Lorentz boost", pkg.id));
     }
-    Ok(binomial)
+    Ok((binomial, minus_uv))
 }
 
 fn gamma_lorentz(beta: f64) -> f64 {
@@ -74,10 +84,18 @@ fn binomial_gamma_residual(beta: f64) -> f64 {
     gamma_lorentz(beta) - gamma_binomial(beta)
 }
 
+/// Residual w_minus − w_Einstein. Evidence, not the encoding. Tiny
+/// speeds stay subluminal and the composition cell still fails.
+fn minus_uv_residual(u: f64, v: f64) -> f64 {
+    let einstein = (u + v) / (1.0 + u * v);
+    let minus = (u + v) / (1.0 - u * v);
+    minus - einstein
+}
+
 const SPECS: &[KnobSpec] = &[KnobSpec {
     name: "absolute_time",
     layer: LayerId::Spacetime,
-    doc: "If true, boosts are Galilean (time is absolute) instead of Lorentzian. Turning this on breaks every relativistic invariant — the pre-1905 worldview.",
+    doc: "If true, boosts are Galilean (time is absolute) instead of Lorentzian. Turning this on breaks every relativistic invariant — the pre-1905 worldview. A truncated γ is not this knob: add-binomial-gamma is an IR mutation. Minus-uv composition is not this knob: add-minus-uv is an IR mutation.",
     origin: ParameterOrigin::Chosen,
     domain: KnobDomain::Bool,
 }];
@@ -86,23 +104,31 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
 ///
 /// The Lorentz boost lives on the IR package. Truncated binomial γ
 /// (`add-binomial-gamma`) is a package mutation, not a knob: interval
-/// and mass-shell fail. `absolute_time` still selects Galilean boosts.
+/// and mass-shell fail. Minus-uv collinear composition (`add-minus-uv`)
+/// is a second package mutation, not a knob: subluminal composition
+/// fails while Lorentz boosts still hold. `absolute_time` still selects
+/// Galilean boosts.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SpecialRelativity {
     /// If true, use Galilean boosts (absolute time) instead of Lorentzian.
     absolute_time: bool,
     /// Whether the encoding uses γ = 1 + β²/2 instead of exact Lorentz.
     binomial_gamma: bool,
+    /// Whether collinear composition uses (u+v)/(1−uv) instead of Einstein.
+    minus_uv: bool,
 }
 
 impl SpecialRelativity {
     /// IR package for this boost encoding. Equations are `boost lorentz`
-    /// and, when forked, `boost binomial-gamma`. `absolute_time` stays
-    /// on the struct.
+    /// and, when forked, `boost binomial-gamma` and/or `compose minus-uv`.
+    /// `absolute_time` stays on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![BOOST_LORENTZ.to_string()];
         if self.binomial_gamma {
             equations.push(BOOST_BINOMIAL.to_string());
+        }
+        if self.minus_uv {
+            equations.push(COMPOSE_MINUS_UV.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -130,15 +156,20 @@ impl SpecialRelativity {
                 pkg.id
             ));
         }
-        let binomial_gamma = parse_sr_boost(pkg)?;
+        let (binomial_gamma, minus_uv) = parse_sr_encoding(pkg)?;
         Ok(Self {
             binomial_gamma,
+            minus_uv,
             ..Self::default()
         })
     }
 
     fn binomial_equation() -> String {
         BOOST_BINOMIAL.to_string()
+    }
+
+    fn minus_uv_equation() -> String {
+        COMPOSE_MINUS_UV.to_string()
     }
 
     /// Boost a two-vector `(a0, a1)` by `beta` (in units of `c`).
@@ -158,9 +189,11 @@ impl SpecialRelativity {
     }
 
     /// Relativistic (or, under the knob, Galilean) composition of two speeds
-    /// given as fractions of `c`.
+    /// given as fractions of `c`. Minus-uv is an IR encoding.
     fn compose_speeds(&self, u: f64, v: f64) -> f64 {
-        if self.absolute_time {
+        if self.minus_uv {
+            (u + v) / (1.0 - u * v)
+        } else if self.absolute_time {
             u + v
         } else {
             (u + v) / (1.0 + u * v)
@@ -207,7 +240,8 @@ impl Theory for SpecialRelativity {
         "Flat Minkowski kinematics: the invariant interval, subluminal velocity \
          composition, and the mass shell E² = (pc)² + (mc²)², all computed. The \
          Lorentz boost is an IR encoding. Truncated binomial γ is an IR mutation, \
-         not the absolute_time knob. That knob still replaces exact Lorentz with \
+         not the absolute_time knob. Minus-uv collinear composition is a second \
+         IR mutation, not that knob. That knob still replaces exact Lorentz with \
          Galilean boosts."
     }
     fn world(&self) -> Option<World> {
@@ -277,9 +311,18 @@ impl Theory for SpecialRelativity {
                 }
             }
             SR_SUBLUMINAL_COMPOSITION => {
-                let (u, v) = (0.8, 0.7);
+                let (u, v) = (COMPOSE_U, COMPOSE_V);
                 let w = self.compose_speeds(u, v);
-                if w < 1.0 {
+                if self.minus_uv {
+                    let residual = minus_uv_residual(u, v);
+                    Verdict::fails(
+                        claim,
+                        "minus-uv composition: two subluminal speeds exceed c",
+                    )
+                    .with_evidence([format!(
+                        "(u+v)/(1-uv) − (u+v)/(1+uv) = {residual:.4} at {u}c ⊕ {v}c = {w:.4}c"
+                    )])
+                } else if w < 1.0 {
                     Verdict::holds(claim, "relativistic composition keeps the result below c")
                         .with_evidence([format!("0.8c ⊕ 0.7c = {w:.4}c < c")])
                 } else {
@@ -333,6 +376,7 @@ impl Theory for SpecialRelativity {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.binomial_gamma = parsed.binomial_gamma;
+        fork.minus_uv = parsed.minus_uv;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
@@ -351,6 +395,19 @@ impl Theory for SpecialRelativity {
                     let mut fork = self.clone();
                     fork.binomial_gamma = true;
                     out.push(("add-binomial-gamma".into(), Box::new(fork)));
+                }
+            }
+        }
+        if !self.minus_uv {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::minus_uv_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.minus_uv {
+                    let mut fork = self.clone();
+                    fork.minus_uv = true;
+                    out.push(("add-minus-uv".into(), Box::new(fork)));
                 }
             }
         }
@@ -451,6 +508,10 @@ mod tests {
         );
         let parsed = SpecialRelativity::from_package(&mutated).unwrap();
         assert!(parsed.binomial_gamma);
+        assert!(
+            !parsed.minus_uv,
+            "binomial mutation must not install minus-uv"
+        );
         let mut fork = t.clone();
         fork.binomial_gamma = true;
         assert_eq!(fork.id(), "special-relativity");
@@ -529,6 +590,10 @@ mod tests {
                 .all(|(label, _)| label != "add-binomial-gamma"),
             "binomial fork must not re-offer add-binomial-gamma"
         );
+        assert!(
+            fork_probes.iter().any(|(label, _)| label == "add-minus-uv"),
+            "binomial fork must still offer add-minus-uv"
+        );
         let live = SpecialRelativity::default();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -573,6 +638,217 @@ mod tests {
                 .iter()
                 .all(|(label, _)| label != "add-binomial-gamma"),
             "turing-machine must not grow add-binomial-gamma"
+        );
+    }
+
+    #[test]
+    fn minus_uv_composition_is_ir_not_a_knob() {
+        let t = SpecialRelativity::default();
+        assert!(
+            SpecialRelativity::default()
+                .set("minus_uv", KnobValue::Bool(true))
+                .is_err(),
+            "minus-uv composition is an IR mutation, not a knob"
+        );
+        assert!(SpecialRelativity::default()
+            .set("compose", KnobValue::Bool(true))
+            .is_err());
+        assert!(
+            SpecialRelativity::default()
+                .set("add-minus-uv", KnobValue::Bool(true))
+                .is_err(),
+            "add-minus-uv is not a knob"
+        );
+        assert_eq!(
+            t.get("absolute_time").unwrap(),
+            KnobValue::Bool(false),
+            "absolute_time stays a knob"
+        );
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay boost lorentz"
+        );
+        assert_eq!(pkg.equations[0], BOOST_LORENTZ);
+        assert_eq!(
+            SpecialRelativity::from_package(&pkg).unwrap(),
+            t,
+            "IR round-trip must preserve the Lorentz boost"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(SpecialRelativity::minus_uv_equation()),
+        );
+        let parsed = SpecialRelativity::from_package(&mutated).unwrap();
+        assert!(parsed.minus_uv);
+        assert!(
+            !parsed.binomial_gamma,
+            "minus-uv mutation must not install binomial γ"
+        );
+        let mut fork = t.clone();
+        fork.minus_uv = true;
+        assert_eq!(fork.id(), "special-relativity");
+        assert_eq!(kind(&fork, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Fails);
+        assert_eq!(
+            kind(&fork, SR_INVARIANT_INTERVAL),
+            VerdictKind::Holds,
+            "minus-uv is not the binomial γ interval fork"
+        );
+        assert_eq!(
+            kind(&fork, SR_ENERGY_MOMENTUM),
+            VerdictKind::Holds,
+            "minus-uv is not the binomial γ mass-shell fork"
+        );
+        assert_eq!(kind(&t, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Holds);
+        let composition = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_SUBLUMINAL_COMPOSITION)
+            .unwrap();
+        let v = fork.evaluate(&composition);
+        assert!(
+            !v.summary.contains("Galilean"),
+            "minus-uv is not the absolute_time knob: {}",
+            v.summary
+        );
+        assert!(
+            !v.summary.contains("kind")
+                && !v.summary.contains("total_dim")
+                && !v.summary.contains("supersymmetry"),
+            "fail summary must not name string knobs: {}",
+            v.summary
+        );
+        let residual = minus_uv_residual(COMPOSE_U, COMPOSE_V);
+        assert!(
+            residual.abs() > 0.5,
+            "residual must be the composition mismatch, not a unit flag, got {residual}"
+        );
+        assert!(
+            v.evidence.iter().any(|e| e.contains("(u+v)/(1-uv)")),
+            "got {:?}",
+            v.evidence
+        );
+        let w_tiny = fork.compose_speeds(1.0e-6, 1.0e-6);
+        assert!(
+            w_tiny < 1.0,
+            "tiny speeds stay subluminal under minus-uv, got {w_tiny}"
+        );
+        assert_eq!(
+            kind(&fork, SR_SUBLUMINAL_COMPOSITION),
+            VerdictKind::Fails,
+            "minus-uv encoding must fail composition even when a tiny-speed sample looks subluminal"
+        );
+        assert!(
+            (fork.compose_speeds(COMPOSE_U, COMPOSE_V)
+                - (COMPOSE_U + COMPOSE_V) / (1.0 - COMPOSE_U * COMPOSE_V))
+                .abs()
+                < 1e-12,
+            "minus-uv must be (u+v)/(1-uv), not Galilean u+v"
+        );
+        let mut galilean = SpecialRelativity::default();
+        galilean
+            .set("absolute_time", KnobValue::Bool(true))
+            .unwrap();
+        assert_eq!(
+            kind(&galilean, SR_SUBLUMINAL_COMPOSITION),
+            VerdictKind::Fails
+        );
+        assert_eq!(kind(&galilean, SR_INVARIANT_INTERVAL), VerdictKind::Fails);
+        let probes = SpecialRelativity::default().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-minus-uv"),
+            "live SR must offer add-minus-uv: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes
+                .iter()
+                .any(|(label, _)| label == "add-binomial-gamma"),
+            "live SR must still offer add-binomial-gamma"
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-minus-uv")
+            .expect("add-minus-uv");
+        assert_eq!(
+            kind(probe.1.as_ref(), SR_SUBLUMINAL_COMPOSITION),
+            VerdictKind::Fails
+        );
+        assert_eq!(
+            kind(probe.1.as_ref(), SR_INVARIANT_INTERVAL),
+            VerdictKind::Holds
+        );
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes.iter().all(|(label, _)| label != "add-minus-uv"),
+            "minus-uv fork must not re-offer add-minus-uv"
+        );
+        assert!(
+            fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-binomial-gamma"),
+            "minus-uv fork must still offer add-binomial-gamma"
+        );
+        let live = SpecialRelativity::default();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed_live = parse_package(&canonical).unwrap();
+        let mut abs = SpecialRelativity::default();
+        abs.set("absolute_time", KnobValue::Bool(true)).unwrap();
+        let rebuilt = abs.reparse_package(&parsed_live).unwrap();
+        assert_eq!(
+            rebuilt.get("absolute_time").unwrap(),
+            KnobValue::Bool(true),
+            "reparse must overlay minus-uv IR onto live knobs"
+        );
+        assert_eq!(
+            kind(rebuilt.as_ref(), SR_SUBLUMINAL_COMPOSITION),
+            VerdictKind::Fails,
+            "absolute_time still Fails composition on the live Lorentz encoding"
+        );
+        let live_rebuilt = live.reparse_package(&parsed_live).unwrap();
+        assert_eq!(
+            kind(live_rebuilt.as_ref(), SR_SUBLUMINAL_COMPOSITION),
+            VerdictKind::Holds
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_SUBLUMINAL_COMPOSITION)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "composition must keep the catalog collinear domain: {:?}",
+            cell.domain()
+        );
+        assert!(
+            crate::relativity::GeneralRelativity::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-minus-uv"),
+            "general-relativity must not grow add-minus-uv"
+        );
+        assert!(
+            crate::computation::TuringMachine::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-minus-uv"),
+            "turing-machine must not grow add-minus-uv"
+        );
+        assert!(
+            crate::blackbody::Blackbody::planck()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-minus-uv"),
+            "planck must not grow add-minus-uv"
+        );
+        assert!(
+            crate::strings::StringTheory::type_i()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-minus-uv"),
+            "type-i must not grow add-minus-uv"
         );
     }
 }

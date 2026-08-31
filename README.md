@@ -158,7 +158,7 @@ cargo run -p physis -- set olbers-static finite_age true   # catastrophe fails â
 cargo run -p physis -- experiment bell
 cargo run -p physis -- run de-rham          # dÂ²=0, Betti numbers; set shape disk/circle/torus/klein/sphere
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
-cargo run -p physis -- hypothesize special-relativity  # add-binomial-gamma is IR, not set
+cargo run -p physis -- hypothesize special-relativity  # add-binomial-gamma and add-minus-uv are IR, not set
 cargo run -p physis -- set special-relativity absolute_time true
 cargo run -p physis -- hypothesize planck              # add-wien is IR, not set
 cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
