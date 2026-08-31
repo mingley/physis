@@ -178,9 +178,9 @@ those tools; a local checkout without them still mints
 | lemmas | `Claim.depends_on` | Live lemma edges in `gaps` / `why`; not statement identity; never deserialized as authority |
 | evidence | `physis evidence`, `NodeKind::Evidence` | Competing encodings (distinct FormalClaims of one slug) and competing evaluations; Statement + Evaluation parents; content-addressed, not deserialized; confidence is derived TrustProfile, not a numeric score; never Canonical or P4 |
 | trust-gate | `Lab::exec` | `reproduce` and loop-review require P3F. Standalone `review` stays encoding-axis. Observation is free |
-| roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove or score. Proof-searcher cannot remint. Replication-agent remints (not P4). Empirical-analyst scores. Numerical-verifier encloses. Provenance-auditor cites. Encoding-auditor round-trips live IR packages. Judge rebuilds `from_lab` (JSON cannot mint `logical proved`). Budget is a cap, not a proof |
+| roles | `Role`, `ResearchBudget`, `physis formalize` | Named processes propose; only `verify` mints. Explorer cannot prove or score. Proof-searcher cannot remint. Replication-agent remints (not P4). Empirical-analyst scores. Numerical-verifier encloses. Provenance-auditor cites and independently rebuilds versioned constants (`physis constant`). Encoding-auditor round-trips live IR packages. Judge rebuilds `from_lab` (JSON cannot mint `logical proved`). Budget is a cap, not a proof |
 | semantic | `physis-semantic`, `physis review` | Provenance + independent IR encoding + corpus, bound to the catalog FormalClaim; never `Canonical` |
-| constants | `physis-constants` | Versioned SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`, `K_cd` as exact `Ratio`. Planck `h` is SI-exact `SciExact` `662607015e-42` (not a `Ratio`: `i128` denominator overflow). `ħ` is not stored. CODATA 2018 `G` is a one-sigma `Interval` (JPCRD table XXXI). Theories still use `physis_model` `f64` Qty |
+| constants | `physis-constants`, `physis constant` | Versioned SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`, `K_cd` as exact `Ratio`. Planck `h` is SI-exact `SciExact` `662607015e-42` (not a `Ratio`: `i128` denominator overflow). `ħ` is not stored. CODATA 2018 `G` is a one-sigma `Interval` (JPCRD table XXXI). `physis constant` independently rebuilds those hashes (`provenance-auditor`; not P3N). Theories still use `physis_model` `f64` Qty |
 
 Journal events are hash-linked in memory (`Journal::tip`). Journal
 restore of a `prove` event remints through `verify` (never Deserialize)
@@ -197,8 +197,9 @@ identity; a slug-only review line is not P3S.
 - Versioned constants: SI 2019 defining `c`, `Δν_Cs`, `e`, `k`, `N_A`,
   `K_cd` are exact `Ratio`. Planck `h` is SI-exact `SciExact`
   `662607015e-42` (not a `Ratio`). `ħ` is not a terminating decimal.
-  CODATA 2018 `G` is a one-sigma `Interval`. Theories still use
-  `physis_model` `f64` Qty constants
+  CODATA 2018 `G` is a one-sigma `Interval`. `physis constant` rebuilds
+  those hashes independently. Theories still use `physis_model` `f64`
+  Qty constants
 - Community-canonical encodings (review tops out at
   `AdversariallyReviewed`; there is no `Canonical` variant to assign)
 - P4 independent reproduction (in-process `reproduce` remints and
@@ -238,6 +239,8 @@ identity; a slug-only review line is not P3S.
   enclose`, a content-addressed NumericCertificate; not a kernel
   receipt, not Canonical, not P4). A reviewer cannot independently
   rehash a `SourceRecord`; that is `provenance-auditor` (`physis cite`;
+  not P3S). A reviewer cannot independently rebuild a versioned
+  Constant; that is `provenance-auditor` (`physis constant`; not P3N,
   not P3S). A reviewer cannot independently round-trip a live theory
   IR package; that is `encoding-auditor` (`physis encode`; combinational
   NAND, Klein–Gordon stencil, and Wilson U(1) plaquettes; a package with

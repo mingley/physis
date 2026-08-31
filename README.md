@@ -43,7 +43,7 @@ This repository does **not** decide whether string theory is false. It makes the
 | `physis-ir` | declarative theory packages and constrained mutations |
 | `physis-audit` | red-team corpus |
 | `physis-semantic` | encoding review from evidence; no `Canonical` variant |
-| `physis-constants` | versioned SI 2019 defining constants (`Ratio` / `SciExact` for `h`) and CODATA `G` (`Interval`) |
+| `physis-constants` | versioned SI 2019 defining constants (`Ratio` / `SciExact` for `h`) and CODATA `G` (`Interval`); `physis constant` rebuilds |
 | `physis-agent` | Lab, protocol v2, hash-linked journal |
 | `physis` | Facade + CLI |
 

@@ -202,6 +202,64 @@ pub fn newtonian_g() -> Constant<Interval> {
     )
 }
 
+/// Independently reconstructable listing of a versioned constant.
+///
+/// The stored [`Constant::hash`] is not authority: rebuild via [`lookup`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ConstantListing {
+    /// Ledger name (`c`, `G`, `h`, …).
+    pub name: String,
+    /// `ratio`, `sci-exact`, or `interval`.
+    pub kind: &'static str,
+    /// Unit string.
+    pub unit: String,
+    /// Display form of the value.
+    pub value: String,
+    /// Release.
+    pub release: ConstantRelease,
+    /// Table locator, if any.
+    pub table: Option<String>,
+    /// Dataset range locator, if any.
+    pub range: Option<String>,
+    /// Content hash of the live [`Constant`].
+    pub hash: ArtifactId,
+    /// Provenance. Recheck independently; the stored hash is not authority.
+    pub source: SourceRecord,
+}
+
+/// Ledger names in catalog order.
+pub const LEDGER: &[&str] = &["c", "delta-nu-Cs", "e", "k", "N_A", "K_cd", "h", "G"];
+
+fn listing<T: std::fmt::Display>(c: Constant<T>, kind: &'static str) -> ConstantListing {
+    ConstantListing {
+        name: c.name,
+        kind,
+        unit: c.unit,
+        value: c.value.to_string(),
+        release: c.release,
+        table: c.provenance.locator.table.clone(),
+        range: c.provenance.locator.dataset_range.clone(),
+        hash: c.hash,
+        source: c.provenance,
+    }
+}
+
+/// Rebuild a versioned constant from live constructors. Unknown names are
+/// absent: this is not a claim slug lookup.
+pub fn lookup(name: &str) -> Option<ConstantListing> {
+    match name {
+        "c" => Some(listing(speed_of_light(), "ratio")),
+        "delta-nu-Cs" => Some(listing(caesium_hyperfine(), "ratio")),
+        "e" => Some(listing(elementary_charge(), "ratio")),
+        "k" => Some(listing(boltzmann(), "ratio")),
+        "N_A" => Some(listing(avogadro(), "ratio")),
+        "K_cd" => Some(listing(luminous_efficacy(), "ratio")),
+        "h" => Some(listing(planck_h(), "sci-exact")),
+        "G" => Some(listing(newtonian_g(), "interval")),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -350,5 +408,32 @@ mod tests {
             "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92"
         );
         assert!(g.provenance.recheck().is_ok());
+    }
+
+    #[test]
+    fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
+        assert_eq!(LEDGER.len(), 8);
+        for name in LEDGER {
+            let live = lookup(name).expect(name);
+            let again = lookup(name).expect(name);
+            assert_eq!(live.hash, again.hash, "{name}");
+            assert!(live.source.recheck().is_ok(), "{name}");
+        }
+        assert_eq!(
+            lookup("c").unwrap().hash.to_hex(),
+            "691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1"
+        );
+        assert_eq!(
+            lookup("h").unwrap().hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef"
+        );
+        assert_eq!(
+            lookup("G").unwrap().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92"
+        );
+        assert_eq!(lookup("G").unwrap().kind, "interval");
+        assert_eq!(lookup("h").unwrap().kind, "sci-exact");
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("gut.weinberg-angle").is_none());
     }
 }

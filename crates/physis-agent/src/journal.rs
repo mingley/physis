@@ -137,6 +137,18 @@ pub enum JournalEvent {
         /// forged hash cannot mint the record.
         source_hash: String,
     },
+    /// An independent versioned-constant rebuild. Restore rebuilds from
+    /// live constructors. The recorded node hash is not deserialized as
+    /// authority, is not P3N, is not P3S, and is not Canonical or P4.
+    Constant {
+        /// Unix millis.
+        t: u64,
+        /// Ledger name (`c`, `G`, `h`, …).
+        name: String,
+        /// Content-addressed VersionedConstant node hex. Restore
+        /// rebuilds; a forged hash cannot mint the node.
+        node_hash: String,
+    },
     /// An independent IR package round-trip. Restore rebuilds from the
     /// live theory package. The recorded package hash is not
     /// deserialized as authority, is not P3S, and is not Canonical or P4.
@@ -294,6 +306,15 @@ impl JournalEvent {
             t: now_ms(),
             claim: claim.into(),
             source_hash: source_hash.into(),
+        }
+    }
+
+    /// An independent versioned-constant rebuild, stamped with the current time.
+    pub fn constant(name: impl Into<String>, node_hash: impl Into<String>) -> Self {
+        JournalEvent::Constant {
+            t: now_ms(),
+            name: name.into(),
+            node_hash: node_hash.into(),
         }
     }
 
@@ -572,6 +593,25 @@ mod tests {
             } => {
                 assert_eq!(claim, "gut.proton-lifetime-sk");
                 assert_eq!(source_hash, "deadbeef");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn constant_event_round_trips_and_is_not_p3n() {
+        let ev = JournalEvent::constant("G", "deadbeef");
+        let s = serde_json::to_string(&ev).unwrap();
+        assert!(s.contains("\"event\":\"constant\""));
+        assert!(s.contains("\"node_hash\":\"deadbeef\""));
+        assert!(!s.contains("receipt"), "{s}");
+        let back: JournalEvent = serde_json::from_str(&s).unwrap();
+        match back {
+            JournalEvent::Constant {
+                name, node_hash, ..
+            } => {
+                assert_eq!(name, "G");
+                assert_eq!(node_hash, "deadbeef");
             }
             other => panic!("{other:?}"),
         }

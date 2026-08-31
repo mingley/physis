@@ -10,6 +10,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Protocol
+
+- **`physis constant` independently rebuilds the versioned ledger.**
+  `provenance-auditor` reconstructs SI 2019 `Ratio` / `SciExact` entries
+  and CODATA 2018 `G` from live constructors, stores a
+  `VersionedConstant` node, and journals a rebuild-only event. A
+  recorded `node_hash` is not deserialized. Unknown names fail closed.
+  That is not P3N, not P3S, not a kernel proof, not Canonical, not P4.
+  Theories still use `physis_model` `f64` Qty. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: `G`,
+  `c`, and `h` hashes; restore rebuilds; explorer/reviewer blocked;
+  node
+  `f320ea2da0141f16c191acd3001a6fe0b5074fc73d4768fa91f42d8e85abc52c`.
+
 ### Constants
 
 - **SI 2019 Planck h is SciExact, not a Ratio.**

@@ -57,6 +57,7 @@ Level-3 trust
   L3 SI constants          ✓ physis-constants versions SI 2019 defining c, Δν_Cs, e, k, N_A, K_cd as Ratio; h is SI-exact but not a Ratio (i128 denominator overflow); theories still use physis_model f64 Qty
   L3 CODATA G              ✓ physis-constants versions CODATA 2018 G as a one-sigma Interval (JPCRD table XXXI); not P3N; h is still not a Ratio; theories still use physis_model f64 Qty
   L3 Planck h              ✓ physis-constants versions SI 2019 h as SciExact 662607015e-42 J s; 10^42 overflows i128 so it is not a Ratio; ħ is not stored; theories still use physis_model f64 Qty
+  L3 constant rebuild      ✓ physis constant independently rebuilds versioned SI/CODATA hashes into a VersionedConstant DAG; provenance-auditor unique op with cite; restore rebuilds; not P3N, not Canonical, not P4; P3N count stays 4
   L3 judgment projection   ✓ physis judge independently rebuilds Judgment::from_lab into a JudgmentProjection DAG; judge unique op; unique-vacuum stays heuristic failed; JSON cannot mint logical proved; restore rebuilds; not Canonical, not P4
 ```
 

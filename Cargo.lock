@@ -162,6 +162,7 @@ name = "physis-agent"
 version = "0.1.0"
 dependencies = [
  "physis-audit",
+ "physis-constants",
  "physis-core",
  "physis-data",
  "physis-ir",

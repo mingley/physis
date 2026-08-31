@@ -20,6 +20,7 @@ physis-store.workspace = true
 physis-numeric.workspace = true
 physis-data.workspace = true
 physis-provenance.workspace = true
+physis-constants.workspace = true
 physis-ir.workspace = true
 serde.workspace = true
 serde_json.workspace = true

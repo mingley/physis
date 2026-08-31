@@ -61,6 +61,10 @@ pub enum NodeKind {
     /// or P4. Restore rebuilds from live `from_lab`; a recorded hash is
     /// not deserialized. JSON cannot mint `logical proved`.
     JudgmentProjection,
+    /// An independent rebuild of a versioned physical constant from live
+    /// constructors. Not P3N, not P3S, not a kernel receipt, not Canonical,
+    /// and not P4. Restore rebuilds; a recorded hash is not deserialized.
+    VersionedConstant,
 }
 
 /// One DAG node.
@@ -253,5 +257,15 @@ mod tests {
         assert_ne!(proj.id, eval.id);
         assert_ne!(proj.id, graph.id);
         assert_eq!(proj.kind, NodeKind::JudgmentProjection);
+    }
+
+    #[test]
+    fn versioned_constant_is_not_a_source_or_numeric_certificate() {
+        let c = Node::new(NodeKind::VersionedConstant, vec![], b"G\nhash");
+        let src = Node::new(NodeKind::Source, vec![], b"G\nhash");
+        let num = Node::new(NodeKind::NumericCertificate, vec![], b"G\nhash");
+        assert_ne!(c.id, src.id);
+        assert_ne!(c.id, num.id);
+        assert_eq!(c.kind, NodeKind::VersionedConstant);
     }
 }

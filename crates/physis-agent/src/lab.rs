@@ -282,7 +282,7 @@ impl Lab {
     }
 
     /// Re-apply journaled `set-knob` events and remint prove / review /
-    /// evidence / enclose / cite / encode / judge from live state, **without** recording them again.
+    /// evidence / enclose / cite / constant / encode / judge from live state, **without** recording them again.
     ///
     /// This resumes a persisted session: after loading a journal from a file,
     /// call this so subsequent turns build on the prior ones instead of on
@@ -292,10 +292,12 @@ impl Lab {
     ///
     /// Evidence restore rebuilds the DAG from live evaluations. Enclose
     /// restore rebuilds numeric certificates from live overlay strings.
-    /// Cite restore rebuilds source records from live fields. Encode
+    /// Cite restore rebuilds source records from live fields. Constant
+    /// restore rebuilds VersionedConstant nodes from live constructors.
+    /// Encode
     /// restore rebuilds EncodingPackage nodes from live IR packages.
     /// Recorded hashes are not deserialized as the snapshot: a forged hash
-    /// cannot mint an Evidence, NumericCertificate, Source, EncodingPackage, or JudgmentProjection node.
+    /// cannot mint an Evidence, NumericCertificate, Source, VersionedConstant, EncodingPackage, or JudgmentProjection node.
     /// [`crate::replay::replay_journal`] still certifies only `set-knob`
     /// diffs.
     pub fn restore_from_journal(&mut self) {
@@ -340,6 +342,11 @@ impl Lab {
                     // Rebuild from live dataset / dossier SourceRecords.
                     // The recorded source hash is not deserialized.
                     let _ = self.build_cite(&claim);
+                }
+                JournalEvent::Constant { name, .. } => {
+                    // Rebuild from live constructors. The recorded node
+                    // hash is not deserialized.
+                    let _ = self.build_constant(&name);
                 }
                 JournalEvent::Encode { theory, .. } => {
                     // Rebuild from the live IR package. The recorded
@@ -801,6 +808,7 @@ impl Lab {
             Command::Gaps => self.gaps(),
             Command::Enclose { claim } => self.enclose_claim(&claim),
             Command::Cite { claim } => self.cite_claim(&claim),
+            Command::Constant { name } => self.constant_entry(&name),
             Command::Encode { theory } => self.encode_theory(&theory),
             Command::Judge { claim } => self.judge_claim(&claim),
             Command::Replay { path } => match std::fs::read_to_string(&path) {
@@ -1347,6 +1355,69 @@ impl Lab {
             out.push_str(&text);
         }
         Ok((out, bundle))
+    }
+
+    /// Independently rebuild a versioned physical constant from live
+    /// constructors. Does not raise P3N or P3S, does not mint a kernel
+    /// receipt, Canonical, or P4.
+    fn constant_entry(&mut self, name: &str) -> Response {
+        match self.build_constant(name) {
+            Ok((out, id)) => {
+                self.journal
+                    .record(JournalEvent::constant(name, id.to_hex()));
+                Response::ok(out)
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Rebuild a VersionedConstant node from live constructors. Does not
+    /// journal and does not deserialize a recorded node hash.
+    fn build_constant(
+        &mut self,
+        name: &str,
+    ) -> Result<(String, physis_core::artifact::ArtifactId), String> {
+        let live =
+            physis_constants::lookup(name).ok_or_else(|| format!("unknown constant '{name}'"))?;
+        live.source
+            .recheck()
+            .map_err(|e| format!("constant {name}: {e}"))?;
+        let again = physis_constants::lookup(name)
+            .ok_or_else(|| format!("constant {name}: lookup failed on rebuild"))?;
+        if again.hash != live.hash {
+            return Err(format!("constant {name}: rebuilt hash does not match"));
+        }
+        if again.source.source_hash != live.source.source_hash {
+            return Err(format!("constant {name}: rebuilt source does not match"));
+        }
+        let payload = format!(
+            "{}\n{}\n{}\n{}\n{}",
+            live.name,
+            live.kind,
+            live.value,
+            live.unit,
+            live.hash.to_hex()
+        );
+        let node = self.store.insert(Node::new(
+            NodeKind::VersionedConstant,
+            vec![],
+            payload.as_bytes(),
+        ));
+        let mut text = format!("constant  {name}  node {}\n", node.to_hex());
+        text.push_str(&format!("  hash     {}\n", live.hash.to_hex()));
+        text.push_str(&format!("  kind     {}\n", live.kind));
+        text.push_str(&format!("  value    {}\n", live.value));
+        text.push_str(&format!("  unit     {}\n", live.unit));
+        text.push_str(&format!("  release  {}\n", live.release.as_str()));
+        if let Some(table) = &live.table {
+            text.push_str(&format!("  table    {table}\n"));
+        }
+        if let Some(range) = &live.range {
+            text.push_str(&format!("  range    {range}\n"));
+        }
+        text.push_str("  rebuild  ok\n");
+        text.push_str("  not P3S; not P3N; not a kernel proof; not P4; not Canonical\n");
+        Ok((text, node))
     }
 
     /// Independently parse, round-trip, and reconstruct a live theory
@@ -8915,6 +8986,13 @@ mod tests {
             .unwrap_or_else(|| panic!("expected 64 hex source id in {line}"))
     }
 
+    fn constant_node_id(text: &str) -> physis_core::artifact::ArtifactId {
+        let line = text.lines().next().expect("empty constant");
+        let hex = line.split_whitespace().last().expect("node hex");
+        physis_core::artifact::ArtifactId::from_hex(hex)
+            .unwrap_or_else(|| panic!("expected 64 hex node id in {line}"))
+    }
+
     fn encoding_package_id(text: &str) -> physis_core::artifact::ArtifactId {
         let line = text.lines().next().expect("empty encode");
         let hex = line.split_whitespace().last().expect("package hex");
@@ -10613,6 +10691,167 @@ mod tests {
         *lab3.journal_mut() = Journal::from_jsonl(&tampered);
         lab3.restore_from_journal();
         assert_eq!(lab3.store.get(live).map(|n| n.kind), Some(NodeKind::Source));
+        let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
+            .expect("64 hex zeros is an ArtifactId");
+        assert!(lab3.store.get(forged).is_none());
+    }
+
+    #[test]
+    fn provenance_auditor_rebuilds_versioned_constants_and_cannot_review() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Constant { name: "G".into() });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("explorer cannot constant"),
+            "{}",
+            blocked.text()
+        );
+
+        lab.set_role(Role::Reviewer);
+        let blocked_rev = lab.exec(Command::Constant { name: "G".into() });
+        assert!(
+            blocked_rev.text().contains("reviewer cannot constant"),
+            "{}",
+            blocked_rev.text()
+        );
+
+        lab.set_role(Role::NumericalVerifier);
+        let blocked_nv = lab.exec(Command::Constant { name: "G".into() });
+        assert!(
+            blocked_nv
+                .text()
+                .contains("numerical-verifier cannot constant"),
+            "{}",
+            blocked_nv.text()
+        );
+
+        lab.set_role(Role::ProvenanceAuditor);
+        let review = lab.exec(Command::Review {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(
+            review.text().contains("provenance-auditor cannot review"),
+            "{}",
+            review.text()
+        );
+
+        let g = lab
+            .exec(Command::Constant { name: "G".into() })
+            .text()
+            .to_string();
+        assert!(g.contains("constant  G  node "), "{g}");
+        assert!(
+            g.contains("hash     ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92"),
+            "{g}"
+        );
+        assert!(g.contains("kind     interval"), "{g}");
+        assert!(g.contains("table    XXXI"), "{g}");
+        assert!(g.contains("rebuild  ok"), "{g}");
+        assert!(g.contains("not P3N"), "{g}");
+        assert!(g.contains("not P3S"), "{g}");
+        assert!(!g.contains("receipt"), "{g}");
+        assert!(!g.contains("theorem"), "{g}");
+        let g_id = constant_node_id(&g);
+        assert_eq!(
+            lab.store.get(g_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
+        let c = lab
+            .exec(Command::Constant { name: "c".into() })
+            .text()
+            .to_string();
+        assert!(
+            c.contains("hash     691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1"),
+            "{c}"
+        );
+        assert!(c.contains("kind     ratio"), "{c}");
+        assert!(c.contains("table    1"), "{c}");
+
+        let h = lab
+            .exec(Command::Constant { name: "h".into() })
+            .text()
+            .to_string();
+        assert!(
+            h.contains("hash     50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef"),
+            "{h}"
+        );
+        assert!(h.contains("kind     sci-exact"), "{h}");
+        assert!(h.contains("662607015e-42"), "{h}");
+
+        let unknown = lab.exec(Command::Constant {
+            name: "hbar".into(),
+        });
+        assert_eq!(unknown.exit_code(), 1, "{}", unknown.text());
+        assert!(
+            unknown.text().contains("unknown constant 'hbar'"),
+            "{}",
+            unknown.text()
+        );
+
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(p3n.contains("count 4"), "constant must not mint P3N: {p3n}");
+
+        lab.set_role(Role::Lab);
+        let sr = lab
+            .exec(Command::Encode {
+                theory: "special-relativity".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            sr.contains("faecac5791ad5650337c61dcb10e45d5eb36ca24c0423df51891673ba3da3ef6"),
+            "{sr}"
+        );
+    }
+
+    #[test]
+    fn versioned_constant_restores_by_rebuild_not_deserialize() {
+        let mut lab1 = Lab::standard();
+        let first = lab1
+            .exec(Command::Constant { name: "G".into() })
+            .text()
+            .to_string();
+        let live = constant_node_id(&first);
+        assert_eq!(
+            live.to_hex(),
+            "f320ea2da0141f16c191acd3001a6fe0b5074fc73d4768fa91f42d8e85abc52c",
+            "journaling must not change the G constant payload"
+        );
+        let jsonl = lab1.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"constant\""), "{jsonl}");
+        assert!(
+            jsonl.contains(&format!("\"node_hash\":\"{}\"", live.to_hex())),
+            "{jsonl}"
+        );
+
+        let mut lab2 = Lab::standard();
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        let journal_len = lab2.journal().len();
+        lab2.restore_from_journal();
+        assert_eq!(lab2.journal().len(), journal_len);
+        assert_eq!(
+            lab2.store.get(live).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
+        let forged_hex = "0".repeat(64);
+        let tampered =
+            format!(r#"{{"event":"constant","t":1,"name":"G","node_hash":"{forged_hex}"}}"#);
+        let mut lab3 = Lab::standard();
+        *lab3.journal_mut() = Journal::from_jsonl(&tampered);
+        lab3.restore_from_journal();
+        assert_eq!(
+            lab3.store.get(live).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
         let forged = physis_core::artifact::ArtifactId::from_hex(&forged_hex)
             .expect("64 hex zeros is an ArtifactId");
         assert!(lab3.store.get(forged).is_none());

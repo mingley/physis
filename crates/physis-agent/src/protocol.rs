@@ -164,6 +164,13 @@ pub enum Command {
         /// Claim id.
         claim: String,
     },
+    /// Independently rebuild a versioned physical constant from live
+    /// constructors. Not P3N, not P3S, not a kernel receipt, not
+    /// Canonical, and not P4.
+    Constant {
+        /// Ledger name (`c`, `G`, `h`, …).
+        name: String,
+    },
     /// Independently parse, round-trip, and reconstruct a live theory
     /// IR package. Stores a content-addressed EncodingPackage. Not P3S,
     /// not a kernel receipt, not Canonical, and not P4.
@@ -216,6 +223,7 @@ impl Command {
             Command::Gaps => "gaps",
             Command::Enclose { .. } => "enclose",
             Command::Cite { .. } => "cite",
+            Command::Constant { .. } => "constant",
             Command::Encode { .. } => "encode",
             Command::Judge { .. } => "judge",
         }
