@@ -224,6 +224,8 @@ identity; a slug-only review line is not P3S.
   `m_e/m_n` is a one-sigma `Interval` `5.4386734424(26)×10^{-4}` from
   the same section. CODATA 2018 electron-deuteron mass ratio
   `m_e/m_d` is a one-sigma `Interval` `2.724437107462(96)×10^{-4}` from
+  the same section. CODATA 2018 electron-triton mass ratio
+  `m_e/m_t` is a one-sigma `Interval` `1.819200062251(90)×10^{-4}` from
   the same section.
   CODATA 2018 `m_p` is a
   one-sigma `Interval` `1.67262192369(51)×10^{-27}` kg (JPCRD table XXXI
@@ -242,7 +244,7 @@ identity; a slug-only review line is not P3S.
   LEDGER. Overlapping `physis_model` Qty floats lockstep the ledger:
   `c`, `au`, `GM_sun`, `R_sun`, and `L_sun` via integer `to_f64`; `e`/`k`/`eV` via IEEE rounding of the SI
   decimal (`SciExact::to_f64`, not reduced `Ratio::to_f64`); `h` via
-  `SciExact::to_f64`; `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, and `m_p` Qty values are the CODATA centres
+  `SciExact::to_f64`; `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, and `m_p` Qty values are the CODATA centres
   inside the hulls.
   Theories still evaluate with `physis_model` `f64` Qty constants
 - Community-canonical encodings (review tops out at
