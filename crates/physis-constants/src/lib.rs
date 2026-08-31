@@ -22,8 +22,11 @@
 //! recommended hull, not `1/α` as a derived Ratio. CODATA 2018 Rydberg
 //! frequency `cR∞` is a one-sigma [`Interval`]
 //! `3.2898419602508(64)×10^{15}` Hz from the same table: a measured hull,
-//! not an SI defining Ratio, and not the energy equivalent `hcR∞`.
-//! CODATA 2018 Rydberg constant `R∞` is a one-sigma [`Interval`] `10973731.568160(21)` m⁻¹
+//! not an SI defining Ratio. CODATA 2018 Rydberg energy equivalent `hcR∞`
+//! is a one-sigma [`Interval`] `2.1798723611035(42)×10^{-18}` J from the
+//! same table: a measured hull, not an SI defining Ratio, and not the
+//! eV conversion. CODATA 2018 Rydberg constant `R∞` is a one-sigma
+//! [`Interval`] `10973731.568160(21)` m⁻¹
 //! from the same table: a measured hull, not an SI defining Ratio.
 //! CODATA 2018 Bohr radius `a₀` is a one-sigma [`Interval`]
 //! `5.29177210903(80)×10^{-11}` m from the same table: a measured hull,
@@ -251,6 +254,10 @@ fn codata_2018_rydberg_frequency_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "cRinf = 3.2898419602508(64)e15")
 }
 
+fn codata_2018_rydberg_energy_source() -> SourceRecord {
+    codata_2018_jpcrd("ATOMIC AND NUCLEAR", "hcRinf = 2.1798723611035(42)e-18")
+}
+
 fn codata_2018_rydberg_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "Rinf = 10973731.568160(21)")
 }
@@ -415,17 +422,40 @@ fn codata_2018_rydberg_frequency_interval() -> Interval {
 
 /// Rydberg frequency cR∞, CODATA 2018 one-sigma enclosure.
 ///
-/// This is the recommended hull in hertz, not an SI defining Ratio,
-/// not the energy equivalent `hcR∞`, and not P3N. It is a different
-/// recommended value from R∞; the exact SI `c` does not make the
-/// stored centres a certificate that they multiply. Theories still use
-/// `physis_model` `f64` Qty.
+/// This is the recommended hull in hertz, not an SI defining Ratio
+/// and not P3N. It is a different recommended value from R∞; the exact
+/// SI `c` does not make the stored centres a certificate that they
+/// multiply. Theories still use `physis_model` `f64` Qty.
 pub fn rydberg_frequency() -> Constant<Interval> {
     Constant::new(
         "cRinf",
         codata_2018_rydberg_frequency_interval(),
         "Hz",
         codata_2018_rydberg_frequency_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 2.1798723611035(42)×10⁻¹⁸ J.
+fn codata_2018_rydberg_energy_interval() -> Interval {
+    let scale = 10i128.pow(31);
+    let mu = 21_798_723_611_035;
+    let sigma = 42;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Rydberg energy equivalent hcR∞, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in joules, not an SI defining Ratio,
+/// not the eV conversion, and not P3N. It is a different recommended
+/// value from E_h; the factor of two is not a certificate that the
+/// stored centres divide. Theories still use `physis_model` `f64` Qty.
+pub fn rydberg_energy_equivalent() -> Constant<Interval> {
+    Constant::new(
+        "hcRinf",
+        codata_2018_rydberg_energy_interval(),
+        "J",
+        codata_2018_rydberg_energy_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -684,6 +714,7 @@ pub const LEDGER: &[&str] = &[
     "alpha",
     "inv_alpha",
     "cRinf",
+    "hcRinf",
     "Rinf",
     "a0",
     "Eh",
@@ -727,6 +758,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "alpha" => Some(listing(fine_structure_constant(), "interval")),
         "inv_alpha" => Some(listing(inverse_fine_structure_constant(), "interval")),
         "cRinf" => Some(listing(rydberg_frequency(), "interval")),
+        "hcRinf" => Some(listing(rydberg_energy_equivalent(), "interval")),
         "Rinf" => Some(listing(rydberg_constant(), "interval")),
         "a0" => Some(listing(bohr_radius(), "interval")),
         "Eh" => Some(listing(hartree_energy(), "interval")),
@@ -1358,7 +1390,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("R_inf").is_none());
         assert!(lookup("Rydberg").is_none());
-        assert!(lookup("hcRinf").is_none());
+        assert!(lookup("hcRinf_eV").is_none());
         assert!(lookup("E_h").is_none());
     }
 
@@ -1469,8 +1501,118 @@ mod tests {
         );
         assert!(lookup("c_Rinf").is_none());
         assert!(lookup("Rydberg").is_none());
-        assert!(lookup("hcRinf").is_none());
+        assert!(lookup("hcRinf_eV").is_none());
         assert!(lookup("cRinf_eV").is_none());
+    }
+
+    #[test]
+    fn codata_2018_rydberg_energy_equivalent_is_a_one_sigma_interval() {
+        let e = rydberg_energy_equivalent();
+        let scale = 10i128.pow(31);
+        let lo = Ratio::new(21_798_723_610_993, scale);
+        let hi = Ratio::new(21_798_723_611_077, scale);
+        let centre = Ratio::new(21_798_723_611_035, scale);
+        assert_eq!(e.name, "hcRinf");
+        assert_eq!(e.unit, "J");
+        assert_eq!(e.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(e.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            e.provenance.locator.section.as_deref(),
+            Some("ATOMIC AND NUCLEAR")
+        );
+        assert_eq!(
+            e.provenance.locator.dataset_range.as_deref(),
+            Some("hcRinf = 2.1798723611035(42)e-18")
+        );
+        assert_eq!(e.value, Interval::new(lo, hi));
+        assert_ne!(e.value.lo, e.value.hi, "hcRinf is measured, not SI-exact");
+        assert!(e.value.contains(Interval::point(centre)));
+        assert!(!e
+            .value
+            .contains(Interval::point(Ratio::new(21_798_000_000_000, scale))));
+        assert_eq!(e.hash, rydberg_energy_equivalent().hash);
+        assert_eq!(
+            e.hash,
+            Constant::new(
+                "hcRinf",
+                codata_2018_rydberg_energy_interval(),
+                "J",
+                codata_2018_rydberg_energy_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(e.hash, rydberg_frequency().hash, "hcRinf is not cRinf");
+        assert_ne!(e.hash, hartree_energy().hash, "hcRinf is not Eh");
+        assert_ne!(e.hash, rydberg_constant().hash, "hcRinf is not Rinf");
+        assert_ne!(
+            e.provenance.source_hash,
+            rydberg_frequency().provenance.source_hash,
+            "hcRinf range is not the cRinf range"
+        );
+        assert_eq!(
+            rydberg_frequency().hash.to_hex(),
+            "c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969",
+            "cRinf hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            rydberg_constant().hash.to_hex(),
+            "fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090",
+            "Rinf hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            hartree_energy().hash.to_hex(),
+            "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a",
+            "Eh hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            bohr_radius().hash.to_hex(),
+            "5d5098fcd983d3db221e4b4047e73de5061985c31a91ccdf12cd122b620eaf29",
+            "a0 hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            inverse_fine_structure_constant().hash.to_hex(),
+            "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482",
+            "inv_alpha hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            vacuum_impedance().hash.to_hex(),
+            "6f72c1c5833dc722ac6fb5223f982879499ff412157c6e6c9851d77088991316",
+            "Z0 hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            vacuum_permittivity().hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80",
+            "epsilon0 hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when hcRinf is added"
+        );
+        assert_eq!(
+            e.hash.to_hex(),
+            "0d0308e874e54cb3d02570c972232b0d26c2d1d64b493880a1bb7ce4ff7827b2"
+        );
+        assert!(e.provenance.recheck().is_ok());
+        assert!(lookup("hc_Rinf").is_none());
+        assert!(lookup("hcRinf_eV").is_none());
+        assert!(lookup("Rydberg").is_none());
     }
 
     #[test]
@@ -1945,7 +2087,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 23);
+        assert_eq!(LEDGER.len(), 24);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -1994,6 +2136,11 @@ mod tests {
         assert_eq!(
             lookup("cRinf").unwrap().hash.to_hex(),
             "c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969"
+        );
+        assert_eq!(lookup("hcRinf").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("hcRinf").unwrap().hash.to_hex(),
+            "0d0308e874e54cb3d02570c972232b0d26c2d1d64b493880a1bb7ce4ff7827b2"
         );
         assert_eq!(lookup("Rinf").unwrap().kind, "interval");
         assert_eq!(
@@ -2055,7 +2202,8 @@ mod tests {
         assert!(lookup("R_inf").is_none());
         assert!(lookup("Rydberg").is_none());
         assert!(lookup("c_Rinf").is_none());
-        assert!(lookup("hcRinf").is_none());
+        assert!(lookup("hc_Rinf").is_none());
+        assert!(lookup("hcRinf_eV").is_none());
         assert!(lookup("a_0").is_none());
         assert!(lookup("Bohr").is_none());
         assert!(lookup("E_h").is_none());

@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  1ceae7214eccc32fe8f6b6134ec22afb85cd7e2d7a42d8aa7fb0112920505b10"),
+            text.contains("constant  ledger  4bbea8428644c09de79c28d441929157bb2872e753fdd15bc0dbda7cf533a3dd"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -10981,6 +10981,41 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let hcrinf = lab
+            .exec(Command::Constant {
+                name: Some("hcRinf".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hcrinf.contains("constant  hcRinf  node "), "{hcrinf}");
+        assert!(
+            hcrinf.contains(
+                "hash     0d0308e874e54cb3d02570c972232b0d26c2d1d64b493880a1bb7ce4ff7827b2"
+            ),
+            "{hcrinf}"
+        );
+        assert!(hcrinf.contains("kind     interval"), "{hcrinf}");
+        assert!(hcrinf.contains("table    XXXI"), "{hcrinf}");
+        assert!(
+            hcrinf.contains("range    hcRinf = 2.1798723611035(42)e-18"),
+            "{hcrinf}"
+        );
+        assert!(hcrinf.contains("unit     J"), "{hcrinf}");
+        assert!(hcrinf.contains("rebuild  ok"), "{hcrinf}");
+        assert!(hcrinf.contains("not P3N"), "{hcrinf}");
+        assert!(!hcrinf.contains("receipt"), "{hcrinf}");
+        assert!(!hcrinf.contains("theorem"), "{hcrinf}");
+        let hcrinf_id = constant_node_id(&hcrinf);
+        assert_eq!(
+            hcrinf_id.to_hex(),
+            "f7c095d695e231cfaee92b74cd8eb2961462727d1068401ee84953d069af4cbd",
+            "journaling must not change the hcRinf constant payload"
+        );
+        assert_eq!(
+            lab.store.get(hcrinf_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let a0 = lab
             .exec(Command::Constant {
                 name: Some("a0".into()),
@@ -11327,11 +11362,11 @@ mod tests {
         );
 
         let unknown_hc = lab.exec(Command::Constant {
-            name: Some("hcRinf".into()),
+            name: Some("hcRinf_eV".into()),
         });
         assert_eq!(unknown_hc.exit_code(), 1, "{}", unknown_hc.text());
         assert!(
-            unknown_hc.text().contains("unknown constant 'hcRinf'"),
+            unknown_hc.text().contains("unknown constant 'hcRinf_eV'"),
             "{}",
             unknown_hc.text()
         );
@@ -11364,7 +11399,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "1ceae7214eccc32fe8f6b6134ec22afb85cd7e2d7a42d8aa7fb0112920505b10",
+            "4bbea8428644c09de79c28d441929157bb2872e753fdd15bc0dbda7cf533a3dd",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -11410,6 +11445,16 @@ mod tests {
         assert!(
             ledger.contains(
                 "hash     c7c49f18cb4f9905decad406f7a835f59588f34483afa3e4751097451d5d9969"
+            ),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains("range    hcRinf = 2.1798723611035(42)e-18"),
+            "{ledger}"
+        );
+        assert!(
+            ledger.contains(
+                "hash     0d0308e874e54cb3d02570c972232b0d26c2d1d64b493880a1bb7ce4ff7827b2"
             ),
             "{ledger}"
         );
@@ -11622,7 +11667,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "1ceae7214eccc32fe8f6b6134ec22afb85cd7e2d7a42d8aa7fb0112920505b10",
+            "4bbea8428644c09de79c28d441929157bb2872e753fdd15bc0dbda7cf533a3dd",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -11734,6 +11779,14 @@ mod tests {
         .expect("pinned cRinf node");
         assert_eq!(
             lab2.store.get(crinf).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let hcrinf = physis_core::artifact::ArtifactId::from_hex(
+            "f7c095d695e231cfaee92b74cd8eb2961462727d1068401ee84953d069af4cbd",
+        )
+        .expect("pinned hcRinf node");
+        assert_eq!(
+            lab2.store.get(hcrinf).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
 
@@ -13271,7 +13324,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  1ceae7214eccc32fe8f6b6134ec22afb85cd7e2d7a42d8aa7fb0112920505b10"),
+            text.contains("constant  ledger  4bbea8428644c09de79c28d441929157bb2872e753fdd15bc0dbda7cf533a3dd"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

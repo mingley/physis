@@ -159,10 +159,18 @@ pub fn rydberg() -> Qty<physis_core::SI<typenum::Z0, typenum::N1, typenum::Z0>> 
 
 /// Rydberg frequency cR∞ (Hz), CODATA 2018.
 ///
-/// This is the recommended centre in hertz, not `hcR∞`. The versioned
-/// ledger stores the one-sigma hull; this Qty is that centre.
+/// This is the recommended centre in hertz. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre.
 pub fn rydberg_frequency() -> Qty<Frequency> {
     Qty::new(3.289_841_960_250_8e15)
+}
+
+/// Rydberg energy equivalent hcR∞ (J), CODATA 2018.
+///
+/// This is the recommended centre in joules, not the eV conversion.
+/// The versioned ledger stores the one-sigma hull; this Qty is that centre.
+pub fn rydberg_energy_equivalent() -> Qty<Energy> {
+    joule(2.179_872_361_103_5e-18)
 }
 
 /// Bohr radius a₀ (m), CODATA 2018.
@@ -603,9 +611,29 @@ mod tests {
             physis_constants::lookup("c_Rinf").is_none(),
             "c_Rinf is not a ledger name; the live name is cRinf"
         );
+
+        let hcrinf = physis_constants::rydberg_energy_equivalent();
+        let hcrinf_centre = Ratio::new(21_798_723_611_035, 10i128.pow(31));
+        assert_eq!(
+            rydberg_energy_equivalent().value(),
+            hcrinf_centre.to_f64(),
+            "hcRinf Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("hcRinf").is_none(),
-            "Rydberg energy equivalent is a different recommended value and is not stored"
+            hcrinf.value.contains(Interval::point(hcrinf_centre)),
+            "hcRinf Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            hcrinf.value.lo, hcrinf.value.hi,
+            "ledger hcRinf stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("hc_Rinf").is_none(),
+            "hc_Rinf is not a ledger name; the live name is hcRinf"
+        );
+        assert!(
+            physis_constants::lookup("hcRinf_eV").is_none(),
+            "Rydberg energy equivalent in eV is a different recommended value and is not stored"
         );
 
         let a0_c = physis_constants::bohr_radius();
