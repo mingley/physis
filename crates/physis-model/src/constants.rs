@@ -160,6 +160,15 @@ pub fn muon_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
     Qty::new(-4.841_970_47e-3)
 }
 
+/// Muon magnetic moment to nuclear magneton ratio μ_μ/μ_N, CODATA 2018.
+///
+/// This is the recommended signed centre, not electron nuclear-magneton
+/// ratio and not the muon Bohr-magneton ratio. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre.
+pub fn muon_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
+    Qty::new(-8.890_597_03)
+}
+
 /// Solar standard gravitational parameter GM_☉ (IAU 2015 nominal), m³ s⁻².
 ///
 /// This is the IAU 2015 conversion ruler `(GM)_☉^N`, not a measured solar
@@ -1928,6 +1937,57 @@ mod tests {
             physis_constants::muon_magnetic_moment_to_bohr_magneton().hash,
             physis_constants::proton_mass().hash,
             "mu_mu_muB is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("mumu_muN").is_none(),
+            "mumu_muN is not a ledger name; the live name is mu_mu_muN"
+        );
+        let mu_mu_mu_n = physis_constants::muon_magnetic_moment_to_nuclear_magneton();
+        let mu_mu_mu_n_centre = Ratio::new(-889_059_703, 10i128.pow(8));
+        assert_eq!(
+            muon_magnetic_moment_to_nuclear_magneton().value(),
+            mu_mu_mu_n_centre.to_f64(),
+            "mu_mu_muN Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_mu_mu_n
+                .value
+                .contains(Interval::point(mu_mu_mu_n_centre)),
+            "mu_mu_muN Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_mu_mu_n.value.lo, mu_mu_mu_n.value.hi,
+            "ledger mu_mu_muN stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
+            physis_constants::electron_magnetic_moment_to_nuclear_magneton().hash,
+            "mu_mu_muN is not mu_e_muN"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
+            physis_constants::muon_magnetic_moment_to_bohr_magneton().hash,
+            "mu_mu_muN is not mu_mu_muB"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
+            physis_constants::muon_magnetic_moment().hash,
+            "mu_mu_muN is not mu_mu"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
+            physis_constants::electron_magnetic_moment().hash,
+            "mu_mu_muN is not mu_e"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_mu_muN is not mu0"
+        );
+        assert_ne!(
+            physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
+            physis_constants::proton_mass().hash,
+            "mu_mu_muN is not m_p"
         );
 
         let mp = physis_constants::proton_mass();
