@@ -22,6 +22,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron magnetic moment to Bohr magneton ratio is a one-sigma Interval.**
+  `physis-constants` versions `mu_e_muB` as the CODATA 2018 hull
+  `−1.00115965218128(18)` from JPCRD 50, 033105 table XXXI
+  (Electron, e-). This is not an SI defining Ratio, not the g-factor,
+  not the magnetic-moment anomaly, not the Thomson cross section, and
+  not P3N. `physis_model` `electron_magnetic_moment_to_bohr_magneton()`
+  Qty locksteps to the recommended signed centre inside the hull.
+  Adding `mu_e_muB` to LEDGER changes the ledger bundle pin. The `G`,
+  `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`,
+  `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, and `m_p` hashes are unchanged. Theories still evaluate with
+  `f64` Qty. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `mu_e_muB` hash
+  `5d4db81093e3f34e08d258ab214de2fb6649d8e7f07cd37c2f5f625a89b52926`;
+  node
+  `2297f4ce64d7c1bd8e9ebdfde769d13acfd03f4334913adcc49a57346b1bbcd8`;
+  ledger node
+  `93ef99c20238bcc776df972d42a184ef1a7cc0a3047f75c53220cd0f92e20112`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`,
+  `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`,
+  `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, and `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 electron magnetic moment is a one-sigma Interval.**
   `physis-constants` versions `mu_e` as the CODATA 2018 hull
   `−9.2847647043(28)×10^{-24}` J T⁻¹ from JPCRD 50, 033105 table XXXI

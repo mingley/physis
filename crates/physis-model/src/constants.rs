@@ -304,12 +304,21 @@ pub fn classical_electron_radius() -> Qty<Length> {
 
 /// Electron magnetic moment μ_e (J T⁻¹ = A m²), CODATA 2018.
 ///
-/// This is the recommended signed centre, not the Bohr-magneton ratio
-/// and not the Thomson cross section. The versioned ledger stores the
-/// one-sigma hull; this Qty is that centre.
+/// This is the recommended signed centre, not the Thomson cross
+/// section. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre.
 pub fn electron_magnetic_moment(
 ) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
     Qty::new(-9.284_764_704_3e-24)
+}
+
+/// Electron magnetic moment to Bohr magneton ratio μ_e/μ_B, CODATA 2018.
+///
+/// This is the recommended signed centre, not the g-factor and not the
+/// magnetic-moment anomaly. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre.
+pub fn electron_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
+    Qty::new(-1.001_159_652_181_28)
 }
 
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
@@ -1055,6 +1064,29 @@ mod tests {
         assert_ne!(
             mu_e.value.lo, mu_e.value.hi,
             "ledger mu_e stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("ae").is_none(),
+            "electron magnetic-moment anomaly is not stored"
+        );
+        assert!(
+            physis_constants::lookup("mue_muB").is_none(),
+            "mue_muB is not a ledger name; the live name is mu_e_muB"
+        );
+        let mu_e_mu_b = physis_constants::electron_magnetic_moment_to_bohr_magneton();
+        let mu_e_mu_b_centre = Ratio::new(-100_115_965_218_128, 10i128.pow(14));
+        assert_eq!(
+            electron_magnetic_moment_to_bohr_magneton().value(),
+            mu_e_mu_b_centre.to_f64(),
+            "mu_e_muB Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_e_mu_b.value.contains(Interval::point(mu_e_mu_b_centre)),
+            "mu_e_muB Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_e_mu_b.value.lo, mu_e_mu_b.value.hi,
+            "ledger mu_e_muB stays an Interval; the Qty is not that Interval"
         );
 
         let mp = physis_constants::proton_mass();
