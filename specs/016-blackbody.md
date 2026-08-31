@@ -31,14 +31,17 @@ restores Rayleigh–Jeans *physics* on the Planck object without renaming it.
 Bose occupation lives on the `planck` IR package (`mode planck-bose`).
 `add-wien` appends `mode wien` and is an IR mutation: truncated
 ⟨E⟩ = hν e^{−hν/kT} fails the infrared Rayleigh–Jeans correspondence.
-That is still `planck`, not a silent `quantum false` turn. `rayleigh-jeans`
-has no package. `quantum` still switches Bose occupation to classical `kT`.
+`add-zero-point` appends `mode zero-point` and is a second IR mutation:
+⟨E⟩ = hν/2 + Bose, the vacuum integral diverges as ν_max⁴, and the
+infrared still matches Rayleigh–Jeans. That is still `planck`, not a
+silent `quantum false` turn. `rayleigh-jeans` has no package. `quantum`
+still switches Bose occupation to classical `kT`.
 
 ## Knobs
 
 | knob | layer | effect |
 |---|---|---|
-| `quantum` | quantum | true: Planck; false: every mode has energy `kT`. Occupation topology is not this knob: `add-wien` is an IR mutation on `planck`. |
+| `quantum` | quantum | true: Planck; false: every mode has energy `kT`. Occupation topology is not this knob: `add-wien` is an IR mutation on `planck`. Zero-point energy is not this knob: `add-zero-point` is an IR mutation on `planck`. |
 | `temperature` | statistical | cavity temperature (K) |
 | `cutoff_hz` | effective | ultraviolet frequency cutoff (Hz) |
 
@@ -81,7 +84,7 @@ is a compile-fail contract in `physis-core`.
 ```
 physis experiment blackbody
 physis run planck
-physis hypothesize planck            # add-wien is IR, not set
+physis hypothesize planck            # add-wien and add-zero-point are IR, not set
 physis set planck quantum false      # ultraviolet catastrophe restored
 physis run rayleigh-jeans
 ```
@@ -96,6 +99,9 @@ physis run rayleigh-jeans
 - The `rj-ir-limit` correspondence is the statement that Planck contains
   Rayleigh–Jeans at low frequency; it is not a claim that classical theory is
   "approximately true in the UV."
+- Zero-point energy `hν/2` is an IR fork on `planck`, not QED vacuum energy
+  or a Lamb-shift calculation. The vacuum integral here is the cavity mode
+  sum with that extra piece, and it diverges as ν_max⁴.
 
 ## Non-goals (this increment)
 

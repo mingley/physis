@@ -160,7 +160,7 @@ cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape di
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
 cargo run -p physis -- hypothesize special-relativity  # add-binomial-gamma and add-minus-uv are IR, not set
 cargo run -p physis -- set special-relativity absolute_time true
-cargo run -p physis -- hypothesize planck              # add-wien is IR, not set
+cargo run -p physis -- hypothesize planck              # add-wien and add-zero-point are IR, not set
 cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
 cargo run -p physis -- run su5-gut          # SU(5): 3/8 at M_GUT; GQW misses 0.231 at M_Z
 cargo run -p physis -- hypothesize su5-gut  # add-missing-10 is IR, not set

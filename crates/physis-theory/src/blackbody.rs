@@ -20,7 +20,10 @@
 //! The Planck–Bose occupation lives on the IR package of `planck`.
 //! Wien's 1896 law (`add-wien`) is a package mutation, not the
 //! `quantum` knob: the infrared Rayleigh–Jeans correspondence fails
-//! on that fork. `quantum` still switches Bose occupation to
+//! on that fork. Zero-point energy (`add-zero-point`) is a second
+//! package mutation: ⟨E⟩ = hν/2 + Bose, the vacuum integral diverges
+//! as ν_max⁴, and the infrared still matches Rayleigh–Jeans. That is
+//! not classical `kT`. `quantum` still switches Bose occupation to
 //! classical `kT`. `rayleigh-jeans` has no package.
 //!
 //! A `quantum` knob on either object is the revolution as a mechanical turn:
@@ -80,6 +83,8 @@ const IR_MODE_X: f64 = 0.01;
 const MODE_PLANCK_BOSE: &str = "mode planck-bose";
 /// Wien 1896 occupation ⟨E⟩ = hν e^{−hν/kT}.
 const MODE_WIEN: &str = "mode wien";
+/// Zero-point occupation ⟨E⟩ = hν/2 + thermal.
+const MODE_ZERO_POINT: &str = "mode zero-point";
 
 fn rj_ir_domain() -> DomainOfValidity {
     DomainOfValidity::new(
@@ -90,27 +95,29 @@ fn rj_ir_domain() -> DomainOfValidity {
     )
 }
 
-fn parse_planck_mode(pkg: &TheoryPackage) -> Result<bool, String> {
+fn parse_planck_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut bose = false;
     let mut wien = false;
+    let mut zero_point = false;
     for eq in &pkg.equations {
         match eq.trim() {
             MODE_PLANCK_BOSE => bose = true,
             MODE_WIEN => wien = true,
+            MODE_ZERO_POINT => zero_point = true,
             _ => {}
         }
     }
     if !bose {
         return Err(format!("{} package has no Planck-Bose occupation", pkg.id));
     }
-    Ok(wien)
+    Ok((wien, zero_point))
 }
 
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "quantum",
         layer: LayerId::Quantum,
-        doc: "If true, cavity modes are Bose-occupied (Planck). If false, every mode has energy kT (Rayleigh–Jeans). Turning this off is the 19th-century theory, and it produces the ultraviolet catastrophe.",
+        doc: "If true, cavity modes are Bose-occupied (Planck). If false, every mode has energy kT (Rayleigh–Jeans). Turning this off is the 19th-century theory, and it produces the ultraviolet catastrophe. Wien occupation is not this knob: add-wien is an IR mutation. Zero-point energy is not this knob: add-zero-point is an IR mutation.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Bool,
     },
@@ -140,7 +147,10 @@ const SPECS: &[KnobSpec] = &[
 ///
 /// Bose occupation lives on the `planck` IR package. Truncated Wien
 /// occupation (`add-wien`) is a package mutation, not the `quantum`
-/// knob: the infrared Rayleigh–Jeans correspondence fails.
+/// knob: the infrared Rayleigh–Jeans correspondence fails. Zero-point
+/// energy (`add-zero-point`) is a second package mutation, not a knob:
+/// the vacuum integral diverges as ν_max⁴ while the infrared still
+/// matches Rayleigh–Jeans.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Blackbody {
     /// Lab id. Fixed at construction; not a knob.
@@ -151,6 +161,8 @@ pub struct Blackbody {
     cutoff_hz: f64,
     /// Whether the encoding uses Wien ⟨E⟩ = hν e^{−x} instead of Bose.
     wien: bool,
+    /// Whether each mode carries an extra hν/2 zero-point.
+    zero_point: bool,
 }
 
 impl Default for Blackbody {
@@ -168,6 +180,7 @@ impl Blackbody {
             temperature_k: DEFAULT_T_K,
             cutoff_hz: DEFAULT_CUTOFF_HZ,
             wien: false,
+            zero_point: false,
         }
     }
 
@@ -183,6 +196,7 @@ impl Blackbody {
             temperature_k: DEFAULT_T_K,
             cutoff_hz: DEFAULT_CUTOFF_HZ,
             wien: false,
+            zero_point: false,
         }
     }
 
@@ -195,11 +209,15 @@ impl Blackbody {
     }
 
     /// IR package for the Planck object. Equations are `mode planck-bose`
-    /// and, when forked, `mode wien`. `quantum` stays on the struct.
+    /// and, when forked, `mode wien` and/or `mode zero-point`. `quantum`
+    /// stays on the struct.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![MODE_PLANCK_BOSE.to_string()];
         if self.wien {
             equations.push(MODE_WIEN.to_string());
+        }
+        if self.zero_point {
+            equations.push(MODE_ZERO_POINT.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -224,15 +242,20 @@ impl Blackbody {
         if pkg.id != "planck" {
             return Err(format!("planck package id '{}' is not planck", pkg.id));
         }
-        let wien = parse_planck_mode(pkg)?;
+        let (wien, zero_point) = parse_planck_encoding(pkg)?;
         Ok(Self {
             wien,
+            zero_point,
             ..Self::planck()
         })
     }
 
     fn wien_equation() -> String {
         MODE_WIEN.to_string()
+    }
+
+    fn zero_point_equation() -> String {
+        MODE_ZERO_POINT.to_string()
     }
 
     fn mean_mode_energy(&self, nu: Qty<Frequency>) -> Qty<Energy> {
@@ -242,13 +265,19 @@ impl Blackbody {
         }
         let hnu: Qty<Energy> = planck_h() * nu;
         let x = hnu.value() / kt.value();
-        if self.wien {
-            Qty::new(hnu.value() * (-x).exp())
+        let thermal = if self.wien {
+            hnu.value() * (-x).exp()
         } else if x < 1.0e-10 {
-            kt
+            kt.value()
         } else {
-            Qty::new(hnu.value() / (x.exp() - 1.0))
-        }
+            hnu.value() / (x.exp() - 1.0)
+        };
+        let zp = if self.zero_point {
+            0.5 * hnu.value()
+        } else {
+            0.0
+        };
+        Qty::new(thermal + zp)
     }
 
     /// Spectral energy density u(ν) (J m⁻³ Hz⁻¹), typed.
@@ -268,12 +297,17 @@ impl Blackbody {
     }
 
     fn energy_density_to(&self, nu_max: f64) -> Qty<EnergyDensity> {
-        if self.wien_occupation() {
+        let thermal = if self.wien_occupation() {
             self.wien_u_to(nu_max)
         } else if self.quantum {
             self.planck_u_to(nu_max)
         } else {
             self.rayleigh_jeans_u_to(nu_max)
+        };
+        if self.quantum && self.zero_point {
+            Qty::new(thermal.value() + self.zero_point_u_to(nu_max).value())
+        } else {
+            thermal
         }
     }
 
@@ -300,6 +334,13 @@ impl Blackbody {
         let nu = hertz(nu_t);
         let nu4 = nu * nu * nu * nu;
         planck_h() * nu4 / (C * C * C) * (8.0 * PI * integral)
+    }
+
+    /// Vacuum piece ∫ (8πν²/c³)(hν/2) dν = (π h / c³) ν_max⁴.
+    fn zero_point_u_to(&self, nu_max: f64) -> Qty<EnergyDensity> {
+        let nu = hertz(nu_max);
+        let nu4 = nu * nu * nu * nu;
+        planck_h() * nu4 / (C * C * C) * PI
     }
 
     /// Full Planck energy density (improper integral, independent of cutoff).
@@ -481,7 +522,9 @@ impl Theory for Blackbody {
         self.id
     }
     fn name(&self) -> &'static str {
-        if self.wien_occupation() {
+        if self.zero_point && self.quantum {
+            "Zero-point cavity radiation"
+        } else if self.wien_occupation() {
             "Wien's law (cavity radiation)"
         } else if self.quantum {
             "Planck's law (cavity radiation)"
@@ -494,12 +537,16 @@ impl Theory for Blackbody {
          modes (Rayleigh–Jeans) produces the ultraviolet catastrophe and the \
          wrong T-dependence; Planck's Bose occupation yields finite u = a T⁴ \
          and Wien's peak. The quantum knob is the 1900 revolution, mechanized. \
-         Wien 1896 occupation is an IR mutation on planck, not that knob."
+         Wien 1896 occupation is an IR mutation on planck, not that knob. \
+         Zero-point energy is a second IR mutation: the vacuum integral \
+         diverges as ν_max⁴ while the infrared still matches Rayleigh–Jeans."
     }
     fn world(&self) -> Option<World> {
         Some(cavity_world(format!(
             "{} cavity at T = {} K, ν_max = {:.3e} Hz",
-            if self.wien_occupation() {
+            if self.zero_point && self.quantum {
+                "zero-point"
+            } else if self.wien_occupation() {
                 "Wien"
             } else if self.quantum {
                 "Planck"
@@ -558,7 +605,9 @@ impl Theory for Blackbody {
                     )
                     .with_evidence([format!("<E>/(kT) = {ratio:.4} at hν = {UV_MODE_X} kT")])
                 } else {
-                    let reason = if self.wien_occupation() {
+                    let reason = if self.zero_point && self.quantum {
+                        "UV modes carry hν/2: <E> is not kT"
+                    } else if self.wien_occupation() {
                         "UV modes freeze out: <E> = hν e^{-hν/kT} ≪ kT"
                     } else {
                         "UV modes freeze out: <E> = hν/(e^{hν/kT}−1) ≪ kT"
@@ -572,7 +621,14 @@ impl Theory for Blackbody {
                 let u1 = self.energy_density_to(self.cutoff_hz);
                 let u2 = self.energy_density_to(self.cutoff_hz * 2.0);
                 let doubling = u2.value() / u1.value();
-                if self.wien_occupation() {
+                if self.zero_point && self.quantum {
+                    let zp = self.zero_point_u_to(self.cutoff_hz);
+                    Verdict::fails(claim, "zero-point: the vacuum integral diverges as ν_max⁴")
+                        .with_evidence([format!(
+                            "u(2ν_max)/u(ν_max) = {doubling:.3}; u_zp = {:.4e} J/m³ at ν_max",
+                            zp.value()
+                        )])
+                } else if self.wien_occupation() {
                     let full = self.full_wien_u();
                     let nu_t = self.thermal_frequency();
                     let nu4 = nu_t * nu_t * nu_t * nu_t;
@@ -632,7 +688,18 @@ impl Theory for Blackbody {
                 }
             }
             STEFAN_BOLTZMANN => {
-                if self.wien_occupation() {
+                if self.zero_point && self.quantum {
+                    let u_t = self.energy_density_to(self.cutoff_hz);
+                    let mut hot = self.clone();
+                    hot.temperature_k *= 2.0;
+                    let u_2t = hot.energy_density_to(self.cutoff_hz);
+                    let ratio = u_2t.value() / u_t.value();
+                    Verdict::fails(claim, "zero-point: cutoff energy is not T⁴").with_evidence([
+                        format!(
+                            "u(2T)/u(T) = {ratio:.3} at fixed ν_max (Stefan–Boltzmann requires 16)"
+                        ),
+                    ])
+                } else if self.wien_occupation() {
                     let u_t = self.full_wien_u();
                     let mut hot = self.clone();
                     hot.temperature_k *= 2.0;
@@ -682,7 +749,34 @@ impl Theory for Blackbody {
                 }
             }
             WIEN_DISPLACEMENT => {
-                if self.wien_occupation() {
+                if self.zero_point && self.quantum {
+                    match self.wien_peak_lambda_m() {
+                        None => {
+                            Verdict::fails(claim, "zero-point: sampled u(λ) has no interior peak")
+                        }
+                        Some(lambda) => {
+                            let product = lambda * self.temperature_k;
+                            let analytic = wien_constant().value();
+                            if (product - analytic).abs() / analytic < 0.02 {
+                                Verdict::holds(
+                                    claim,
+                                    "zero-point still has a spectral peak at the Planck Wien constant",
+                                )
+                                .with_evidence([format!(
+                                    "λ_max T = {product:.6e} m·K (analytic hc/(k x) = {analytic:.6e})"
+                                )])
+                            } else {
+                                Verdict::fails(
+                                    claim,
+                                    "zero-point: peak is not the Planck Wien constant",
+                                )
+                                .with_evidence([format!(
+                                    "λ_max T = {product:.6e}, analytic {analytic:.6e}"
+                                )])
+                            }
+                        }
+                    }
+                } else if self.wien_occupation() {
                     match self.wien_peak_lambda_m() {
                         None => Verdict::fails(
                             claim,
@@ -766,28 +860,45 @@ impl Theory for Blackbody {
         let parsed = Self::from_package(pkg)?;
         let mut fork = self.clone();
         fork.wien = parsed.wien;
+        fork.zero_point = parsed.zero_point;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
-        if self.id != "planck" || self.wien {
+        if self.id != "planck" {
             return Vec::new();
         }
         let src = render_package(&self.package());
         let Ok(pkg) = parse_package(&src) else {
             return Vec::new();
         };
-        let mutated = apply_mutation(
-            &pkg,
-            &PackageMutation::AppendEquation(Self::wien_equation()),
-        );
-        if let Ok(parsed) = Self::from_package(&mutated) {
-            if parsed.wien {
-                let mut fork = self.clone();
-                fork.wien = true;
-                return vec![("add-wien".into(), Box::new(fork))];
+        let mut out: Vec<(String, Box<dyn Theory>)> = Vec::new();
+        if !self.wien {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::wien_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.wien {
+                    let mut fork = self.clone();
+                    fork.wien = true;
+                    out.push(("add-wien".into(), Box::new(fork)));
+                }
             }
         }
-        Vec::new()
+        if !self.zero_point {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::zero_point_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.zero_point {
+                    let mut fork = self.clone();
+                    fork.zero_point = true;
+                    out.push(("add-zero-point".into(), Box::new(fork)));
+                }
+            }
+        }
+        out
     }
 }
 
@@ -810,6 +921,7 @@ pub fn blackbody() -> ExperimentReport {
             "`thermo.rj-ir-limit` is the correspondence: Planck *contains* Rayleigh–Jeans at hν ≪ kT.".into(),
             "`set planck quantum false` restores the catastrophe — the 1900 revolution as a knob turn.".into(),
             "`add-wien` is an IR mutation on `planck`: truncated Wien occupation fails the infrared Rayleigh–Jeans correspondence.".into(),
+            "`add-zero-point` is a second IR mutation on `planck`: hν/2 vacuum energy diverges as ν_max⁴ while the infrared still matches Rayleigh–Jeans.".into(),
         ],
         &blackbody_rows(),
         vec![
@@ -1009,6 +1121,10 @@ mod tests {
         );
         let parsed = Blackbody::from_package(&mutated).unwrap();
         assert!(parsed.wien);
+        assert!(
+            !parsed.zero_point,
+            "Wien mutation must not install zero-point"
+        );
         let mut fork = t.clone();
         fork.wien = true;
         assert_eq!(fork.id(), "planck");
@@ -1069,6 +1185,12 @@ mod tests {
             fork_probes.iter().all(|(label, _)| label != "add-wien"),
             "Wien fork must not re-offer add-wien"
         );
+        assert!(
+            fork_probes
+                .iter()
+                .any(|(label, _)| label == "add-zero-point"),
+            "Wien fork must still offer add-zero-point"
+        );
         let live = Blackbody::planck();
         let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
         let parsed = parse_package(&canonical).unwrap();
@@ -1120,6 +1242,211 @@ mod tests {
                 .iter()
                 .all(|(label, _)| label != "add-wien"),
             "turing-machine must not grow add-wien"
+        );
+    }
+
+    #[test]
+    fn zero_point_occupation_is_ir_not_a_knob() {
+        let t = Blackbody::planck();
+        assert!(
+            Blackbody::planck()
+                .set("zero_point", KnobValue::Bool(true))
+                .is_err(),
+            "zero-point energy is an IR mutation, not a knob"
+        );
+        assert!(Blackbody::planck()
+            .set("vacuum", KnobValue::Bool(true))
+            .is_err());
+        assert!(
+            Blackbody::planck()
+                .set("add-zero-point", KnobValue::Bool(true))
+                .is_err(),
+            "add-zero-point is not a knob"
+        );
+        assert_eq!(
+            t.get("quantum").unwrap(),
+            KnobValue::Bool(true),
+            "quantum stays a knob"
+        );
+        let src = render_package(&t.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay mode planck-bose"
+        );
+        assert_eq!(pkg.equations[0], MODE_PLANCK_BOSE);
+        assert_eq!(
+            Blackbody::from_package(&pkg).unwrap(),
+            t,
+            "IR round-trip must preserve Planck-Bose occupation"
+        );
+        let mutated = apply_mutation(
+            &pkg,
+            &PackageMutation::AppendEquation(Blackbody::zero_point_equation()),
+        );
+        let parsed = Blackbody::from_package(&mutated).unwrap();
+        assert!(parsed.zero_point);
+        assert!(
+            !parsed.wien,
+            "zero-point mutation must not install Wien occupation"
+        );
+        let mut fork = t.clone();
+        fork.zero_point = true;
+        assert_eq!(fork.id(), "planck");
+        assert_eq!(verdict(&fork, UV_FINITE), VerdictKind::Fails);
+        assert_eq!(verdict(&fork, STEFAN_BOLTZMANN), VerdictKind::Fails);
+        assert_eq!(
+            verdict(&fork, WIEN_DISPLACEMENT),
+            VerdictKind::Fails,
+            "zero-point vacuum must steal the interior peak"
+        );
+        assert_eq!(
+            verdict(&fork, RJ_IR_LIMIT),
+            VerdictKind::Holds,
+            "zero-point is not the Wien infrared fork"
+        );
+        assert_eq!(verdict(&fork, MODE_EQUIPARTITION), VerdictKind::Fails);
+        assert_eq!(verdict(&t, UV_FINITE), VerdictKind::Holds);
+        let uv = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == UV_FINITE)
+            .unwrap();
+        let v = fork.evaluate(&uv);
+        assert!(
+            !v.summary.contains("quantum")
+                && !v.summary.contains("Rayleigh")
+                && !v.summary.contains("catastrophe"),
+            "zero-point is not the quantum knob: {}",
+            v.summary
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("u(2ν_max)/u(ν_max)") || e.contains("u_zp")),
+            "got {:?}",
+            v.evidence
+        );
+        let doubling = {
+            let u1 = fork.energy_density_to(fork.cutoff_hz).value();
+            let u2 = fork.energy_density_to(fork.cutoff_hz * 2.0).value();
+            u2 / u1
+        };
+        assert!(
+            (doubling - 16.0).abs() < 1.0 || doubling > 8.5,
+            "zero-point doubling must be ν⁴ (16), not RJ ν³ (8) or a unit flag: {doubling}"
+        );
+        let zp = fork.zero_point_u_to(fork.cutoff_hz).value();
+        let bose = fork.planck_u_to(fork.cutoff_hz).value();
+        assert!(
+            zp / bose > 10.0,
+            "vacuum piece must dominate the Bose integral, not a unit flag: zp={zp} bose={bose}"
+        );
+        let ir = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == RJ_IR_LIMIT)
+            .unwrap();
+        let ir_v = fork.evaluate(&ir);
+        assert_eq!(ir_v.kind, VerdictKind::Holds);
+        assert!(
+            ir_v.evidence.iter().any(|e| e.contains("|u − u_RJ|/u_RJ")),
+            "got {:?}",
+            ir_v.evidence
+        );
+        let mut classical = Blackbody::planck();
+        classical.set("quantum", KnobValue::Bool(false)).unwrap();
+        assert_eq!(verdict(&classical, UV_FINITE), VerdictKind::Fails);
+        assert_eq!(verdict(&classical, MODE_EQUIPARTITION), VerdictKind::Holds);
+        assert_eq!(verdict(&fork, MODE_EQUIPARTITION), VerdictKind::Fails);
+        let rj_u1 = classical.energy_density_to(classical.cutoff_hz).value();
+        let rj_u2 = classical
+            .energy_density_to(classical.cutoff_hz * 2.0)
+            .value();
+        assert!(
+            (rj_u2 / rj_u1 - 8.0).abs() < 1e-6,
+            "quantum=false stays ν³: {}",
+            rj_u2 / rj_u1
+        );
+        let probes = Blackbody::planck().structural_mutations();
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-zero-point"),
+            "live Planck must offer add-zero-point: {:?}",
+            probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+        );
+        assert!(
+            probes.iter().any(|(label, _)| label == "add-wien"),
+            "live Planck must still offer add-wien"
+        );
+        let probe = probes
+            .iter()
+            .find(|(label, _)| label == "add-zero-point")
+            .expect("add-zero-point");
+        assert_eq!(verdict(probe.1.as_ref(), UV_FINITE), VerdictKind::Fails);
+        assert_eq!(verdict(probe.1.as_ref(), RJ_IR_LIMIT), VerdictKind::Holds);
+        let fork_probes = fork.structural_mutations();
+        assert!(
+            fork_probes
+                .iter()
+                .all(|(label, _)| label != "add-zero-point"),
+            "zero-point fork must not re-offer add-zero-point"
+        );
+        assert!(
+            fork_probes.iter().any(|(label, _)| label == "add-wien"),
+            "zero-point fork must still offer add-wien"
+        );
+        let live = Blackbody::planck();
+        let canonical = physis_ir::certify_round_trip(&live.ir_package().unwrap()).unwrap();
+        let parsed_live = parse_package(&canonical).unwrap();
+        let mut abs = Blackbody::planck();
+        abs.set("quantum", KnobValue::Bool(false)).unwrap();
+        let rebuilt = abs.reparse_package(&parsed_live).unwrap();
+        assert_eq!(
+            rebuilt.get("quantum").unwrap(),
+            KnobValue::Bool(false),
+            "reparse must overlay zero-point IR onto live knobs"
+        );
+        assert_eq!(
+            verdict(rebuilt.as_ref(), UV_FINITE),
+            VerdictKind::Fails,
+            "quantum still Fails UV-finite on the live Bose encoding"
+        );
+        let live_rebuilt = live.reparse_package(&parsed_live).unwrap();
+        assert_eq!(
+            verdict(live_rebuilt.as_ref(), UV_FINITE),
+            VerdictKind::Holds
+        );
+        let cell = live
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == RJ_IR_LIMIT)
+            .unwrap();
+        assert!(
+            !cell.domain().is_encoding_wide(),
+            "IR correspondence must keep the 0.01 kT domain: {:?}",
+            cell.domain()
+        );
+        assert!(
+            Blackbody::rayleigh_jeans()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-zero-point"),
+            "rayleigh-jeans must not grow add-zero-point"
+        );
+        assert!(
+            crate::relativity::GeneralRelativity::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-zero-point"),
+            "general-relativity must not grow add-zero-point"
+        );
+        assert!(
+            crate::special_relativity::SpecialRelativity::default()
+                .structural_mutations()
+                .iter()
+                .all(|(label, _)| label != "add-zero-point"),
+            "special-relativity must not grow add-zero-point"
         );
     }
 }

@@ -6166,6 +6166,10 @@ mod tests {
             "add-wien should flip only the IR correspondence: {wien_block}"
         );
         assert!(
+            text.contains("add-zero-point"),
+            "add-zero-point must still be an IR fork: {text}"
+        );
+        assert!(
             text.contains("quantum"),
             "quantum must still be a knob probe: {text}"
         );
@@ -6213,6 +6217,132 @@ mod tests {
         assert!(
             !pb.contains("not yet a machine-checked regime"),
             "IR correspondence must not be encoding-wide: {pb}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_planck_zero_point_is_ir_not_a_knob() {
+        let mut lab = Lab::standard();
+        let journal_len = lab.journal().len();
+        for knob in ["zero_point", "vacuum", "add-zero-point"] {
+            let blocked = lab.exec(Command::Set {
+                theory: "planck".into(),
+                knob: knob.into(),
+                value: "true".into(),
+            });
+            assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+            assert!(
+                blocked.text().contains("unknown knob") || blocked.text().contains(knob),
+                "{}",
+                blocked.text()
+            );
+        }
+
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("planck".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("ir package mutations are not knobs"),
+            "{text}"
+        );
+        assert!(
+            text.contains("add-zero-point") && text.contains("ir structural"),
+            "{text}"
+        );
+        let marker = "add-zero-point: package → add-zero-point";
+        let start = text.find(marker).expect("add-zero-point hit");
+        let rest = &text[start..];
+        let end = rest[marker.len()..]
+            .find("\n  planck  ")
+            .map(|i| marker.len() + i)
+            .unwrap_or(rest.len());
+        let zp_block = &rest[..end];
+        assert!(
+            zp_block.contains("thermo.uv-finite") && zp_block.contains("holds → fails"),
+            "add-zero-point must flip UV-finite holds to fails: {zp_block}"
+        );
+        assert!(
+            zp_block.contains("thermo.stefan-boltzmann") && zp_block.contains("holds → fails"),
+            "add-zero-point must flip Stefan-Boltzmann holds to fails: {zp_block}"
+        );
+        assert!(
+            zp_block.contains("thermo.wien-displacement") && zp_block.contains("holds → fails"),
+            "add-zero-point must flip Wien displacement holds to fails: {zp_block}"
+        );
+        assert!(
+            !zp_block.contains("thermo.rj-ir-limit"),
+            "add-zero-point is not the Wien infrared fork: {zp_block}"
+        );
+        assert!(
+            !zp_block.contains("thermo.mode-equipartition"),
+            "add-zero-point is not the quantum equipartition fork: {zp_block}"
+        );
+        assert!(
+            zp_block.matches("holds → fails").count() == 3,
+            "add-zero-point should flip UV, Stefan, and Wien: {zp_block}"
+        );
+        assert!(
+            text.contains("add-wien"),
+            "add-wien must still be an IR fork: {text}"
+        );
+        assert!(
+            text.contains("quantum"),
+            "quantum must still be a knob probe: {text}"
+        );
+        assert!(!text.contains("theorem"), "{text}");
+        assert!(!text.contains("receipt"), "{text}");
+        assert_eq!(lab.journal().len(), journal_len);
+        let live = lab.theory("planck").unwrap();
+        assert!(
+            live.evaluate_all()
+                .iter()
+                .any(|(c, v)| { c.id_str() == "thermo.uv-finite" && v.kind == VerdictKind::Holds }),
+            "IR mutant must not be installed"
+        );
+        assert_eq!(
+            live.get("quantum").unwrap().display(),
+            "true",
+            "hypothesize must restore knobs"
+        );
+        let cat = lab.exec(Command::Set {
+            theory: "planck".into(),
+            knob: "quantum".into(),
+            value: "false".into(),
+        });
+        assert_eq!(cat.exit_code(), 0, "{}", cat.text());
+        assert!(
+            cat.text().contains("thermo.uv-finite") && cat.text().contains("holds → fails"),
+            "quantum still restores the catastrophe: {}",
+            cat.text()
+        );
+        assert!(
+            cat.text().contains("thermo.mode-equipartition")
+                && cat.text().contains("fails → holds"),
+            "quantum still restores equipartition: {}",
+            cat.text()
+        );
+        let _ = lab.exec(Command::Set {
+            theory: "planck".into(),
+            knob: "quantum".into(),
+            value: "true".into(),
+        });
+        let why = lab
+            .exec(Command::Why {
+                claim: "thermo.uv-finite".into(),
+            })
+            .text()
+            .to_string();
+        let pb = why_theory_block(&why, "planck");
+        assert!(
+            pb.contains("holds") || pb.contains("finite"),
+            "live Planck UV-finite must still hold: {pb}"
+        );
+        assert!(
+            !pb.contains("theory "),
+            "why none-lines must not split why_theory_block: {pb}"
         );
     }
 
@@ -11080,6 +11210,7 @@ mod tests {
             .text()
             .to_string();
         assert!(hypo_planck.contains("add-wien"), "{hypo_planck}");
+        assert!(hypo_planck.contains("add-zero-point"), "{hypo_planck}");
         let planck_again = lab
             .exec(Command::Encode {
                 theory: "planck".into(),

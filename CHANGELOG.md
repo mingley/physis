@@ -32,6 +32,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Computed theorems
 
+- **Planck zero-point vacuum is an IR mutation**
+  (`planck`, `add-zero-point`). Planck–Bose is still the live encoding
+  (`mode planck-bose`); appending `mode zero-point` uses
+  ⟨E⟩ = hν/2 + Bose and flips `thermo.uv-finite`,
+  `thermo.stefan-boltzmann`, and `thermo.wien-displacement` holds to
+  fails. The vacuum integral diverges as ν_max⁴ (doubling ≈ 16, not
+  Rayleigh–Jeans ν³). The infrared still matches Rayleigh–Jeans at
+  hν = 0.01 kT. Equipartition still fails: at hν = 8 kT the ratio is
+  ⟨E⟩/kT ≈ 4 from the zero-point piece, not freeze-out ≪ kT. That is
+  not a knob and not `quantum false`. Truncated Wien occupation remains
+  a separate IR fork (`add-wien`) that flips only the infrared
+  correspondence. `quantum` stays a knob and still restores the
+  ultraviolet catastrophe and equipartition. IR correspondence keeps
+  the catalog `hν = 0.01 kT` domain. Mutants stay `planck`; they are
+  not a silent `rayleigh-jeans` install. `rayleigh-jeans` has no
+  package. Mutants are not installed, not journaled, and not Canonical
+  or P4. Catalog d² hash unchanged. Unique-vacuum graph id unchanged.
+  P3N count stays 4. Verified: IR round-trip; set zero_point is
+  unknown; hypothesize planck; live Bose restored; encode pin
+  `7f7e69662ab0960948a1dc7c965078eddda2687e31ea7eebfdc2ab93aa69807b`.
+
 - **SR minus-uv composition is an IR mutation**
   (`special-relativity`, `add-minus-uv`). Exact Lorentz is still the
   live encoding (`boost lorentz`); appending `compose minus-uv` uses
