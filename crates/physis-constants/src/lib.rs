@@ -24,7 +24,10 @@
 //! from the same table: a measured hull, not an SI defining Ratio.
 //! CODATA 2018 Bohr radius `a₀` is a one-sigma [`Interval`]
 //! `5.29177210903(80)×10^{-11}` m from the same table: a measured hull,
-//! not an SI defining Ratio, and not the Hartree energy. CODATA 2018 proton mass `m_p` is a
+//! not an SI defining Ratio. CODATA 2018 Hartree energy `E_h` is a
+//! one-sigma [`Interval`] `4.3597447222071(85)×10^{-18}` J from the
+//! same table: a measured hull, not an SI defining Ratio, and not the
+//! eV conversion. CODATA 2018 proton mass `m_p` is a
 //! one-sigma [`Interval`] `1.67262192369(51)×10^{-27}` kg (JPCRD table
 //! XXXI, Proton, p): a measured hull, not an SI defining Ratio.
 //! Electron mass is not stored: `10^{42}` overflows `i128`. The IAU 2012 astronomical unit is
@@ -249,6 +252,10 @@ fn codata_2018_bohr_source() -> SourceRecord {
     codata_2018_jpcrd("ATOMIC AND NUCLEAR", "a0 = 5.29177210903(80)e-11")
 }
 
+fn codata_2018_hartree_source() -> SourceRecord {
+    codata_2018_jpcrd("ATOMIC AND NUCLEAR", "Eh = 4.3597447222071(85)e-18")
+}
+
 fn codata_2018_proton_mass_source() -> SourceRecord {
     codata_2018_jpcrd("Proton, p", "mp = 1.67262192369(51)e-27")
 }
@@ -438,6 +445,31 @@ pub fn bohr_radius() -> Constant<Interval> {
     )
 }
 
+/// CODATA 2018 one-sigma hull of 4.3597447222071(85)×10⁻¹⁸ J.
+fn codata_2018_hartree_interval() -> Interval {
+    let scale = 10i128.pow(31);
+    let mu = 43_597_447_222_071;
+    let sigma = 85;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Hartree energy E_h, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in joules, not an SI defining Ratio,
+/// not the eV conversion, and not P3N. It is a different recommended
+/// value from a₀; the algebraic relations `E_h = e²/(4πε₀ a₀) = 2 h c R∞`
+/// are not a certificate that the stored centres multiply. Theories
+/// still use `physis_model` `f64` Qty.
+pub fn hartree_energy() -> Constant<Interval> {
+    Constant::new(
+        "Eh",
+        codata_2018_hartree_interval(),
+        "J",
+        codata_2018_hartree_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
 /// CODATA 2018 one-sigma hull of 1.67262192369(51)×10⁻²⁷ kg.
 fn codata_2018_proton_mass_interval() -> Interval {
     let scale = 10i128.pow(38);
@@ -623,6 +655,7 @@ pub const LEDGER: &[&str] = &[
     "inv_alpha",
     "Rinf",
     "a0",
+    "Eh",
     "m_p",
     "au",
     "eV",
@@ -664,6 +697,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "inv_alpha" => Some(listing(inverse_fine_structure_constant(), "interval")),
         "Rinf" => Some(listing(rydberg_constant(), "interval")),
         "a0" => Some(listing(bohr_radius(), "interval")),
+        "Eh" => Some(listing(hartree_energy(), "interval")),
         "m_p" => Some(listing(proton_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
@@ -1199,7 +1233,7 @@ mod tests {
         assert!(lookup("alpha-inv").is_none());
         assert!(lookup("alpha_inv").is_none());
         assert!(lookup("inverse-alpha").is_none());
-        assert!(lookup("Eh").is_none());
+        assert!(lookup("E_h").is_none());
     }
 
     #[test]
@@ -1293,7 +1327,7 @@ mod tests {
         assert!(lookup("R_inf").is_none());
         assert!(lookup("Rydberg").is_none());
         assert!(lookup("cRinf").is_none());
-        assert!(lookup("Eh").is_none());
+        assert!(lookup("E_h").is_none());
     }
 
     #[test]
@@ -1388,7 +1422,112 @@ mod tests {
         assert!(lookup("a_0").is_none());
         assert!(lookup("Bohr").is_none());
         assert!(lookup("bohr").is_none());
-        assert!(lookup("Eh").is_none());
+        assert!(lookup("E_h").is_none());
+    }
+
+    #[test]
+    fn codata_2018_hartree_energy_is_a_one_sigma_interval() {
+        let eh = hartree_energy();
+        let scale = 10i128.pow(31);
+        let lo = Ratio::new(43_597_447_221_986, scale);
+        let hi = Ratio::new(43_597_447_222_156, scale);
+        let centre = Ratio::new(43_597_447_222_071, scale);
+        assert_eq!(eh.name, "Eh");
+        assert_eq!(eh.unit, "J");
+        assert_eq!(eh.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(eh.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            eh.provenance.locator.section.as_deref(),
+            Some("ATOMIC AND NUCLEAR")
+        );
+        assert_eq!(
+            eh.provenance.locator.dataset_range.as_deref(),
+            Some("Eh = 4.3597447222071(85)e-18")
+        );
+        assert_eq!(eh.value, Interval::new(lo, hi));
+        assert_ne!(eh.value.lo, eh.value.hi, "Eh is measured, not SI-exact");
+        assert!(eh.value.contains(Interval::point(centre)));
+        assert!(!eh
+            .value
+            .contains(Interval::point(Ratio::new(43_597_000_000_000, scale))));
+        assert_eq!(eh.hash, hartree_energy().hash);
+        assert_eq!(
+            eh.hash,
+            Constant::new(
+                "Eh",
+                codata_2018_hartree_interval(),
+                "J",
+                codata_2018_hartree_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(eh.hash, bohr_radius().hash, "Eh is not a0");
+        assert_ne!(eh.hash, rydberg_constant().hash, "Eh is not Rinf");
+        assert_ne!(eh.hash, newtonian_g().hash, "Eh is not G");
+        assert_ne!(
+            eh.provenance.source_hash,
+            bohr_radius().provenance.source_hash,
+            "Eh range is not the a0 range"
+        );
+        assert_eq!(
+            bohr_radius().hash.to_hex(),
+            "5d5098fcd983d3db221e4b4047e73de5061985c31a91ccdf12cd122b620eaf29",
+            "a0 hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            rydberg_constant().hash.to_hex(),
+            "fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090",
+            "Rinf hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            inverse_fine_structure_constant().hash.to_hex(),
+            "4b7050d77da09c5322877eaf83e94ebba7b84c99bad8ba3713b0e5fe91128482",
+            "inv_alpha hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            fine_structure_constant().hash.to_hex(),
+            "cef64589acdbd1ed4cb5f5f631658978c01477248f334b1d3563e57314644b38",
+            "alpha hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            vacuum_impedance().hash.to_hex(),
+            "6f72c1c5833dc722ac6fb5223f982879499ff412157c6e6c9851d77088991316",
+            "Z0 hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            vacuum_permittivity().hash.to_hex(),
+            "fadaf2a47a8161ba2727a4c2ff6b842f7c9e6add2edd67cd5496a7a753f22d80",
+            "epsilon0 hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            vacuum_permeability().hash.to_hex(),
+            "fa1264a6ce514520c9c2d9131fee2c71cacd4ce5fe615ea4dd424fd23de35cd7",
+            "mu0 hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when Eh is added"
+        );
+        assert_eq!(
+            eh.hash.to_hex(),
+            "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a"
+        );
+        assert!(eh.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(31).is_some(),
+            "Eh = 4.3597447222071e-18 is 43597447222071/10^31; that denominator fits i128"
+        );
+        assert!(lookup("E_h").is_none());
+        assert!(lookup("hartree").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("m_e").is_none());
     }
 
     #[test]
@@ -1663,7 +1802,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 21);
+        assert_eq!(LEDGER.len(), 22);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -1718,6 +1857,11 @@ mod tests {
             lookup("a0").unwrap().hash.to_hex(),
             "5d5098fcd983d3db221e4b4047e73de5061985c31a91ccdf12cd122b620eaf29"
         );
+        assert_eq!(lookup("Eh").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("Eh").unwrap().hash.to_hex(),
+            "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a"
+        );
         assert_eq!(lookup("m_p").unwrap().kind, "interval");
         assert_eq!(
             lookup("m_p").unwrap().hash.to_hex(),
@@ -1765,7 +1909,9 @@ mod tests {
         assert!(lookup("cRinf").is_none());
         assert!(lookup("a_0").is_none());
         assert!(lookup("Bohr").is_none());
-        assert!(lookup("Eh").is_none());
+        assert!(lookup("E_h").is_none());
+        assert!(lookup("hartree").is_none());
+        assert!(lookup("Eh_eV").is_none());
         assert!(lookup("solar-gm").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());
     }

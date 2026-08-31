@@ -22,6 +22,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Hartree energy is a one-sigma Interval.**
+  `physis-constants` versions `Eh` as the CODATA 2018 hull
+  `4.3597447222071(85)×10^{-18}` J from JPCRD 50, 033105 table XXXI
+  (ATOMIC AND NUCLEAR). This is not an SI defining Ratio, not the eV
+  conversion, and not P3N. `physis_model` `hartree_energy()` Qty
+  locksteps to the recommended centre inside the hull. Adding `Eh` to
+  LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `Z0`, `alpha`, `inv_alpha`, `Rinf`, `a0`, and `m_p` hashes are
+  unchanged. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: `Eh`
+  hash
+  `c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a`;
+  node
+  `84818158c407563a9a514c8eedc85ee7303b0d96f09f09610bda6684582cc82e`;
+  ledger node
+  `8abfcf2eb2430a79300861a147f32f87bc0f42479165397b7ab13ef0b7ecfb70`.
+  `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `Rinf`, `a0`, and
+  `m_p` hashes and nodes unchanged.
+
 - **CODATA 2018 Bohr radius is a one-sigma Interval.**
   `physis-constants` versions `a0` as the CODATA 2018 hull
   `5.29177210903(80)×10^{-11}` m from JPCRD 50, 033105 table XXXI

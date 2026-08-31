@@ -10,7 +10,7 @@ use physis_core::dim::{
     Action, Dimensionless, Energy, EnergyDensity, Frequency, HeatCapacity, Length,
     LuminosityDensity, Mass, Power, RadiationConstant, StefanBoltzmann, Time, Velocity,
 };
-use physis_core::qty::{kg, meters, seconds, Qty};
+use physis_core::qty::{joule, kg, meters, seconds, Qty};
 
 /// Speed of light in vacuum (exact, SI).
 pub const C: Qty<Velocity> = Qty::new(299_792_458.0);
@@ -162,6 +162,14 @@ pub fn rydberg() -> Qty<physis_core::SI<typenum::Z0, typenum::N1, typenum::Z0>> 
 /// ledger stores the one-sigma hull; this Qty is that centre.
 pub fn bohr_radius() -> Qty<Length> {
     meters(5.291_772_109_03e-11)
+}
+
+/// Hartree energy E_h (J), CODATA 2018.
+///
+/// This is the recommended centre in joules, not the eV conversion.
+/// The versioned ledger stores the one-sigma hull; this Qty is that centre.
+pub fn hartree_energy() -> Qty<Energy> {
+    joule(4.359_744_722_207_1e-18)
 }
 
 /// Strong coupling α_s at the Z mass (dimensionless), PDG 2022.
@@ -587,8 +595,32 @@ mod tests {
             "a_0 is not a ledger name; the live name is a0"
         );
         assert!(
-            physis_constants::lookup("Eh").is_none(),
-            "Hartree energy is a different recommended value and is not stored"
+            physis_constants::lookup("E_h").is_none(),
+            "E_h is not a ledger name; the live name is Eh"
+        );
+
+        let eh_c = physis_constants::hartree_energy();
+        let eh_centre = Ratio::new(43_597_447_222_071, 10i128.pow(31));
+        assert_eq!(
+            hartree_energy().value(),
+            eh_centre.to_f64(),
+            "Eh Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            eh_c.value.contains(Interval::point(eh_centre)),
+            "Eh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            eh_c.value.lo, eh_c.value.hi,
+            "ledger Eh stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            physis_constants::lookup("hartree").is_none(),
+            "hartree is not a ledger name; the live name is Eh"
+        );
+        assert!(
+            physis_constants::lookup("Eh_eV").is_none(),
+            "Hartree energy in eV is a different recommended value and is not stored"
         );
 
         let mp = physis_constants::proton_mass();
