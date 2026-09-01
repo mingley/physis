@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  1bf1bde6a7e28c328be227bdaf31a9fcf64c86accf132e993e683d0636eab6ec"),
+            text.contains("constant  ledger  3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -17700,6 +17700,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let eh_ev = lab
+            .exec(Command::Constant {
+                name: Some("Eh_eV".into()),
+            })
+            .text()
+            .to_string();
+        assert!(eh_ev.contains("constant  Eh_eV  node "), "{eh_ev}");
+        assert!(
+            eh_ev.contains(
+                "hash     6be9d50e9eae8a9a943d69b81db60616a84e98bd294f2d85300ce39f9f4a6262"
+            ),
+            "{eh_ev}"
+        );
+        assert!(eh_ev.contains("kind     interval"), "{eh_ev}");
+        assert!(eh_ev.contains("table    XXXI"), "{eh_ev}");
+        assert!(
+            eh_ev.contains("range    Eh_eV = 27.211386245988(53)"),
+            "{eh_ev}"
+        );
+        assert!(eh_ev.contains("unit     eV"), "{eh_ev}");
+        assert!(
+            eh_ev.contains("value    [5442277249187/200000000000, 27211386246041/1000000000000]"),
+            "{eh_ev}"
+        );
+        assert!(eh_ev.contains("rebuild  ok"), "{eh_ev}");
+        assert!(eh_ev.contains("not P3N"), "{eh_ev}");
+        assert!(!eh_ev.contains("receipt"), "{eh_ev}");
+        assert!(!eh_ev.contains("theorem"), "{eh_ev}");
+        let eh_ev_id = constant_node_id(&eh_ev);
+        assert_eq!(
+            eh_ev_id.to_hex(),
+            "6c1374381f3d7b77e32895687f2effdb0fc6f9e689f1ef2c93275fe6f45ef949",
+            "journaling must not change the Eh_eV constant payload"
+        );
+        assert_eq!(
+            lab.store.get(eh_ev_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -20167,7 +20206,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "1bf1bde6a7e28c328be227bdaf31a9fcf64c86accf132e993e683d0636eab6ec",
+            "3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -21102,7 +21141,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "1bf1bde6a7e28c328be227bdaf31a9fcf64c86accf132e993e683d0636eab6ec",
+            "3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -22534,6 +22573,14 @@ mod tests {
         .expect("pinned gamma0h_MHz node");
         assert_eq!(
             lab2.store.get(gamma0h_mhz).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let eh_ev = physis_core::artifact::ArtifactId::from_hex(
+            "6c1374381f3d7b77e32895687f2effdb0fc6f9e689f1ef2c93275fe6f45ef949",
+        )
+        .expect("pinned Eh_eV node");
+        assert_eq!(
+            lab2.store.get(eh_ev).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -24087,7 +24134,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  1bf1bde6a7e28c328be227bdaf31a9fcf64c86accf132e993e683d0636eab6ec"),
+            text.contains("constant  ledger  3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

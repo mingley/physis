@@ -2023,10 +2023,22 @@ pub fn bohr_radius() -> Qty<Length> {
 
 /// Hartree energy E_h (J), CODATA 2018.
 ///
-/// This is the recommended centre in joules, not the eV conversion.
+/// This is the recommended centre in joules, not the eV conversion Eh_eV.
 /// The versioned ledger stores the one-sigma hull; this Qty is that centre.
 pub fn hartree_energy() -> Qty<Energy> {
     joule(4.359_744_722_207_1e-18)
+}
+
+/// Hartree energy in eV, CODATA 2018.
+///
+/// This is the recommended printed ATOMIC AND NUCLEAR centre in eV,
+/// not joule Eh, not SI-exact eV, not hcRinf in eV, not the atomic unit
+/// of electric potential, not a FormalClaim of Eh / e, and not hbar.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. Ledger unit is eV; this Qty is dimensionless, not SI joule.
+/// Quantum of circulation still cites pi hbar / m_e and is not stored.
+pub fn hartree_energy_in_ev() -> Qty<Dimensionless> {
+    Qty::new(27.211_386_245_988)
 }
 
 /// Electron-muon mass ratio m_e/m_μ, CODATA 2018.
@@ -2733,9 +2745,32 @@ mod tests {
             physis_constants::lookup("hartree").is_none(),
             "hartree is not a ledger name; the live name is Eh"
         );
+
+        let eh_ev = physis_constants::hartree_energy_in_ev();
+        let eh_ev_centre = Ratio::new(27_211_386_245_988, 10i128.pow(12));
+        assert_eq!(
+            hartree_energy_in_ev().value(),
+            27.211_386_245_988,
+            "Eh_eV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            hartree_energy_in_ev().value(),
+            eh_ev_centre.to_f64(),
+            "Eh_eV Qty locksteps to Ratio::to_f64 on the 10^12 centre"
+        );
         assert!(
-            physis_constants::lookup("Eh_eV").is_none(),
-            "Hartree energy in eV is a different recommended value and is not stored"
+            eh_ev.value.contains(Interval::point(eh_ev_centre)),
+            "Eh_eV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            physis_constants::hartree_energy_in_ev().hash,
+            physis_constants::hartree_energy().hash,
+            "Eh_eV is not Eh"
+        );
+        assert_ne!(
+            physis_constants::hartree_energy_in_ev().hash,
+            physis_constants::electron_volt().hash,
+            "Eh_eV is not the SI-exact eV"
         );
 
         let me_mmu = physis_constants::electron_muon_mass_ratio();
