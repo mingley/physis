@@ -1195,6 +1195,18 @@ pub fn alpha_particle_molar_mass() -> Qty<
     Qty::new(4.001_506_177_7e-3)
 }
 
+/// Atomic mass constant m_u (kg), CODATA 2018.
+///
+/// This is the recommended centre from the PHYSICOCHEMICAL section, not
+/// proton, neutron, deuteron, triton, helion, alpha-particle, or muon
+/// mass, not alpha-particle molar mass, not Avogadro N_A, not vacuum
+/// permeability, and not the unified atomic mass unit stored under a
+/// second name. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre. This is not the CODATA 2022 last-digit 892.
+pub fn atomic_mass_constant() -> Qty<Mass> {
+    kg(1.660_539_066_60e-27)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -7416,9 +7428,97 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "M_alpha is not G"
         );
+
         assert!(
-            physis_constants::lookup("m_u").is_none(),
-            "m_u atomic mass constant is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("mu").is_none(),
+            "mu is not a ledger name; the live name is m_u"
+        );
+        assert!(
+            physis_constants::lookup("u").is_none(),
+            "unified atomic mass unit is the same digits and is not stored under a second name"
+        );
+        let m_u = physis_constants::atomic_mass_constant();
+        let m_u_centre = Ratio::new(166_053_906_660, 10i128.pow(38));
+        assert_eq!(
+            atomic_mass_constant().value(),
+            1.660_539_066_60e-27,
+            "m_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_mass_constant().value(),
+            m_u_centre.to_f64(),
+            "m_u Qty locksteps to Ratio::to_f64 on the 10^38 centre"
+        );
+        assert!(
+            m_u.value.contains(Interval::point(m_u_centre)),
+            "m_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_u.value.lo, m_u.value.hi,
+            "ledger m_u stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            m_u.value.lo > Ratio::int(0),
+            "ledger m_u stays a positive mass hull"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::proton_mass().hash,
+            "m_u is not m_p"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::neutron_mass().hash,
+            "m_u is not m_n"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::deuteron_mass().hash,
+            "m_u is not m_d"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::triton_mass().hash,
+            "m_u is not m_t"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::helion_mass().hash,
+            "m_u is not m_h"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::alpha_particle_mass().hash,
+            "m_u is not m_alpha"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::muon_mass().hash,
+            "m_u is not m_mu"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::alpha_particle_molar_mass().hash,
+            "m_u is not M_alpha"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::avogadro().hash,
+            "m_u is not N_A"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::vacuum_permeability().hash,
+            "m_u is not mu0"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant().hash,
+            physis_constants::newtonian_g().hash,
+            "m_u is not G"
+        );
+        assert!(
+            physis_constants::lookup("m_u_c2").is_none(),
+            "m_u_c2 atomic mass constant energy equivalent is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
