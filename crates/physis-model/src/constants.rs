@@ -1555,10 +1555,23 @@ pub fn nuclear_magneton() -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typen
 /// electronvolt eV, not a FormalClaim of muN / e, and not hbar. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// Ledger unit is eV T^{-1}; this Qty is dimensionless, not SI joule per
-/// tesla. Nuclear magneton in inverse meter per tesla is a later
-/// ELECTROMAGNETIC row and is not stored.
+/// tesla. Nuclear magneton in inverse meter per tesla is muN_m.
 pub fn nuclear_magneton_in_ev_per_tesla() -> Qty<Dimensionless> {
     Qty::new(3.152_451_258_44e-8)
+}
+
+/// Nuclear magneton in inverse meter per tesla, CODATA 2018.
+///
+/// This is the recommended printed ELECTROMAGNETIC centre in
+/// m^{-1} T^{-1}, not the J T^{-1} muN hull, not the eV T^{-1} muN_eV
+/// hull, not the inverse-meter muB_m hull, not Planck h, not a
+/// FormalClaim of muN / hc, and not hbar. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. Ledger unit is
+/// m^{-1} T^{-1}; this Qty is dimensionless, not SI joule per tesla.
+/// Nuclear magneton in K/T is a later ELECTROMAGNETIC row and is not
+/// stored.
+pub fn nuclear_magneton_in_inverse_meter_per_tesla() -> Qty<Dimensionless> {
+    Qty::new(2.542_623_413_53e-2)
 }
 
 /// Muon mass.
@@ -9193,9 +9206,49 @@ mod tests {
             physis_constants::bohr_magneton_in_ev_per_tesla().hash,
             "muN_eV is not muB_eV"
         );
+
+        let mu_nuc_m = physis_constants::nuclear_magneton_in_inverse_meter_per_tesla();
+        let mu_nuc_m_centre = Ratio::new(254_262_341_353, 10i128.pow(13));
+        assert_eq!(
+            nuclear_magneton_in_inverse_meter_per_tesla().value(),
+            2.542_623_413_53e-2,
+            "nuclear magneton in inverse meter per tesla muN_m Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            nuclear_magneton_in_inverse_meter_per_tesla().value(),
+            mu_nuc_m_centre.to_f64(),
+            "muN_m Qty locksteps to Ratio::to_f64 on the 10^13 centre"
+        );
         assert!(
-            physis_constants::lookup("muN_m").is_none(),
-            "nuclear magneton in inverse meter per tesla is a later ELECTROMAGNETIC row"
+            mu_nuc_m.value.contains(Interval::point(mu_nuc_m_centre)),
+            "muN_m Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_nuc_m.value.lo, mu_nuc_m.value.hi,
+            "ledger muN_m stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            mu_nuc_m.value.lo > Ratio::int(0),
+            "ledger muN_m stays a positive hull"
+        );
+        assert_ne!(
+            physis_constants::nuclear_magneton_in_inverse_meter_per_tesla().hash,
+            physis_constants::nuclear_magneton().hash,
+            "muN_m is not muN"
+        );
+        assert_ne!(
+            physis_constants::nuclear_magneton_in_inverse_meter_per_tesla().hash,
+            physis_constants::nuclear_magneton_in_ev_per_tesla().hash,
+            "muN_m is not muN_eV"
+        );
+        assert_ne!(
+            physis_constants::nuclear_magneton_in_inverse_meter_per_tesla().hash,
+            physis_constants::bohr_magneton_in_inverse_meter_per_tesla().hash,
+            "muN_m is not muB_m"
+        );
+        assert!(
+            physis_constants::lookup("muN_K").is_none(),
+            "nuclear magneton in K/T is a later ELECTROMAGNETIC row"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
