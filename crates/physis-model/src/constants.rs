@@ -530,12 +530,24 @@ pub fn deuteron_mass_in_u() -> Qty<Dimensionless> {
 ///
 /// This is the recommended centre in joules from the deuteron section,
 /// not the kg hull, not the u-row, not neutron, proton, or muon joule
-/// hulls, and not the MeV conversion. This Qty is not a certificate of
-/// a reconstruction from sibling masses. The versioned ledger stores
-/// the one-sigma hull; this Qty is that centre. This is not the CODATA
-/// 2022 last-digit 23491.
+/// hulls. The MeV conversion is `m_d_c2_MeV`. This Qty is not a
+/// certificate of a reconstruction from sibling masses. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 23491.
 pub fn deuteron_mass_energy_equivalent() -> Qty<Energy> {
     joule(3.005_063_231_02e-10)
+}
+
+/// Deuteron mass energy equivalent in MeV, CODATA 2018.
+///
+/// This is the recommended centre in MeV from the deuteron section, not
+/// the joule hull, not neutron, proton, or muon MeV, and not the exact
+/// electronvolt Ratio. This Qty is not a certificate of a reconstruction
+/// from sibling masses. Ledger unit is MeV; this Qty is dimensionless,
+/// not SI joule. The versioned ledger stores the one-sigma hull; this
+/// Qty is that centre. This is not the CODATA 2022 last-digit 94500.
+pub fn deuteron_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
+    Qty::new(1_875.612_942_57)
 }
 
 /// Muon mass.
@@ -4310,6 +4322,47 @@ mod tests {
             physis_constants::deuteron_mass_energy_equivalent().hash,
             physis_constants::muon_mass_energy_equivalent().hash,
             "m_d_c2 is not m_mu_c2"
+        );
+        assert!(
+            physis_constants::lookup("mdc2_MeV").is_none(),
+            "mdc2_MeV is not a ledger name; the live name is m_d_c2_MeV"
+        );
+        let m_d_c2_mev = physis_constants::deuteron_mass_energy_equivalent_in_mev();
+        let m_d_c2_mev_centre = Ratio::new(187_561_294_257, 10i128.pow(8));
+        assert_eq!(
+            deuteron_mass_energy_equivalent_in_mev().value(),
+            m_d_c2_mev_centre.to_f64(),
+            "m_d_c2_MeV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_d_c2_mev
+                .value
+                .contains(Interval::point(m_d_c2_mev_centre)),
+            "m_d_c2_MeV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_d_c2_mev.value.lo, m_d_c2_mev.value.hi,
+            "ledger m_d_c2_MeV stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            "m_d_c2_MeV is not m_d_c2"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::neutron_mass_energy_equivalent_in_mev().hash,
+            "m_d_c2_MeV is not m_n_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::proton_mass_energy_equivalent_in_mev().hash,
+            "m_d_c2_MeV is not m_p_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::muon_mass_energy_equivalent_in_mev().hash,
+            "m_d_c2_MeV is not m_mu_c2_MeV"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
