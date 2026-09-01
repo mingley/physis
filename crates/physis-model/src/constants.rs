@@ -695,11 +695,25 @@ pub fn deuteron_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// the deuteron nuclear-magneton ratio. This Qty is not a certificate
 /// that it equals a reconstructed μ_d/μ_n from sibling moments. The
 /// live name `mu_d_mun` is not a case-variant of `mu_d_muN`. Triton
-/// rows are later table rows and are not stored. The versioned ledger
-/// stores the one-sigma hull; this Qty is that centre. This is not the
-/// CODATA 2022 last-digit 2.
+/// mass is `m_t`. Later Triton rows are not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 2.
 pub fn deuteron_neutron_magnetic_moment_ratio() -> Qty<Dimensionless> {
     Qty::new(-0.448_206_53)
+}
+
+/// Triton mass m_t (kg), CODATA 2018.
+///
+/// This is the recommended kg centre from the triton section, not
+/// deuteron, neutron, proton, or muon mass and not the electron-triton
+/// mass ratio. This Qty is not a certificate of a reconstruction from
+/// sibling masses or mass ratios. The u-row, energy equivalent, MeV,
+/// mass ratios, molar mass, and magnetic-moment rows are later table
+/// rows and are not stored. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. This is not the CODATA 2022 last-digit
+/// 7512.
+pub fn triton_mass() -> Qty<Mass> {
+    kg(5.007_356_744_6e-27)
 }
 
 /// Muon mass.
@@ -4926,6 +4940,50 @@ mod tests {
             physis_constants::deuteron_neutron_magnetic_moment_ratio().hash,
             physis_constants::deuteron_proton_magnetic_moment_ratio().hash,
             "mu_d_mun is not mu_d_mup"
+        );
+        assert!(
+            physis_constants::lookup("mt").is_none(),
+            "mt is not a ledger name; the live name is m_t"
+        );
+        let m_t = physis_constants::triton_mass();
+        let m_t_centre = Ratio::new(50_073_567_446, 10i128.pow(37));
+        assert_eq!(
+            triton_mass().value(),
+            m_t_centre.to_f64(),
+            "m_t Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_t.value.contains(Interval::point(m_t_centre)),
+            "m_t Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_t.value.lo, m_t.value.hi,
+            "ledger m_t stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::triton_mass().hash,
+            physis_constants::deuteron_mass().hash,
+            "m_t is not m_d"
+        );
+        assert_ne!(
+            physis_constants::triton_mass().hash,
+            physis_constants::neutron_mass().hash,
+            "m_t is not m_n"
+        );
+        assert_ne!(
+            physis_constants::triton_mass().hash,
+            physis_constants::proton_mass().hash,
+            "m_t is not m_p"
+        );
+        assert_ne!(
+            physis_constants::triton_mass().hash,
+            physis_constants::muon_mass().hash,
+            "m_t is not m_mu"
+        );
+        assert_ne!(
+            physis_constants::triton_mass().hash,
+            physis_constants::electron_triton_mass_ratio().hash,
+            "m_t is not me_mt"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
