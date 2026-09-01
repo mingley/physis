@@ -580,14 +580,26 @@ pub fn deuteron_proton_mass_ratio() -> Qty<Dimensionless> {
 /// This is the recommended centre in kg mol⁻¹ from the deuteron
 /// section, not neutron, proton, electron, or muon molar mass, not the
 /// kg hull, not the u-row, and not a certificate that this equals N_A
-/// times the deuteron-mass hull. The rms charge radius is a later
-/// table row and is not stored. The versioned ledger stores the
-/// one-sigma hull; this Qty is that centre. This is not the CODATA
-/// 2022 last-digit 466.
+/// times the deuteron-mass hull. The rms charge radius is `rd`.
+/// Magnetic-moment rows are later table rows and are not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 466.
 pub fn deuteron_molar_mass() -> Qty<
     physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
 > {
     Qty::new(2.013_553_212_05e-3)
+}
+
+/// Deuteron rms charge radius r_d (m), CODATA 2018.
+///
+/// This is the recommended centre in metres from the deuteron section,
+/// not proton rms charge radius and not classical electron radius.
+/// This Qty is not a certificate of a deuteron-proton radius
+/// difference. Magnetic-moment rows are later table rows and are not
+/// stored. The versioned ledger stores the one-sigma hull; this Qty is
+/// that centre. This is not the CODATA 2022 last-digit 78.
+pub fn deuteron_rms_charge_radius() -> Qty<Length> {
+    meters(2.127_99e-15)
 }
 
 /// Muon mass.
@@ -3116,8 +3128,8 @@ mod tests {
             "rp is not m_p"
         );
         assert!(
-            physis_constants::lookup("rd").is_none(),
-            "deuteron rms charge radius is not stored in this increment"
+            physis_constants::lookup("rd").is_some(),
+            "deuteron rms charge radius is the live ledger name rd"
         );
         assert!(
             physis_constants::lookup("mup").is_none(),
@@ -4515,6 +4527,40 @@ mod tests {
             physis_constants::deuteron_molar_mass().hash,
             physis_constants::muon_molar_mass().hash,
             "M_d is not M_mu"
+        );
+        assert!(
+            physis_constants::lookup("r_d").is_none(),
+            "r_d is not a ledger name; the live name is rd"
+        );
+        let rd = physis_constants::deuteron_rms_charge_radius();
+        let rd_centre = Ratio::new(212_799, 10i128.pow(20));
+        assert_eq!(
+            deuteron_rms_charge_radius().value(),
+            rd_centre.to_f64(),
+            "rd Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            rd.value.contains(Interval::point(rd_centre)),
+            "rd Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            rd.value.lo, rd.value.hi,
+            "ledger rd stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_rms_charge_radius().hash,
+            physis_constants::proton_rms_charge_radius().hash,
+            "rd is not rp"
+        );
+        assert_ne!(
+            physis_constants::deuteron_rms_charge_radius().hash,
+            physis_constants::classical_electron_radius().hash,
+            "rd is not re"
+        );
+        assert_ne!(
+            physis_constants::deuteron_rms_charge_radius().hash,
+            physis_constants::deuteron_molar_mass().hash,
+            "rd is not M_d"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
