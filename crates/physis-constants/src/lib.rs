@@ -885,6 +885,10 @@ fn codata_2018_sackur_tetrode_constant_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "S0_R = -1.15170753706(45)")
 }
 
+fn codata_2018_sackur_tetrode_constant_atm_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "S0_R_atm = -1.16487052358(45)")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5383,8 +5387,8 @@ fn codata_2018_sackur_tetrode_constant_interval() -> Interval {
 /// Ratio, not a terminating SciExact, not a FormalClaim that
 /// reconstructs the JPCRD formula (that formula cites ħ and π), and
 /// not P3N. JPCRD prints `S0/R`; `S0_R` is the ledger name. `S0` and
-/// `S0/R` are not second names. The 101.325 kPa companion is a later
-/// table row and is not stored. Stefan-Boltzmann is a later table row
+/// `S0/R` are not second names. The 101.325 kPa companion is `S0_R_atm`.
+/// Stefan-Boltzmann is a later table row
 /// and is not stored. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `96`. The decade is
 /// `10^{11}`; `10^{10}` is the 10× trap (`σ = 4.5` is not an integer).
@@ -5395,6 +5399,43 @@ pub fn sackur_tetrode_constant() -> Constant<Interval> {
         codata_2018_sackur_tetrode_constant_interval(),
         "1",
         codata_2018_sackur_tetrode_constant_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of −1.16487052358(45).
+fn codata_2018_sackur_tetrode_constant_atm_interval() -> Interval {
+    let scale = 10i128.pow(11);
+    let centre = -116_487_052_358i128;
+    let sigma = 45;
+    Interval::new(
+        Ratio::new(centre - sigma, scale),
+        Ratio::new(centre + sigma, scale),
+    )
+}
+
+/// Sackur-Tetrode constant S0/R at 1 K and 101.325 kPa, CODATA 2018
+/// one-sigma enclosure.
+///
+/// This is the recommended signed dimensionless hull from the
+/// PHYSICOCHEMICAL section at T1 = 1 K and p0 = 101.325 kPa (`atm`),
+/// not the 100 kPa `S0_R`, not 101.325 kPa Loschmidt `n0_atm`, not
+/// 100 kPa Loschmidt `n0`, not molar gas `NAk`, not an SI defining
+/// Ratio, not a terminating SciExact, not a FormalClaim that
+/// reconstructs the JPCRD formula (that formula cites ħ and π), and
+/// not P3N. JPCRD prints the same symbol `S0/R` as the 100 kPa row;
+/// `S0_R_atm` is the ledger name. `S0` and `S0/R` are not second names.
+/// Stefan-Boltzmann is a later table row and is not stored. Electron
+/// mass is not stored: `10^{42}` overflows `i128`. This is not the
+/// CODATA 2022 last-digit `49`. The decade is `10^{11}`; `10^{10}` is
+/// the 10× trap (`σ = 4.5` is not an integer). Theories still use
+/// `physis_model` `f64` Qty.
+pub fn sackur_tetrode_constant_atm() -> Constant<Interval> {
+    Constant::new(
+        "S0_R_atm",
+        codata_2018_sackur_tetrode_constant_atm_interval(),
+        "1",
+        codata_2018_sackur_tetrode_constant_atm_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5706,6 +5747,7 @@ pub const LEDGER: &[&str] = &[
     "Vm_atm",
     "n0_atm",
     "S0_R",
+    "S0_R_atm",
     "au",
     "eV",
     "GM_sun",
@@ -5990,6 +6032,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "Vm_atm" => Some(listing(molar_volume_ideal_gas_atm(), "ratio")),
         "n0_atm" => Some(listing(loschmidt_constant_atm(), "ratio")),
         "S0_R" => Some(listing(sackur_tetrode_constant(), "interval")),
+        "S0_R_atm" => Some(listing(sackur_tetrode_constant_atm(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25298,7 +25341,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -25448,7 +25491,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25584,7 +25627,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25714,7 +25757,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25814,7 +25857,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -25913,7 +25956,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -26035,7 +26078,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26157,7 +26200,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26282,7 +26325,7 @@ mod tests {
         );
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26408,7 +26451,7 @@ mod tests {
             "n0_atm = atm / (k T) is 101325 * 10^31 / (1380649 * 27315); that fits i128"
         );
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("gamma0h").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
@@ -26527,7 +26570,7 @@ mod tests {
             "37bd72c139f411ab023e7a400c4d8b90ef044d0334ab01e29ca31d6bdca08a8e"
         );
         assert!(r.provenance.recheck().is_ok());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
@@ -26542,6 +26585,129 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0").is_some());
+        assert!(lookup("gn").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_sackur_tetrode_constant_atm_is_a_one_sigma_interval() {
+        let r = sackur_tetrode_constant_atm();
+        let scale = 10i128.pow(11);
+        let lo = Ratio::new(-116_487_052_403, scale);
+        let hi = Ratio::new(-116_487_052_313, scale);
+        let centre = Ratio::new(-116_487_052_358, scale);
+        assert_eq!(r.name, "S0_R_atm");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("S0_R_atm = -1.16487052358(45)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "S0_R_atm is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.hi < Ratio::int(0),
+            "CODATA S0_R_atm is the signed Sackur-Tetrode companion, not |S0/R|"
+        );
+        assert!(
+            !r.value.contains(Interval::point(Ratio::new(
+                -115_170_753_706,
+                10i128.pow(11)
+            ))),
+            "S0_R_atm hull does not contain the 100 kPa S0_R centre"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[-116487052403/100000000000, -116487052313/100000000000]"
+        );
+        assert_eq!(r.hash, sackur_tetrode_constant_atm().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "S0_R_atm",
+                codata_2018_sackur_tetrode_constant_atm_interval(),
+                "1",
+                codata_2018_sackur_tetrode_constant_atm_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            sackur_tetrode_constant().hash,
+            "S0_R_atm is not S0_R"
+        );
+        assert_ne!(
+            r.hash,
+            loschmidt_constant_atm().hash,
+            "S0_R_atm is not n0_atm"
+        );
+        assert_ne!(r.hash, loschmidt_constant().hash, "S0_R_atm is not n0");
+        assert_ne!(r.hash, molar_gas_constant().hash, "S0_R_atm is not NAk");
+        assert_ne!(r.hash, neutron_g_factor().hash, "S0_R_atm is not gn");
+        assert_ne!(r.hash, newtonian_g().hash, "S0_R_atm is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "S0_R_atm is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            sackur_tetrode_constant().provenance.source_hash,
+            "S0_R_atm range is not the S0_R range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            loschmidt_constant_atm().provenance.source_hash,
+            "S0_R_atm range is not the n0_atm range"
+        );
+        assert_eq!(
+            sackur_tetrode_constant().hash.to_hex(),
+            "37bd72c139f411ab023e7a400c4d8b90ef044d0334ab01e29ca31d6bdca08a8e",
+            "S0_R hash must stay pinned when S0_R_atm is added"
+        );
+        assert_eq!(
+            loschmidt_constant_atm().hash.to_hex(),
+            "040ac164b64d31d949ee7f2b59af9ed649dcd8f6fb69f09546b317b8a9beb14b",
+            "n0_atm hash must stay pinned when S0_R_atm is added"
+        );
+        assert_eq!(
+            neutron_g_factor().hash.to_hex(),
+            "745d414efe1b217af8239787ffd1bb6d0d820fd8753d8aeaedac10c87658aac9",
+            "gn hash must stay pinned when S0_R_atm is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when S0_R_atm is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when S0_R_atm is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "80cbdc3db3e995895b8c311f14beea81756bf55eee0004c45e97efc43d54af2f"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("sigma").is_none());
+        assert!(lookup("S0/R").is_none());
+        assert!(lookup("S0").is_none());
+        assert!(lookup("gamma0h").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("S0_R").is_some());
+        assert!(lookup("n0_atm").is_some());
         assert!(lookup("gn").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
@@ -26749,7 +26915,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 165);
+        assert_eq!(LEDGER.len(), 166);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -27529,6 +27695,11 @@ mod tests {
             lookup("S0_R").unwrap().hash.to_hex(),
             "37bd72c139f411ab023e7a400c4d8b90ef044d0334ab01e29ca31d6bdca08a8e"
         );
+        assert_eq!(lookup("S0_R_atm").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("S0_R_atm").unwrap().hash.to_hex(),
+            "80cbdc3db3e995895b8c311f14beea81756bf55eee0004c45e97efc43d54af2f"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -27869,7 +28040,7 @@ mod tests {
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
-        assert!(lookup("S0_R_atm").is_none());
+        assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());
