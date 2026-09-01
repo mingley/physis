@@ -817,6 +817,10 @@ fn codata_2018_alpha_particle_electron_mass_ratio_source() -> SourceRecord {
     codata_2018_jpcrd("Alpha particle, a", "malpha/me = 7294.29954142(24)")
 }
 
+fn codata_2018_alpha_particle_proton_mass_ratio_source() -> SourceRecord {
+    codata_2018_jpcrd("Alpha particle, a", "malpha/mp = 3.97259969009(22)")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -4790,7 +4794,8 @@ fn codata_2018_alpha_particle_electron_mass_ratio_interval() -> Interval {
 /// `mn_me`, not the proton-electron ratio `mp_me`, not the muon-electron
 /// ratio `mmu_me`, not alpha particle mass, not MeV energy equivalent,
 /// not an SI defining Ratio, and not P3N. The alpha-proton mass ratio is
-/// a later table row and is not stored. Electron mass is not stored:
+/// `malpha_mp`. Molar mass is a later table row and is not stored.
+/// Electron mass is not stored:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `71`. The decade is `10^{8}`; `10^{7}` is the 10× trap (`μ` would not
 /// be an integer). Theories still use `physis_model` `f64` Qty.
@@ -4800,6 +4805,38 @@ pub fn alpha_particle_electron_mass_ratio() -> Constant<Interval> {
         codata_2018_alpha_particle_electron_mass_ratio_interval(),
         "1",
         codata_2018_alpha_particle_electron_mass_ratio_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 3.97259969009(22).
+fn codata_2018_alpha_particle_proton_mass_ratio_interval() -> Interval {
+    let scale = 10i128.pow(11);
+    let mu = 397_259_969_009i128;
+    let sigma = 22;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Alpha particle-proton mass ratio m_α/m_p, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended dimensionless hull from the alpha-particle
+/// section, not the helion-proton ratio `mh_mp`, not the triton-proton
+/// ratio `mt_mp`, not the deuteron-proton ratio `md_mp`, not the
+/// neutron-proton ratio `mn_mp`, not the proton-neutron ratio `mp_mn`,
+/// not the muon-proton ratio `mmu_mp`, not a certificate that the stored
+/// centres reconstruct `m_alpha/m_p`, not the alpha-electron ratio
+/// `malpha_me`, not alpha particle mass, not proton mass, not an SI
+/// defining Ratio, and not P3N. Molar mass is a later table row and is
+/// not stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// This is not the CODATA 2022 last-digit `252`. The decade is `10^{11}`;
+/// `10^{10}` is the 10× trap (`μ` would not be an integer). Theories
+/// still use `physis_model` `f64` Qty.
+pub fn alpha_particle_proton_mass_ratio() -> Constant<Interval> {
+    Constant::new(
+        "malpha_mp",
+        codata_2018_alpha_particle_proton_mass_ratio_interval(),
+        "1",
+        codata_2018_alpha_particle_proton_mass_ratio_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5094,6 +5131,7 @@ pub const LEDGER: &[&str] = &[
     "m_alpha_c2",
     "m_alpha_c2_MeV",
     "malpha_me",
+    "malpha_mp",
     "au",
     "eV",
     "GM_sun",
@@ -5355,6 +5393,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             "interval",
         )),
         "malpha_me" => Some(listing(alpha_particle_electron_mass_ratio(), "interval")),
+        "malpha_mp" => Some(listing(alpha_particle_proton_mass_ratio(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -23422,7 +23461,7 @@ mod tests {
         assert!(lookup("malpha/me").is_none());
         assert!(lookup("m_alpha_me").is_none());
         assert!(lookup("m-alpha-me").is_none());
-        assert!(lookup("malpha_mp").is_none());
+        assert!(lookup("malpha_mp").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -23437,6 +23476,185 @@ mod tests {
         assert!(lookup("mp_me").is_some());
         assert!(lookup("mmu_me").is_some());
         assert!(lookup("m_alpha_c2_MeV").is_some());
+        assert!(lookup("G").is_some());
+    }
+
+    #[test]
+    fn codata_2018_alpha_particle_proton_mass_ratio_is_a_one_sigma_interval() {
+        let r = alpha_particle_proton_mass_ratio();
+        let scale = 10i128.pow(11);
+        let lo = Ratio::new(397_259_968_987, scale);
+        let hi = Ratio::new(397_259_969_031, scale);
+        let centre = Ratio::new(397_259_969_009, scale);
+        assert_eq!(r.name, "malpha_mp");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("Alpha particle, a")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("malpha/mp = 3.97259969009(22)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(
+            r.value.lo, r.value.hi,
+            "malpha_mp is measured, not SI-exact"
+        );
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA malpha_mp is a positive mass-ratio hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[397259968987/100000000000, 397259969031/100000000000]"
+        );
+        assert_eq!(r.hash, alpha_particle_proton_mass_ratio().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "malpha_mp",
+                codata_2018_alpha_particle_proton_mass_ratio_interval(),
+                "1",
+                codata_2018_alpha_particle_proton_mass_ratio_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            helion_proton_mass_ratio().hash,
+            "malpha_mp is not mh_mp"
+        );
+        assert_ne!(
+            r.hash,
+            triton_proton_mass_ratio().hash,
+            "malpha_mp is not mt_mp"
+        );
+        assert_ne!(
+            r.hash,
+            deuteron_proton_mass_ratio().hash,
+            "malpha_mp is not md_mp"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_proton_mass_ratio().hash,
+            "malpha_mp is not mn_mp"
+        );
+        assert_ne!(
+            r.hash,
+            proton_neutron_mass_ratio().hash,
+            "malpha_mp is not mp_mn"
+        );
+        assert_ne!(
+            r.hash,
+            muon_proton_mass_ratio().hash,
+            "malpha_mp is not mmu_mp"
+        );
+        assert_ne!(
+            r.hash,
+            alpha_particle_electron_mass_ratio().hash,
+            "malpha_mp is not malpha_me"
+        );
+        assert_ne!(
+            r.hash,
+            alpha_particle_mass().hash,
+            "malpha_mp is not m_alpha"
+        );
+        assert_ne!(r.hash, proton_mass().hash, "malpha_mp is not m_p");
+        assert_ne!(r.hash, newtonian_g().hash, "malpha_mp is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            helion_proton_mass_ratio().provenance.source_hash,
+            "malpha_mp range is not the mh_mp range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            triton_proton_mass_ratio().provenance.source_hash,
+            "malpha_mp range is not the mt_mp range"
+        );
+        assert_eq!(
+            alpha_particle_electron_mass_ratio().hash.to_hex(),
+            "72ecb3fbc0d48ab53a5d6f3a08cbe581b7909dc03ece21eb07cb35887e7c68c1",
+            "malpha_me hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            helion_proton_mass_ratio().hash.to_hex(),
+            "46ae4686293f59d147df432b57e622e0883c8611813e0684326e4f2fd00d5c6d",
+            "mh_mp hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            triton_proton_mass_ratio().hash.to_hex(),
+            "de2806f05b0502127a1c6e32a40eb5fde57e2dbbe06c02fbbd78e92899519595",
+            "mt_mp hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            deuteron_proton_mass_ratio().hash.to_hex(),
+            "a1c84e01de3c4fb4e5eb0c9de98edd0d13aefc51c32e1c95c2d4203d6144a919",
+            "md_mp hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            neutron_proton_mass_ratio().hash.to_hex(),
+            "4a1cc9e1870d573594b4de7b64f6ec1667f13da26f6cb8b72ae351eed5c89eb4",
+            "mn_mp hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            proton_neutron_mass_ratio().hash.to_hex(),
+            "fd6d15f0f9cd99a1889486d78f316d0e3299c3b9ff8db13d6429bcb47cccb465",
+            "mp_mn hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            muon_proton_mass_ratio().hash.to_hex(),
+            "1527aa21236682ad99206cf1ef6b6267d7432a5a1975bcc2315af9a510e147d2",
+            "mmu_mp hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            alpha_particle_mass().hash.to_hex(),
+            "8f3ec14a8381c0b83aba64d6f42a44dcd12b59e65bcf4ff11ab7edb36b4296c4",
+            "m_alpha hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when malpha_mp is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "0c31195c0e868eb3e6b4a54c10ed662a1075d58cad2e565ad5ec5f389f7c567d"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(11).is_some(),
+            "malpha_mp = 3.97259969009 is 397259969009/10^11; that denominator fits i128"
+        );
+        assert!(lookup("malpha/mp").is_none());
+        assert!(lookup("m_alpha_mp").is_none());
+        assert!(lookup("m-alpha-mp").is_none());
+        assert!(lookup("M_alpha").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("malpha_mp").is_some());
+        assert!(lookup("malpha_me").is_some());
+        assert!(lookup("mh_mp").is_some());
+        assert!(lookup("mt_mp").is_some());
+        assert!(lookup("md_mp").is_some());
+        assert!(lookup("mn_mp").is_some());
+        assert!(lookup("mp_mn").is_some());
+        assert!(lookup("mmu_mp").is_some());
+        assert!(lookup("m_alpha").is_some());
+        assert!(lookup("m_p").is_some());
         assert!(lookup("G").is_some());
     }
 
@@ -23642,7 +23860,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 148);
+        assert_eq!(LEDGER.len(), 149);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -24337,6 +24555,11 @@ mod tests {
             lookup("malpha_me").unwrap().hash.to_hex(),
             "72ecb3fbc0d48ab53a5d6f3a08cbe581b7909dc03ece21eb07cb35887e7c68c1"
         );
+        assert_eq!(lookup("malpha_mp").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("malpha_mp").unwrap().hash.to_hex(),
+            "0c31195c0e868eb3e6b4a54c10ed662a1075d58cad2e565ad5ec5f389f7c567d"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -24633,7 +24856,11 @@ mod tests {
         assert!(lookup("malpha/me").is_none());
         assert!(lookup("m_alpha_me").is_none());
         assert!(lookup("m-alpha-me").is_none());
-        assert!(lookup("malpha_mp").is_none());
+        assert!(lookup("malpha_mp").is_some());
+        assert!(lookup("malpha/mp").is_none());
+        assert!(lookup("m_alpha_mp").is_none());
+        assert!(lookup("m-alpha-mp").is_none());
+        assert!(lookup("M_alpha").is_none());
         assert!(lookup("mmu").is_none());
         assert!(lookup("m-mu").is_none());
         assert!(lookup("muon-mass").is_none());

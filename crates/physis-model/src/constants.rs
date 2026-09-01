@@ -1161,11 +1161,23 @@ pub fn alpha_particle_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
 ///
 /// This is the recommended centre from the alpha-particle section, not
 /// the electron-alpha mass ratio and not a certificate that the stored
-/// centres invert. The alpha-proton mass ratio is a later table row.
+/// centres invert. The alpha-proton mass ratio is `malpha_mp`.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 71.
 pub fn alpha_particle_electron_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(7_294.299_541_42)
+}
+
+/// Alpha particle-proton mass ratio m_α/m_p, CODATA 2018.
+///
+/// This is the recommended centre from the alpha-particle section, not
+/// the helion-proton, triton-proton, deuteron-proton, neutron-proton,
+/// or proton-neutron mass ratio, and not a certificate that the stored
+/// centres reconstruct m_alpha/m_p. The molar mass is a later table
+/// row. The versioned ledger stores the one-sigma hull; this Qty is
+/// that centre. This is not the CODATA 2022 last-digit 252.
+pub fn alpha_particle_proton_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(3.972_599_690_09)
 }
 
 /// Muon mass.
@@ -7229,6 +7241,79 @@ mod tests {
             physis_constants::alpha_particle_electron_mass_ratio().hash,
             physis_constants::newtonian_g().hash,
             "malpha_me is not G"
+        );
+        assert!(
+            physis_constants::lookup("malpha/mp").is_none(),
+            "malpha/mp is not a ledger name; the live name is malpha_mp"
+        );
+        let malpha_mp = physis_constants::alpha_particle_proton_mass_ratio();
+        let malpha_mp_centre = Ratio::new(397_259_969_009, 10i128.pow(11));
+        assert_eq!(
+            alpha_particle_proton_mass_ratio().value(),
+            3.972_599_690_09,
+            "malpha_mp Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            alpha_particle_proton_mass_ratio().value(),
+            malpha_mp_centre.to_f64(),
+            "malpha_mp Qty locksteps to Ratio::to_f64 on the 10^11 centre"
+        );
+        assert!(
+            malpha_mp.value.contains(Interval::point(malpha_mp_centre)),
+            "malpha_mp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            malpha_mp.value.lo, malpha_mp.value.hi,
+            "ledger malpha_mp stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            malpha_mp.value.lo > Ratio::int(0),
+            "ledger malpha_mp stays a positive mass-ratio hull"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::helion_proton_mass_ratio().hash,
+            "malpha_mp is not mh_mp"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::triton_proton_mass_ratio().hash,
+            "malpha_mp is not mt_mp"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::deuteron_proton_mass_ratio().hash,
+            "malpha_mp is not md_mp"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::neutron_proton_mass_ratio().hash,
+            "malpha_mp is not mn_mp"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::proton_neutron_mass_ratio().hash,
+            "malpha_mp is not mp_mn"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::muon_proton_mass_ratio().hash,
+            "malpha_mp is not mmu_mp"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            "malpha_mp is not malpha_me"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::proton_mass().hash,
+            "malpha_mp is not m_p"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_proton_mass_ratio().hash,
+            physis_constants::newtonian_g().hash,
+            "malpha_mp is not G"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
