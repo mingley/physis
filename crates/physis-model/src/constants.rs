@@ -554,11 +554,24 @@ pub fn deuteron_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
 ///
 /// This is the recommended centre from the deuteron section, not the
 /// electron-deuteron mass ratio and not a certificate that the stored
-/// centres invert. The deuteron-proton mass ratio is a later table row
-/// and is not stored. The versioned ledger stores the one-sigma hull;
-/// this Qty is that centre. This is not the CODATA 2022 last-digit 655.
+/// centres invert. The deuteron-proton mass ratio is `md_mp`. Molar
+/// mass and rms charge radius are later table rows and are not stored.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 655.
 pub fn deuteron_electron_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(3_670.482_967_88)
+}
+
+/// Deuteron-proton mass ratio m_d/m_p, CODATA 2018.
+///
+/// This is the recommended centre from the deuteron section, not the
+/// neutron-proton mass ratio, not the proton-neutron mass ratio, and
+/// not a certificate that the stored centres reconstruct m_d/m_p.
+/// Molar mass is a later table row and is not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 2699.
+pub fn deuteron_proton_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(1.999_007_501_39)
 }
 
 /// Muon mass.
@@ -4413,6 +4426,40 @@ mod tests {
             physis_constants::deuteron_electron_mass_ratio().hash,
             physis_constants::muon_electron_mass_ratio().hash,
             "md_me is not mmu_me"
+        );
+        assert!(
+            physis_constants::lookup("md/mp").is_none(),
+            "md/mp is not a ledger name; the live name is md_mp"
+        );
+        let md_mp = physis_constants::deuteron_proton_mass_ratio();
+        let md_mp_centre = Ratio::new(199_900_750_139, 10i128.pow(11));
+        assert_eq!(
+            deuteron_proton_mass_ratio().value(),
+            md_mp_centre.to_f64(),
+            "md_mp Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            md_mp.value.contains(Interval::point(md_mp_centre)),
+            "md_mp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            md_mp.value.lo, md_mp.value.hi,
+            "ledger md_mp stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_proton_mass_ratio().hash,
+            physis_constants::deuteron_electron_mass_ratio().hash,
+            "md_mp is not md_me"
+        );
+        assert_ne!(
+            physis_constants::deuteron_proton_mass_ratio().hash,
+            physis_constants::neutron_proton_mass_ratio().hash,
+            "md_mp is not mn_mp"
+        );
+        assert_ne!(
+            physis_constants::deuteron_proton_mass_ratio().hash,
+            physis_constants::proton_neutron_mass_ratio().hash,
+            "md_mp is not mp_mn"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
