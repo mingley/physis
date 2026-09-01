@@ -1382,9 +1382,23 @@ pub fn molar_volume_ideal_gas_atm() -> Qty<
 /// ledger name. The table prints an ellipsis; the ledger stores the exact
 /// Ratio. This is not a terminating SciExact. The versioned ledger stores
 /// the exact Ratio; this Qty is the IEEE rounding of that Ratio. The
-/// Sackur-Tetrode constant is a later table row and is not stored.
+/// Sackur-Tetrode constant is S0_R.
 pub fn loschmidt_constant_atm() -> Qty<physis_core::SI<typenum::Z0, typenum::N3, typenum::Z0>> {
     Qty::new(2.686_780_111_798_443_5e25)
+}
+
+/// Sackur-Tetrode constant S0/R at 1 K and 100 kPa, CODATA 2018.
+///
+/// This is the recommended signed dimensionless centre from the
+/// PHYSICOCHEMICAL section at T1 = 1 K and p0 = 100 kPa, not the
+/// 101.325 kPa companion, not n0_atm, and not a reconstructed formula
+/// certificate (that formula cites hbar and pi). JPCRD prints S0/R;
+/// S0_R is the ledger name. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. The 101.325 kPa companion is a later
+/// table row and is not stored. This is not the CODATA 2022 last-digit
+/// 96.
+pub fn sackur_tetrode_constant() -> Qty<Dimensionless> {
+    Qty::new(-1.151_707_537_06)
 }
 
 /// Muon mass.
@@ -8495,9 +8509,62 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "n0_atm is not G"
         );
+
+        let s_0_r = physis_constants::sackur_tetrode_constant();
+        let s_0_r_centre = Ratio::new(-115_170_753_706, 10i128.pow(11));
+        assert_eq!(
+            sackur_tetrode_constant().value(),
+            -1.151_707_537_06,
+            "S0_R Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            sackur_tetrode_constant().value(),
+            s_0_r_centre.to_f64(),
+            "S0_R Qty locksteps to Ratio::to_f64 on the 10^11 centre"
+        );
         assert!(
-            physis_constants::lookup("S0_R").is_none(),
-            "Sackur-Tetrode constant is a later PHYSICOCHEMICAL row"
+            s_0_r.value.contains(Interval::point(s_0_r_centre)),
+            "S0_R Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            s_0_r.value.lo, s_0_r.value.hi,
+            "ledger S0_R stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            s_0_r.value.hi < Ratio::int(0),
+            "ledger S0_R stays a signed dimensionless hull"
+        );
+        assert_ne!(
+            physis_constants::sackur_tetrode_constant().hash,
+            physis_constants::loschmidt_constant_atm().hash,
+            "S0_R is not n0_atm"
+        );
+        assert_ne!(
+            physis_constants::sackur_tetrode_constant().hash,
+            physis_constants::loschmidt_constant().hash,
+            "S0_R is not n0"
+        );
+        assert_ne!(
+            physis_constants::sackur_tetrode_constant().hash,
+            physis_constants::neutron_g_factor().hash,
+            "S0_R is not gn"
+        );
+        assert_ne!(
+            physis_constants::sackur_tetrode_constant().hash,
+            physis_constants::newtonian_g().hash,
+            "S0_R is not G"
+        );
+        assert!(
+            physis_constants::lookup("S0_R_atm").is_none(),
+            "101.325 kPa Sackur-Tetrode companion is a later PHYSICOCHEMICAL row"
+        );
+        assert!(
+            physis_constants::lookup("S0/R").is_none(),
+            "S0/R is not a second name; the live name is S0_R"
+        );
+        assert!(
+            physis_constants::lookup("S0").is_none(),
+            "S0 is not a second name; the live name is S0_R"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
