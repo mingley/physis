@@ -1660,11 +1660,24 @@ pub fn shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla() -> Qty<Dimensionles
 /// hbar. The printed formula cites ħ; the reconstruction is unused.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. Ledger unit is s^{-1} T^{-1}; this Qty is SI kg^{-1} s A,
-/// not dimensionless. Neutron gyromagnetic ratio in MHz/T is a later
-/// row and is not stored.
+/// not dimensionless. Neutron gyromagnetic ratio in MHz/T is
+/// gamma_n_MHz.
 pub fn neutron_gyromagnetic_ratio(
 ) -> Qty<physis_core::SI<typenum::N1, typenum::Z0, typenum::P1, typenum::P1>> {
     Qty::new(1.832_471_71e8)
+}
+
+/// Neutron gyromagnetic ratio in MHz/T, CODATA 2018.
+///
+/// This is the recommended printed Neutron, n centre in MHz T^{-1},
+/// not s^{-1} T^{-1} gamma_n, not gamma_p_MHz, not gamma0p_MHz, not
+/// muN_MHz, not muB_Hz, not gn, not a FormalClaim of gamma_n / 2 pi,
+/// and not hbar. NIST lists MHz T^{-1}, not Hz T^{-1}. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. Ledger
+/// unit is MHz T^{-1}; this Qty is dimensionless, not SI kg^{-1} s A.
+/// Helion gyromagnetic ratio is not stored.
+pub fn neutron_gyromagnetic_ratio_in_mhz_per_tesla() -> Qty<Dimensionless> {
+    Qty::new(29.164_693_1)
 }
 
 /// Muon mass.
@@ -9635,9 +9648,52 @@ mod tests {
             physis_constants::neutron_magnetic_moment().hash,
             "gamma_n is not mu_n"
         );
+
+        let gamma_n_mhz = physis_constants::neutron_gyromagnetic_ratio_in_mhz_per_tesla();
+        let gamma_n_mhz_centre = Ratio::new(291_646_931, 10i128.pow(7));
+        assert_eq!(
+            neutron_gyromagnetic_ratio_in_mhz_per_tesla().value(),
+            29.164_693_1,
+            "neutron gyromagnetic ratio in MHz/T gamma_n_MHz Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            neutron_gyromagnetic_ratio_in_mhz_per_tesla().value(),
+            gamma_n_mhz_centre.to_f64(),
+            "gamma_n_MHz Qty locksteps to Ratio::to_f64 on the 10^7 centre"
+        );
         assert!(
-            physis_constants::lookup("gamma_n_MHz").is_none(),
-            "neutron gyromagnetic ratio in MHz/T is a later row"
+            gamma_n_mhz
+                .value
+                .contains(Interval::point(gamma_n_mhz_centre)),
+            "gamma_n_MHz Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            gamma_n_mhz.value.lo, gamma_n_mhz.value.hi,
+            "ledger gamma_n_MHz stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            gamma_n_mhz.value.lo > Ratio::int(0),
+            "ledger gamma_n_MHz stays a positive hull"
+        );
+        assert_ne!(
+            physis_constants::neutron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::neutron_gyromagnetic_ratio().hash,
+            "gamma_n_MHz is not gamma_n"
+        );
+        assert_ne!(
+            physis_constants::neutron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            "gamma_n_MHz is not gamma0p_MHz"
+        );
+        assert_ne!(
+            physis_constants::neutron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::proton_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            "gamma_n_MHz is not gamma_p_MHz"
+        );
+        assert_ne!(
+            physis_constants::neutron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::neutron_g_factor().hash,
+            "gamma_n_MHz is not gn"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
