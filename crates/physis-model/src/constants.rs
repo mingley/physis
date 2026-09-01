@@ -1212,11 +1212,23 @@ pub fn atomic_mass_constant() -> Qty<Mass> {
 /// This is the recommended centre from the PHYSICOCHEMICAL section, not
 /// the kg hull, not proton, neutron, deuteron, triton, helion,
 /// alpha-particle, or muon energy equivalent, not Hartree, and not the
-/// exact electronvolt Ratio. The MeV conversion is a later table row.
+/// exact electronvolt Ratio. The MeV conversion is `m_u_c2_MeV`.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 768.
 pub fn atomic_mass_constant_energy_equivalent() -> Qty<Energy> {
     joule(1.492_418_085_60e-10)
+}
+
+/// Atomic mass constant energy equivalent in MeV, CODATA 2018.
+///
+/// This is the recommended centre in MeV from the PHYSICOCHEMICAL
+/// section, not the joule hull, not proton, neutron, deuteron, triton,
+/// helion, alpha-particle, or muon MeV, not Hartree, and not the exact
+/// electronvolt Ratio. Ledger unit is MeV; this Qty is dimensionless,
+/// not SI joule. The versioned ledger stores the one-sigma hull; this
+/// Qty is that centre. This is not the CODATA 2022 last-digit 372.
+pub fn atomic_mass_constant_energy_equivalent_in_mev() -> Qty<Dimensionless> {
+    Qty::new(931.494_102_42)
 }
 
 /// Muon mass.
@@ -7612,9 +7624,95 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "m_u_c2 is not G"
         );
+
         assert!(
-            physis_constants::lookup("m_u_c2_MeV").is_none(),
-            "m_u_c2_MeV atomic mass constant energy equivalent in MeV is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("muc2_MeV").is_none(),
+            "muc2_MeV is not a ledger name; the live name is m_u_c2_MeV"
+        );
+        let m_u_c2_mev = physis_constants::atomic_mass_constant_energy_equivalent_in_mev();
+        let m_u_c2_mev_centre = Ratio::new(93_149_410_242, 10i128.pow(8));
+        assert_eq!(
+            atomic_mass_constant_energy_equivalent_in_mev().value(),
+            931.494_102_42,
+            "m_u_c2_MeV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_mass_constant_energy_equivalent_in_mev().value(),
+            m_u_c2_mev_centre.to_f64(),
+            "m_u_c2_MeV Qty locksteps to Ratio::to_f64 on the 10^8 centre"
+        );
+        assert!(
+            m_u_c2_mev
+                .value
+                .contains(Interval::point(m_u_c2_mev_centre)),
+            "m_u_c2_MeV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_u_c2_mev.value.lo, m_u_c2_mev.value.hi,
+            "ledger m_u_c2_MeV stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            m_u_c2_mev.value.lo > Ratio::int(0),
+            "ledger m_u_c2_MeV stays a positive energy-equivalent hull"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            "m_u_c2_MeV is not m_u_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::proton_mass_energy_equivalent_in_mev().hash,
+            "m_u_c2_MeV is not m_p_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::neutron_mass_energy_equivalent_in_mev().hash,
+            "m_u_c2_MeV is not m_n_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::deuteron_mass_energy_equivalent_in_mev().hash,
+            "m_u_c2_MeV is not m_d_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::triton_mass_energy_equivalent_in_mev().hash,
+            "m_u_c2_MeV is not m_t_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::helion_mass_energy_equivalent_in_mev().hash,
+            "m_u_c2_MeV is not m_h_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::alpha_particle_mass_energy_equivalent_in_mev().hash,
+            "m_u_c2_MeV is not m_alpha_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::muon_mass_energy_equivalent_in_mev().hash,
+            "m_u_c2_MeV is not m_mu_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::hartree_energy().hash,
+            "m_u_c2_MeV is not Eh"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::electron_volt().hash,
+            "m_u_c2_MeV is not eV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            physis_constants::newtonian_g().hash,
+            "m_u_c2_MeV is not G"
+        );
+        assert!(
+            physis_constants::lookup("M_u").is_none(),
+            "M_u molar mass constant is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
