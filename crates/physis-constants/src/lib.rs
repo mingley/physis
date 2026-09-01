@@ -897,6 +897,10 @@ fn codata_2018_second_radiation_constant_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "c2 = 1.438776877e-2 exact")
 }
 
+fn codata_2018_josephson_constant_source() -> SourceRecord {
+    codata_2018_jpcrd("ELECTROMAGNETIC", "KJ = 483597.8484e9 exact")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5493,8 +5497,8 @@ fn second_radiation_constant_value() -> Ratio {
 /// not Planck `h`, not Boltzmann `k`, not speed of light `c`, not first
 /// radiation constant for spectral radiance `c1L`, not first radiation
 /// constant `c1` = `2πhc²` (π; not stored), not Stefan-Boltzmann `σ`
-/// (π; not stored), not Wien `b` / `b0` (transcendental roots; later
-/// rows), not an SI defining constant, and not a FormalClaim that
+/// (π; not stored), not Wien `b` / `b0` (transcendental roots; not
+/// stored). The Josephson constant is `KJ`. Not an SI defining constant, and not a FormalClaim that
 /// reconstructs `h c / k` from live lookups. The table prints
 /// `1.438 776 877… × 10^{-2}`; the ledger stores the exact Ratio. The
 /// reduced denominator keeps factor 18913, so this is not a terminating
@@ -5509,6 +5513,38 @@ pub fn second_radiation_constant() -> Constant<Ratio> {
         second_radiation_constant_value(),
         "m K",
         codata_2018_second_radiation_constant_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 Josephson constant 2 e / h as an exact Ratio.
+fn josephson_constant_value() -> Ratio {
+    Ratio::new(2 * 1_602_176_634i128 * 10i128.pow(14), 662_607_015i128)
+}
+
+/// Josephson constant KJ, SI 2019 exact Ratio.
+///
+/// This is the exact ELECTROMAGNETIC product listed as `KJ` = `2e/h`,
+/// not elementary charge `e`, not Planck `h`, not magnetic flux quantum
+/// `Phi0` (printed `2πℏ/(2e)`; π and ħ; not stored), not conductance
+/// quantum `G0` (printed `2e²/2πℏ`; π and ħ; not stored), not
+/// conventional 1990 `KJ-90`, not second radiation constant `c2`, not
+/// an SI defining constant, and not a FormalClaim that reconstructs
+/// `2 e / h` from live lookups. The table prints
+/// `483 597.848 4… × 10^9`; the ledger stores the exact Ratio. The
+/// reduced denominator keeps factors 7 and 6310543, so this is not a
+/// terminating [`SciExact`]. The product fits [`Ratio`] (`10^{14}`).
+/// This is not P3N. The JPCRD symbol `KJ` is the ledger name. Von
+/// Klitzing `RK` is a later ELECTROMAGNETIC row. Electron mass is not
+/// stored: `10^{42}` overflows `i128`. CODATA 2022 prints the same
+/// SI-exact ellipsis; there is no last-digit trap. Theories still use
+/// `physis_model` `f64` Qty.
+pub fn josephson_constant() -> Constant<Ratio> {
+    Constant::new(
+        "KJ",
+        josephson_constant_value(),
+        "Hz V^{-1}",
+        codata_2018_josephson_constant_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5823,6 +5859,7 @@ pub const LEDGER: &[&str] = &[
     "S0_R_atm",
     "c1L",
     "c2",
+    "KJ",
     "au",
     "eV",
     "GM_sun",
@@ -6113,6 +6150,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             "sci-exact",
         )),
         "c2" => Some(listing(second_radiation_constant(), "ratio")),
+        "KJ" => Some(listing(josephson_constant(), "ratio")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25424,6 +25462,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -25576,6 +25615,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25714,6 +25754,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25846,6 +25887,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25948,6 +25990,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -26049,6 +26092,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -26173,6 +26217,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26297,6 +26342,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26424,6 +26470,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26552,6 +26599,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("gamma0h").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
@@ -26673,6 +26721,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
@@ -26810,6 +26859,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("gn").is_some());
@@ -26929,6 +26979,7 @@ mod tests {
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_none());
@@ -26940,6 +26991,7 @@ mod tests {
         assert!(lookup("Eh_eV").is_none());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -27076,6 +27128,130 @@ mod tests {
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
         assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
+        assert!(lookup("c1L").is_some());
+        assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("S0_R").is_some());
+        assert!(lookup("n0_atm").is_some());
+        assert!(lookup("gn").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_josephson_constant_is_an_exact_ratio() {
+        let r = josephson_constant();
+        let value = Ratio::new(2 * 1_602_176_634i128 * 10i128.pow(14), 662_607_015i128);
+        assert_eq!(r.name, "KJ");
+        assert_eq!(r.unit, "Hz V^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("ELECTROMAGNETIC")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("KJ = 483597.8484e9 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(r.value.to_string(), "21362355120000000000000/44173801");
+        assert!(r.value > Ratio::int(0), "KJ is a positive exact Ratio");
+        assert_ne!(
+            r.value,
+            Ratio::new(483_597_848_400_000, 1),
+            "KJ is the full SI Ratio, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, josephson_constant().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "KJ",
+                josephson_constant_value(),
+                "Hz V^{-1}",
+                codata_2018_josephson_constant_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, elementary_charge().hash, "KJ is not e");
+        assert_ne!(r.hash, planck_h().hash, "KJ is not h");
+        assert_ne!(r.hash, second_radiation_constant().hash, "KJ is not c2");
+        assert_ne!(
+            r.hash,
+            first_radiation_constant_spectral_radiance().hash,
+            "KJ is not c1L"
+        );
+        assert_ne!(r.hash, newtonian_g().hash, "KJ is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "KJ is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            second_radiation_constant().provenance.source_hash,
+            "KJ range is not the c2 range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            elementary_charge().provenance.source_hash,
+            "KJ locator is not the SI brochure e locator"
+        );
+        assert_eq!(
+            second_radiation_constant().hash.to_hex(),
+            "9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc",
+            "c2 hash must stay pinned when KJ is added"
+        );
+        assert_eq!(
+            first_radiation_constant_spectral_radiance().hash.to_hex(),
+            "bb3b42d41a8d8ebc3191a2aa98d974733538eaba1098eb89a1574d228479249c",
+            "c1L hash must stay pinned when KJ is added"
+        );
+        assert_eq!(
+            planck_h().hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef",
+            "h hash must stay pinned when KJ is added"
+        );
+        assert_eq!(
+            elementary_charge().hash.to_hex(),
+            "412cb379a6bf6cca245ba89fc43539399942e644fa08000cd30bd1d9b25372a5",
+            "e hash must stay pinned when KJ is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when KJ is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when KJ is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "eb31c5b04ef0823e6e80a2921172c06fa6ef692e5a7700cb25d183b00a0090d2"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(14).is_some(),
+            "KJ = 2e/h fits Ratio; 10^14 fits i128"
+        );
+        assert!(lookup("Phi0").is_none());
+        assert!(lookup("G0").is_none());
+        assert!(lookup("KJ-90").is_none());
+        assert!(lookup("RK").is_none());
+        assert!(lookup("sigma").is_none());
+        assert!(lookup("c1").is_none());
+        assert!(lookup("b").is_none());
+        assert!(lookup("b0").is_none());
+        assert!(lookup("S0/R").is_none());
+        assert!(lookup("S0").is_none());
+        assert!(lookup("gamma0h").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
@@ -27288,7 +27464,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 168);
+        assert_eq!(LEDGER.len(), 169);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -28083,6 +28259,11 @@ mod tests {
             lookup("c2").unwrap().hash.to_hex(),
             "9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc"
         );
+        assert_eq!(lookup("KJ").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("KJ").unwrap().hash.to_hex(),
+            "eb31c5b04ef0823e6e80a2921172c06fa6ef692e5a7700cb25d183b00a0090d2"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -28426,6 +28607,7 @@ mod tests {
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
+        assert!(lookup("KJ").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());

@@ -1438,10 +1438,26 @@ pub fn first_radiation_constant_spectral_radiance(
 /// prints an ellipsis; the ledger stores the exact Ratio. This is not a
 /// terminating SciExact (18913 remains in the reduced denominator). The
 /// versioned ledger stores the exact Ratio; this Qty is the IEEE
-/// rounding of that Ratio. Wien displacement constants are later table
-/// rows and are not stored.
+/// rounding of that Ratio. Wien displacement constants are not stored.
+/// The Josephson constant is KJ.
 pub fn second_radiation_constant() -> Qty<physis_core::LengthTemperature> {
     Qty::new(0.014_387_768_775_039_339)
+}
+
+/// Josephson constant KJ = 2 e / h, SI 2019 exact.
+///
+/// This is the exact ELECTROMAGNETIC product listed as KJ, not
+/// elementary charge e, not Planck h, not Phi0 (that printed formula
+/// cites pi and hbar), not G0 (that printed formula cites pi and hbar),
+/// not conventional KJ-90, and not a FormalClaim that reconstructs
+/// 2 e / h from live lookups. The table prints an ellipsis; the ledger
+/// stores the exact Ratio. This is not a terminating SciExact (7 and
+/// 6310543 remain in the reduced denominator). The versioned ledger
+/// stores the exact Ratio; this Qty is the IEEE rounding of that Ratio.
+/// Von Klitzing RK is a later ELECTROMAGNETIC row and is not stored.
+pub fn josephson_constant(
+) -> Qty<physis_core::SI<typenum::N1, typenum::N2, typenum::P2, typenum::P1>> {
+    Qty::new(483_597_848_416_983.7)
 }
 
 /// Muon mass.
@@ -8735,6 +8751,56 @@ mod tests {
         assert!(
             physis_constants::lookup("b0").is_none(),
             "Wien displacement law constant is a later PHYSICOCHEMICAL row"
+        );
+
+        let k_j = physis_constants::josephson_constant();
+        let k_j_value = Ratio::new(2 * 1_602_176_634i128 * 10i128.pow(14), 662_607_015i128);
+        assert_eq!(k_j.value, k_j_value, "ledger KJ is the exact SI Ratio");
+        assert_eq!(
+            josephson_constant().value(),
+            k_j_value.to_f64(),
+            "KJ Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            josephson_constant().value(),
+            483_597_848_416_983.7,
+            "KJ Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
+        assert!(
+            k_j.value > Ratio::int(0),
+            "ledger KJ stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::josephson_constant().hash,
+            physis_constants::elementary_charge().hash,
+            "KJ is not e"
+        );
+        assert_ne!(
+            physis_constants::josephson_constant().hash,
+            physis_constants::planck_h().hash,
+            "KJ is not h"
+        );
+        assert_ne!(
+            physis_constants::josephson_constant().hash,
+            physis_constants::second_radiation_constant().hash,
+            "KJ is not c2"
+        );
+        assert_ne!(
+            physis_constants::josephson_constant().hash,
+            physis_constants::newtonian_g().hash,
+            "KJ is not G"
+        );
+        assert!(
+            physis_constants::lookup("Phi0").is_none(),
+            "magnetic flux quantum printed formula cites pi and hbar and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("G0").is_none(),
+            "conductance quantum printed formula cites pi and hbar and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("RK").is_none(),
+            "von Klitzing constant is a later ELECTROMAGNETIC row"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
