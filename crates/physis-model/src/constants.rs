@@ -847,7 +847,7 @@ pub fn triton_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
 /// sibling moments and not a certificate that it equals the g-factor
 /// gt. The g-factor is `gt`. JPCRD prints different digits from
 /// `mu_t_muN` because I = 1/2; each row has its own Claim identity.
-/// Helion rows are later table rows and are not stored. The
+/// Helion mass is `m_h`. Later Helion rows are not stored. The
 /// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 4650.
 pub fn triton_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
@@ -861,11 +861,24 @@ pub fn triton_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
 /// triton nuclear-magneton ratio. This Qty is not a certificate that
 /// it equals 2 μ_t/μ_N from sibling moments. JPCRD prints different
 /// digits from mu_t_muN because I = 1/2; each row has its own Claim
-/// identity. Helion rows are later table rows and are not stored. The
+/// identity. Helion mass is `m_h`. Later Helion rows are not stored. The
 /// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 930.
 pub fn triton_g_factor() -> Qty<Dimensionless> {
     Qty::new(5.957_924_931)
+}
+
+/// Helion mass m_h (kg), CODATA 2018.
+///
+/// This is the recommended kg centre from the helion section, not
+/// triton, deuteron, neutron, proton, or muon mass and not the
+/// electron-helion mass ratio. This Qty is not a certificate of a
+/// reconstruction from sibling masses or mass ratios. The u-row is a
+/// later table row and is not stored. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. This is not the CODATA
+/// 2022 last-digit 7862.
+pub fn helion_mass() -> Qty<Mass> {
+    kg(5.006_412_779_6e-27)
 }
 
 /// Muon mass.
@@ -5625,6 +5638,55 @@ mod tests {
             physis_constants::triton_g_factor().hash,
             physis_constants::neutron_g_factor().hash,
             "gt is not gn"
+        );
+        assert!(
+            physis_constants::lookup("mh").is_none(),
+            "mh is not a ledger name; the live name is m_h"
+        );
+        let m_h = physis_constants::helion_mass();
+        let m_h_centre = Ratio::new(50_064_127_796, 10i128.pow(37));
+        assert_eq!(
+            helion_mass().value(),
+            m_h_centre.to_f64(),
+            "m_h Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_h.value.contains(Interval::point(m_h_centre)),
+            "m_h Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_h.value.lo, m_h.value.hi,
+            "ledger m_h stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::helion_mass().hash,
+            physis_constants::triton_mass().hash,
+            "m_h is not m_t"
+        );
+        assert_ne!(
+            physis_constants::helion_mass().hash,
+            physis_constants::deuteron_mass().hash,
+            "m_h is not m_d"
+        );
+        assert_ne!(
+            physis_constants::helion_mass().hash,
+            physis_constants::neutron_mass().hash,
+            "m_h is not m_n"
+        );
+        assert_ne!(
+            physis_constants::helion_mass().hash,
+            physis_constants::proton_mass().hash,
+            "m_h is not m_p"
+        );
+        assert_ne!(
+            physis_constants::helion_mass().hash,
+            physis_constants::muon_mass().hash,
+            "m_h is not m_mu"
+        );
+        assert_ne!(
+            physis_constants::helion_mass().hash,
+            physis_constants::electron_helion_mass_ratio().hash,
+            "m_h is not me_mh"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

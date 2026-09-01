@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  e36fff7e272cc2f04b97dcb839b7c312c8a6b20d8264ec0db593090057e29efa"),
+            text.contains("constant  ledger  64e966c68754735c57c3f0a5888162bc2abdbca3df5397b84023ecfaf46b194e"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -15207,6 +15207,42 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let m_h = lab
+            .exec(Command::Constant {
+                name: Some("m_h".into()),
+            })
+            .text()
+            .to_string();
+        assert!(m_h.contains("constant  m_h  node "), "{m_h}");
+        assert!(
+            m_h.contains(
+                "hash     1a53756d23bdbbc188edb9cc55d1f3a9e5cc952d386bf885530507a4cded2492"
+            ),
+            "{m_h}"
+        );
+        assert!(m_h.contains("kind     interval"), "{m_h}");
+        assert!(m_h.contains("table    XXXI"), "{m_h}");
+        assert!(m_h.contains("range    mh = 5.0064127796(15)e-27"), "{m_h}");
+        assert!(m_h.contains("unit     kg"), "{m_h}");
+        assert!(
+            m_h.contains("value    [50064127781/10000000000000000000000000000000000000, 50064127811/10000000000000000000000000000000000000]"),
+            "{m_h}"
+        );
+        assert!(m_h.contains("rebuild  ok"), "{m_h}");
+        assert!(m_h.contains("not P3N"), "{m_h}");
+        assert!(!m_h.contains("receipt"), "{m_h}");
+        assert!(!m_h.contains("theorem"), "{m_h}");
+        let m_h_id = constant_node_id(&m_h);
+        assert_eq!(
+            m_h_id.to_hex(),
+            "dd7fb3d8d0f506e48199cd8b575f47d9668d7968a53a4d82a9d40c0f62e4cb9a",
+            "journaling must not change the m_h constant payload"
+        );
+        assert_eq!(
+            lab.store.get(m_h_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -17674,7 +17710,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "e36fff7e272cc2f04b97dcb839b7c312c8a6b20d8264ec0db593090057e29efa",
+            "64e966c68754735c57c3f0a5888162bc2abdbca3df5397b84023ecfaf46b194e",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -18609,7 +18645,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "e36fff7e272cc2f04b97dcb839b7c312c8a6b20d8264ec0db593090057e29efa",
+            "64e966c68754735c57c3f0a5888162bc2abdbca3df5397b84023ecfaf46b194e",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -19537,6 +19573,14 @@ mod tests {
         .expect("pinned gt node");
         assert_eq!(
             lab2.store.get(gt).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let m_h = physis_core::artifact::ArtifactId::from_hex(
+            "dd7fb3d8d0f506e48199cd8b575f47d9668d7968a53a4d82a9d40c0f62e4cb9a",
+        )
+        .expect("pinned m_h node");
+        assert_eq!(
+            lab2.store.get(m_h).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -21090,7 +21134,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  e36fff7e272cc2f04b97dcb839b7c312c8a6b20d8264ec0db593090057e29efa"),
+            text.contains("constant  ledger  64e966c68754735c57c3f0a5888162bc2abdbca3df5397b84023ecfaf46b194e"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
