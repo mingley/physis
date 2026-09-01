@@ -937,11 +937,25 @@ pub fn helion_electron_mass_ratio() -> Qty<Dimensionless> {
 /// This is the recommended centre from the helion section, not the
 /// triton-proton, deuteron-proton, neutron-proton, or proton-neutron
 /// mass ratio, and not a certificate that the stored centres reconstruct
-/// m_h/m_p. The molar mass is a later table row and is not stored. The
-/// versioned ledger stores the one-sigma hull; this Qty is that centre.
-/// This is not the CODATA 2022 last-digit 671552.
+/// m_h/m_p. The molar mass is `M_h`. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. This is not the CODATA 2022
+/// last-digit 671552.
 pub fn helion_proton_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(2.993_152_671_67)
+}
+
+/// Helion molar mass M_h (kg mol⁻¹), CODATA 2018.
+///
+/// This is the recommended centre from the helion section, not triton,
+/// deuteron, neutron, proton, electron, or muon molar mass, not the kg
+/// hull, not the u-row, and not a certificate that this equals N_A times
+/// the helion-mass hull. The magnetic moment is a later table row and is
+/// not stored. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre. This is not the CODATA 2022 last-digit 25010.
+pub fn helion_molar_mass() -> Qty<
+    physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(3.014_932_246_13e-3)
 }
 
 /// Muon mass.
@@ -6032,6 +6046,70 @@ mod tests {
             physis_constants::helion_proton_mass_ratio().hash,
             physis_constants::proton_mass().hash,
             "mh_mp is not m_p"
+        );
+        assert!(
+            physis_constants::lookup("Mh").is_none(),
+            "Mh is not a ledger name; the live name is M_h"
+        );
+        let m_h_molar = physis_constants::helion_molar_mass();
+        let m_h_molar_centre = Ratio::new(301_493_224_613, 10i128.pow(14));
+        assert_eq!(
+            helion_molar_mass().value(),
+            m_h_molar_centre.to_f64(),
+            "M_h Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_h_molar.value.contains(Interval::point(m_h_molar_centre)),
+            "M_h Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_h_molar.value.lo, m_h_molar.value.hi,
+            "ledger M_h stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::triton_molar_mass().hash,
+            "M_h is not M_t"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::deuteron_molar_mass().hash,
+            "M_h is not M_d"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::neutron_molar_mass().hash,
+            "M_h is not M_n"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::proton_molar_mass().hash,
+            "M_h is not M_p"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::electron_molar_mass().hash,
+            "M_h is not M_e"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::muon_molar_mass().hash,
+            "M_h is not M_mu"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::helion_mass().hash,
+            "M_h is not m_h"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::helion_mass_in_u().hash,
+            "M_h is not m_h_u"
+        );
+        assert_ne!(
+            physis_constants::helion_molar_mass().hash,
+            physis_constants::helion_proton_mass_ratio().hash,
+            "M_h is not mh_mp"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
