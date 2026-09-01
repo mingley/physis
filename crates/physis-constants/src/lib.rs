@@ -741,6 +741,10 @@ fn codata_2018_helion_mass_in_u_source() -> SourceRecord {
     codata_2018_jpcrd("Helion, h", "mh_u = 3.014932247175(97)")
 }
 
+fn codata_2018_helion_mass_energy_equivalent_source() -> SourceRecord {
+    codata_2018_jpcrd("Helion, h", "mhc2 = 4.4995394125(14)e-10")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -4028,8 +4032,8 @@ fn codata_2018_helion_mass_interval() -> Interval {
 /// proton mass `m_p`, not muon mass `m_mu`, not electron-helion mass
 /// ratio `me_mh`, not a certificate of a reconstruction from sibling
 /// masses or mass ratios, not an SI defining Ratio, and not P3N. The
-/// u-row is `m_h_u`. Energy-equivalent,
-/// mass-ratio, molar-mass, and moment rows are later table rows and
+/// u-row is `m_h_u`. The energy equivalent is `m_h_c2`.
+/// MeV, mass-ratio, molar-mass, and moment rows are later table rows and
 /// are not stored. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `7862`. The decade
 /// is `10^{37}`; `10^{36}` is the 10× trap (`μ` would not be an
@@ -4062,7 +4066,7 @@ fn codata_2018_helion_mass_in_u_interval() -> Interval {
 /// atomic mass under a different name (NIST prints the same digits as
 /// this u-row), not a certificate of a reconstruction from sibling
 /// masses or mass ratios, not an SI defining Ratio, and not P3N. The
-/// energy equivalent is a later table row and is not stored. The MeV
+/// energy equivalent is `m_h_c2`. The MeV
 /// conversion, mass-ratio, molar-mass, and moment rows are later table
 /// rows and are not stored. Electron mass is not stored: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `932`. The
@@ -4074,6 +4078,40 @@ pub fn helion_mass_in_u() -> Constant<Interval> {
         codata_2018_helion_mass_in_u_interval(),
         "u",
         codata_2018_helion_mass_in_u_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 4.4995394125(14)×10⁻¹⁰ J.
+fn codata_2018_helion_mass_energy_equivalent_interval() -> Interval {
+    let scale = 10i128.pow(20);
+    let mu = 44_995_394_125i128;
+    let sigma = 14;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Helion mass energy equivalent m_h c², CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in joules from the helion section, not
+/// the kg hull `m_h`, not the u-row `m_h_u`, not triton mass energy
+/// equivalent `m_t_c2`, not deuteron mass energy equivalent `m_d_c2`,
+/// not neutron mass energy equivalent `m_n_c2`, not proton mass energy
+/// equivalent `m_p_c2`, not muon mass energy equivalent `m_mu_c2`, not
+/// the Rydberg energy equivalent, not Hartree, not the exact
+/// electronvolt Ratio, not a certificate of a reconstruction from
+/// sibling masses, not an SI defining Ratio, and not P3N. The MeV
+/// conversion is a later table row and is not stored. Mass-ratio,
+/// molar-mass, and moment rows are later table rows and are not stored.
+/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// the CODATA 2022 last-digit `4185`. The decade is `10^{20}`; `10^{19}`
+/// is the 10× trap (`μ` would not be an integer). Theories still use
+/// `physis_model` `f64` Qty.
+pub fn helion_mass_energy_equivalent() -> Constant<Interval> {
+    Constant::new(
+        "m_h_c2",
+        codata_2018_helion_mass_energy_equivalent_interval(),
+        "J",
+        codata_2018_helion_mass_energy_equivalent_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -4349,6 +4387,7 @@ pub const LEDGER: &[&str] = &[
     "gt",
     "m_h",
     "m_h_u",
+    "m_h_c2",
     "au",
     "eV",
     "GM_sun",
@@ -4570,6 +4609,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "gt" => Some(listing(triton_g_factor(), "interval")),
         "m_h" => Some(listing(helion_mass(), "interval")),
         "m_h_u" => Some(listing(helion_mass_in_u(), "interval")),
+        "m_h_c2" => Some(listing(helion_mass_energy_equivalent(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -19582,7 +19622,7 @@ mod tests {
         assert!(lookup("mh_u").is_none());
         assert!(lookup("m-h-u").is_none());
         assert!(lookup("m_h/u").is_none());
-        assert!(lookup("m_h_c2").is_none());
+        assert!(lookup("m_h_c2").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -19597,6 +19637,183 @@ mod tests {
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("me_mh").is_some());
         assert!(lookup("M_e").is_some());
+        assert!(lookup("G").is_some());
+    }
+
+    #[test]
+    fn codata_2018_helion_mass_energy_equivalent_is_a_one_sigma_interval() {
+        let r = helion_mass_energy_equivalent();
+        let scale = 10i128.pow(20);
+        let lo = Ratio::new(44_995_394_111, scale);
+        let hi = Ratio::new(44_995_394_139, scale);
+        let centre = Ratio::new(44_995_394_125, scale);
+        assert_eq!(r.name, "m_h_c2");
+        assert_eq!(r.unit, "J");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Helion, h"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("mhc2 = 4.4995394125(14)e-10")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "m_h_c2 is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA m_h_c2 is a positive energy hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[44995394111/100000000000000000000, 44995394139/100000000000000000000]"
+        );
+        assert_eq!(r.hash, helion_mass_energy_equivalent().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "m_h_c2",
+                codata_2018_helion_mass_energy_equivalent_interval(),
+                "J",
+                codata_2018_helion_mass_energy_equivalent_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, helion_mass().hash, "m_h_c2 is not m_h");
+        assert_ne!(r.hash, helion_mass_in_u().hash, "m_h_c2 is not m_h_u");
+        assert_ne!(
+            r.hash,
+            triton_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_t_c2"
+        );
+        assert_ne!(
+            r.hash,
+            deuteron_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_d_c2"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_n_c2"
+        );
+        assert_ne!(
+            r.hash,
+            proton_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_p_c2"
+        );
+        assert_ne!(
+            r.hash,
+            muon_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_mu_c2"
+        );
+        assert_ne!(
+            r.hash,
+            rydberg_energy_equivalent().hash,
+            "m_h_c2 is not hcRinf"
+        );
+        assert_ne!(r.hash, hartree_energy().hash, "m_h_c2 is not Eh");
+        assert_ne!(r.hash, electron_volt().hash, "m_h_c2 is not eV");
+        assert_ne!(r.hash, newtonian_g().hash, "m_h_c2 is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            helion_mass().provenance.source_hash,
+            "m_h_c2 range is not the m_h range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            helion_mass_in_u().provenance.source_hash,
+            "m_h_c2 range is not the m_h_u range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            triton_mass_energy_equivalent().provenance.source_hash,
+            "m_h_c2 range is not the m_t_c2 range"
+        );
+        assert_eq!(
+            helion_mass().hash.to_hex(),
+            "1a53756d23bdbbc188edb9cc55d1f3a9e5cc952d386bf885530507a4cded2492",
+            "m_h hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            helion_mass_in_u().hash.to_hex(),
+            "652b05943359b759c6dd9125ca3fb791ebfe9272583a413f3d752ca742f5da51",
+            "m_h_u hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            triton_mass_energy_equivalent().hash.to_hex(),
+            "2e658432e2c5b63fc780b7af02de9f3d2d94c304d16e120708f73bb18ccd2b3c",
+            "m_t_c2 hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            deuteron_mass_energy_equivalent().hash.to_hex(),
+            "dfe04d95b7f5a00ad95da03903d7218c1ba7e38d88d89a3e1644018a94e65868",
+            "m_d_c2 hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            neutron_mass_energy_equivalent().hash.to_hex(),
+            "6e677c893f10770fdedc46ec68d0c6de2321e9d5fd03819ca0bc0054308ebff4",
+            "m_n_c2 hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            proton_mass_energy_equivalent().hash.to_hex(),
+            "9bdab3205a64c45d2c413626db03cdf6452e021df65c420170cd7ffb163990f3",
+            "m_p_c2 hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            muon_mass_energy_equivalent().hash.to_hex(),
+            "d83a5072b8cb4fe869a2aa076aff9c4cd0d8f9f613a41eef52117124acde5854",
+            "m_mu_c2 hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            rydberg_energy_equivalent().hash.to_hex(),
+            "0d0308e874e54cb3d02570c972232b0d26c2d1d64b493880a1bb7ce4ff7827b2",
+            "hcRinf hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            hartree_energy().hash.to_hex(),
+            "c4606c77e55763a397f633ef0f3ace1328d3e1e8781428baf97554c97f4fba5a",
+            "Eh hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            electron_volt().hash.to_hex(),
+            "d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f",
+            "eV hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when m_h_c2 is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "33cd4c3d375911c13d541bf56f9664717286c73fa2ef1ebe83e2728a196a8a46"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(20).is_some(),
+            "m_h_c2 = 4.4995394125e-10 is 44995394125/10^20; that denominator fits i128"
+        );
+        assert!(lookup("mhc2").is_none());
+        assert!(lookup("m-h-c2").is_none());
+        assert!(lookup("m_h/c2").is_none());
+        assert!(lookup("m_h_c2_MeV").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("m_h_c2").is_some());
+        assert!(lookup("m_h").is_some());
+        assert!(lookup("m_h_u").is_some());
+        assert!(lookup("m_t_c2").is_some());
+        assert!(lookup("m_d_c2").is_some());
+        assert!(lookup("m_n_c2").is_some());
+        assert!(lookup("m_p_c2").is_some());
+        assert!(lookup("m_mu_c2").is_some());
+        assert!(lookup("hcRinf").is_some());
+        assert!(lookup("Eh").is_some());
+        assert!(lookup("eV").is_some());
         assert!(lookup("G").is_some());
     }
 
@@ -19802,7 +20019,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 129);
+        assert_eq!(LEDGER.len(), 130);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -20402,6 +20619,11 @@ mod tests {
             lookup("m_h_u").unwrap().hash.to_hex(),
             "652b05943359b759c6dd9125ca3fb791ebfe9272583a413f3d752ca742f5da51"
         );
+        assert_eq!(lookup("m_h_c2").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("m_h_c2").unwrap().hash.to_hex(),
+            "33cd4c3d375911c13d541bf56f9664717286c73fa2ef1ebe83e2728a196a8a46"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -20614,7 +20836,11 @@ mod tests {
         assert!(lookup("mh_u").is_none());
         assert!(lookup("m-h-u").is_none());
         assert!(lookup("m_h/u").is_none());
-        assert!(lookup("m_h_c2").is_none());
+        assert!(lookup("m_h_c2").is_some());
+        assert!(lookup("mhc2").is_none());
+        assert!(lookup("m-h-c2").is_none());
+        assert!(lookup("m_h/c2").is_none());
+        assert!(lookup("m_h_c2_MeV").is_none());
         assert!(lookup("mue_mun").is_none());
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());

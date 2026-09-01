@@ -888,11 +888,24 @@ pub fn helion_mass() -> Qty<Mass> {
 /// This Qty is not a certificate of a reconstruction from sibling
 /// masses. Ledger unit is u; this Qty is dimensionless, not kg. Relative
 /// atomic mass is not stored under a different name. Energy equivalent
-/// is a later table row and is not stored. The versioned ledger stores
+/// is `m_h_c2`. The versioned ledger stores
 /// the one-sigma hull; this Qty is that centre. This is not the CODATA
 /// 2022 last-digit 932.
 pub fn helion_mass_in_u() -> Qty<Dimensionless> {
     Qty::new(3.014_932_247_175)
+}
+
+/// Helion mass energy equivalent m_h c² (J), CODATA 2018.
+///
+/// This is the recommended centre in joules from the helion section,
+/// not the kg hull, not the u-row, not triton, deuteron, neutron,
+/// proton, or muon joule hulls. This Qty is not a certificate of a
+/// reconstruction from sibling masses. Ledger unit is J. The MeV
+/// conversion is a later table row and is not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 4185.
+pub fn helion_mass_energy_equivalent() -> Qty<Energy> {
+    joule(4.499_539_412_5e-10)
 }
 
 /// Muon mass.
@@ -5760,6 +5773,65 @@ mod tests {
             physis_constants::helion_mass_in_u().hash,
             physis_constants::electron_molar_mass().hash,
             "m_h_u is not M_e"
+        );
+        assert!(
+            physis_constants::lookup("mhc2").is_none(),
+            "mhc2 is not a ledger name; the live name is m_h_c2"
+        );
+        let m_h_c2 = physis_constants::helion_mass_energy_equivalent();
+        let m_h_c2_centre = Ratio::new(44_995_394_125, 10i128.pow(20));
+        assert_eq!(
+            helion_mass_energy_equivalent().value(),
+            m_h_c2_centre.to_f64(),
+            "m_h_c2 Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_h_c2.value.contains(Interval::point(m_h_c2_centre)),
+            "m_h_c2 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_h_c2.value.lo, m_h_c2.value.hi,
+            "ledger m_h_c2 stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::helion_mass().hash,
+            "m_h_c2 is not m_h"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::helion_mass_in_u().hash,
+            "m_h_c2 is not m_h_u"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::triton_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_t_c2"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_d_c2"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::neutron_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_n_c2"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::proton_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_p_c2"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::muon_mass_energy_equivalent().hash,
+            "m_h_c2 is not m_mu_c2"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_energy_equivalent().hash,
+            physis_constants::electron_volt().hash,
+            "m_h_c2 is not eV"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
