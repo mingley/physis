@@ -873,12 +873,26 @@ pub fn triton_g_factor() -> Qty<Dimensionless> {
 /// This is the recommended kg centre from the helion section, not
 /// triton, deuteron, neutron, proton, or muon mass and not the
 /// electron-helion mass ratio. This Qty is not a certificate of a
-/// reconstruction from sibling masses or mass ratios. The u-row is a
-/// later table row and is not stored. The versioned ledger stores the
+/// reconstruction from sibling masses or mass ratios. The u-row is
+/// `m_h_u`. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre. This is not the CODATA
 /// 2022 last-digit 7862.
 pub fn helion_mass() -> Qty<Mass> {
     kg(5.006_412_779_6e-27)
+}
+
+/// Helion mass in unified atomic mass units, CODATA 2018.
+///
+/// This is the recommended centre in u from the helion section, not the
+/// kg hull and not triton, deuteron, neutron, proton, or muon mass in u.
+/// This Qty is not a certificate of a reconstruction from sibling
+/// masses. Ledger unit is u; this Qty is dimensionless, not kg. Relative
+/// atomic mass is not stored under a different name. Energy equivalent
+/// is a later table row and is not stored. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. This is not the CODATA
+/// 2022 last-digit 932.
+pub fn helion_mass_in_u() -> Qty<Dimensionless> {
+    Qty::new(3.014_932_247_175)
 }
 
 /// Muon mass.
@@ -5687,6 +5701,65 @@ mod tests {
             physis_constants::helion_mass().hash,
             physis_constants::electron_helion_mass_ratio().hash,
             "m_h is not me_mh"
+        );
+        assert!(
+            physis_constants::lookup("mh_u").is_none(),
+            "mh_u is not a ledger name; the live name is m_h_u"
+        );
+        let m_h_u = physis_constants::helion_mass_in_u();
+        let m_h_u_centre = Ratio::new(3_014_932_247_175, 10i128.pow(12));
+        assert_eq!(
+            helion_mass_in_u().value(),
+            m_h_u_centre.to_f64(),
+            "m_h_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_h_u.value.contains(Interval::point(m_h_u_centre)),
+            "m_h_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_h_u.value.lo, m_h_u.value.hi,
+            "ledger m_h_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::helion_mass().hash,
+            "m_h_u is not m_h"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::triton_mass_in_u().hash,
+            "m_h_u is not m_t_u"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::deuteron_mass_in_u().hash,
+            "m_h_u is not m_d_u"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::neutron_mass_in_u().hash,
+            "m_h_u is not m_n_u"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::proton_mass_in_u().hash,
+            "m_h_u is not m_p_u"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::muon_mass_in_u().hash,
+            "m_h_u is not m_mu_u"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::electron_helion_mass_ratio().hash,
+            "m_h_u is not me_mh"
+        );
+        assert_ne!(
+            physis_constants::helion_mass_in_u().hash,
+            physis_constants::electron_molar_mass().hash,
+            "m_h_u is not M_e"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
