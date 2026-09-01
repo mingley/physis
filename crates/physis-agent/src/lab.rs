@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  b33c0f610446cf18bf33c48ea9169a8d3ba586181f0fb173647b258b4b66d288"),
+            text.contains("constant  ledger  eda64b62c6716bdb4722547fea1200a960b3cb8a85f6049517a5c78ff6f548bb"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -16090,6 +16090,55 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let m_alpha_molar = lab
+            .exec(Command::Constant {
+                name: Some("M_alpha".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            m_alpha_molar.contains("constant  M_alpha  node "),
+            "{m_alpha_molar}"
+        );
+        assert!(
+            m_alpha_molar.contains(
+                "hash     247f1e1ac48e536f49b0e9ea42f1233960dc446e599c1177469c80d2b50fddf3"
+            ),
+            "{m_alpha_molar}"
+        );
+        assert!(
+            m_alpha_molar.contains("kind     interval"),
+            "{m_alpha_molar}"
+        );
+        assert!(m_alpha_molar.contains("table    XXXI"), "{m_alpha_molar}");
+        assert!(
+            m_alpha_molar.contains("range    Malpha = 4.0015061777(12)e-3"),
+            "{m_alpha_molar}"
+        );
+        assert!(
+            m_alpha_molar.contains("unit     kg mol^{-1}"),
+            "{m_alpha_molar}"
+        );
+        assert!(
+            m_alpha_molar
+                .contains("value    [8003012353/2000000000000, 40015061789/10000000000000]"),
+            "{m_alpha_molar}"
+        );
+        assert!(m_alpha_molar.contains("rebuild  ok"), "{m_alpha_molar}");
+        assert!(m_alpha_molar.contains("not P3N"), "{m_alpha_molar}");
+        assert!(!m_alpha_molar.contains("receipt"), "{m_alpha_molar}");
+        assert!(!m_alpha_molar.contains("theorem"), "{m_alpha_molar}");
+        let m_alpha_molar_id = constant_node_id(&m_alpha_molar);
+        assert_eq!(
+            m_alpha_molar_id.to_hex(),
+            "d44a8e073d6b4105db288a959ad5cb0adf3a174239e2753a68e5c7f7981a83ac",
+            "journaling must not change the M_alpha constant payload"
+        );
+        assert_eq!(
+            lab.store.get(m_alpha_molar_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -18557,7 +18606,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "b33c0f610446cf18bf33c48ea9169a8d3ba586181f0fb173647b258b4b66d288",
+            "eda64b62c6716bdb4722547fea1200a960b3cb8a85f6049517a5c78ff6f548bb",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -19492,7 +19541,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "b33c0f610446cf18bf33c48ea9169a8d3ba586181f0fb173647b258b4b66d288",
+            "eda64b62c6716bdb4722547fea1200a960b3cb8a85f6049517a5c78ff6f548bb",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -20596,6 +20645,14 @@ mod tests {
         .expect("pinned malpha_mp node");
         assert_eq!(
             lab2.store.get(malpha_mp).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let m_alpha_molar = physis_core::artifact::ArtifactId::from_hex(
+            "d44a8e073d6b4105db288a959ad5cb0adf3a174239e2753a68e5c7f7981a83ac",
+        )
+        .expect("pinned M_alpha node");
+        assert_eq!(
+            lab2.store.get(m_alpha_molar).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -22149,7 +22206,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  b33c0f610446cf18bf33c48ea9169a8d3ba586181f0fb173647b258b4b66d288"),
+            text.contains("constant  ledger  eda64b62c6716bdb4722547fea1200a960b3cb8a85f6049517a5c78ff6f548bb"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
