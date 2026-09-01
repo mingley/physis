@@ -1518,10 +1518,22 @@ pub fn bohr_magneton_in_hz_per_tesla() -> Qty<Dimensionless> {
 /// hull, not the Hz T^{-1} muB_Hz hull, not Planck h, not a FormalClaim
 /// of muB / hc, and not hbar. The versioned ledger stores the one-sigma
 /// hull; this Qty is that centre. Ledger unit is m^{-1} T^{-1}; this Qty
-/// is dimensionless, not SI joule per tesla. Bohr magneton in K/T is a
-/// later ELECTROMAGNETIC row and is not stored.
+/// is dimensionless, not SI joule per tesla. Bohr magneton in K/T is muB_K.
 pub fn bohr_magneton_in_inverse_meter_per_tesla() -> Qty<Dimensionless> {
     Qty::new(46.686_447_783)
+}
+
+/// Bohr magneton in K/T, CODATA 2018.
+///
+/// This is the recommended printed ELECTROMAGNETIC centre in K T^{-1},
+/// not the J T^{-1} muB hull, not the inverse-meter muB_m hull, not
+/// Boltzmann k, not a FormalClaim of muB / k, and not hbar. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// Ledger unit is K T^{-1}; this Qty is dimensionless, not SI joule per
+/// tesla. Nuclear magneton is a later ELECTROMAGNETIC row and is not
+/// stored (printed formula cites hbar).
+pub fn bohr_magneton_in_kelvin_per_tesla() -> Qty<Dimensionless> {
+    Qty::new(0.671_713_815_63)
 }
 
 /// Muon mass.
@@ -9051,9 +9063,44 @@ mod tests {
             physis_constants::bohr_magneton_in_hz_per_tesla().hash,
             "muB_m is not muB_Hz"
         );
+
+        let mu_b_k = physis_constants::bohr_magneton_in_kelvin_per_tesla();
+        let mu_b_k_centre = Ratio::new(67_171_381_563, 10i128.pow(11));
+        assert_eq!(
+            bohr_magneton_in_kelvin_per_tesla().value(),
+            0.671_713_815_63,
+            "Bohr magneton in K/T muB_K Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            bohr_magneton_in_kelvin_per_tesla().value(),
+            mu_b_k_centre.to_f64(),
+            "muB_K Qty locksteps to Ratio::to_f64 on the 10^11 centre"
+        );
         assert!(
-            physis_constants::lookup("muB_K").is_none(),
-            "Bohr magneton in K/T is a later ELECTROMAGNETIC row"
+            mu_b_k.value.contains(Interval::point(mu_b_k_centre)),
+            "muB_K Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_b_k.value.lo, mu_b_k.value.hi,
+            "ledger muB_K stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            mu_b_k.value.lo > Ratio::int(0),
+            "ledger muB_K stays a positive hull"
+        );
+        assert_ne!(
+            physis_constants::bohr_magneton_in_kelvin_per_tesla().hash,
+            physis_constants::bohr_magneton().hash,
+            "muB_K is not muB"
+        );
+        assert_ne!(
+            physis_constants::bohr_magneton_in_kelvin_per_tesla().hash,
+            physis_constants::bohr_magneton_in_inverse_meter_per_tesla().hash,
+            "muB_K is not muB_m"
+        );
+        assert!(
+            physis_constants::lookup("muN").is_none(),
+            "nuclear magneton printed formula cites hbar and is not stored"
         );
         assert!(
             physis_constants::lookup("muN").is_none(),
