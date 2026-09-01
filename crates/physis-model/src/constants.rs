@@ -965,6 +965,7 @@ pub fn helion_molar_mass() -> Qty<
 /// and not vacuum permeability. This Qty is not a certificate that it
 /// equals g_h μ_N / 2. The Bohr-magneton ratio is `mu_h_muB`. The
 /// nuclear-magneton ratio is `mu_h_muN`. The g-factor is `gh`. The
+/// shielded magnetic moment is `mu0h`. The
 /// versioned ledger stores the one-sigma hull; this
 /// Qty is that centre as the CODATA decimal. `Ratio::to_f64` on the
 /// `10^{35}` centre is one ulp below this decimal and is not this Qty.
@@ -1011,11 +1012,25 @@ pub fn helion_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
 /// the helion nuclear-magneton ratio. This Qty is not a certificate that
 /// it equals 2 μ_h/μ_N from sibling moments. JPCRD prints different
 /// digits from mu_h_muN because I = 1/2; each row has its own Claim
-/// identity. Shielded-helion rows are later table rows and are not
-/// stored. The versioned ledger stores the one-sigma hull; this Qty is
+/// identity. The shielded magnetic moment is `mu0h`. The versioned
+/// ledger stores the one-sigma hull; this Qty is
 /// that centre. This is not the CODATA 2022 last-digit 6995.
 pub fn helion_g_factor() -> Qty<Dimensionless> {
     Qty::new(-4.255_250_615)
+}
+
+/// Shielded helion magnetic moment μ′_h (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended signed centre for the helion in a spherical
+/// gas sample at 25 °C, not the free helion moment, not shielded proton
+/// moment, not the electron to shielded-helion moment ratio, and not
+/// vacuum permeability. The Bohr-magneton ratio is a later table row
+/// and is not stored. Gyromagnetic ratios cite ħ and are not stored.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 11035.
+pub fn shielded_helion_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(-1.074_553_090e-26)
 }
 
 /// Muon mass.
@@ -6424,6 +6439,54 @@ mod tests {
             physis_constants::helion_g_factor().hash,
             physis_constants::neutron_g_factor().hash,
             "gh is not gn"
+        );
+        assert!(
+            physis_constants::lookup("mu_0h").is_none(),
+            "mu_0h is not a ledger name; the live name is mu0h"
+        );
+        let mu0h = physis_constants::shielded_helion_magnetic_moment();
+        let mu0h_centre = Ratio::new(-1_074_553_090, 10i128.pow(35));
+        assert_eq!(
+            shielded_helion_magnetic_moment().value(),
+            mu0h_centre.to_f64(),
+            "mu0h Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu0h.value.contains(Interval::point(mu0h_centre)),
+            "mu0h Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu0h.value.lo, mu0h.value.hi,
+            "ledger mu0h stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            mu0h.value.hi < Ratio::int(0),
+            "ledger mu0h stays the signed shielded helion moment"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment().hash,
+            physis_constants::helion_magnetic_moment().hash,
+            "mu0h is not mu_h"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment().hash,
+            physis_constants::shielded_proton_magnetic_moment().hash,
+            "mu0h is not mu0p"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment().hash,
+            physis_constants::electron_to_shielded_helion_magnetic_moment_ratio().hash,
+            "mu0h is not mu_e_mu0h"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu0h is not mu0"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment().hash,
+            physis_constants::helion_g_factor().hash,
+            "mu0h is not gh"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
