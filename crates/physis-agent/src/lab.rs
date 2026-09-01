@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817"),
+            text.contains("constant  ledger  0751a3f5088d2d573c072633a58da1459f5c34e1df28ddc8b4abb5883fa7093c"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -17739,6 +17739,48 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let hcrinf_ev = lab
+            .exec(Command::Constant {
+                name: Some("hcRinf_eV".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            hcrinf_ev.contains("constant  hcRinf_eV  node "),
+            "{hcrinf_ev}"
+        );
+        assert!(
+            hcrinf_ev.contains(
+                "hash     5af1daec68e85898cf41891c1a8336b720457d3bc73c4384bafbb07b9b7050e6"
+            ),
+            "{hcrinf_ev}"
+        );
+        assert!(hcrinf_ev.contains("kind     interval"), "{hcrinf_ev}");
+        assert!(hcrinf_ev.contains("table    XXXI"), "{hcrinf_ev}");
+        assert!(
+            hcrinf_ev.contains("range    hcRinf_eV = 13.605693122994(26)"),
+            "{hcrinf_ev}"
+        );
+        assert!(hcrinf_ev.contains("unit     eV"), "{hcrinf_ev}");
+        assert!(
+            hcrinf_ev.contains("value    [1700711640371/125000000000, 680284656151/50000000000]"),
+            "{hcrinf_ev}"
+        );
+        assert!(hcrinf_ev.contains("rebuild  ok"), "{hcrinf_ev}");
+        assert!(hcrinf_ev.contains("not P3N"), "{hcrinf_ev}");
+        assert!(!hcrinf_ev.contains("receipt"), "{hcrinf_ev}");
+        assert!(!hcrinf_ev.contains("theorem"), "{hcrinf_ev}");
+        let hcrinf_ev_id = constant_node_id(&hcrinf_ev);
+        assert_eq!(
+            hcrinf_ev_id.to_hex(),
+            "f5a202be0fdb836a2239c19a4da5300c1a153d4436db4d9151e4764eddf51168",
+            "journaling must not change the hcRinf_eV constant payload"
+        );
+        assert_eq!(
+            lab.store.get(hcrinf_ev_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -17988,14 +18030,14 @@ mod tests {
             unknown_eh.text()
         );
 
-        let unknown_hc = lab.exec(Command::Constant {
-            name: Some("hcRinf_eV".into()),
+        let unknown_me = lab.exec(Command::Constant {
+            name: Some("m_e".into()),
         });
-        assert_eq!(unknown_hc.exit_code(), 1, "{}", unknown_hc.text());
+        assert_eq!(unknown_me.exit_code(), 1, "{}", unknown_me.text());
         assert!(
-            unknown_hc.text().contains("unknown constant 'hcRinf_eV'"),
+            unknown_me.text().contains("unknown constant 'm_e'"),
             "{}",
-            unknown_hc.text()
+            unknown_me.text()
         );
 
         let unknown_ratio = lab.exec(Command::Constant {
@@ -20206,7 +20248,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817",
+            "0751a3f5088d2d573c072633a58da1459f5c34e1df28ddc8b4abb5883fa7093c",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -21141,7 +21183,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817",
+            "0751a3f5088d2d573c072633a58da1459f5c34e1df28ddc8b4abb5883fa7093c",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -22581,6 +22623,14 @@ mod tests {
         .expect("pinned Eh_eV node");
         assert_eq!(
             lab2.store.get(eh_ev).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let hcrinf_ev = physis_core::artifact::ArtifactId::from_hex(
+            "f5a202be0fdb836a2239c19a4da5300c1a153d4436db4d9151e4764eddf51168",
+        )
+        .expect("pinned hcRinf_eV node");
+        assert_eq!(
+            lab2.store.get(hcrinf_ev).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -24134,7 +24184,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  3303e64de1a13819cb8ee7591fd827e0b5694425b2041a46d142d053ca4ba817"),
+            text.contains("constant  ledger  0751a3f5088d2d573c072633a58da1459f5c34e1df28ddc8b4abb5883fa7093c"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

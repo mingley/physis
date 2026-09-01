@@ -2007,10 +2007,22 @@ pub fn rydberg_frequency() -> Qty<Frequency> {
 
 /// Rydberg energy equivalent hcR∞ (J), CODATA 2018.
 ///
-/// This is the recommended centre in joules, not the eV conversion.
+/// This is the recommended centre in joules, not the eV conversion hcRinf_eV.
 /// The versioned ledger stores the one-sigma hull; this Qty is that centre.
 pub fn rydberg_energy_equivalent() -> Qty<Energy> {
     joule(2.179_872_361_103_5e-18)
+}
+
+/// Rydberg energy equivalent in eV, CODATA 2018.
+///
+/// This is the recommended printed ATOMIC AND NUCLEAR centre in eV,
+/// not joule hcRinf, not Eh_eV, not SI-exact eV, not a FormalClaim of
+/// hcRinf / e, and not hbar. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. Ledger unit is eV; this Qty is
+/// dimensionless, not SI joule. Quantum of circulation still cites
+/// pi hbar / m_e and is not stored.
+pub fn rydberg_energy_equivalent_in_ev() -> Qty<Dimensionless> {
+    Qty::new(13.605_693_122_994)
 }
 
 /// Bohr radius a₀ (m), CODATA 2018.
@@ -2032,7 +2044,7 @@ pub fn hartree_energy() -> Qty<Energy> {
 /// Hartree energy in eV, CODATA 2018.
 ///
 /// This is the recommended printed ATOMIC AND NUCLEAR centre in eV,
-/// not joule Eh, not SI-exact eV, not hcRinf in eV, not the atomic unit
+/// not joule Eh, not SI-exact eV, not hcRinf_eV, not the atomic unit
 /// of electric potential, not a FormalClaim of Eh / e, and not hbar.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. Ledger unit is eV; this Qty is dimensionless, not SI joule.
@@ -2697,9 +2709,32 @@ mod tests {
             physis_constants::lookup("hc_Rinf").is_none(),
             "hc_Rinf is not a ledger name; the live name is hcRinf"
         );
+
+        let hcrinf_ev = physis_constants::rydberg_energy_equivalent_in_ev();
+        let hcrinf_ev_centre = Ratio::new(13_605_693_122_994, 10i128.pow(12));
+        assert_eq!(
+            rydberg_energy_equivalent_in_ev().value(),
+            13.605_693_122_994,
+            "hcRinf_eV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            rydberg_energy_equivalent_in_ev().value(),
+            hcrinf_ev_centre.to_f64(),
+            "hcRinf_eV Qty locksteps to Ratio::to_f64 on the 10^12 centre"
+        );
         assert!(
-            physis_constants::lookup("hcRinf_eV").is_none(),
-            "Rydberg energy equivalent in eV is a different recommended value and is not stored"
+            hcrinf_ev.value.contains(Interval::point(hcrinf_ev_centre)),
+            "hcRinf_eV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            physis_constants::rydberg_energy_equivalent_in_ev().hash,
+            physis_constants::rydberg_energy_equivalent().hash,
+            "hcRinf_eV is not hcRinf"
+        );
+        assert_ne!(
+            physis_constants::rydberg_energy_equivalent_in_ev().hash,
+            physis_constants::hartree_energy_in_ev().hash,
+            "hcRinf_eV is not Eh_eV"
         );
 
         let a0_c = physis_constants::bohr_radius();
