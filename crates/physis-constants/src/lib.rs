@@ -981,6 +981,10 @@ fn codata_2018_shielded_helion_gyromagnetic_ratio_source() -> SourceRecord {
     codata_2018_jpcrd("Helion, h", "gamma0h = 2.037894569(24)e8")
 }
 
+fn codata_2018_shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla_source() -> SourceRecord {
+    codata_2018_jpcrd("Helion, h", "gamma0h_MHz = 32.43409942(38)")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -6324,7 +6328,7 @@ fn codata_2018_shielded_helion_gyromagnetic_ratio_interval() -> Interval {
 /// FormalClaim that reconstructs `2 |μ′h| / ℏ` from live lookups. The
 /// printed formula cites ħ; the reconstruction is unused. The ledger
 /// stores the recommended one-sigma hull. The ledger name is `gamma0h`.
-/// Shielded helion gyromagnetic ratio in MHz/T is a later row. The
+/// Shielded helion gyromagnetic ratio in MHz/T is `gamma0h_MHz`. The
 /// decade is `10^{1}`; `10^{0}` is the 10× trap (`σ = 2.4` is not an
 /// integer). This is not the CODATA 2022 last-digit `6078`. This is not
 /// P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
@@ -6335,6 +6339,44 @@ pub fn shielded_helion_gyromagnetic_ratio() -> Constant<Interval> {
         codata_2018_shielded_helion_gyromagnetic_ratio_interval(),
         "s^{-1} T^{-1}",
         codata_2018_shielded_helion_gyromagnetic_ratio_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 32.43409942(38) MHz T⁻¹.
+fn codata_2018_shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla_interval() -> Interval {
+    let scale = 10i128.pow(8);
+    let centre = 3_243_409_942i128;
+    let sigma = 38;
+    Interval::new(
+        Ratio::new(centre - sigma, scale),
+        Ratio::new(centre + sigma, scale),
+    )
+}
+
+/// Shielded helion gyromagnetic ratio in MHz/T, CODATA 2018 one-sigma
+/// enclosure.
+///
+/// This is the recommended printed Helion, h companion for the helion
+/// in a spherical gas sample at 25 °C listed as shielded helion
+/// gyromagnetic ratio in MHz/T, not s⁻¹ T⁻¹ `gamma0h`, not shielded
+/// proton `gamma0p_MHz`, not electron `gamma_e_MHz`, not neutron
+/// `gamma_n_MHz`, not nuclear magneton in MHz/T `muN_MHz`, not
+/// glossary `g0p`, not an SI defining Ratio, not a terminating
+/// [`SciExact`], not `hbar`, and not a FormalClaim that reconstructs
+/// `gamma0h / 2π` from live lookups. NIST lists MHz T⁻¹, not Hz T⁻¹.
+/// The ledger stores the recommended one-sigma hull. The ledger name
+/// is `gamma0h_MHz`. Glossary `g0p` is still skipped. The decade is
+/// `10^{8}`; `10^{7}` is the 10× trap (`σ = 3.8` is not an integer).
+/// This is not the CODATA 2022 last-digit `033`. This is not P3N.
+/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// still use `physis_model` `f64` Qty.
+pub fn shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla() -> Constant<Interval> {
+    Constant::new(
+        "gamma0h_MHz",
+        codata_2018_shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla_interval(),
+        "MHz T^{-1}",
+        codata_2018_shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -6670,6 +6712,7 @@ pub const LEDGER: &[&str] = &[
     "gamma_e",
     "gamma_e_MHz",
     "gamma0h",
+    "gamma0h_MHz",
     "au",
     "eV",
     "GM_sun",
@@ -6999,6 +7042,10 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             "interval",
         )),
         "gamma0h" => Some(listing(shielded_helion_gyromagnetic_ratio(), "interval")),
+        "gamma0h_MHz" => Some(listing(
+            shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla(),
+            "interval",
+        )),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -24202,6 +24249,7 @@ mod tests {
         assert!(lookup("mu-0h-mu0p").is_none());
         assert!(lookup("mu0h_mu_0p").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -24346,6 +24394,7 @@ mod tests {
         assert!(lookup("m_a").is_none());
         assert!(lookup("Ar_alpha").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -26331,6 +26380,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -26504,6 +26554,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -26663,6 +26714,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -26816,6 +26868,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -26939,6 +26992,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -27061,6 +27115,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -27206,6 +27261,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -27351,6 +27407,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -27499,6 +27556,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -27648,7 +27706,9 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -27790,10 +27850,12 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -27918,6 +27980,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -27948,6 +28011,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("gn").is_some());
@@ -28088,9 +28152,11 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -28120,6 +28186,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -28250,6 +28317,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -28278,6 +28346,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
@@ -28405,6 +28474,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28412,6 +28482,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -28439,6 +28510,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
@@ -28575,6 +28647,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -28589,6 +28662,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28596,6 +28670,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -28622,6 +28697,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
@@ -28772,6 +28848,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -28786,6 +28863,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28793,6 +28871,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -28818,6 +28897,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
@@ -28979,6 +29059,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -28993,6 +29074,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29000,6 +29082,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -29024,6 +29107,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
@@ -29187,6 +29271,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -29201,6 +29286,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29208,6 +29294,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -29231,6 +29318,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
@@ -29406,6 +29494,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -29420,6 +29509,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29427,6 +29517,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -29449,6 +29540,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
@@ -29631,6 +29723,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29638,6 +29731,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -29659,6 +29753,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
@@ -29855,6 +29950,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29862,6 +29958,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -29882,6 +29979,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
@@ -30084,6 +30182,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -30091,6 +30190,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -30110,6 +30210,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
@@ -30327,6 +30428,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -30334,6 +30436,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -30352,6 +30455,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
@@ -30579,6 +30683,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -30586,6 +30691,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -30603,6 +30709,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
@@ -30835,6 +30942,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -30842,6 +30950,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -30858,6 +30967,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
@@ -31093,6 +31203,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -31100,11 +31211,13 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -31112,6 +31225,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -31127,6 +31241,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_m").is_some());
@@ -31348,17 +31463,20 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -31366,6 +31484,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -31380,6 +31499,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("muN_K").is_some());
@@ -31600,12 +31720,14 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -31613,6 +31735,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -31625,6 +31748,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_MHz").is_some());
@@ -31871,6 +31995,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
@@ -31879,6 +32004,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -31890,6 +32016,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
@@ -32139,6 +32266,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
@@ -32147,6 +32275,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -32157,6 +32286,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
@@ -32425,6 +32555,7 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -32434,6 +32565,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
@@ -32650,8 +32782,10 @@ mod tests {
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -32660,6 +32794,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
@@ -32796,10 +32931,12 @@ mod tests {
         assert!(lookup("G0").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_none());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -32915,9 +33052,147 @@ mod tests {
         assert!(lookup("Phi0").is_none());
         assert!(lookup("G0").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("gamma0h_MHz").is_none());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_none());
+        assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
+        assert!(lookup("gamma_e_MHz").is_some());
+        assert!(lookup("gamma_e").is_some());
+        assert!(lookup("gamma0p").is_some());
+        assert!(lookup("mu0h").is_some());
+        assert!(lookup("gh").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla_is_a_one_sigma_interval() {
+        let r = shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla();
+        let scale = 10i128.pow(8);
+        let lo = Ratio::new(3_243_409_904, scale);
+        let hi = Ratio::new(3_243_409_980, scale);
+        let centre = Ratio::new(3_243_409_942, scale);
+        assert_eq!(r.name, "gamma0h_MHz");
+        assert_eq!(r.unit, "MHz T^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Helion, h"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("gamma0h_MHz = 32.43409942(38)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(
+            r.value.lo, r.value.hi,
+            "gamma0h_MHz is measured, not SI-exact"
+        );
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA gamma0h_MHz is a positive hull, not the SI-unit gamma0h row"
+        );
+        assert_eq!(
+            centre,
+            Ratio::new(3_243_409_942, scale),
+            "gamma0h_MHz centre is the CODATA 2018 last-digit 9942"
+        );
+        assert_ne!(
+            centre,
+            Ratio::new(3_243_410_003, scale),
+            "gamma0h_MHz centre is not the CODATA 2022 last-digit 003"
+        );
+        assert!(
+            !r.value
+                .contains(Interval::point(Ratio::new(32_434_100_033, 10i128.pow(9)))),
+            "gamma0h_MHz 2018 hull excludes the CODATA 2022 last-digit 033"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[202713119/6250000, 162170499/5000000]"
+        );
+        assert_eq!(
+            r.hash,
+            shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla().hash
+        );
+        assert_ne!(
+            r.hash,
+            shielded_helion_gyromagnetic_ratio().hash,
+            "gamma0h_MHz is not gamma0h"
+        );
+        assert_ne!(
+            r.hash,
+            shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            "gamma0h_MHz is not gamma0p_MHz"
+        );
+        assert_ne!(
+            r.hash,
+            electron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            "gamma0h_MHz is not gamma_e_MHz"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            "gamma0h_MHz is not gamma_n_MHz"
+        );
+        assert_ne!(
+            r.hash,
+            nuclear_magneton_in_mhz_per_tesla().hash,
+            "gamma0h_MHz is not muN_MHz"
+        );
+        assert_eq!(
+            shielded_helion_gyromagnetic_ratio().hash.to_hex(),
+            "d0d76042a7c3a216840e099b7c709a90930cc9582a3e194e091bf38703f2840a",
+            "gamma0h hash must stay pinned when gamma0h_MHz is added"
+        );
+        assert_eq!(
+            shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla()
+                .hash
+                .to_hex(),
+            "0a531c484802446cb1ed9633e0d097ccdf86fdae629fc24a8417da5ffc0f1c38",
+            "gamma0p_MHz hash must stay pinned when gamma0h_MHz is added"
+        );
+        assert_eq!(
+            electron_gyromagnetic_ratio_in_mhz_per_tesla().hash.to_hex(),
+            "4467f4343ca683946219dde053497c42e8da08518663051808ffe7529630eda0",
+            "gamma_e_MHz hash must stay pinned when gamma0h_MHz is added"
+        );
+        assert_eq!(
+            neutron_gyromagnetic_ratio_in_mhz_per_tesla().hash.to_hex(),
+            "afb240ddc4bf6fa45a44eb869268021801762dd70fbaa21d23e5fbc3669049a7",
+            "gamma_n_MHz hash must stay pinned when gamma0h_MHz is added"
+        );
+        assert_eq!(
+            shielded_helion_magnetic_moment().hash.to_hex(),
+            "f207205c27290f0b85017413fd3cd47593d77a3ad71a7d4337c96d0bff8ff559",
+            "mu0h hash must stay pinned when gamma0h_MHz is added"
+        );
+        assert_eq!(
+            helion_g_factor().hash.to_hex(),
+            "89764c03ec4774afa24862fca730205f559747ba9256e7378c64629720d31c4f",
+            "gh hash must stay pinned when gamma0h_MHz is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when gamma0h_MHz is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "222550d6fcbe1f85109b0d4fb4e6e9d4529a471976a1f24587a3cc29fac5f6ac"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(8).is_some(),
+            "gamma0h_MHz decade 10^8 fits i128; 10^7 is the 10x trap"
+        );
+        assert!(lookup("Phi0").is_none());
+        assert!(lookup("G0").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -33130,7 +33405,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 189);
+        assert_eq!(LEDGER.len(), 190);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -34030,6 +34305,11 @@ mod tests {
             lookup("gamma0h").unwrap().hash.to_hex(),
             "d0d76042a7c3a216840e099b7c709a90930cc9582a3e194e091bf38703f2840a"
         );
+        assert_eq!(lookup("gamma0h_MHz").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("gamma0h_MHz").unwrap().hash.to_hex(),
+            "222550d6fcbe1f85109b0d4fb4e6e9d4529a471976a1f24587a3cc29fac5f6ac"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -34305,6 +34585,7 @@ mod tests {
         assert!(lookup("mu-0h-mu0p").is_none());
         assert!(lookup("mu0h_mu_0p").is_none());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_alpha_u").is_some());
         assert!(lookup("malpha").is_none());
@@ -34394,6 +34675,7 @@ mod tests {
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
+        assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());

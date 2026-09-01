@@ -1719,10 +1719,24 @@ pub fn electron_gyromagnetic_ratio_in_mhz_per_tesla() -> Qty<Dimensionless> {
 /// cites ħ; the reconstruction is unused. The versioned ledger stores
 /// the one-sigma hull; this Qty is that centre. Ledger unit is
 /// s^{-1} T^{-1}; this Qty is SI kg^{-1} s A, not dimensionless.
-/// Shielded helion gyromagnetic ratio in MHz/T is a later row.
+/// Shielded helion gyromagnetic ratio in MHz/T is gamma0h_MHz.
 pub fn shielded_helion_gyromagnetic_ratio(
 ) -> Qty<physis_core::SI<typenum::N1, typenum::Z0, typenum::P1, typenum::P1>> {
     Qty::new(2.037_894_569e8)
+}
+
+/// Shielded helion gyromagnetic ratio in MHz/T, CODATA 2018.
+///
+/// This is the recommended printed Helion, h centre in MHz T^{-1} for
+/// the helion in a spherical gas sample at 25 °C, not s^{-1} T^{-1}
+/// gamma0h, not gamma0p_MHz, not gamma_e_MHz, not gamma_n_MHz, not
+/// muN_MHz, not g0p, not a FormalClaim of gamma0h / 2 pi, and not
+/// hbar. NIST lists MHz T^{-1}, not Hz T^{-1}. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre. Ledger unit is
+/// MHz T^{-1}; this Qty is dimensionless, not SI kg^{-1} s A.
+/// Glossary g0p is still skipped.
+pub fn shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla() -> Qty<Dimensionless> {
+    Qty::new(32.434_099_42)
 }
 
 /// Muon mass.
@@ -9835,9 +9849,34 @@ mod tests {
             physis_constants::shielded_helion_magnetic_moment().hash,
             "gamma0h is not mu0h"
         );
+
+        let gamma0h_mhz = physis_constants::shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla();
+        let gamma0h_mhz_centre = Ratio::new(3_243_409_942, 10i128.pow(8));
+        assert_eq!(
+            shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla().value(),
+            32.434_099_42,
+            "shielded helion gyromagnetic ratio in MHz/T gamma0h_MHz Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla().value(),
+            gamma0h_mhz_centre.to_f64(),
+            "gamma0h_MHz Qty locksteps to Ratio::to_f64 on the 10^8 centre"
+        );
         assert!(
-            physis_constants::lookup("gamma0h_MHz").is_none(),
-            "shielded helion gyromagnetic ratio in MHz/T is a later row"
+            gamma0h_mhz
+                .value
+                .contains(Interval::point(gamma0h_mhz_centre)),
+            "gamma0h_MHz Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::shielded_helion_gyromagnetic_ratio().hash,
+            "gamma0h_MHz is not gamma0h"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            "gamma0h_MHz is not gamma0p_MHz"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
