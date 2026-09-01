@@ -1409,10 +1409,25 @@ pub fn sackur_tetrode_constant() -> Qty<Dimensionless> {
 /// certificate (that formula cites hbar and pi). JPCRD prints the same
 /// symbol S0/R as the 100 kPa row; S0_R_atm is the ledger name. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
-/// Stefan-Boltzmann is a later table row and is not stored. This is not
+/// First radiation constant for spectral radiance is c1L. Stefan-Boltzmann
+/// cites pi and is not stored. This is not
 /// the CODATA 2022 last-digit 49.
 pub fn sackur_tetrode_constant_atm() -> Qty<Dimensionless> {
     Qty::new(-1.164_870_523_58)
+}
+
+/// First radiation constant for spectral radiance c1L = 2 h c², SI 2019.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as c1L, not Planck
+/// h, not Stefan-Boltzmann (that formula cites pi), not c1 = 2 pi h c²,
+/// and not a FormalClaim that reconstructs 2 h c² from live lookups.
+/// The table prints an ellipsis; the ledger stores the full terminating
+/// decimal as SciExact because 10^41 overflows i128. This Qty is the
+/// IEEE rounding of that SI decimal. First radiation constant c1 is a
+/// later table row and is not stored.
+pub fn first_radiation_constant_spectral_radiance(
+) -> Qty<physis_core::SI<typenum::P1, typenum::P4, typenum::N3>> {
+    Qty::new(1.191_042_972_397_188_4e-16)
 }
 
 /// Muon mass.
@@ -8613,9 +8628,50 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "S0_R_atm is not G"
         );
+
+        let c_1_l = physis_constants::first_radiation_constant_spectral_radiance();
+        let c_1_l_value = SciExact::new(2 * 662_607_015i128 * 299_792_458i128.pow(2), -42);
+        assert_eq!(
+            c_1_l.value, c_1_l_value,
+            "ledger c1L is the exact SI product"
+        );
+        assert_eq!(c_1_l.value.to_ratio(), None, "c1L does not fit Ratio");
+        assert_eq!(
+            first_radiation_constant_spectral_radiance().value(),
+            c_1_l_value.to_f64(),
+            "c1L Qty is the IEEE rounding of the SI decimal"
+        );
+        assert_eq!(
+            first_radiation_constant_spectral_radiance().value(),
+            1.191_042_972_397_188_4e-16,
+            "c1L Qty locksteps to the SI 2019 terminating decimal literal"
+        );
+        assert_ne!(
+            physis_constants::first_radiation_constant_spectral_radiance().hash,
+            physis_constants::planck_h().hash,
+            "c1L is not h"
+        );
+        assert_ne!(
+            physis_constants::first_radiation_constant_spectral_radiance().hash,
+            physis_constants::sackur_tetrode_constant_atm().hash,
+            "c1L is not S0_R_atm"
+        );
+        assert_ne!(
+            physis_constants::first_radiation_constant_spectral_radiance().hash,
+            physis_constants::newtonian_g().hash,
+            "c1L is not G"
+        );
         assert!(
             physis_constants::lookup("sigma").is_none(),
-            "Stefan-Boltzmann constant is a later PHYSICOCHEMICAL row"
+            "Stefan-Boltzmann constant cites pi and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("c1").is_none(),
+            "first radiation constant c1 cites pi and is a later PHYSICOCHEMICAL row"
+        );
+        assert!(
+            physis_constants::lookup("c2").is_none(),
+            "second radiation constant is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),

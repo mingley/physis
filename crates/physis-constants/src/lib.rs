@@ -889,6 +889,10 @@ fn codata_2018_sackur_tetrode_constant_atm_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "S0_R_atm = -1.16487052358(45)")
 }
 
+fn codata_2018_first_radiation_constant_spectral_radiance_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "c1L = 1.191042972e-16 exact")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5425,7 +5429,8 @@ fn codata_2018_sackur_tetrode_constant_atm_interval() -> Interval {
 /// reconstructs the JPCRD formula (that formula cites ħ and π), and
 /// not P3N. JPCRD prints the same symbol `S0/R` as the 100 kPa row;
 /// `S0_R_atm` is the ledger name. `S0` and `S0/R` are not second names.
-/// Stefan-Boltzmann is a later table row and is not stored. Electron
+/// First radiation constant for spectral radiance is `c1L`. Stefan-Boltzmann
+/// cites π and is not stored. Electron
 /// mass is not stored: `10^{42}` overflows `i128`. This is not the
 /// CODATA 2022 last-digit `49`. The decade is `10^{11}`; `10^{10}` is
 /// the 10× trap (`σ = 4.5` is not an integer). Theories still use
@@ -5436,6 +5441,36 @@ pub fn sackur_tetrode_constant_atm() -> Constant<Interval> {
         codata_2018_sackur_tetrode_constant_atm_interval(),
         "1",
         codata_2018_sackur_tetrode_constant_atm_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 first radiation constant for spectral radiance 2 h c².
+fn first_radiation_constant_spectral_radiance_value() -> SciExact {
+    SciExact::new(2 * 662_607_015i128 * 299_792_458i128.pow(2), -42)
+}
+
+/// First radiation constant for spectral radiance c1L, SI 2019 SciExact.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as `c1L` = `2hc²`,
+/// not Planck `h`, not Stefan-Boltzmann `σ` (that formula cites π), not
+/// first radiation constant `c1` = `2πhc²` (π), not second radiation
+/// constant `c2`, not an SI defining constant, and not a FormalClaim
+/// that reconstructs `2 h c²` from live lookups. The table prints
+/// `1.191 042 972… × 10^{-16}`; the ledger stores the full terminating
+/// decimal `2 h c²`. That product does not fit [`Ratio`]: after gcd 40
+/// the denominator is `2.5 × 10^{40}`, and `10^{41}` overflows `i128`
+/// (same reason Planck `h` is SciExact). This is not P3N. The JPCRD
+/// symbol `c1L` is the ledger name. Electron mass is not stored:
+/// `10^{42}` overflows `i128`. CODATA 2022 prints the same SI-exact
+/// ellipsis; there is no last-digit trap. Theories still use
+/// `physis_model` `f64` Qty.
+pub fn first_radiation_constant_spectral_radiance() -> Constant<SciExact> {
+    Constant::new(
+        "c1L",
+        first_radiation_constant_spectral_radiance_value(),
+        "W m^{2} sr^{-1}",
+        codata_2018_first_radiation_constant_spectral_radiance_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5748,6 +5783,7 @@ pub const LEDGER: &[&str] = &[
     "n0_atm",
     "S0_R",
     "S0_R_atm",
+    "c1L",
     "au",
     "eV",
     "GM_sun",
@@ -6033,6 +6069,10 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "n0_atm" => Some(listing(loschmidt_constant_atm(), "ratio")),
         "S0_R" => Some(listing(sackur_tetrode_constant(), "interval")),
         "S0_R_atm" => Some(listing(sackur_tetrode_constant_atm(), "interval")),
+        "c1L" => Some(listing(
+            first_radiation_constant_spectral_radiance(),
+            "sci-exact",
+        )),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25342,6 +25382,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -25492,6 +25533,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25628,6 +25670,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25758,6 +25801,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25858,6 +25902,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -25957,6 +26002,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -26079,6 +26125,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26201,6 +26248,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26326,6 +26374,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26452,6 +26501,7 @@ mod tests {
         );
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("gamma0h").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
@@ -26571,6 +26621,7 @@ mod tests {
         );
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
@@ -26705,6 +26756,137 @@ mod tests {
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
         assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
+        assert!(lookup("S0_R").is_some());
+        assert!(lookup("n0_atm").is_some());
+        assert!(lookup("gn").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_first_radiation_constant_spectral_radiance_is_sci_exact() {
+        let r = first_radiation_constant_spectral_radiance();
+        let value = SciExact::new(2 * 662_607_015i128 * 299_792_458i128.pow(2), -42);
+        assert_eq!(r.name, "c1L");
+        assert_eq!(r.unit, "W m^{2} sr^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("c1L = 1.191042972e-16 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(
+            r.value,
+            SciExact::new(119_104_297_239_718_841_407_948_920, -42)
+        );
+        assert_eq!(r.value.to_string(), "11910429723971884140794892e-41");
+        assert_eq!(r.value.to_ratio(), None, "c1L denominator overflows i128");
+        assert!(
+            10i128.checked_pow(41).is_none(),
+            "c1L = 2 h c^2 is 11910429723971884140794892e-41; 10^41 overflows i128"
+        );
+        assert_ne!(
+            r.value,
+            SciExact::new(1_191_042_972, -25),
+            "c1L is the full SI product, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, first_radiation_constant_spectral_radiance().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "c1L",
+                first_radiation_constant_spectral_radiance_value(),
+                "W m^{2} sr^{-1}",
+                codata_2018_first_radiation_constant_spectral_radiance_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, planck_h().hash, "c1L is not h");
+        assert_ne!(
+            r.hash,
+            sackur_tetrode_constant_atm().hash,
+            "c1L is not S0_R_atm"
+        );
+        assert_ne!(r.hash, sackur_tetrode_constant().hash, "c1L is not S0_R");
+        assert_ne!(r.hash, loschmidt_constant_atm().hash, "c1L is not n0_atm");
+        assert_ne!(r.hash, newtonian_g().hash, "c1L is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "c1L is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            planck_h().provenance.source_hash,
+            "c1L locator is not the SI brochure h locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            sackur_tetrode_constant_atm().provenance.source_hash,
+            "c1L range is not the S0_R_atm range"
+        );
+        assert_eq!(
+            sackur_tetrode_constant_atm().hash.to_hex(),
+            "80cbdc3db3e995895b8c311f14beea81756bf55eee0004c45e97efc43d54af2f",
+            "S0_R_atm hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            sackur_tetrode_constant().hash.to_hex(),
+            "37bd72c139f411ab023e7a400c4d8b90ef044d0334ab01e29ca31d6bdca08a8e",
+            "S0_R hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            loschmidt_constant_atm().hash.to_hex(),
+            "040ac164b64d31d949ee7f2b59af9ed649dcd8f6fb69f09546b317b8a9beb14b",
+            "n0_atm hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            planck_h().hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef",
+            "h hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            loschmidt_constant().hash.to_hex(),
+            "886c42750e98f22584361f3cba1c202a4b75fbcdb5485e4fa06df7645129e3f3",
+            "n0 hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            molar_volume_ideal_gas_atm().hash.to_hex(),
+            "ee25d6479dd4102060b836649dc7a84cddec0dab3838c1f79d33b9e19ff11e92",
+            "Vm_atm hash must stay pinned when c1L is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "bb3b42d41a8d8ebc3191a2aa98d974733538eaba1098eb89a1574d228479249c"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("sigma").is_none());
+        assert!(lookup("c1").is_none());
+        assert!(lookup("c2").is_none());
+        assert!(lookup("S0/R").is_none());
+        assert!(lookup("S0").is_none());
+        assert!(lookup("gamma0h").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -26915,7 +27097,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 166);
+        assert_eq!(LEDGER.len(), 167);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -27700,6 +27882,11 @@ mod tests {
             lookup("S0_R_atm").unwrap().hash.to_hex(),
             "80cbdc3db3e995895b8c311f14beea81756bf55eee0004c45e97efc43d54af2f"
         );
+        assert_eq!(lookup("c1L").unwrap().kind, "sci-exact");
+        assert_eq!(
+            lookup("c1L").unwrap().hash.to_hex(),
+            "bb3b42d41a8d8ebc3191a2aa98d974733538eaba1098eb89a1574d228479249c"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -28041,6 +28228,7 @@ mod tests {
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("c1L").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());
