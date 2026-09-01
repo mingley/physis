@@ -853,6 +853,10 @@ fn codata_2018_molar_gas_constant_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "NAk = 8.314462618 exact")
 }
 
+fn codata_2018_faraday_constant_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "NAe = 96485.33212 exact")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5120,7 +5124,7 @@ fn molar_gas_constant_value() -> Ratio {
 /// `8.314 462 618…`; the ledger stores the full terminating decimal
 /// `N_A × k`. That product fits [`Ratio`] (`10^{14}`). This is not P3N.
 /// The JPCRD symbol `NAk` is the ledger name; `R` is not a second name.
-/// Faraday constant is a later table row and is not stored. Electron
+/// The Faraday constant is `NAe`. Electron
 /// mass is not stored: `10^{42}` overflows `i128`. CODATA 2022 prints
 /// the same SI-exact ellipsis; there is no last-digit trap. Theories
 /// still use `physis_model` `f64` Qty.
@@ -5130,6 +5134,35 @@ pub fn molar_gas_constant() -> Constant<Ratio> {
         molar_gas_constant_value(),
         "J mol^{-1} K^{-1}",
         codata_2018_molar_gas_constant_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 Faraday constant N_A × e as a terminating decimal.
+fn faraday_constant_value() -> Ratio {
+    Ratio::new(602_214_076i128 * 1_602_176_634i128, 10i128.pow(13))
+}
+
+/// Faraday constant NAe, SI 2019 exact Ratio.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as `NAe`, not
+/// elementary charge `e`, not Avogadro `N_A`, not molar gas `NAk`, not
+/// molar Planck `NAh`, not Hartree, not Maxwell Faraday `dF=0`, not an
+/// SI defining constant, and not a FormalClaim that reconstructs
+/// `N_A × e` from live lookups. The table prints `96 485.332 12…`; the
+/// ledger stores the full terminating decimal `N_A × e`. That product
+/// fits [`Ratio`] (`10^{13}`). This is not P3N. The JPCRD symbol `NAe`
+/// is the ledger name; `F` is not a second name. Standard-state
+/// pressure is a later table row and is not stored. Electron mass is
+/// not stored: `10^{42}` overflows `i128`. CODATA 2022 prints the same
+/// SI-exact ellipsis; there is no last-digit trap. Theories still use
+/// `physis_model` `f64` Qty.
+pub fn faraday_constant() -> Constant<Ratio> {
+    Constant::new(
+        "NAe",
+        faraday_constant_value(),
+        "C mol^{-1}",
+        codata_2018_faraday_constant_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5433,6 +5466,7 @@ pub const LEDGER: &[&str] = &[
     "M_12C",
     "NAh",
     "NAk",
+    "NAe",
     "au",
     "eV",
     "GM_sun",
@@ -5709,6 +5743,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "M_12C" => Some(listing(carbon_12_molar_mass(), "interval")),
         "NAh" => Some(listing(molar_planck_constant(), "ratio")),
         "NAk" => Some(listing(molar_gas_constant(), "ratio")),
+        "NAe" => Some(listing(faraday_constant(), "ratio")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25009,7 +25044,8 @@ mod tests {
         assert!(lookup("M_12C/mol").is_none());
         assert!(lookup("NAh").is_some());
         assert!(lookup("NAk").is_some());
-        assert!(lookup("NAe").is_none());
+        assert!(lookup("NAe").is_some());
+        assert!(lookup("p0").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -25151,7 +25187,8 @@ mod tests {
         assert!(lookup("N_A_h").is_none());
         assert!(lookup("N_A*h").is_none());
         assert!(lookup("NAk").is_some());
-        assert!(lookup("NAe").is_none());
+        assert!(lookup("NAe").is_some());
+        assert!(lookup("p0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25279,7 +25316,8 @@ mod tests {
         assert!(lookup("R").is_none());
         assert!(lookup("N_A_k").is_none());
         assert!(lookup("N_A*k").is_none());
-        assert!(lookup("NAe").is_none());
+        assert!(lookup("NAe").is_some());
+        assert!(lookup("p0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25291,6 +25329,129 @@ mod tests {
         assert!(lookup("N_A").is_some());
         assert!(lookup("k").is_some());
         assert!(lookup("h").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+        assert!(lookup("NAe").is_some());
+    }
+
+    #[test]
+    fn codata_2018_faraday_constant_is_an_exact_ratio() {
+        let r = faraday_constant();
+        let value = Ratio::new(602_214_076i128 * 1_602_176_634i128, 10i128.pow(13));
+        assert_eq!(r.name, "NAe");
+        assert_eq!(r.unit, "C mol^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("NAe = 96485.33212 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(
+            r.value,
+            SciExact::new(964_853_321_233_100_184, -13)
+                .to_ratio()
+                .expect("NAe fits Ratio")
+        );
+        assert_eq!(r.value.to_string(), "120606665154137523/1250000000000");
+        assert!(r.value > Ratio::int(0), "NAe is a positive exact Ratio");
+        assert_ne!(
+            r.value,
+            Ratio::new(9_648_533_212, 100_000),
+            "NAe is the full SI product, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, faraday_constant().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "NAe",
+                faraday_constant_value(),
+                "C mol^{-1}",
+                codata_2018_faraday_constant_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, avogadro().hash, "NAe is not N_A");
+        assert_ne!(r.hash, elementary_charge().hash, "NAe is not e");
+        assert_ne!(r.hash, molar_gas_constant().hash, "NAe is not NAk");
+        assert_ne!(r.hash, molar_planck_constant().hash, "NAe is not NAh");
+        assert_ne!(r.hash, electron_volt().hash, "NAe is not eV");
+        assert_ne!(r.hash, hartree_energy().hash, "NAe is not Hartree");
+        assert_ne!(r.hash, newtonian_g().hash, "NAe is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            molar_gas_constant().provenance.source_hash,
+            "NAe range is not the NAk range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            avogadro().provenance.source_hash,
+            "NAe locator is not the SI brochure N_A locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            elementary_charge().provenance.source_hash,
+            "NAe locator is not the SI brochure e locator"
+        );
+        assert_eq!(
+            molar_gas_constant().hash.to_hex(),
+            "28c95a46c67bec666b887658cc44664000bf821eac09b9023cf401b89231efc3",
+            "NAk hash must stay pinned when NAe is added"
+        );
+        assert_eq!(
+            molar_planck_constant().hash.to_hex(),
+            "9290f6b333a3a26c429b761769bd641d7a642b68d6e34cbea852119c170d6228",
+            "NAh hash must stay pinned when NAe is added"
+        );
+        assert_eq!(
+            avogadro().hash.to_hex(),
+            "410e2191c8cf7c074a32f621413239e74a7fefe735cacfaad4f503c47c9351dc",
+            "N_A hash must stay pinned when NAe is added"
+        );
+        assert_eq!(
+            elementary_charge().hash.to_hex(),
+            "412cb379a6bf6cca245ba89fc43539399942e644fa08000cd30bd1d9b25372a5",
+            "e hash must stay pinned when NAe is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when NAe is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when NAe is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(13).is_some(),
+            "NAe = N_A e is 964853321233100184/10^13; that denominator fits i128"
+        );
+        assert!(lookup("F").is_none());
+        assert!(lookup("N_A_e").is_none());
+        assert!(lookup("N_A*e").is_none());
+        assert!(lookup("p0").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("NAe").is_some());
+        assert!(lookup("NAk").is_some());
+        assert!(lookup("NAh").is_some());
+        assert!(lookup("N_A").is_some());
+        assert!(lookup("e").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
     }
@@ -25497,7 +25658,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 157);
+        assert_eq!(LEDGER.len(), 158);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -26237,6 +26398,11 @@ mod tests {
             lookup("NAk").unwrap().hash.to_hex(),
             "28c95a46c67bec666b887658cc44664000bf821eac09b9023cf401b89231efc3"
         );
+        assert_eq!(lookup("NAe").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("NAe").unwrap().hash.to_hex(),
+            "dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -26567,7 +26733,10 @@ mod tests {
         assert!(lookup("NAk").is_some());
         assert!(lookup("R").is_none());
         assert!(lookup("N_A_k").is_none());
-        assert!(lookup("NAe").is_none());
+        assert!(lookup("NAe").is_some());
+        assert!(lookup("F").is_none());
+        assert!(lookup("N_A_e").is_none());
+        assert!(lookup("p0").is_none());
         assert!(lookup("mmu").is_none());
         assert!(lookup("m-mu").is_none());
         assert!(lookup("muon-mass").is_none());

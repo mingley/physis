@@ -1283,12 +1283,27 @@ pub fn molar_planck_constant() -> Qty<
 /// and not a FormalClaim that reconstructs N_A times k. The table
 /// prints an ellipsis; the ledger stores the full terminating decimal.
 /// The versioned ledger stores the exact Ratio; this Qty is the IEEE
-/// rounding of that SI decimal. Faraday constant is a later table row
-/// and is not stored. JPCRD also writes R; that is not a ledger name.
+/// rounding of that SI decimal. The Faraday constant is `NAe`.
+/// JPCRD also writes R; that is not a ledger name.
 pub fn molar_gas_constant() -> Qty<
     physis_core::SI<typenum::P1, typenum::P2, typenum::N2, typenum::Z0, typenum::N1, typenum::N1>,
 > {
     Qty::new(8.314_462_618_153_24)
+}
+
+/// Faraday constant N_A e (C mol⁻¹), SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as NAe, not
+/// elementary charge e, not Avogadro N_A, not molar gas NAk, not Hartree,
+/// and not Maxwell Faraday dF=0. The table prints an ellipsis; the
+/// ledger stores the full terminating decimal. The versioned ledger
+/// stores the exact Ratio; this Qty is the IEEE rounding of that SI
+/// decimal. Standard-state pressure is a later table row and is not
+/// stored. JPCRD also writes F; that is not a ledger name.
+pub fn faraday_constant() -> Qty<
+    physis_core::SI<typenum::Z0, typenum::Z0, typenum::P1, typenum::P1, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(96_485.332_123_310_01)
 }
 
 /// Muon mass.
@@ -8068,9 +8083,74 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "NAk is not G"
         );
+
         assert!(
-            physis_constants::lookup("NAe").is_none(),
-            "NAe Faraday constant is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("F").is_none(),
+            "F is not a ledger name; the live name is NAe"
+        );
+        let n_a_e = physis_constants::faraday_constant();
+        let n_a_e_value = Ratio::new(602_214_076i128 * 1_602_176_634i128, 10i128.pow(13));
+        assert_eq!(
+            n_a_e.value, n_a_e_value,
+            "ledger NAe is the exact SI product"
+        );
+        assert_eq!(
+            SciExact::new(964_853_321_233_100_184, -13).to_ratio(),
+            Some(n_a_e.value),
+            "NAe fits Ratio; SciExact and Ratio are the same decimal"
+        );
+        assert_eq!(
+            faraday_constant().value(),
+            SciExact::new(964_853_321_233_100_184, -13).to_f64(),
+            "NAe Qty is the IEEE rounding of the SI decimal"
+        );
+        assert_eq!(
+            faraday_constant().value(),
+            96_485.332_123_310_01,
+            "NAe Qty locksteps to the SI 2019 terminating decimal literal"
+        );
+        assert_eq!(
+            faraday_constant().value(),
+            n_a_e_value.to_f64(),
+            "NAe reduced Ratio::to_f64 matches SciExact::to_f64 at this scale"
+        );
+        assert!(
+            n_a_e.value > Ratio::int(0),
+            "ledger NAe stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::faraday_constant().hash,
+            physis_constants::avogadro().hash,
+            "NAe is not N_A"
+        );
+        assert_ne!(
+            physis_constants::faraday_constant().hash,
+            physis_constants::elementary_charge().hash,
+            "NAe is not e"
+        );
+        assert_ne!(
+            physis_constants::faraday_constant().hash,
+            physis_constants::molar_gas_constant().hash,
+            "NAe is not NAk"
+        );
+        assert_ne!(
+            physis_constants::faraday_constant().hash,
+            physis_constants::molar_planck_constant().hash,
+            "NAe is not NAh"
+        );
+        assert_ne!(
+            physis_constants::faraday_constant().hash,
+            physis_constants::electron_volt().hash,
+            "NAe is not eV"
+        );
+        assert_ne!(
+            physis_constants::faraday_constant().hash,
+            physis_constants::newtonian_g().hash,
+            "NAe is not G"
+        );
+        assert!(
+            physis_constants::lookup("p0").is_none(),
+            "p0 standard-state pressure is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

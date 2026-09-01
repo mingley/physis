@@ -22,6 +22,76 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Faraday constant is an exact Ratio.**
+  `physis-constants` versions `NAe` as the exact SI 2019 product
+  `N_A × e` `96485.3321233100184` C mol⁻¹ from JPCRD 50, 033105 table
+  XXXI (PHYSICOCHEMICAL). The table prints an ellipsis; the ledger
+  stores the full terminating decimal, not the truncated display
+  digits. This is not elementary charge `e`, not Avogadro `N_A`, not
+  molar gas `NAk`, not molar Planck `NAh`, not Hartree, not Maxwell
+  Faraday `dF=0`, not an SI defining constant, not a FormalClaim that
+  reconstructs `N_A × e` from live lookups, not the Thomson cross
+  section, and not P3N. JPCRD also writes `F`; that is not a second
+  ledger name. Standard-state pressure is a later table row and is not
+  stored. Electron mass is still not stored (`10^{42}` overflows
+  `i128`). The product fits Ratio (`10^{13}`). CODATA 2022 prints the
+  same SI-exact ellipsis; there is no last-digit trap. `physis_model`
+  `faraday_constant()` Qty locksteps to the IEEE rounding of that SI
+  decimal (`SciExact::to_f64`). Adding `NAe` to LEDGER changes the
+  ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`,
+  `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`,
+  `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`,
+  `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`, `mt_mp`,
+  `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`, `m_h_u`,
+  `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`, `mu_h_muB`,
+  `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`, `mu0h_mup`,
+  `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`, `m_alpha_c2_MeV`,
+  `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`, `m_u_c2`, `m_u_c2_MeV`,
+  `M_u`, `M_12C`, `NAh`, and `NAk` hashes are unchanged. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `NAe` hash dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4; node 4146991435f7e1aeca08cafaa6c26cd8f8947a49f7c1ca32df3eac4d36bb060d;
+  ledger node 2b8808478cff2036f511122b68700fa51eabb7c5c5956eb948d4147c25a6018b. `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`,
+  `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`,
+  `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`,
+  `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`,
+  `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`,
+  `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`,
+  `mu_h_muB`, `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`,
+  `mu0h_mup`, `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`,
+  `m_alpha_c2_MeV`, `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`,
+  `m_u_c2`, `m_u_c2_MeV`, `M_u`, `M_12C`, `NAh`, and `NAk` hashes and
+  nodes unchanged.
+
 - **CODATA 2018 molar gas constant is an exact Ratio.**
   `physis-constants` versions `NAk` as the exact SI 2019 product
   `N_A × k` `8.31446261815324` J mol⁻¹ K⁻¹ from JPCRD 50, 033105 table
