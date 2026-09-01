@@ -22,6 +22,65 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 triton magnetic moment to nuclear magneton ratio is a one-sigma Interval.**
+  `physis-constants` versions `mu_t_muN` as the CODATA 2018 hull
+  `2.9789624656(59)` from JPCRD 50, 033105 table XXXI
+  (Triton, t). This is not triton magnetic moment `mu_t`, not triton
+  Bohr-magneton ratio `mu_t_muB`, not deuteron `mu_d_muN`, not proton
+  `mu_p_muN`, not neutron `mu_n_muN`, not electron `mu_e_muN`, not muon
+  `mu_mu_muN`, not a certificate that the stored centres reconstruct
+  `μ_t/μ_N`, not a certificate that this equals the g-factor `gt`, not
+  an SI defining Ratio, not the Thomson cross section, and not P3N. The
+  g-factor is a later table row and is not stored. Electron mass is
+  still not stored (`10^{42}` overflows `i128`). Decade `10^{10}`
+  (`10^{9}` is the 10× trap). This is not the CODATA 2022 last-digit
+  `4650`. `physis_model` `triton_magnetic_moment_to_nuclear_magneton()`
+  Qty locksteps to the recommended centre inside the hull. Adding
+  `mu_t_muN` to LEDGER changes the ledger bundle pin. The `G`, `mu0`,
+  `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`,
+  `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`,
+  `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`,
+  `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`,
+  `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`,
+  `lambda_C_mu`, `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`,
+  `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`,
+  `mp_mmu`, `mp_mn`, `e_mp`, `M_p`, `lambda_C_p`, `rp`, `mu_p`,
+  `mu_p_muB`, `mu_p_muN`, `gp`, `mu_p_mun`, `mu0p`, `mu0p_muB`,
+  `mu0p_muN`, `sigma0p`, `m_n`, `m_n_u`, `m_n_c2`, `m_n_c2_MeV`,
+  `mn_me`, `mn_mmu`, `mn_mp`, `mn_minus_mp`, `mn_minus_mp_u`,
+  `mn_minus_mp_c2`, `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`,
+  `mu_n_muB`, `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`,
+  `m_d`, `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`,
+  `rd`, `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`, `mt_mp`,
+  `M_t`, `mu_t`, and `mu_t_muB` hashes are unchanged. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `mu_t_muN` hash 88f8acc9ba93fb7694b33fa92505cf9ade50157256c713a95b5802113dfe5c65; node 499abd51eb8397c380382aaa5cdf4e713c71f2feb1ef36b0c8d3faa31a268266;
+  ledger node 20f68d6788366c99414086af9d33aeffb3ab9960b0fdfd6d84c6d34e2b9ac891. `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`,
+  `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`,
+  `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`,
+  `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`,
+  `e_mp`, `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`,
+  `mu_p_muN`, `gp`, `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`,
+  `sigma0p`, `m_n`, `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`,
+  `mn_mmu`, `mn_mp`, `mn_minus_mp`, `mn_minus_mp_u`,
+  `mn_minus_mp_c2`, `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`,
+  `mu_n`, `mu_n_muB`, `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`,
+  `mu_n_mu0p`, `m_d`, `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`,
+  `md_mp`, `M_d`, `rd`, `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`,
+  `mu_d_mue`, `mu_d_mup`, `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`,
+  `m_t_c2_MeV`, `mt_me`, `mt_mp`, `M_t`, `mu_t`, and `mu_t_muB`
+  hashes and nodes unchanged.
+
 - **CODATA 2018 triton magnetic moment to Bohr magneton ratio is a one-sigma Interval.**
   `physis-constants` versions `mu_t_muB` as the CODATA 2018 hull
   `1.6223936651(32)×10^{-3}` from JPCRD 50, 033105 table XXXI
