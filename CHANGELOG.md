@@ -22,6 +22,29 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 shielded helion gyromagnetic ratio is a one-sigma Interval.**
+  `physis-constants` versions `gamma0h` as the CODATA 2018 hull
+  `2.037894569(24)×10^{8}` s⁻¹ T⁻¹ from JPCRD 50, 033105 table XXXI
+  (Helion, h). This is the recommended printed hull for the helion in a
+  spherical gas sample at 25 °C, not `gamma0p`, not `gamma_e`, not
+  `mu0h`, not `gh`, not an SI defining Ratio, not a terminating
+  SciExact, not `hbar`, and not a FormalClaim reconstructing
+  `2 |μ′h| / ℏ` from live lookups. The printed formula cites ħ; the
+  reconstruction is unused. The ledger name is `gamma0h`. Shielded
+  helion gyromagnetic ratio in MHz/T is a later row. Decade `10^{1}`
+  (`10^{0}` is the 10× trap). This is not the CODATA 2022 last-digit
+  `6078`; the 2018 hull excludes that 2022 centre. Electron mass is
+  still not stored (`10^{42}` overflows `i128`). `physis_model`
+  `shielded_helion_gyromagnetic_ratio()` Qty locksteps to the
+  recommended centre inside the hull. Adding `gamma0h` to LEDGER
+  changes the ledger bundle pin. Theories still evaluate with `f64` Qty.
+  That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `gamma0h` hash d0d76042a7c3a216840e099b7c709a90930cc9582a3e194e091bf38703f2840a; node f4bd91931b09ce44201f11f82d8212d6789ef070780322823cf3e813d8bfecd2;
+  ledger node 12bca5650f162364de9c3b4da1b218fdd87eba003395b6dbb139a571e1b50e4b. `gamma_e_MHz` hash
+  4467f4343ca683946219dde053497c42e8da08518663051808ffe7529630eda0
+  and prior gyromagnetic hashes unchanged.
+
 - **CODATA 2018 electron gyromagnetic ratio in MHz/T is a one-sigma Interval.**
   `physis-constants` versions `gamma_e_MHz` as the CODATA 2018 hull
   `28024.9514242(85)` MHz T⁻¹ from JPCRD 50, 033105 table XXXI
