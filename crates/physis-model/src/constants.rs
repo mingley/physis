@@ -1152,9 +1152,20 @@ pub fn alpha_particle_mass_energy_equivalent() -> Qty<Energy> {
 /// unit is MeV; this Qty is dimensionless, not SI joule. The versioned
 /// ledger stores the one-sigma hull; this Qty is that centre. This is
 /// not the CODATA 2022 last-digit 4118. The alpha-electron mass ratio is
-/// a later table row and is not stored.
+/// `malpha_me`.
 pub fn alpha_particle_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
     Qty::new(3_727.379_406_6)
+}
+
+/// Alpha particle-electron mass ratio m_α/m_e, CODATA 2018.
+///
+/// This is the recommended centre from the alpha-particle section, not
+/// the electron-alpha mass ratio and not a certificate that the stored
+/// centres invert. The alpha-proton mass ratio is a later table row.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 71.
+pub fn alpha_particle_electron_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(7_294.299_541_42)
 }
 
 /// Muon mass.
@@ -7145,6 +7156,79 @@ mod tests {
             physis_constants::alpha_particle_mass_energy_equivalent_in_mev().hash,
             physis_constants::newtonian_g().hash,
             "m_alpha_c2_MeV is not G"
+        );
+        assert!(
+            physis_constants::lookup("malpha/me").is_none(),
+            "malpha/me is not a ledger name; the live name is malpha_me"
+        );
+        let malpha_me = physis_constants::alpha_particle_electron_mass_ratio();
+        let malpha_me_centre = Ratio::new(729_429_954_142, 10i128.pow(8));
+        assert_eq!(
+            alpha_particle_electron_mass_ratio().value(),
+            7_294.299_541_42,
+            "malpha_me Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            alpha_particle_electron_mass_ratio().value(),
+            malpha_me_centre.to_f64(),
+            "malpha_me Qty locksteps to Ratio::to_f64 on the 10^8 centre"
+        );
+        assert!(
+            malpha_me.value.contains(Interval::point(malpha_me_centre)),
+            "malpha_me Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            malpha_me.value.lo, malpha_me.value.hi,
+            "ledger malpha_me stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            malpha_me.value.lo > Ratio::int(0),
+            "ledger malpha_me stays a positive mass-ratio hull"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::electron_alpha_mass_ratio().hash,
+            "malpha_me is not me_malpha"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::helion_electron_mass_ratio().hash,
+            "malpha_me is not mh_me"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::triton_electron_mass_ratio().hash,
+            "malpha_me is not mt_me"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::deuteron_electron_mass_ratio().hash,
+            "malpha_me is not md_me"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::neutron_electron_mass_ratio().hash,
+            "malpha_me is not mn_me"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::proton_electron_mass_ratio().hash,
+            "malpha_me is not mp_me"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::muon_electron_mass_ratio().hash,
+            "malpha_me is not mmu_me"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::alpha_particle_mass_energy_equivalent_in_mev().hash,
+            "malpha_me is not m_alpha_c2_MeV"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_electron_mass_ratio().hash,
+            physis_constants::newtonian_g().hash,
+            "malpha_me is not G"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
