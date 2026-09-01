@@ -1027,7 +1027,9 @@ pub fn helion_g_factor() -> Qty<Dimensionless> {
 /// vacuum permeability. The Bohr-magneton ratio is a later table row
 /// and is not stored. Gyromagnetic ratios cite ħ and are not stored.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
-/// centre. This is not the CODATA 2022 last-digit 11035.
+/// centre as the CODATA decimal. `Ratio::to_f64` on the `10^{35}`
+/// centre is one ulp from this decimal and is not this Qty. This is
+/// not the CODATA 2022 last-digit 11035.
 pub fn shielded_helion_magnetic_moment(
 ) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
     Qty::new(-1.074_553_090e-26)
@@ -6448,8 +6450,13 @@ mod tests {
         let mu0h_centre = Ratio::new(-1_074_553_090, 10i128.pow(35));
         assert_eq!(
             shielded_helion_magnetic_moment().value(),
-            mu0h_centre.to_f64(),
+            -1.074_553_090e-26,
             "mu0h Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_ne!(
+            shielded_helion_magnetic_moment().value(),
+            mu0h_centre.to_f64(),
+            "Ratio::to_f64 on the 10^35 centre is one ulp from the CODATA decimal"
         );
         assert!(
             mu0h.value.contains(Interval::point(mu0h_centre)),
