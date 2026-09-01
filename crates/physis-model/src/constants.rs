@@ -1454,10 +1454,28 @@ pub fn second_radiation_constant() -> Qty<physis_core::LengthTemperature> {
 /// stores the exact Ratio. This is not a terminating SciExact (7 and
 /// 6310543 remain in the reduced denominator). The versioned ledger
 /// stores the exact Ratio; this Qty is the IEEE rounding of that Ratio.
-/// Von Klitzing RK is a later ELECTROMAGNETIC row and is not stored.
+/// The von Klitzing constant is RK.
 pub fn josephson_constant(
 ) -> Qty<physis_core::SI<typenum::N1, typenum::N2, typenum::P2, typenum::P1>> {
     Qty::new(483_597_848_416_983.7)
+}
+
+/// Von Klitzing constant RK = h / e^2, SI 2019 exact.
+///
+/// This is the exact ELECTROMAGNETIC product listed as RK, not Planck
+/// h, not elementary charge e, not KJ, not Z0, not Phi0 (that printed
+/// formula cites pi and hbar), not G0 (that printed formula cites pi
+/// and hbar), not conventional RK-90, and not a FormalClaim that
+/// reconstructs h / e^2 from live lookups. JPCRD also writes 2 pi hbar
+/// / e^2; that printed formula is not the stored product. The table
+/// prints an ellipsis; the ledger stores the exact Ratio. This is not
+/// a terminating SciExact (3, 19, 389, and 12043 remain in the reduced
+/// denominator). The versioned ledger stores the exact Ratio; this Qty
+/// is the IEEE rounding of that Ratio. Bohr magneton is a later
+/// ELECTROMAGNETIC row and is not stored.
+pub fn von_klitzing_constant(
+) -> Qty<physis_core::SI<typenum::P1, typenum::P2, typenum::N3, typenum::N2>> {
+    Qty::new(25_812.807_459_304_506)
 }
 
 /// Muon mass.
@@ -8798,9 +8816,58 @@ mod tests {
             physis_constants::lookup("G0").is_none(),
             "conductance quantum printed formula cites pi and hbar and is not stored"
         );
+
+        let r_k = physis_constants::von_klitzing_constant();
+        let r_k_value = Ratio::new(
+            662_607_015i128 * 10i128.pow(14),
+            1_602_176_634i128 * 1_602_176_634i128,
+        );
+        assert_eq!(r_k.value, r_k_value, "ledger RK is the exact SI Ratio");
+        assert_eq!(
+            von_klitzing_constant().value(),
+            r_k_value.to_f64(),
+            "RK Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            von_klitzing_constant().value(),
+            25_812.807_459_304_506,
+            "RK Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("RK").is_none(),
-            "von Klitzing constant is a later ELECTROMAGNETIC row"
+            r_k.value > Ratio::int(0),
+            "ledger RK stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::von_klitzing_constant().hash,
+            physis_constants::planck_h().hash,
+            "RK is not h"
+        );
+        assert_ne!(
+            physis_constants::von_klitzing_constant().hash,
+            physis_constants::elementary_charge().hash,
+            "RK is not e"
+        );
+        assert_ne!(
+            physis_constants::von_klitzing_constant().hash,
+            physis_constants::josephson_constant().hash,
+            "RK is not KJ"
+        );
+        assert_ne!(
+            physis_constants::von_klitzing_constant().hash,
+            physis_constants::vacuum_impedance().hash,
+            "RK is not Z0"
+        );
+        assert!(
+            physis_constants::lookup("Phi0").is_none(),
+            "magnetic flux quantum printed formula cites pi and hbar and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("G0").is_none(),
+            "conductance quantum printed formula cites pi and hbar and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("muB").is_none(),
+            "Bohr magneton printed formula cites hbar and is not stored"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
