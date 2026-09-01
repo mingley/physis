@@ -8,9 +8,9 @@
 
 use physis_core::dim::{
     Action, Dimensionless, Energy, EnergyDensity, Frequency, HeatCapacity, Length,
-    LuminosityDensity, Mass, Power, RadiationConstant, StefanBoltzmann, Time, Velocity,
+    LuminosityDensity, Mass, Power, Pressure, RadiationConstant, StefanBoltzmann, Time, Velocity,
 };
-use physis_core::qty::{joule, kg, meters, seconds, Qty};
+use physis_core::qty::{joule, kg, meters, pascal, seconds, Qty};
 
 /// Speed of light in vacuum (exact, SI).
 pub const C: Qty<Velocity> = Qty::new(299_792_458.0);
@@ -1298,12 +1298,24 @@ pub fn molar_gas_constant() -> Qty<
 /// and not Maxwell Faraday dF=0. The table prints an ellipsis; the
 /// ledger stores the full terminating decimal. The versioned ledger
 /// stores the exact Ratio; this Qty is the IEEE rounding of that SI
-/// decimal. Standard-state pressure is a later table row and is not
-/// stored. JPCRD also writes F; that is not a ledger name.
+/// decimal. Standard-state pressure is `p0`.
+/// JPCRD also writes F; that is not a ledger name.
 pub fn faraday_constant() -> Qty<
     physis_core::SI<typenum::Z0, typenum::Z0, typenum::P1, typenum::P1, typenum::Z0, typenum::N1>,
 > {
     Qty::new(96_485.332_123_310_01)
+}
+
+/// Standard-state pressure p0 (Pa), CODATA 2018 exact.
+///
+/// This is the exact PHYSICOCHEMICAL conventional pressure 100 000 Pa,
+/// not Faraday NAe, not the standard atmosphere 101 325 Pa, and not
+/// Newtonian G. JPCRD prints no symbol; p0 is the ledger name. bar is
+/// not a ledger name. The versioned ledger stores the exact Ratio;
+/// this Qty is the integer to_f64 of that pascal count. The standard
+/// atmosphere is a later table row and is not stored.
+pub fn standard_state_pressure() -> Qty<Pressure> {
+    pascal(100_000.0)
 }
 
 /// Muon mass.
@@ -8148,9 +8160,54 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "NAe is not G"
         );
+
         assert!(
-            physis_constants::lookup("p0").is_none(),
-            "p0 standard-state pressure is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("bar").is_none(),
+            "bar is not a ledger name; the live name is p0"
+        );
+        let p_0 = physis_constants::standard_state_pressure();
+        assert_eq!(
+            p_0.value,
+            Ratio::int(100_000),
+            "ledger p0 is exactly 100000 Pa"
+        );
+        assert_eq!(
+            standard_state_pressure().value(),
+            p_0.value.to_f64(),
+            "p0 Qty is the integer to_f64 of 100000 Pa"
+        );
+        assert_eq!(
+            standard_state_pressure().value(),
+            100_000.0,
+            "p0 Qty locksteps to the exact pascal count"
+        );
+        assert!(
+            p_0.value > Ratio::int(0),
+            "ledger p0 stays a positive exact Ratio"
+        );
+        assert_ne!(
+            p_0.value,
+            Ratio::int(101_325),
+            "p0 is not the standard atmosphere"
+        );
+        assert_ne!(
+            physis_constants::standard_state_pressure().hash,
+            physis_constants::faraday_constant().hash,
+            "p0 is not NAe"
+        );
+        assert_ne!(
+            physis_constants::standard_state_pressure().hash,
+            physis_constants::astronomical_unit().hash,
+            "p0 is not au"
+        );
+        assert_ne!(
+            physis_constants::standard_state_pressure().hash,
+            physis_constants::newtonian_g().hash,
+            "p0 is not G"
+        );
+        assert!(
+            physis_constants::lookup("atm").is_none(),
+            "atm standard atmosphere is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
