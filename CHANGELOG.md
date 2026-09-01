@@ -22,6 +22,77 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 second radiation constant is an exact Ratio.**
+  `physis-constants` versions `c2` as the SI-exact Ratio `h c / k` =
+  `272115870842319/18913000000000000` m K from JPCRD 50, 033105 table
+  XXXI (PHYSICOCHEMICAL). The table prints `1.438 776 877… × 10^{-2}`;
+  the ledger stores the exact product. The reduced denominator keeps
+  factor 18913, so this is not a terminating SciExact. This is not
+  Planck `h`, not Boltzmann `k`, not `c1L`, not first radiation
+  constant `c1` = `2πhc²` (π; not stored), not Stefan-Boltzmann `σ`
+  (π; not stored), not Wien `b` / `b0` (transcendental; later rows),
+  not an SI defining constant, and not a FormalClaim reconstructing
+  `h c / k` from live lookups. The JPCRD symbol `c2` is the ledger
+  name. Electron mass is still not stored (`10^{42}` overflows
+  `i128`). CODATA 2022 prints the same SI-exact ellipsis; there is no
+  last-digit trap. `physis_model` `second_radiation_constant()` Qty
+  locksteps to `Ratio::to_f64` of the reduced fraction. Adding `c2` to
+  LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`,
+  `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`,
+  `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`,
+  `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`,
+  `mu_h_muB`, `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`,
+  `mu0h_mup`, `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`,
+  `m_alpha_c2_MeV`, `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`,
+  `m_u_c2`, `m_u_c2_MeV`, `M_u`, `M_12C`, `NAh`, `NAk`, `NAe`, `p0`,
+  `atm`, `Vm`, `n0`, `Vm_atm`, `n0_atm`, `S0_R`, `S0_R_atm`, and
+  `c1L` hashes are unchanged. Theories still evaluate with `f64` Qty.
+  That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `c2` hash 9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc; node 8c098b806e87a28bd2d42c5d7f5662dd61b3b81f9c6d926ecc1cd2c7665ccc87;
+  ledger node b1a0822a74113454ec1cabca659e2574f435a09095fbd25e80e87100893b4570. `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`,
+  `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`,
+  `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`,
+  `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`,
+  `mu_h_muB`, `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`,
+  `mu0h_mup`, `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`,
+  `m_alpha_c2_MeV`, `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`,
+  `m_u_c2`, `m_u_c2_MeV`, `M_u`, `M_12C`, `NAh`, `NAk`, `NAe`, `p0`,
+  `atm`, `Vm`, `n0`, `Vm_atm`, `n0_atm`, `S0_R`, `S0_R_atm`, and
+  `c1L` hashes and nodes unchanged.
+
 - **CODATA 2018 first radiation constant for spectral radiance is SI-exact SciExact.**
   `physis-constants` versions `c1L` as the SI-exact terminating decimal
   `2 h c²` = `11910429723971884140794892e-41` W m² sr⁻¹ from JPCRD 50,

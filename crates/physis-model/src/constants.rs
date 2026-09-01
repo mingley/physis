@@ -1423,11 +1423,25 @@ pub fn sackur_tetrode_constant_atm() -> Qty<Dimensionless> {
 /// and not a FormalClaim that reconstructs 2 h c² from live lookups.
 /// The table prints an ellipsis; the ledger stores the full terminating
 /// decimal as SciExact because 10^41 overflows i128. This Qty is the
-/// IEEE rounding of that SI decimal. First radiation constant c1 is a
-/// later table row and is not stored.
+/// IEEE rounding of that SI decimal. First radiation constant c1 cites
+/// pi and is not stored. The second radiation constant is c2.
 pub fn first_radiation_constant_spectral_radiance(
 ) -> Qty<physis_core::SI<typenum::P1, typenum::P4, typenum::N3>> {
     Qty::new(1.191_042_972_397_188_4e-16)
+}
+
+/// Second radiation constant c2 = h c / k, SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as c2, not Planck
+/// h, not Boltzmann k, not c1L, not c1 (that formula cites pi), and not
+/// a FormalClaim that reconstructs h c / k from live lookups. The table
+/// prints an ellipsis; the ledger stores the exact Ratio. This is not a
+/// terminating SciExact (18913 remains in the reduced denominator). The
+/// versioned ledger stores the exact Ratio; this Qty is the IEEE
+/// rounding of that Ratio. Wien displacement constants are later table
+/// rows and are not stored.
+pub fn second_radiation_constant() -> Qty<physis_core::LengthTemperature> {
+    Qty::new(0.014_387_768_775_039_339)
 }
 
 /// Muon mass.
@@ -8669,9 +8683,58 @@ mod tests {
             physis_constants::lookup("c1").is_none(),
             "first radiation constant c1 cites pi and is a later PHYSICOCHEMICAL row"
         );
+
+        let c_2 = physis_constants::second_radiation_constant();
+        let c_2_value = Ratio::new(
+            662_607_015i128 * 299_792_458i128,
+            1_380_649i128 * 10i128.pow(13),
+        );
+        assert_eq!(c_2.value, c_2_value, "ledger c2 is the exact SI Ratio");
+        assert_eq!(
+            second_radiation_constant().value(),
+            c_2_value.to_f64(),
+            "c2 Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            second_radiation_constant().value(),
+            0.014_387_768_775_039_339,
+            "c2 Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("c2").is_none(),
-            "second radiation constant is a later PHYSICOCHEMICAL row"
+            c_2.value > Ratio::int(0),
+            "ledger c2 stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::second_radiation_constant().hash,
+            physis_constants::planck_h().hash,
+            "c2 is not h"
+        );
+        assert_ne!(
+            physis_constants::second_radiation_constant().hash,
+            physis_constants::first_radiation_constant_spectral_radiance().hash,
+            "c2 is not c1L"
+        );
+        assert_ne!(
+            physis_constants::second_radiation_constant().hash,
+            physis_constants::boltzmann().hash,
+            "c2 is not k"
+        );
+        assert_ne!(
+            physis_constants::second_radiation_constant().hash,
+            physis_constants::newtonian_g().hash,
+            "c2 is not G"
+        );
+        assert!(
+            physis_constants::lookup("c1").is_none(),
+            "first radiation constant c1 cites pi and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("sigma").is_none(),
+            "Stefan-Boltzmann constant cites pi and is not stored"
+        );
+        assert!(
+            physis_constants::lookup("b0").is_none(),
+            "Wien displacement law constant is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
