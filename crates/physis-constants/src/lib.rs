@@ -4910,7 +4910,7 @@ fn codata_2018_atomic_mass_constant_interval() -> Interval {
 /// JPCRD symbol `mu` as a ledger name, not unified atomic mass unit `u`
 /// under a second name (footnote f: `mu = m(¹²C)/12 = 1 u`), not an SI
 /// defining Ratio, and not P3N. The energy equivalent is `m_u_c2`. The
-/// MeV conversion is a later table row and is not stored. Electron mass
+/// MeV conversion is `m_u_c2_MeV`. Electron mass
 /// is not stored: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `892`. The
 /// decade is `10^{38}` matching the printed 11-decimal × `10^{-27}` form;
