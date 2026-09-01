@@ -22,6 +22,29 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron gyromagnetic ratio in MHz/T is a one-sigma Interval.**
+  `physis-constants` versions `gamma_e_MHz` as the CODATA 2018 hull
+  `28024.9514242(85)` MHz T⁻¹ from JPCRD 50, 033105 table XXXI
+  (Electron, e-). This is the recommended printed companion, not s⁻¹ T⁻¹
+  `gamma_e`, not `gamma_p_MHz`, not `gamma_n_MHz`, not `gamma0p_MHz`, not
+  `muN_MHz`, not `ge`, not an SI defining Ratio, not a terminating
+  SciExact, not `hbar`, and not a FormalClaim reconstructing
+  `gamma_e / 2π` from live lookups. NIST lists MHz T⁻¹, not Hz T⁻¹.
+  The ledger name is `gamma_e_MHz`. Helion gyromagnetic `gamma0h` still
+  cites ħ and is not stored. Decade `10^{7}` (`10^{6}` is the 10× trap).
+  This is not the CODATA 2022 last-digit `3861`; the 2018 hull excludes
+  that 2022 centre. Electron mass is still not stored (`10^{42}`
+  overflows `i128`). `physis_model`
+  `electron_gyromagnetic_ratio_in_mhz_per_tesla()` Qty locksteps to the
+  recommended centre inside the hull. Adding `gamma_e_MHz` to LEDGER
+  changes the ledger bundle pin. Theories still evaluate with `f64` Qty.
+  That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `gamma_e_MHz` hash 4467f4343ca683946219dde053497c42e8da08518663051808ffe7529630eda0; node
+  a2a19a2dbfc04e754e457c06a5f84f67a7dc185a5a1dc63634ef97f75700f243; ledger node ad4c9f69bf42589bdb5ca036d0f0c3e183116c08591a2326d64d70e95729d60a. `gamma_e`
+  hash ebc106324ea058d91d5790627b8c24a19ea6a9865e2fe273b07239771454e7c9
+  and prior gyromagnetic hashes unchanged.
+
 - **CODATA 2018 electron gyromagnetic ratio is a one-sigma Interval.**
   `physis-constants` versions `gamma_e` as the CODATA 2018 hull
   `1.76085963023(53)×10^{11}` s⁻¹ T⁻¹ from JPCRD 50, 033105 table XXXI

@@ -1689,11 +1689,24 @@ pub fn neutron_gyromagnetic_ratio_in_mhz_per_tesla() -> Qty<Dimensionless> {
 /// printed formula cites ħ; the reconstruction is unused. The versioned
 /// ledger stores the one-sigma hull; this Qty is that centre. Ledger
 /// unit is s^{-1} T^{-1}; this Qty is SI kg^{-1} s A, not dimensionless.
-/// Electron gyromagnetic ratio in MHz/T is a later row. Helion
+/// Electron gyromagnetic ratio in MHz/T is gamma_e_MHz. Helion
 /// gyromagnetic ratio is not stored.
 pub fn electron_gyromagnetic_ratio(
 ) -> Qty<physis_core::SI<typenum::N1, typenum::Z0, typenum::P1, typenum::P1>> {
     Qty::new(1.760_859_630_23e11)
+}
+
+/// Electron gyromagnetic ratio in MHz/T, CODATA 2018.
+///
+/// This is the recommended printed Electron, e- centre in MHz T^{-1},
+/// not s^{-1} T^{-1} gamma_e, not gamma_p_MHz, not gamma_n_MHz, not
+/// gamma0p_MHz, not muN_MHz, not ge, not a FormalClaim of gamma_e / 2 pi,
+/// and not hbar. NIST lists MHz T^{-1}, not Hz T^{-1}. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. Ledger
+/// unit is MHz T^{-1}; this Qty is dimensionless, not SI kg^{-1} s A.
+/// Helion gyromagnetic ratio is not stored.
+pub fn electron_gyromagnetic_ratio_in_mhz_per_tesla() -> Qty<Dimensionless> {
+    Qty::new(28_024.951_424_2)
 }
 
 /// Muon mass.
@@ -9751,9 +9764,33 @@ mod tests {
             physis_constants::proton_gyromagnetic_ratio().hash,
             "gamma_e is not gamma_p"
         );
+        let gamma_e_mhz = physis_constants::electron_gyromagnetic_ratio_in_mhz_per_tesla();
+        let gamma_e_mhz_centre = Ratio::new(280_249_514_242, 10i128.pow(7));
+        assert_eq!(
+            electron_gyromagnetic_ratio_in_mhz_per_tesla().value(),
+            28_024.951_424_2,
+            "electron gyromagnetic ratio in MHz/T gamma_e_MHz Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            electron_gyromagnetic_ratio_in_mhz_per_tesla().value(),
+            gamma_e_mhz_centre.to_f64(),
+            "gamma_e_MHz Qty locksteps to Ratio::to_f64 on the 10^7 centre"
+        );
         assert!(
-            physis_constants::lookup("gamma_e_MHz").is_none(),
-            "electron gyromagnetic ratio in MHz/T is a later row"
+            gamma_e_mhz
+                .value
+                .contains(Interval::point(gamma_e_mhz_centre)),
+            "gamma_e_MHz Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            physis_constants::electron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::electron_gyromagnetic_ratio().hash,
+            "gamma_e_MHz is not gamma_e"
+        );
+        assert_ne!(
+            physis_constants::electron_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            physis_constants::proton_gyromagnetic_ratio_in_mhz_per_tesla().hash,
+            "gamma_e_MHz is not gamma_p_MHz"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
