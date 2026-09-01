@@ -707,13 +707,28 @@ pub fn deuteron_neutron_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// This is the recommended kg centre from the triton section, not
 /// deuteron, neutron, proton, or muon mass and not the electron-triton
 /// mass ratio. This Qty is not a certificate of a reconstruction from
-/// sibling masses or mass ratios. The u-row, energy equivalent, MeV,
+/// sibling masses or mass ratios. The u-row is `m_t_u`. Energy
+/// equivalent, MeV, mass ratios, molar mass, and magnetic-moment rows
+/// are later table rows and are not stored. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. This is not the CODATA
+/// 2022 last-digit 7512.
+pub fn triton_mass() -> Qty<Mass> {
+    kg(5.007_356_744_6e-27)
+}
+
+/// Triton mass in unified atomic mass units, CODATA 2018.
+///
+/// This is the recommended centre in u from the triton section, not the
+/// kg hull and not deuteron, neutron, proton, or muon mass in u. This
+/// Qty is not a certificate of a reconstruction from sibling masses.
+/// Ledger unit is u; this Qty is dimensionless, not kg. Relative atomic
+/// mass is not stored under a different name. Energy equivalent, MeV,
 /// mass ratios, molar mass, and magnetic-moment rows are later table
 /// rows and are not stored. The versioned ledger stores the one-sigma
 /// hull; this Qty is that centre. This is not the CODATA 2022 last-digit
-/// 7512.
-pub fn triton_mass() -> Qty<Mass> {
-    kg(5.007_356_744_6e-27)
+/// 597.
+pub fn triton_mass_in_u() -> Qty<Dimensionless> {
+    Qty::new(3.015_500_716_21)
 }
 
 /// Muon mass.
@@ -4984,6 +4999,55 @@ mod tests {
             physis_constants::triton_mass().hash,
             physis_constants::electron_triton_mass_ratio().hash,
             "m_t is not me_mt"
+        );
+        assert!(
+            physis_constants::lookup("mt_u").is_none(),
+            "mt_u is not a ledger name; the live name is m_t_u"
+        );
+        let m_t_u = physis_constants::triton_mass_in_u();
+        let m_t_u_centre = Ratio::new(301_550_071_621, 10i128.pow(11));
+        assert_eq!(
+            triton_mass_in_u().value(),
+            m_t_u_centre.to_f64(),
+            "m_t_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_t_u.value.contains(Interval::point(m_t_u_centre)),
+            "m_t_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_t_u.value.lo, m_t_u.value.hi,
+            "ledger m_t_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::triton_mass_in_u().hash,
+            physis_constants::triton_mass().hash,
+            "m_t_u is not m_t"
+        );
+        assert_ne!(
+            physis_constants::triton_mass_in_u().hash,
+            physis_constants::deuteron_mass_in_u().hash,
+            "m_t_u is not m_d_u"
+        );
+        assert_ne!(
+            physis_constants::triton_mass_in_u().hash,
+            physis_constants::neutron_mass_in_u().hash,
+            "m_t_u is not m_n_u"
+        );
+        assert_ne!(
+            physis_constants::triton_mass_in_u().hash,
+            physis_constants::proton_mass_in_u().hash,
+            "m_t_u is not m_p_u"
+        );
+        assert_ne!(
+            physis_constants::triton_mass_in_u().hash,
+            physis_constants::muon_mass_in_u().hash,
+            "m_t_u is not m_mu_u"
+        );
+        assert_ne!(
+            physis_constants::triton_mass_in_u().hash,
+            physis_constants::electron_triton_mass_ratio().hash,
+            "m_t_u is not me_mt"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
