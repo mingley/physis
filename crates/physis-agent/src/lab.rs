@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  7a46985daf6f2be4088255294c7df0ed9ca945b2b46190619d82317ea7f5debd"),
+            text.contains("constant  ledger  e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -17334,6 +17334,48 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let gamma_p_mhz = lab
+            .exec(Command::Constant {
+                name: Some("gamma_p_MHz".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            gamma_p_mhz.contains("constant  gamma_p_MHz  node "),
+            "{gamma_p_mhz}"
+        );
+        assert!(
+            gamma_p_mhz.contains(
+                "hash     0e7b084d03777a4e9e875e48a87702d1d4284d30cb7ea50ba424f103d4660f73"
+            ),
+            "{gamma_p_mhz}"
+        );
+        assert!(gamma_p_mhz.contains("kind     interval"), "{gamma_p_mhz}");
+        assert!(gamma_p_mhz.contains("table    XXXI"), "{gamma_p_mhz}");
+        assert!(
+            gamma_p_mhz.contains("range    gamma_p_MHz = 42.577478518(18)"),
+            "{gamma_p_mhz}"
+        );
+        assert!(gamma_p_mhz.contains("unit     MHz T^{-1}"), "{gamma_p_mhz}");
+        assert!(
+            gamma_p_mhz.contains("value    [85154957/2000000, 5322184817/125000000]"),
+            "{gamma_p_mhz}"
+        );
+        assert!(gamma_p_mhz.contains("rebuild  ok"), "{gamma_p_mhz}");
+        assert!(gamma_p_mhz.contains("not P3N"), "{gamma_p_mhz}");
+        assert!(!gamma_p_mhz.contains("receipt"), "{gamma_p_mhz}");
+        assert!(!gamma_p_mhz.contains("theorem"), "{gamma_p_mhz}");
+        let gamma_p_mhz_id = constant_node_id(&gamma_p_mhz);
+        assert_eq!(
+            gamma_p_mhz_id.to_hex(),
+            "89744598268cf707cc8c75c45c9eecd6e9380f4caa2521b9a94633818fc6ebf9",
+            "journaling must not change the gamma_p_MHz constant payload"
+        );
+        assert_eq!(
+            lab.store.get(gamma_p_mhz_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -19801,7 +19843,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "7a46985daf6f2be4088255294c7df0ed9ca945b2b46190619d82317ea7f5debd",
+            "e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -20736,7 +20778,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "7a46985daf6f2be4088255294c7df0ed9ca945b2b46190619d82317ea7f5debd",
+            "e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -22096,6 +22138,14 @@ mod tests {
         .expect("pinned gamma_p node");
         assert_eq!(
             lab2.store.get(gamma_p).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let gamma_p_mhz = physis_core::artifact::ArtifactId::from_hex(
+            "89744598268cf707cc8c75c45c9eecd6e9380f4caa2521b9a94633818fc6ebf9",
+        )
+        .expect("pinned gamma_p_MHz node");
+        assert_eq!(
+            lab2.store.get(gamma_p_mhz).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -23649,7 +23699,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  7a46985daf6f2be4088255294c7df0ed9ca945b2b46190619d82317ea7f5debd"),
+            text.contains("constant  ledger  e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
