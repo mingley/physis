@@ -865,6 +865,10 @@ fn codata_2018_standard_atmosphere_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "atm = 101325 exact")
 }
 
+fn codata_2018_molar_volume_ideal_gas_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "Vm = 22.71095464e-3 exact")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5203,7 +5207,7 @@ pub fn standard_state_pressure() -> Constant<Ratio> {
 /// Faraday `NAe`, not Newtonian `G`, not an SI defining constant, and
 /// not a FormalClaim. JPCRD prints no symbol; `atm` is the ledger
 /// name. `Torr` and `mmHg` are not second names. The molar volume of
-/// ideal gas is a later table row and is not stored. Electron mass is
+/// ideal gas is `Vm`. Electron mass is
 /// not stored: `10^{42}` overflows `i128`. CODATA 2022 prints the same
 /// exact 101 325 Pa; there is no last-digit trap. Theories still use
 /// `physis_model` `f64` Qty.
@@ -5213,6 +5217,35 @@ pub fn standard_atmosphere() -> Constant<Ratio> {
         Ratio::int(101_325),
         "Pa",
         codata_2018_standard_atmosphere_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 molar volume of ideal gas R T / p0 as a terminating decimal.
+fn molar_volume_ideal_gas_value() -> Ratio {
+    Ratio::new(602_214_076i128 * 1_380_649i128 * 27_315i128, 10i128.pow(21))
+}
+
+/// Molar volume of ideal gas Vm at 273.15 K and 100 kPa, SI 2019 exact Ratio.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as `Vm` at
+/// T = 273.15 K and p = 100 kPa (`p0`), not the 101.325 kPa companion,
+/// not Loschmidt `n0`, not Faraday `NAe`, not molar gas `NAk`, not an
+/// SI defining constant, and not a FormalClaim that reconstructs
+/// `NAk × T / p0` from live lookups. The table prints
+/// `22.710 954 64… × 10^{-3}`; the ledger stores the full terminating
+/// decimal `R T / p0`. That product fits [`Ratio`] (`10^{21}`). This is
+/// not P3N. The JPCRD symbol `Vm` is the ledger name. Loschmidt
+/// constant is a later table row and is not stored. Electron mass is
+/// not stored: `10^{42}` overflows `i128`. CODATA 2022 prints the same
+/// SI-exact ellipsis; there is no last-digit trap. Theories still use
+/// `physis_model` `f64` Qty.
+pub fn molar_volume_ideal_gas() -> Constant<Ratio> {
+    Constant::new(
+        "Vm",
+        molar_volume_ideal_gas_value(),
+        "m^{3} mol^{-1}",
+        codata_2018_molar_volume_ideal_gas_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5519,6 +5552,7 @@ pub const LEDGER: &[&str] = &[
     "NAe",
     "p0",
     "atm",
+    "Vm",
     "au",
     "eV",
     "GM_sun",
@@ -5798,6 +5832,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "NAe" => Some(listing(faraday_constant(), "ratio")),
         "p0" => Some(listing(standard_state_pressure(), "ratio")),
         "atm" => Some(listing(standard_atmosphere(), "ratio")),
+        "Vm" => Some(listing(molar_volume_ideal_gas(), "ratio")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25101,7 +25136,8 @@ mod tests {
         assert!(lookup("NAe").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
-        assert!(lookup("Vm").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("n0").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -25246,7 +25282,8 @@ mod tests {
         assert!(lookup("NAe").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
-        assert!(lookup("Vm").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("n0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25377,7 +25414,8 @@ mod tests {
         assert!(lookup("NAe").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
-        assert!(lookup("Vm").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("n0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25502,7 +25540,8 @@ mod tests {
         assert!(lookup("N_A*e").is_none());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
-        assert!(lookup("Vm").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("n0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25597,7 +25636,8 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("bar").is_none());
         assert!(lookup("atm").is_some());
-        assert!(lookup("Vm").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("n0").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -25691,7 +25731,8 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
-        assert!(lookup("Vm").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("n0").is_none());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -25704,6 +25745,126 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+        assert!(lookup("Vm").is_some());
+    }
+
+    #[test]
+    fn codata_2018_molar_volume_ideal_gas_is_an_exact_ratio() {
+        let r = molar_volume_ideal_gas();
+        let value = Ratio::new(602_214_076i128 * 1_380_649i128 * 27_315i128, 10i128.pow(21));
+        assert_eq!(r.name, "Vm");
+        assert_eq!(r.unit, "m^{3} mol^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("Vm = 22.71095464e-3 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(
+            r.value,
+            SciExact::new(2_271_095_464_148_557_506, -20)
+                .to_ratio()
+                .expect("Vm fits Ratio")
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "1135547732074278753/50000000000000000000"
+        );
+        assert!(r.value > Ratio::int(0), "Vm is a positive exact Ratio");
+        assert_ne!(
+            r.value,
+            Ratio::new(2_271_095_464, 10i128.pow(11)),
+            "Vm is the full SI product, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, molar_volume_ideal_gas().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "Vm",
+                molar_volume_ideal_gas_value(),
+                "m^{3} mol^{-1}",
+                codata_2018_molar_volume_ideal_gas_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, molar_gas_constant().hash, "Vm is not NAk");
+        assert_ne!(r.hash, standard_state_pressure().hash, "Vm is not p0");
+        assert_ne!(r.hash, standard_atmosphere().hash, "Vm is not atm");
+        assert_ne!(r.hash, faraday_constant().hash, "Vm is not NAe");
+        assert_ne!(r.hash, newtonian_g().hash, "Vm is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "Vm is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            standard_atmosphere().provenance.source_hash,
+            "Vm range is not the atm range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            molar_gas_constant().provenance.source_hash,
+            "Vm range is not the NAk range"
+        );
+        assert_eq!(
+            standard_atmosphere().hash.to_hex(),
+            "0bb71f6a38e105217751cdd7fb11c3cff6eefd0cd8aab0ae2ae366d28119ba2d",
+            "atm hash must stay pinned when Vm is added"
+        );
+        assert_eq!(
+            standard_state_pressure().hash.to_hex(),
+            "21e32b495cec5be6d2655b0f3fc2e6d27541b76c8582ad17562002a30b5a1217",
+            "p0 hash must stay pinned when Vm is added"
+        );
+        assert_eq!(
+            molar_gas_constant().hash.to_hex(),
+            "28c95a46c67bec666b887658cc44664000bf821eac09b9023cf401b89231efc3",
+            "NAk hash must stay pinned when Vm is added"
+        );
+        assert_eq!(
+            faraday_constant().hash.to_hex(),
+            "dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4",
+            "NAe hash must stay pinned when Vm is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when Vm is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when Vm is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "0b56b98a81e8961ca9be8efeb6775ea197dbf0f96a913cae13944d40e71479a5"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(21).is_some(),
+            "Vm = R T / p0 is 22710954641485575060/10^21; that denominator fits i128"
+        );
+        assert!(lookup("n0").is_none());
+        assert!(lookup("Vm_atm").is_none());
+        assert!(lookup("Torr").is_none());
+        assert!(lookup("mmHg").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("atm").is_some());
+        assert!(lookup("p0").is_some());
+        assert!(lookup("NAk").is_some());
+        assert!(lookup("NAe").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
     }
@@ -25910,7 +26071,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 160);
+        assert_eq!(LEDGER.len(), 161);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -26665,6 +26826,11 @@ mod tests {
             lookup("atm").unwrap().hash.to_hex(),
             "0bb71f6a38e105217751cdd7fb11c3cff6eefd0cd8aab0ae2ae366d28119ba2d"
         );
+        assert_eq!(lookup("Vm").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("Vm").unwrap().hash.to_hex(),
+            "0b56b98a81e8961ca9be8efeb6775ea197dbf0f96a913cae13944d40e71479a5"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -27000,7 +27166,9 @@ mod tests {
         assert!(lookup("N_A_e").is_none());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
-        assert!(lookup("Vm").is_none());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("n0").is_none());
+        assert!(lookup("Vm_atm").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());

@@ -1325,9 +1325,23 @@ pub fn standard_state_pressure() -> Qty<Pressure> {
 /// G. JPCRD prints no symbol; atm is the ledger name. Torr and mmHg
 /// are not ledger names. The versioned ledger stores the exact Ratio;
 /// this Qty is the integer to_f64 of that pascal count. The molar
-/// volume of ideal gas is a later table row and is not stored.
+/// volume of ideal gas is `Vm`.
 pub fn standard_atmosphere() -> Qty<Pressure> {
     pascal(101_325.0)
+}
+
+/// Molar volume of ideal gas Vm (m³ mol⁻¹) at 273.15 K and 100 kPa, SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as Vm at T = 273.15 K
+/// and p = 100 kPa, not the 101.325 kPa companion, not Loschmidt n0,
+/// not Faraday NAe, and not molar gas NAk. The table prints an ellipsis;
+/// the ledger stores the full terminating decimal. The versioned ledger
+/// stores the exact Ratio; this Qty is the IEEE rounding of that SI
+/// decimal. Loschmidt constant is a later table row and is not stored.
+pub fn molar_volume_ideal_gas() -> Qty<
+    physis_core::SI<typenum::Z0, typenum::P3, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(0.022_710_954_641_485_575)
 }
 
 /// Muon mass.
@@ -8267,9 +8281,57 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "atm is not G"
         );
+
+        let v_m = physis_constants::molar_volume_ideal_gas();
+        let v_m_value = Ratio::new(602_214_076i128 * 1_380_649i128 * 27_315i128, 10i128.pow(21));
+        assert_eq!(v_m.value, v_m_value, "ledger Vm is the exact SI product");
+        assert_eq!(
+            SciExact::new(2_271_095_464_148_557_506, -20).to_ratio(),
+            Some(v_m.value),
+            "Vm fits Ratio; SciExact and Ratio are the same decimal"
+        );
+        assert_eq!(
+            molar_volume_ideal_gas().value(),
+            SciExact::new(2_271_095_464_148_557_506, -20).to_f64(),
+            "Vm Qty is the IEEE rounding of the SI decimal"
+        );
+        assert_eq!(
+            molar_volume_ideal_gas().value(),
+            0.022_710_954_641_485_575,
+            "Vm Qty locksteps to the SI 2019 terminating decimal literal"
+        );
+        assert_eq!(
+            molar_volume_ideal_gas().value(),
+            v_m_value.to_f64(),
+            "Vm reduced Ratio::to_f64 matches SciExact::to_f64 at this scale"
+        );
         assert!(
-            physis_constants::lookup("Vm").is_none(),
-            "Vm molar volume of ideal gas is a later PHYSICOCHEMICAL row"
+            v_m.value > Ratio::int(0),
+            "ledger Vm stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::molar_volume_ideal_gas().hash,
+            physis_constants::molar_gas_constant().hash,
+            "Vm is not NAk"
+        );
+        assert_ne!(
+            physis_constants::molar_volume_ideal_gas().hash,
+            physis_constants::standard_state_pressure().hash,
+            "Vm is not p0"
+        );
+        assert_ne!(
+            physis_constants::molar_volume_ideal_gas().hash,
+            physis_constants::standard_atmosphere().hash,
+            "Vm is not atm"
+        );
+        assert_ne!(
+            physis_constants::molar_volume_ideal_gas().hash,
+            physis_constants::newtonian_g().hash,
+            "Vm is not G"
+        );
+        assert!(
+            physis_constants::lookup("n0").is_none(),
+            "n0 Loschmidt constant is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

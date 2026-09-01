@@ -22,6 +22,76 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 molar volume of ideal gas is an exact Ratio.**
+  `physis-constants` versions `Vm` as the exact SI 2019 product
+  `R T / p0` at `T = 273.15 K` and `p = 100 kPa`
+  `0.022710954641485575` m³ mol⁻¹ from JPCRD 50, 033105 table XXXI
+  (PHYSICOCHEMICAL). The table prints an ellipsis; the ledger stores
+  the full terminating decimal, not the truncated display digits.
+  This is not molar gas `NAk`, not standard-state pressure `p0`, not
+  standard atmosphere `atm`, not the 101.325 kPa companion molar
+  volume, not Loschmidt `n0`, not Faraday `NAe`, not an SI defining
+  constant, not a FormalClaim that reconstructs `NAk × T / p0` from
+  live lookups, and not P3N. Loschmidt constant is a later table row
+  and is not stored. Electron mass is still not stored (`10^{42}`
+  overflows `i128`). The product fits Ratio (`10^{21}`). CODATA 2022
+  prints the same SI-exact ellipsis; there is no last-digit trap.
+  `physis_model` `molar_volume_ideal_gas()` Qty locksteps to the IEEE
+  rounding of that SI decimal (`SciExact::to_f64`). Adding `Vm` to
+  LEDGER changes the ledger bundle pin. The `G`, `mu0`, `epsilon0`,
+  `Z0`, `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`,
+  `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`,
+  `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`, `mt_mp`,
+  `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`, `m_h_u`,
+  `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`, `mu_h_muB`,
+  `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`, `mu0h_mup`,
+  `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`, `m_alpha_c2_MeV`,
+  `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`, `m_u_c2`, `m_u_c2_MeV`,
+  `M_u`, `M_12C`, `NAh`, `NAk`, `NAe`, `p0`, and `atm` hashes are
+  unchanged. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `Vm` hash 0b56b98a81e8961ca9be8efeb6775ea197dbf0f96a913cae13944d40e71479a5; node e5115026033b6250c155eb66657eeec10fa5f72ddf3ae38e85ade223235f5f6b;
+  ledger node 8e148d227818b9a85f4084313e6ad89bf63e1598861076d8b9f6ea5cfa325f25. `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`,
+  `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`,
+  `M_e`, `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`,
+  `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`,
+  `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`,
+  `m_mu_c2_MeV`, `mmu_me`, `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`,
+  `mu_mu`, `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`,
+  `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`,
+  `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`,
+  `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`,
+  `mu_h_muB`, `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`,
+  `mu0h_mup`, `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`,
+  `m_alpha_c2_MeV`, `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`,
+  `m_u_c2`, `m_u_c2_MeV`, `M_u`, `M_12C`, `NAh`, `NAk`, `NAe`, `p0`,
+  and `atm` hashes and nodes unchanged.
+
 - **CODATA 2018 standard atmosphere is an exact Ratio.**
   `physis-constants` versions `atm` as the exact PHYSICOCHEMICAL
   conventional pressure `101325` Pa from JPCRD 50, 033105 table XXXI.
