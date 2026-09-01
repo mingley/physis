@@ -925,12 +925,23 @@ pub fn helion_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
 ///
 /// This is the recommended centre from the helion section, not the
 /// electron-helion mass ratio and not a certificate that the stored
-/// centres invert. The helion-proton mass ratio is a later table row
-/// and is not stored. The versioned ledger stores the one-sigma hull;
-/// this Qty is that centre. This is not the CODATA 2022 last-digit
-/// 27984.
+/// centres invert. The helion-proton mass ratio is `mh_mp`. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// This is not the CODATA 2022 last-digit 27984.
 pub fn helion_electron_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(5_495.885_280_07)
+}
+
+/// Helion-proton mass ratio m_h/m_p, CODATA 2018.
+///
+/// This is the recommended centre from the helion section, not the
+/// triton-proton, deuteron-proton, neutron-proton, or proton-neutron
+/// mass ratio, and not a certificate that the stored centres reconstruct
+/// m_h/m_p. The molar mass is a later table row and is not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// This is not the CODATA 2022 last-digit 671552.
+pub fn helion_proton_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(2.993_152_671_67)
 }
 
 /// Muon mass.
@@ -5967,6 +5978,60 @@ mod tests {
             physis_constants::helion_electron_mass_ratio().hash,
             physis_constants::helion_mass_energy_equivalent_in_mev().hash,
             "mh_me is not m_h_c2_MeV"
+        );
+        assert!(
+            physis_constants::lookup("mh/mp").is_none(),
+            "mh/mp is not a ledger name; the live name is mh_mp"
+        );
+        let mh_mp = physis_constants::helion_proton_mass_ratio();
+        let mh_mp_centre = Ratio::new(299_315_267_167, 10i128.pow(11));
+        assert_eq!(
+            helion_proton_mass_ratio().value(),
+            mh_mp_centre.to_f64(),
+            "mh_mp Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mh_mp.value.contains(Interval::point(mh_mp_centre)),
+            "mh_mp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mh_mp.value.lo, mh_mp.value.hi,
+            "ledger mh_mp stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::helion_proton_mass_ratio().hash,
+            physis_constants::triton_proton_mass_ratio().hash,
+            "mh_mp is not mt_mp"
+        );
+        assert_ne!(
+            physis_constants::helion_proton_mass_ratio().hash,
+            physis_constants::deuteron_proton_mass_ratio().hash,
+            "mh_mp is not md_mp"
+        );
+        assert_ne!(
+            physis_constants::helion_proton_mass_ratio().hash,
+            physis_constants::neutron_proton_mass_ratio().hash,
+            "mh_mp is not mn_mp"
+        );
+        assert_ne!(
+            physis_constants::helion_proton_mass_ratio().hash,
+            physis_constants::proton_neutron_mass_ratio().hash,
+            "mh_mp is not mp_mn"
+        );
+        assert_ne!(
+            physis_constants::helion_proton_mass_ratio().hash,
+            physis_constants::helion_electron_mass_ratio().hash,
+            "mh_mp is not mh_me"
+        );
+        assert_ne!(
+            physis_constants::helion_proton_mass_ratio().hash,
+            physis_constants::helion_mass().hash,
+            "mh_mp is not m_h"
+        );
+        assert_ne!(
+            physis_constants::helion_proton_mass_ratio().hash,
+            physis_constants::proton_mass().hash,
+            "mh_mp is not m_p"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

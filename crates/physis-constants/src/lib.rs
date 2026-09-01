@@ -753,6 +753,10 @@ fn codata_2018_helion_electron_mass_ratio_source() -> SourceRecord {
     codata_2018_jpcrd("Helion, h", "mh/me = 5495.88528007(24)")
 }
 
+fn codata_2018_helion_proton_mass_ratio_source() -> SourceRecord {
+    codata_2018_jpcrd("Helion, h", "mh/mp = 2.99315267167(13)")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -4142,7 +4146,8 @@ fn codata_2018_helion_mass_energy_equivalent_in_mev_interval() -> Interval {
 /// electronvolt Ratio, not a certificate of a reconstruction from
 /// sibling masses, not an SI defining Ratio, and not P3N. The
 /// helion-electron mass ratio is `mh_me`. The helion-proton mass ratio
-/// is a later table row and is not stored.
+/// is `mh_mp`. Molar-mass and moment rows are later table rows and are
+/// not stored.
 /// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `61112`. The decade is `10^{8}`; `10^{7}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
@@ -4173,8 +4178,9 @@ fn codata_2018_helion_electron_mass_ratio_interval() -> Interval {
 /// the deuteron-electron ratio `md_me`, not the neutron-electron ratio
 /// `mn_me`, not the proton-electron ratio `mp_me`, not the muon-electron
 /// ratio `mmu_me`, not helion mass, not MeV energy equivalent, not an
-/// SI defining Ratio, and not P3N. The helion-proton mass ratio is a
-/// later table row and is not stored. Electron mass is not stored:
+/// SI defining Ratio, and not P3N. The helion-proton mass ratio is
+/// `mh_mp`. Molar-mass and moment rows are later table rows and are not
+/// stored. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `27984`. The decade is `10^{8}`; `10^{7}` is the 10× trap (`μ` would
 /// not be an integer). Theories still use `physis_model` `f64` Qty.
@@ -4184,6 +4190,37 @@ pub fn helion_electron_mass_ratio() -> Constant<Interval> {
         codata_2018_helion_electron_mass_ratio_interval(),
         "1",
         codata_2018_helion_electron_mass_ratio_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 2.99315267167(13).
+fn codata_2018_helion_proton_mass_ratio_interval() -> Interval {
+    let scale = 10i128.pow(11);
+    let mu = 299_315_267_167i128;
+    let sigma = 13;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Helion-proton mass ratio m_h/m_p, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended dimensionless hull from the helion section,
+/// not the triton-proton ratio `mt_mp`, not the deuteron-proton ratio
+/// `md_mp`, not the neutron-proton ratio `mn_mp`, not the proton-neutron
+/// ratio `mp_mn`, not a certificate that the stored centres reconstruct
+/// `m_h/m_p`, not the helion-electron ratio `mh_me`, not helion mass,
+/// not proton mass, not an SI defining Ratio, and not P3N. The molar
+/// mass is a later table row and is not stored. Electron mass is not
+/// stored: `10^{42}` overflows `i128`. This is not the CODATA 2022
+/// last-digit `671552`. The decade is `10^{11}`; `10^{10}` is the 10×
+/// trap (`μ` would not be an integer). Theories still use `physis_model`
+/// `f64` Qty.
+pub fn helion_proton_mass_ratio() -> Constant<Interval> {
+    Constant::new(
+        "mh_mp",
+        codata_2018_helion_proton_mass_ratio_interval(),
+        "1",
+        codata_2018_helion_proton_mass_ratio_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -4462,6 +4499,7 @@ pub const LEDGER: &[&str] = &[
     "m_h_c2",
     "m_h_c2_MeV",
     "mh_me",
+    "mh_mp",
     "au",
     "eV",
     "GM_sun",
@@ -4686,6 +4724,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "m_h_c2" => Some(listing(helion_mass_energy_equivalent(), "interval")),
         "m_h_c2_MeV" => Some(listing(helion_mass_energy_equivalent_in_mev(), "interval")),
         "mh_me" => Some(listing(helion_electron_mass_ratio(), "interval")),
+        "mh_mp" => Some(listing(helion_proton_mass_ratio(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -20196,7 +20235,7 @@ mod tests {
         assert!(lookup("mh/me").is_none());
         assert!(lookup("m_h_me").is_none());
         assert!(lookup("m-h-me").is_none());
-        assert!(lookup("mh_mp").is_none());
+        assert!(lookup("mh_mp").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -20210,6 +20249,153 @@ mod tests {
         assert!(lookup("mp_me").is_some());
         assert!(lookup("mmu_me").is_some());
         assert!(lookup("m_h_c2_MeV").is_some());
+        assert!(lookup("G").is_some());
+    }
+
+    #[test]
+    fn codata_2018_helion_proton_mass_ratio_is_a_one_sigma_interval() {
+        let r = helion_proton_mass_ratio();
+        let scale = 10i128.pow(11);
+        let lo = Ratio::new(299_315_267_154, scale);
+        let hi = Ratio::new(299_315_267_180, scale);
+        let centre = Ratio::new(299_315_267_167, scale);
+        assert_eq!(r.name, "mh_mp");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Helion, h"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("mh/mp = 2.99315267167(13)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "mh_mp is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA mh_mp is a positive mass-ratio hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[149657633577/50000000000, 14965763359/5000000000]"
+        );
+        assert_eq!(r.hash, helion_proton_mass_ratio().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "mh_mp",
+                codata_2018_helion_proton_mass_ratio_interval(),
+                "1",
+                codata_2018_helion_proton_mass_ratio_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            triton_proton_mass_ratio().hash,
+            "mh_mp is not mt_mp"
+        );
+        assert_ne!(
+            r.hash,
+            deuteron_proton_mass_ratio().hash,
+            "mh_mp is not md_mp"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_proton_mass_ratio().hash,
+            "mh_mp is not mn_mp"
+        );
+        assert_ne!(
+            r.hash,
+            proton_neutron_mass_ratio().hash,
+            "mh_mp is not mp_mn"
+        );
+        assert_ne!(
+            r.hash,
+            helion_electron_mass_ratio().hash,
+            "mh_mp is not mh_me"
+        );
+        assert_ne!(r.hash, helion_mass().hash, "mh_mp is not m_h");
+        assert_ne!(r.hash, proton_mass().hash, "mh_mp is not m_p");
+        assert_ne!(r.hash, newtonian_g().hash, "mh_mp is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            triton_proton_mass_ratio().provenance.source_hash,
+            "mh_mp range is not the mt_mp range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            deuteron_proton_mass_ratio().provenance.source_hash,
+            "mh_mp range is not the md_mp range"
+        );
+        assert_eq!(
+            helion_electron_mass_ratio().hash.to_hex(),
+            "2456ff97efcbfce853572c4f0bedf455455afedf9cec1628db183f23c2fe5368",
+            "mh_me hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            triton_proton_mass_ratio().hash.to_hex(),
+            "de2806f05b0502127a1c6e32a40eb5fde57e2dbbe06c02fbbd78e92899519595",
+            "mt_mp hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            deuteron_proton_mass_ratio().hash.to_hex(),
+            "a1c84e01de3c4fb4e5eb0c9de98edd0d13aefc51c32e1c95c2d4203d6144a919",
+            "md_mp hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            neutron_proton_mass_ratio().hash.to_hex(),
+            "4a1cc9e1870d573594b4de7b64f6ec1667f13da26f6cb8b72ae351eed5c89eb4",
+            "mn_mp hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            proton_neutron_mass_ratio().hash.to_hex(),
+            "fd6d15f0f9cd99a1889486d78f316d0e3299c3b9ff8db13d6429bcb47cccb465",
+            "mp_mn hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            helion_mass().hash.to_hex(),
+            "1a53756d23bdbbc188edb9cc55d1f3a9e5cc952d386bf885530507a4cded2492",
+            "m_h hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when mh_mp is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "46ae4686293f59d147df432b57e622e0883c8611813e0684326e4f2fd00d5c6d"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(11).is_some(),
+            "mh_mp = 2.99315267167 is 299315267167/10^11; that denominator fits i128"
+        );
+        assert!(lookup("mh/mp").is_none());
+        assert!(lookup("m_h_mp").is_none());
+        assert!(lookup("m-h-mp").is_none());
+        assert!(lookup("M_h").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("mh_mp").is_some());
+        assert!(lookup("mh_me").is_some());
+        assert!(lookup("mt_mp").is_some());
+        assert!(lookup("md_mp").is_some());
+        assert!(lookup("mn_mp").is_some());
+        assert!(lookup("mp_mn").is_some());
+        assert!(lookup("m_h").is_some());
+        assert!(lookup("m_p").is_some());
         assert!(lookup("G").is_some());
     }
 
@@ -20415,7 +20601,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 132);
+        assert_eq!(LEDGER.len(), 133);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -21030,6 +21216,11 @@ mod tests {
             lookup("mh_me").unwrap().hash.to_hex(),
             "2456ff97efcbfce853572c4f0bedf455455afedf9cec1628db183f23c2fe5368"
         );
+        assert_eq!(lookup("mh_mp").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("mh_mp").unwrap().hash.to_hex(),
+            "46ae4686293f59d147df432b57e622e0883c8611813e0684326e4f2fd00d5c6d"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -21254,7 +21445,11 @@ mod tests {
         assert!(lookup("mh/me").is_none());
         assert!(lookup("m_h_me").is_none());
         assert!(lookup("m-h-me").is_none());
-        assert!(lookup("mh_mp").is_none());
+        assert!(lookup("mh_mp").is_some());
+        assert!(lookup("mh/mp").is_none());
+        assert!(lookup("m_h_mp").is_none());
+        assert!(lookup("m-h-mp").is_none());
+        assert!(lookup("M_h").is_none());
         assert!(lookup("mue_mun").is_none());
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());
