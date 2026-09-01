@@ -1024,8 +1024,9 @@ pub fn helion_g_factor() -> Qty<Dimensionless> {
 /// This is the recommended signed centre for the helion in a spherical
 /// gas sample at 25 °C, not the free helion moment, not shielded proton
 /// moment, not the electron to shielded-helion moment ratio, and not
-/// vacuum permeability. The Bohr-magneton ratio is a later table row
-/// and is not stored. Gyromagnetic ratios cite ħ and are not stored.
+/// vacuum permeability. The Bohr-magneton ratio is `mu0h_muB`. The
+/// nuclear-magneton ratio is a later table row and is not stored.
+/// Gyromagnetic ratios cite ħ and are not stored.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre as the CODATA decimal. `Ratio::to_f64` on the `10^{35}`
 /// centre is one ulp from this decimal and is not this Qty. This is
@@ -1033,6 +1034,22 @@ pub fn helion_g_factor() -> Qty<Dimensionless> {
 pub fn shielded_helion_magnetic_moment(
 ) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
     Qty::new(-1.074_553_090e-26)
+}
+
+/// Shielded helion magnetic moment to Bohr magneton ratio μ′_h/μ_B,
+/// CODATA 2018.
+///
+/// This is the recommended signed centre for the helion in a spherical
+/// gas sample at 25 °C, not the free helion Bohr-magneton ratio, not
+/// shielded helion magnetic moment, not shielded proton Bohr-magneton
+/// ratio, and not vacuum permeability. This Qty is not a certificate
+/// that it equals a reconstructed μ′_h/μ_B from sibling moments. The
+/// nuclear-magneton ratio is a later table row and is not stored.
+/// Gyromagnetic ratios cite ħ and are not stored. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre. This is not the
+/// CODATA 2022 last-digit 49457.
+pub fn shielded_helion_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
+    Qty::new(-1.158_671_471e-3)
 }
 
 /// Muon mass.
@@ -6494,6 +6511,69 @@ mod tests {
             physis_constants::shielded_helion_magnetic_moment().hash,
             physis_constants::helion_g_factor().hash,
             "mu0h is not gh"
+        );
+        assert!(
+            physis_constants::lookup("mu0h_mub").is_none(),
+            "mu0h_mub is not a ledger name; the live name is mu0h_muB"
+        );
+        let mu0h_mub = physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton();
+        let mu0h_mub_centre = Ratio::new(-1_158_671_471, 10i128.pow(12));
+        assert_eq!(
+            shielded_helion_magnetic_moment_to_bohr_magneton().value(),
+            -1.158_671_471e-3,
+            "mu0h_muB Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            shielded_helion_magnetic_moment_to_bohr_magneton().value(),
+            mu0h_mub_centre.to_f64(),
+            "mu0h_muB Qty locksteps to Ratio::to_f64 on the 10^12 centre"
+        );
+        assert!(
+            mu0h_mub.value.contains(Interval::point(mu0h_mub_centre)),
+            "mu0h_muB Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu0h_mub.value.lo, mu0h_mub.value.hi,
+            "ledger mu0h_muB stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            mu0h_mub.value.hi < Ratio::int(0),
+            "ledger mu0h_muB stays the signed shielded helion Bohr-magneton ratio"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton().hash,
+            physis_constants::shielded_helion_magnetic_moment().hash,
+            "mu0h_muB is not mu0h"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton().hash,
+            physis_constants::helion_magnetic_moment_to_bohr_magneton().hash,
+            "mu0h_muB is not mu_h_muB"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton().hash,
+            physis_constants::shielded_proton_magnetic_moment_to_bohr_magneton().hash,
+            "mu0h_muB is not mu0p_muB"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton().hash,
+            physis_constants::triton_magnetic_moment_to_bohr_magneton().hash,
+            "mu0h_muB is not mu_t_muB"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton().hash,
+            physis_constants::electron_magnetic_moment_to_bohr_magneton().hash,
+            "mu0h_muB is not mu_e_muB"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu0h_muB is not mu0"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton().hash,
+            physis_constants::helion_g_factor().hash,
+            "mu0h_muB is not gh"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
