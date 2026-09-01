@@ -624,10 +624,9 @@ pub fn deuteron_magnetic_moment(
 /// proton, neutron, electron, or muon Bohr-magneton ratio and not the
 /// deuteron magnetic moment. This Qty is not a certificate that it
 /// equals a reconstructed μ_d/μ_B from sibling moments. The
-/// nuclear-magneton ratio is `mu_d_muN`. The g-factor is a later table
-/// row and is not stored. The versioned ledger stores the one-sigma
-/// hull; this Qty is that centre. This is not the CODATA 2022 last-digit
-/// 8.
+/// nuclear-magneton ratio is `mu_d_muN`. The g-factor is `gd`. The
+/// versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 8.
 pub fn deuteron_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
     Qty::new(4.669_754_570e-4)
 }
@@ -637,11 +636,25 @@ pub fn deuteron_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
 /// This is the recommended signed centre from the deuteron section, not
 /// proton, neutron, electron, or muon nuclear-magneton ratio and not
 /// the deuteron Bohr-magneton ratio or magnetic moment. This Qty is not
-/// a certificate that it equals the g-factor gd. JPCRD prints the same
-/// recommended digits for gd on the next row; that row is not stored.
-/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// a certificate that it equals the g-factor gd. The g-factor is gd.
+/// Moment-ratio rows are later table rows and are not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 5.
 pub fn deuteron_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
+    Qty::new(0.857_438_233_8)
+}
+
+/// Deuteron g-factor g_d, CODATA 2018.
+///
+/// This is the recommended signed centre from the deuteron section, not
+/// electron, muon, proton, or neutron g-factor and not the deuteron
+/// nuclear-magneton ratio. This Qty is not a certificate that it equals
+/// μ_d/μ_N. JPCRD prints the same recommended digits as mu_d_muN
+/// because I = 1; each row has its own Claim identity. Moment-ratio
+/// rows are later table rows and are not stored. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre. This is not the
+/// CODATA 2022 last-digit 5.
+pub fn deuteron_g_factor() -> Qty<Dimensionless> {
     Qty::new(0.857_438_233_8)
 }
 
@@ -4711,6 +4724,45 @@ mod tests {
             physis_constants::deuteron_magnetic_moment_to_nuclear_magneton().hash,
             physis_constants::neutron_magnetic_moment_to_nuclear_magneton().hash,
             "mu_d_muN is not mu_n_muN"
+        );
+        assert!(
+            physis_constants::lookup("g_d").is_none(),
+            "g_d is not a ledger name; the live name is gd"
+        );
+        let gd = physis_constants::deuteron_g_factor();
+        let gd_centre = Ratio::new(8_574_382_338, 10i128.pow(10));
+        assert_eq!(
+            deuteron_g_factor().value(),
+            gd_centre.to_f64(),
+            "gd Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            gd.value.contains(Interval::point(gd_centre)),
+            "gd Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            gd.value.lo, gd.value.hi,
+            "ledger gd stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_g_factor().hash,
+            physis_constants::deuteron_magnetic_moment_to_nuclear_magneton().hash,
+            "gd is not mu_d_muN"
+        );
+        assert_ne!(
+            physis_constants::deuteron_g_factor().hash,
+            physis_constants::electron_g_factor().hash,
+            "gd is not ge"
+        );
+        assert_ne!(
+            physis_constants::deuteron_g_factor().hash,
+            physis_constants::neutron_g_factor().hash,
+            "gd is not gn"
+        );
+        assert_ne!(
+            physis_constants::deuteron_g_factor().hash,
+            physis_constants::proton_g_factor().hash,
+            "gd is not gp"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
