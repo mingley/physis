@@ -1240,10 +1240,25 @@ pub fn atomic_mass_constant_energy_equivalent_in_mev() -> Qty<Dimensionless> {
 /// certificate that this equals N_A times the atomic-mass-constant hull.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 105.
+/// The molar mass of carbon-12 is `M_12C`.
 pub fn molar_mass_constant() -> Qty<
     physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
 > {
     Qty::new(0.999_999_999_65e-3)
+}
+
+/// Molar mass of carbon-12 M(¹²C) (kg mol⁻¹), CODATA 2018.
+///
+/// This is the recommended centre from the PHYSICOCHEMICAL section, not
+/// the molar mass constant, not alpha-particle, helion, triton,
+/// deuteron, neutron, proton, electron, or muon molar mass, not the kg
+/// hull, not Avogadro N_A, and not a certificate that this equals 12
+/// times M_u. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre. This is not the CODATA 2022 last-digit 126.
+pub fn carbon_12_molar_mass() -> Qty<
+    physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(11.999_999_995_8e-3)
 }
 
 /// Muon mass.
@@ -7809,9 +7824,98 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "M_u is not G"
         );
+
         assert!(
-            physis_constants::lookup("M_12C").is_none(),
-            "M_12C molar mass of carbon-12 is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("M12C").is_none(),
+            "M12C is not a ledger name; the live name is M_12C"
+        );
+        let m_12c = physis_constants::carbon_12_molar_mass();
+        let m_12c_centre = Ratio::new(119_999_999_958, 10i128.pow(13));
+        assert_eq!(
+            carbon_12_molar_mass().value(),
+            11.999_999_995_8e-3,
+            "M_12C Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            carbon_12_molar_mass().value(),
+            m_12c_centre.to_f64(),
+            "M_12C Qty locksteps to Ratio::to_f64 on the 10^13 centre"
+        );
+        assert!(
+            m_12c.value.contains(Interval::point(m_12c_centre)),
+            "M_12C Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_12c.value.lo, m_12c.value.hi,
+            "ledger M_12C stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            m_12c.value.lo > Ratio::int(0),
+            "ledger M_12C stays a positive molar-mass hull"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::molar_mass_constant().hash,
+            "M_12C is not M_u"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::alpha_particle_molar_mass().hash,
+            "M_12C is not M_alpha"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::helion_molar_mass().hash,
+            "M_12C is not M_h"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::triton_molar_mass().hash,
+            "M_12C is not M_t"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::deuteron_molar_mass().hash,
+            "M_12C is not M_d"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::neutron_molar_mass().hash,
+            "M_12C is not M_n"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::proton_molar_mass().hash,
+            "M_12C is not M_p"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::electron_molar_mass().hash,
+            "M_12C is not M_e"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::muon_molar_mass().hash,
+            "M_12C is not M_mu"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::atomic_mass_constant().hash,
+            "M_12C is not m_u"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::avogadro().hash,
+            "M_12C is not N_A"
+        );
+        assert_ne!(
+            physis_constants::carbon_12_molar_mass().hash,
+            physis_constants::newtonian_g().hash,
+            "M_12C is not G"
+        );
+        assert!(
+            physis_constants::lookup("NAh").is_none(),
+            "NAh molar Planck constant is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

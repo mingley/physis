@@ -841,6 +841,10 @@ fn codata_2018_molar_mass_constant_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "Mu = 0.99999999965(30)e-3")
 }
 
+fn codata_2018_carbon_12_molar_mass_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "M12C = 11.9999999958(36)e-3")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -4983,8 +4987,8 @@ fn codata_2018_atomic_mass_constant_energy_equivalent_in_mev_interval() -> Inter
 /// helion `m_h_c2_MeV`, not alpha-particle `m_alpha_c2_MeV`, not muon
 /// `m_mu_c2_MeV`, not Hartree, not the exact electronvolt Ratio, not a
 /// certificate that this converts the joule hull, not an SI defining
-/// Ratio, and not P3N. The molar mass constant is `M_u`. Molar mass of
-/// carbon-12 is a later table row and is not stored. Electron mass is
+/// Ratio, and not P3N. The molar mass constant is `M_u`. The molar mass
+/// of carbon-12 is `M_12C`. Electron mass is
 /// not stored: `10^{42}` overflows `i128`.
 /// This is not the CODATA 2022 last-digit `372`. The decade is `10^{8}`;
 /// `10^{7}` is the 10× trap (`μ` would not be an integer). Theories
@@ -5015,8 +5019,8 @@ fn codata_2018_molar_mass_constant_interval() -> Interval {
 /// `M_p`, not electron `M_e`, not muon `M_mu`, not the kg hull `m_u`,
 /// not Avogadro `N_A`, not vacuum permeability `mu0`, not a certificate
 /// that this equals `N_A × m_u`, not an SI defining Ratio, and not P3N.
-/// The JPCRD symbol `Mu` is not a ledger name. Molar mass of carbon-12
-/// is a later table row and is not stored. Electron mass is not stored:
+/// The JPCRD symbol `Mu` is not a ledger name. The molar mass of
+/// carbon-12 is `M_12C`. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `105`. The decade is `10^{14}` matching the printed 11-decimal ×
 /// `10^{-3}` form; `10^{13}` is the 10× trap (`μ` would not be an
@@ -5027,6 +5031,40 @@ pub fn molar_mass_constant() -> Constant<Interval> {
         codata_2018_molar_mass_constant_interval(),
         "kg mol^{-1}",
         codata_2018_molar_mass_constant_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 11.9999999958(36)×10⁻³ kg mol⁻¹.
+fn codata_2018_carbon_12_molar_mass_interval() -> Interval {
+    let scale = 10i128.pow(13);
+    let mu = 119_999_999_958i128;
+    let sigma = 36;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Molar mass of carbon-12 M(¹²C), CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended hull in kg mol⁻¹ from the PHYSICOCHEMICAL
+/// section, not the molar mass constant `M_u`, not alpha-particle
+/// `M_alpha`, not helion `M_h`, not triton `M_t`, not deuteron `M_d`,
+/// not neutron `M_n`, not proton `M_p`, not electron `M_e`, not muon
+/// `M_mu`, not the kg hull `m_u`, not Avogadro `N_A`, not a certificate
+/// that this equals `12 × M_u` or `N_A × m(¹²C)`, not an SI defining
+/// Ratio, and not P3N. The JPCRD symbol `M(12C)` is not a ledger name.
+/// Relative atomic mass Ar(¹²C) is 12 by definition and is not stored
+/// under a second name. Molar Planck constant is a later table row and
+/// is not stored. Electron mass is not stored: `10^{42}` overflows
+/// `i128`. This is not the CODATA 2022 last-digit `126`. The decade is
+/// `10^{13}` matching the printed 10-decimal × `10^{-3}` form; `10^{12}`
+/// is the 10× trap (`μ` would not be an integer). Theories still use
+/// `physis_model` `f64` Qty.
+pub fn carbon_12_molar_mass() -> Constant<Interval> {
+    Constant::new(
+        "M_12C",
+        codata_2018_carbon_12_molar_mass_interval(),
+        "kg mol^{-1}",
+        codata_2018_carbon_12_molar_mass_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5327,6 +5365,7 @@ pub const LEDGER: &[&str] = &[
     "m_u_c2",
     "m_u_c2_MeV",
     "M_u",
+    "M_12C",
     "au",
     "eV",
     "GM_sun",
@@ -5600,6 +5639,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             "interval",
         )),
         "M_u" => Some(listing(molar_mass_constant(), "interval")),
+        "M_12C" => Some(listing(carbon_12_molar_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -24730,7 +24770,7 @@ mod tests {
         assert!(lookup("Mu").is_none());
         assert!(lookup("M-u").is_none());
         assert!(lookup("M_u/mol").is_none());
-        assert!(lookup("M_12C").is_none());
+        assert!(lookup("M_12C").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -24747,6 +24787,174 @@ mod tests {
         assert!(lookup("M_mu").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2_MeV").is_some());
+        assert!(lookup("N_A").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_carbon_12_molar_mass_is_a_one_sigma_interval() {
+        let r = carbon_12_molar_mass();
+        let scale = 10i128.pow(13);
+        let lo = Ratio::new(119_999_999_922, scale);
+        let hi = Ratio::new(119_999_999_994, scale);
+        let centre = Ratio::new(119_999_999_958, scale);
+        assert_eq!(r.name, "M_12C");
+        assert_eq!(r.unit, "kg mol^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("M12C = 11.9999999958(36)e-3")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "M_12C is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA M_12C is a positive molar-mass hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[59999999961/5000000000000, 59999999997/5000000000000]"
+        );
+        assert_eq!(r.hash, carbon_12_molar_mass().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "M_12C",
+                codata_2018_carbon_12_molar_mass_interval(),
+                "kg mol^{-1}",
+                codata_2018_carbon_12_molar_mass_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, molar_mass_constant().hash, "M_12C is not M_u");
+        assert_ne!(
+            r.hash,
+            alpha_particle_molar_mass().hash,
+            "M_12C is not M_alpha"
+        );
+        assert_ne!(r.hash, helion_molar_mass().hash, "M_12C is not M_h");
+        assert_ne!(r.hash, triton_molar_mass().hash, "M_12C is not M_t");
+        assert_ne!(r.hash, deuteron_molar_mass().hash, "M_12C is not M_d");
+        assert_ne!(r.hash, neutron_molar_mass().hash, "M_12C is not M_n");
+        assert_ne!(r.hash, proton_molar_mass().hash, "M_12C is not M_p");
+        assert_ne!(r.hash, electron_molar_mass().hash, "M_12C is not M_e");
+        assert_ne!(r.hash, muon_molar_mass().hash, "M_12C is not M_mu");
+        assert_ne!(r.hash, atomic_mass_constant().hash, "M_12C is not m_u");
+        assert_ne!(r.hash, avogadro().hash, "M_12C is not N_A");
+        assert_ne!(r.hash, newtonian_g().hash, "M_12C is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            molar_mass_constant().provenance.source_hash,
+            "M_12C range is not the M_u range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            alpha_particle_molar_mass().provenance.source_hash,
+            "M_12C range is not the M_alpha range"
+        );
+        assert_eq!(
+            molar_mass_constant().hash.to_hex(),
+            "db927829cb6a1d796a00ab6509b3a9faf0e2f09ed7bb3dc5aca6154abb9e388e",
+            "M_u hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            alpha_particle_molar_mass().hash.to_hex(),
+            "247f1e1ac48e536f49b0e9ea42f1233960dc446e599c1177469c80d2b50fddf3",
+            "M_alpha hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            helion_molar_mass().hash.to_hex(),
+            "a03524238032cd0ba44f2ed25ec8d2a62a5259d7b5353a00df939716d6efb7bf",
+            "M_h hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            triton_molar_mass().hash.to_hex(),
+            "c6c24c87f2920c72a840157ddeaa978adb4013e40c08e62168d27c940c0ff25b",
+            "M_t hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            deuteron_molar_mass().hash.to_hex(),
+            "cd2742c648825c389159209b4b9ab8105b81bbb4696f9cbd103883f371d3b50a",
+            "M_d hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            neutron_molar_mass().hash.to_hex(),
+            "503014b9a1cfa5be5f983c7cd8f477ec6fa601225d084f3acd22ab41b88151d5",
+            "M_n hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            proton_molar_mass().hash.to_hex(),
+            "6ca2722d15970d11783522598ee8879e560019865477f1735041e1c9c8180149",
+            "M_p hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            electron_molar_mass().hash.to_hex(),
+            "0a8b3285a4969854567b59db2ebf9449268df86ffdbb461e3b9c1db0955eb804",
+            "M_e hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            muon_molar_mass().hash.to_hex(),
+            "b53efc5e339708317e98c92c02ae506bf5b90c6d847e586d716d1631d902c81a",
+            "M_mu hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            atomic_mass_constant().hash.to_hex(),
+            "fcefc139b85d5be198ab911fed33049d37641b01dcd0b87e12630db6dfd467d3",
+            "m_u hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            avogadro().hash.to_hex(),
+            "410e2191c8cf7c074a32f621413239e74a7fefe735cacfaad4f503c47c9351dc",
+            "N_A hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when M_12C is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "bec80fb1c51bead2000a5ba56e2fd680fd79d5538dd3e0e0cd9ceca1fb983d43"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(13).is_some(),
+            "M_12C = 11.9999999958e-3 is 119999999958/10^13; that denominator fits i128"
+        );
+        assert!(lookup("M12C").is_none());
+        assert!(lookup("M-12C").is_none());
+        assert!(lookup("M_12C/mol").is_none());
+        assert!(lookup("NAh").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("M_12C").is_some());
+        assert!(lookup("M_u").is_some());
+        assert!(lookup("M_alpha").is_some());
+        assert!(lookup("M_h").is_some());
+        assert!(lookup("M_t").is_some());
+        assert!(lookup("M_d").is_some());
+        assert!(lookup("M_n").is_some());
+        assert!(lookup("M_p").is_some());
+        assert!(lookup("M_e").is_some());
+        assert!(lookup("M_mu").is_some());
+        assert!(lookup("m_u").is_some());
         assert!(lookup("N_A").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
@@ -24954,7 +25162,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 154);
+        assert_eq!(LEDGER.len(), 155);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -25679,6 +25887,11 @@ mod tests {
             lookup("M_u").unwrap().hash.to_hex(),
             "db927829cb6a1d796a00ab6509b3a9faf0e2f09ed7bb3dc5aca6154abb9e388e"
         );
+        assert_eq!(lookup("M_12C").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("M_12C").unwrap().hash.to_hex(),
+            "bec80fb1c51bead2000a5ba56e2fd680fd79d5538dd3e0e0cd9ceca1fb983d43"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -25999,7 +26212,11 @@ mod tests {
         assert!(lookup("Mu").is_none());
         assert!(lookup("M-u").is_none());
         assert!(lookup("M_u/mol").is_none());
-        assert!(lookup("M_12C").is_none());
+        assert!(lookup("M_12C").is_some());
+        assert!(lookup("M12C").is_none());
+        assert!(lookup("M-12C").is_none());
+        assert!(lookup("M_12C/mol").is_none());
+        assert!(lookup("NAh").is_none());
         assert!(lookup("mmu").is_none());
         assert!(lookup("m-mu").is_none());
         assert!(lookup("muon-mass").is_none());
