@@ -1107,12 +1107,27 @@ pub fn shielded_helion_to_shielded_proton_magnetic_moment_ratio() -> Qty<Dimensi
 /// This is the recommended kg centre from the alpha-particle section,
 /// not helion, triton, deuteron, neutron, proton, or muon mass and not
 /// the electron-alpha mass ratio. This Qty is not a certificate of a
-/// reconstruction from sibling masses or mass ratios. The u-row, energy
-/// equivalent, mass ratios, and molar mass are later table rows and are
-/// not stored. The versioned ledger stores the one-sigma hull; this Qty
-/// is that centre. This is not the CODATA 2022 last-digit 3450.
+/// reconstruction from sibling masses or mass ratios. The u-row is
+/// `m_alpha_u`. Energy equivalent, mass ratios, and molar mass are later
+/// table rows and are not stored. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. This is not the CODATA 2022
+/// last-digit 3450.
 pub fn alpha_particle_mass() -> Qty<Mass> {
     kg(6.644_657_335_7e-27)
+}
+
+/// Alpha particle mass in unified atomic mass units, CODATA 2018.
+///
+/// This is the recommended centre in u from the alpha-particle section,
+/// not the kg hull and not helion, triton, deuteron, neutron, proton, or
+/// muon mass in u. This Qty is not a certificate of a reconstruction
+/// from sibling masses. Ledger unit is u; this Qty is dimensionless, not
+/// kg. Relative atomic mass is not stored under a different name. Energy
+/// equivalent is a later table row and is not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 129.
+pub fn alpha_particle_mass_in_u() -> Qty<Dimensionless> {
+    Qty::new(4.001_506_179_127)
 }
 
 /// Muon mass.
@@ -6870,6 +6885,84 @@ mod tests {
             physis_constants::alpha_particle_mass().hash,
             physis_constants::newtonian_g().hash,
             "m_alpha is not G"
+        );
+        assert!(
+            physis_constants::lookup("malpha_u").is_none(),
+            "malpha_u is not a ledger name; the live name is m_alpha_u"
+        );
+        let m_alpha_u = physis_constants::alpha_particle_mass_in_u();
+        let m_alpha_u_centre = Ratio::new(4_001_506_179_127, 10i128.pow(12));
+        assert_eq!(
+            alpha_particle_mass_in_u().value(),
+            4.001_506_179_127,
+            "m_alpha_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            alpha_particle_mass_in_u().value(),
+            m_alpha_u_centre.to_f64(),
+            "m_alpha_u Qty locksteps to Ratio::to_f64 on the 10^12 centre"
+        );
+        assert!(
+            m_alpha_u.value.contains(Interval::point(m_alpha_u_centre)),
+            "m_alpha_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_alpha_u.value.lo, m_alpha_u.value.hi,
+            "ledger m_alpha_u stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            m_alpha_u.value.lo > Ratio::int(0),
+            "ledger m_alpha_u stays a positive mass-in-u hull"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::alpha_particle_mass().hash,
+            "m_alpha_u is not m_alpha"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::helion_mass_in_u().hash,
+            "m_alpha_u is not m_h_u"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::triton_mass_in_u().hash,
+            "m_alpha_u is not m_t_u"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::deuteron_mass_in_u().hash,
+            "m_alpha_u is not m_d_u"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::neutron_mass_in_u().hash,
+            "m_alpha_u is not m_n_u"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::proton_mass_in_u().hash,
+            "m_alpha_u is not m_p_u"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::muon_mass_in_u().hash,
+            "m_alpha_u is not m_mu_u"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::electron_alpha_mass_ratio().hash,
+            "m_alpha_u is not me_malpha"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::electron_molar_mass().hash,
+            "m_alpha_u is not M_e"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass_in_u().hash,
+            physis_constants::newtonian_g().hash,
+            "m_alpha_u is not G"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
