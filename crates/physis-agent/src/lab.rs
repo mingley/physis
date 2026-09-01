@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8"),
+            text.contains("constant  ledger  dbb12d9624f3b0195db33ffadde179c14a9d2dc89ffcf815e8865bb95d73da9d"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -17376,6 +17376,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let gamma0p = lab
+            .exec(Command::Constant {
+                name: Some("gamma0p".into()),
+            })
+            .text()
+            .to_string();
+        assert!(gamma0p.contains("constant  gamma0p  node "), "{gamma0p}");
+        assert!(
+            gamma0p.contains(
+                "hash     ad17e3a83ff5bcbb8f9cb82c9065a16a82caf68df4f48c901c86b4f62a633cbc"
+            ),
+            "{gamma0p}"
+        );
+        assert!(gamma0p.contains("kind     interval"), "{gamma0p}");
+        assert!(gamma0p.contains("table    XXXI"), "{gamma0p}");
+        assert!(
+            gamma0p.contains("range    gamma0p = 2.675153151(29)e8"),
+            "{gamma0p}"
+        );
+        assert!(gamma0p.contains("unit     s^{-1} T^{-1}"), "{gamma0p}");
+        assert!(
+            gamma0p.contains("value    [1337576561/5, 267515318]"),
+            "{gamma0p}"
+        );
+        assert!(gamma0p.contains("rebuild  ok"), "{gamma0p}");
+        assert!(gamma0p.contains("not P3N"), "{gamma0p}");
+        assert!(!gamma0p.contains("receipt"), "{gamma0p}");
+        assert!(!gamma0p.contains("theorem"), "{gamma0p}");
+        let gamma0p_id = constant_node_id(&gamma0p);
+        assert_eq!(
+            gamma0p_id.to_hex(),
+            "b5ab615ca36f3799a21c3574ba8d45c12142ec93172797980396ffa02d2f1963",
+            "journaling must not change the gamma0p constant payload"
+        );
+        assert_eq!(
+            lab.store.get(gamma0p_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -19843,7 +19882,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8",
+            "dbb12d9624f3b0195db33ffadde179c14a9d2dc89ffcf815e8865bb95d73da9d",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -20778,7 +20817,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8",
+            "dbb12d9624f3b0195db33ffadde179c14a9d2dc89ffcf815e8865bb95d73da9d",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -22146,6 +22185,14 @@ mod tests {
         .expect("pinned gamma_p_MHz node");
         assert_eq!(
             lab2.store.get(gamma_p_mhz).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let gamma0p = physis_core::artifact::ArtifactId::from_hex(
+            "b5ab615ca36f3799a21c3574ba8d45c12142ec93172797980396ffa02d2f1963",
+        )
+        .expect("pinned gamma0p node");
+        assert_eq!(
+            lab2.store.get(gamma0p).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -23699,7 +23746,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  e2ad435e2d75302c87aed1816356b552c2d148c55337e94cd95070c0344abbf8"),
+            text.contains("constant  ledger  dbb12d9624f3b0195db33ffadde179c14a9d2dc89ffcf815e8865bb95d73da9d"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
