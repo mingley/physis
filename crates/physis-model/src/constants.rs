@@ -1207,6 +1207,18 @@ pub fn atomic_mass_constant() -> Qty<Mass> {
     kg(1.660_539_066_60e-27)
 }
 
+/// Atomic mass constant energy equivalent m_u c² (J), CODATA 2018.
+///
+/// This is the recommended centre from the PHYSICOCHEMICAL section, not
+/// the kg hull, not proton, neutron, deuteron, triton, helion,
+/// alpha-particle, or muon energy equivalent, not Hartree, and not the
+/// exact electronvolt Ratio. The MeV conversion is a later table row.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 768.
+pub fn atomic_mass_constant_energy_equivalent() -> Qty<Energy> {
+    joule(1.492_418_085_60e-10)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -7516,9 +7528,93 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "m_u is not G"
         );
+
         assert!(
-            physis_constants::lookup("m_u_c2").is_none(),
-            "m_u_c2 atomic mass constant energy equivalent is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("muc2").is_none(),
+            "muc2 is not a ledger name; the live name is m_u_c2"
+        );
+        let m_u_c2 = physis_constants::atomic_mass_constant_energy_equivalent();
+        let m_u_c2_centre = Ratio::new(149_241_808_560, 10i128.pow(21));
+        assert_eq!(
+            atomic_mass_constant_energy_equivalent().value(),
+            1.492_418_085_60e-10,
+            "m_u_c2 Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_mass_constant_energy_equivalent().value(),
+            m_u_c2_centre.to_f64(),
+            "m_u_c2 Qty locksteps to Ratio::to_f64 on the 10^21 centre"
+        );
+        assert!(
+            m_u_c2.value.contains(Interval::point(m_u_c2_centre)),
+            "m_u_c2 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_u_c2.value.lo, m_u_c2.value.hi,
+            "ledger m_u_c2 stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            m_u_c2.value.lo > Ratio::int(0),
+            "ledger m_u_c2 stays a positive energy hull"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::atomic_mass_constant().hash,
+            "m_u_c2 is not m_u"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::proton_mass_energy_equivalent().hash,
+            "m_u_c2 is not m_p_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::neutron_mass_energy_equivalent().hash,
+            "m_u_c2 is not m_n_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            "m_u_c2 is not m_d_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::triton_mass_energy_equivalent().hash,
+            "m_u_c2 is not m_t_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::helion_mass_energy_equivalent().hash,
+            "m_u_c2 is not m_h_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::alpha_particle_mass_energy_equivalent().hash,
+            "m_u_c2 is not m_alpha_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::muon_mass_energy_equivalent().hash,
+            "m_u_c2 is not m_mu_c2"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::hartree_energy().hash,
+            "m_u_c2 is not Eh"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::electron_volt().hash,
+            "m_u_c2 is not eV"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            physis_constants::newtonian_g().hash,
+            "m_u_c2 is not G"
+        );
+        assert!(
+            physis_constants::lookup("m_u_c2_MeV").is_none(),
+            "m_u_c2_MeV atomic mass constant energy equivalent in MeV is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
