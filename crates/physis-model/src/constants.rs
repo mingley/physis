@@ -1366,11 +1366,25 @@ pub fn loschmidt_constant() -> Qty<physis_core::SI<typenum::Z0, typenum::N3, typ
 /// prints an ellipsis; the ledger stores the exact Ratio. This is not a
 /// terminating SciExact. The versioned ledger stores the exact Ratio;
 /// this Qty is the IEEE rounding of that Ratio. The 101.325 kPa
-/// Loschmidt constant is a later table row and is not stored.
+/// Loschmidt constant is `n0_atm`.
 pub fn molar_volume_ideal_gas_atm() -> Qty<
     physis_core::SI<typenum::Z0, typenum::P3, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
 > {
     Qty::new(0.022_413_969_545_014_137)
+}
+
+/// Loschmidt constant at 273.15 K and 101.325 kPa (m⁻³), SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL companion listed as n0 at T = 273.15 K
+/// and p = 101.325 kPa, equal to atm / (k T) and to N_A / Vm_atm, not the
+/// 100 kPa n0, not molar volume Vm_atm, not Boltzmann k, and not Avogadro
+/// N_A. JPCRD prints the same symbol n0 as the 100 kPa row; n0_atm is the
+/// ledger name. The table prints an ellipsis; the ledger stores the exact
+/// Ratio. This is not a terminating SciExact. The versioned ledger stores
+/// the exact Ratio; this Qty is the IEEE rounding of that Ratio. The
+/// Sackur-Tetrode constant is a later table row and is not stored.
+pub fn loschmidt_constant_atm() -> Qty<physis_core::SI<typenum::Z0, typenum::N3, typenum::Z0>> {
+    Qty::new(2.686_780_111_798_443_5e25)
 }
 
 /// Muon mass.
@@ -8440,9 +8454,50 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "Vm_atm is not G"
         );
+
+        let n_0_atm = physis_constants::loschmidt_constant_atm();
+        let n_0_atm_value = Ratio::new(101_325i128 * 10i128.pow(31), 1_380_649i128 * 27_315i128);
+        assert_eq!(
+            n_0_atm.value, n_0_atm_value,
+            "ledger n0_atm is the exact SI Ratio"
+        );
+        assert_eq!(
+            loschmidt_constant_atm().value(),
+            n_0_atm_value.to_f64(),
+            "n0_atm Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            loschmidt_constant_atm().value(),
+            2.686_780_111_798_443_5e25,
+            "n0_atm Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("n0_atm").is_none(),
-            "101.325 kPa Loschmidt constant is a later PHYSICOCHEMICAL row"
+            n_0_atm.value > Ratio::int(0),
+            "ledger n0_atm stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant_atm().hash,
+            physis_constants::loschmidt_constant().hash,
+            "n0_atm is not n0"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant_atm().hash,
+            physis_constants::molar_volume_ideal_gas_atm().hash,
+            "n0_atm is not Vm_atm"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant_atm().hash,
+            physis_constants::boltzmann().hash,
+            "n0_atm is not k"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant_atm().hash,
+            physis_constants::newtonian_g().hash,
+            "n0_atm is not G"
+        );
+        assert!(
+            physis_constants::lookup("S0_R").is_none(),
+            "Sackur-Tetrode constant is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
