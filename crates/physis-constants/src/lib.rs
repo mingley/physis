@@ -729,6 +729,10 @@ fn codata_2018_triton_nuclear_magneton_ratio_source() -> SourceRecord {
     codata_2018_jpcrd("Triton, t", "mu_t/muN = 2.9789624656(59)")
 }
 
+fn codata_2018_triton_g_factor_source() -> SourceRecord {
+    codata_2018_jpcrd("Triton, t", "gt = 5.957924931(12)")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -3658,7 +3662,7 @@ fn codata_2018_triton_mass_interval() -> Interval {
 /// not an SI defining Ratio, and not P3N. The u-row is `m_t_u`. The energy
 /// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
 /// triton-electron mass ratio is `mt_me`. The triton-proton mass ratio
-/// is `mt_mp`. The molar mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later table row and is not stored. Electron mass is not stored:
+/// is `mt_mp`. The molar mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `7512`. The decade is `10^{37}`; `10^{36}` is the 10× trap (`μ` would
 /// not be an integer). `10^{39}` overflows `i128`. Theories still use
@@ -3691,7 +3695,7 @@ fn codata_2018_triton_mass_in_u_interval() -> Interval {
 /// mass ratios, not an SI defining Ratio, and not P3N. The energy
 /// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
 /// triton-electron mass ratio is `mt_me`. The triton-proton mass ratio
-/// is `mt_mp`. The molar mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later table row and is not stored.
+/// is `mt_mp`. The molar mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`.
 /// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `597`. The decade is `10^{11}`; `10^{10}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
@@ -3726,7 +3730,7 @@ fn codata_2018_triton_mass_energy_equivalent_interval() -> Interval {
 /// not P3N. The MeV conversion is `m_t_c2_MeV`. The triton-electron mass
 /// ratio is `mt_me`. The triton-proton mass ratio is `mt_mp`. The molar
 /// mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton
-/// ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later table row and is not stored.
+/// ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`.
 /// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `8119`. The decade is `10^{20}`; `10^{19}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
@@ -3789,8 +3793,7 @@ fn codata_2018_triton_electron_mass_ratio_interval() -> Interval {
 /// MeV energy equivalent, not an SI defining Ratio, and not P3N. The
 /// triton-proton mass ratio is `mt_mp`. The molar mass is `M_t`.
 /// The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`.
-/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later
-/// table row and is not stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored: `10^{42}` overflows `i128`.
 /// This is not the CODATA 2022 last-digit `53551`. The decade is
 /// `10^{8}`; `10^{7}` is the 10× trap (`μ` would not be an integer).
 /// Theories still use `physis_model` `f64` Qty.
@@ -3821,8 +3824,7 @@ fn codata_2018_triton_proton_mass_ratio_interval() -> Interval {
 /// triton-electron ratio `mt_me`, not triton mass, not proton mass,
 /// not an SI defining Ratio, and not P3N. The molar mass is `M_t`.
 /// The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`.
-/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later
-/// table row and is not stored. Electron mass is not stored: `10^{42}`
+/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `03403`.
 /// The decade is `10^{11}`; `10^{10}` is the 10× trap (`μ` would not
 /// be an integer). Theories still use `physis_model` `f64` Qty.
@@ -3852,8 +3854,7 @@ fn codata_2018_triton_molar_mass_interval() -> Interval {
 /// hull `m_t`, not the u-row `m_t_u`, not a certificate that this
 /// equals `N_A × m_t`, not an SI defining Ratio, and not P3N. The
 /// magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`.
-/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later
-/// table row and is not stored. Electron mass is not stored: `10^{42}` overflows `i128`. This is not the CODATA
+/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored: `10^{42}` overflows `i128`. This is not the CODATA
 /// 2022 last-digit `71913`. The decade is `10^{14}`; `10^{13}` is the
 /// 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3884,10 +3885,9 @@ fn codata_2018_triton_magnetic_moment_interval() -> Interval {
 /// vacuum permeability `mu0`, not molar mass `M_t`, not the
 /// electron-deuteron moment ratio `mu_e_mud`, not a certificate that
 /// this equals `g_t μ_N / 2` (triton spin is 1/2, so the table g-factor
-/// is `2μ_t/μ_N`, still not stored here), not an SI defining Ratio, and
+/// is `2μ_t/μ_N`; the stored g-factor is `gt`), not an SI defining Ratio, and
 /// not P3N. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton
-/// ratio is `mu_t_muN`. The g-factor is a later table row and is not
-/// stored. Electron mass is not stored:
+/// ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `5178`. The decade is `10^{36}`; `10^{35}` is the 10× trap (`μ`
 /// would not be an integer). Theories still use `physis_model` `f64`
@@ -3955,7 +3955,9 @@ fn codata_2018_triton_nuclear_magneton_ratio_interval() -> Interval {
 /// muon nuclear-magneton ratio `mu_mu_muN`, not a certificate that this
 /// equals `μ_t/μ_N` from sibling moments, not a certificate that this
 /// equals the g-factor `gt`, not an SI defining Ratio, and not P3N. The
-/// g-factor is a later table row and is not stored. Electron mass is
+/// g-factor is `gt`. JPCRD prints different digits from `mu_t_muN`
+/// because `I = 1/2` (`g = 2μ/μN`); each row has its own Claim identity.
+/// Helion rows are later table rows and are not stored. Electron mass is
 /// not stored: `10^{42}` overflows `i128`. This is not the CODATA 2022
 /// last-digit `4650`. The decade is `10^{10}`; `10^{9}` is the 10× trap
 /// (`μ` would not be an integer; `σ = 5.9` is not an integer). Theories
@@ -3966,6 +3968,39 @@ pub fn triton_magnetic_moment_to_nuclear_magneton() -> Constant<Interval> {
         codata_2018_triton_nuclear_magneton_ratio_interval(),
         "1",
         codata_2018_triton_nuclear_magneton_ratio_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 5.957924931(12).
+fn codata_2018_triton_g_factor_interval() -> Interval {
+    let scale = 10i128.pow(9);
+    let mu = 5_957_924_931i128;
+    let sigma = 12;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Triton g-factor g_t, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended signed dimensionless hull from the triton
+/// section, not electron g-factor `ge`, not muon g-factor `gmu`, not
+/// proton g-factor `gp`, not neutron g-factor `gn`, not deuteron
+/// g-factor `gd`, not triton nuclear-magneton ratio `mu_t_muN`, not a
+/// certificate that this equals `2 μ_t/μ_N` from sibling moments, not
+/// an SI defining Ratio, and not P3N. JPCRD prints different digits
+/// from `mu_t_muN` because `I = 1/2` (`g = 2μ/μN`); each row has its
+/// own Claim identity. Helion rows are later table rows and are not
+/// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// This is not the CODATA 2022 last-digit `930`. The decade is
+/// `10^{9}`; `10^{8}` is the 10× trap (`μ` would not be an integer;
+/// `σ = 1.2` is not an integer). Theories still use `physis_model`
+/// `f64` Qty.
+pub fn triton_g_factor() -> Constant<Interval> {
+    Constant::new(
+        "gt",
+        codata_2018_triton_g_factor_interval(),
+        "1",
+        codata_2018_triton_g_factor_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -4238,6 +4273,7 @@ pub const LEDGER: &[&str] = &[
     "mu_t",
     "mu_t_muB",
     "mu_t_muN",
+    "gt",
     "au",
     "eV",
     "GM_sun",
@@ -4456,6 +4492,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             triton_magnetic_moment_to_nuclear_magneton(),
             "interval",
         )),
+        "gt" => Some(listing(triton_g_factor(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -19088,7 +19125,7 @@ mod tests {
         assert!(lookup("mu_t/muN").is_none());
         assert!(lookup("mu-t-muN").is_none());
         assert!(lookup("mu_t_mun").is_none());
-        assert!(lookup("gt").is_none());
+        assert!(lookup("gt").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -19102,6 +19139,128 @@ mod tests {
         assert!(lookup("mu_n_muN").is_some());
         assert!(lookup("mu_e_muN").is_some());
         assert!(lookup("mu_mu_muN").is_some());
+        assert!(lookup("G").is_some());
+    }
+
+    #[test]
+    fn codata_2018_triton_g_factor_is_a_one_sigma_interval() {
+        let r = triton_g_factor();
+        let scale = 10i128.pow(9);
+        let lo = Ratio::new(5_957_924_919, scale);
+        let hi = Ratio::new(5_957_924_943, scale);
+        let centre = Ratio::new(5_957_924_931, scale);
+        assert_eq!(r.name, "gt");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Triton, t"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("gt = 5.957924931(12)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "gt is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA gt is a positive g-factor hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[5957924919/1000000000, 5957924943/1000000000]"
+        );
+        assert_eq!(r.hash, triton_g_factor().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "gt",
+                codata_2018_triton_g_factor_interval(),
+                "1",
+                codata_2018_triton_g_factor_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            triton_magnetic_moment_to_nuclear_magneton().hash,
+            "gt is not mu_t_muN"
+        );
+        assert_ne!(r.hash, deuteron_g_factor().hash, "gt is not gd");
+        assert_ne!(r.hash, electron_g_factor().hash, "gt is not ge");
+        assert_ne!(r.hash, muon_g_factor().hash, "gt is not gmu");
+        assert_ne!(r.hash, proton_g_factor().hash, "gt is not gp");
+        assert_ne!(r.hash, neutron_g_factor().hash, "gt is not gn");
+        assert_ne!(r.hash, newtonian_g().hash, "gt is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            triton_magnetic_moment_to_nuclear_magneton()
+                .provenance
+                .source_hash,
+            "gt range is not the mu_t_muN range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            deuteron_g_factor().provenance.source_hash,
+            "gt range is not the gd range"
+        );
+        assert_eq!(
+            triton_magnetic_moment_to_nuclear_magneton().hash.to_hex(),
+            "88f8acc9ba93fb7694b33fa92505cf9ade50157256c713a95b5802113dfe5c65",
+            "mu_t_muN hash must stay pinned when gt is added"
+        );
+        assert_eq!(
+            deuteron_g_factor().hash.to_hex(),
+            "2abb89db8e1e22310c2a7f61a8afee935dfe5e73a9034a17537dd58927215d84",
+            "gd hash must stay pinned when gt is added"
+        );
+        assert_eq!(
+            electron_g_factor().hash.to_hex(),
+            "8e1daf3628381ffa7dce3fafc5e65038038eb74b5537cf7adb95702f5d0e0050",
+            "ge hash must stay pinned when gt is added"
+        );
+        assert_eq!(
+            muon_g_factor().hash.to_hex(),
+            "0a3447871c2dc78e3fa0c69d9134b7ee2852cbf55a0c570452a9118d9c747ded",
+            "gmu hash must stay pinned when gt is added"
+        );
+        assert_eq!(
+            proton_g_factor().hash.to_hex(),
+            "9a1a482bd1adcc3258834dd9275ce119d29903b398307609f17788e5f4a6874d",
+            "gp hash must stay pinned when gt is added"
+        );
+        assert_eq!(
+            neutron_g_factor().hash.to_hex(),
+            "745d414efe1b217af8239787ffd1bb6d0d820fd8753d8aeaedac10c87658aac9",
+            "gn hash must stay pinned when gt is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when gt is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "2f77c0ee28920e4866250d271d9288df2b68a2f82655588827e4678e5c0825ac"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("g_t").is_none());
+        assert!(lookup("g-t").is_none());
+        assert!(lookup("Gt").is_none());
+        assert!(lookup("m_h").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("gt").is_some());
+        assert!(lookup("mu_t_muN").is_some());
+        assert!(lookup("gd").is_some());
+        assert!(lookup("ge").is_some());
+        assert!(lookup("gmu").is_some());
+        assert!(lookup("gp").is_some());
+        assert!(lookup("gn").is_some());
         assert!(lookup("G").is_some());
     }
 
@@ -19307,7 +19466,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 126);
+        assert_eq!(LEDGER.len(), 127);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -19892,6 +20051,11 @@ mod tests {
             lookup("mu_t_muN").unwrap().hash.to_hex(),
             "88f8acc9ba93fb7694b33fa92505cf9ade50157256c713a95b5802113dfe5c65"
         );
+        assert_eq!(lookup("gt").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("gt").unwrap().hash.to_hex(),
+            "2f77c0ee28920e4866250d271d9288df2b68a2f82655588827e4678e5c0825ac"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -20092,7 +20256,11 @@ mod tests {
         assert!(lookup("mu_t/muN").is_none());
         assert!(lookup("mu-t-muN").is_none());
         assert!(lookup("mu_t_mun").is_none());
-        assert!(lookup("gt").is_none());
+        assert!(lookup("gt").is_some());
+        assert!(lookup("g_t").is_none());
+        assert!(lookup("g-t").is_none());
+        assert!(lookup("Gt").is_none());
+        assert!(lookup("m_h").is_none());
         assert!(lookup("mue_mun").is_none());
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());

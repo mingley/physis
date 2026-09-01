@@ -712,8 +712,7 @@ pub fn deuteron_neutron_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// triton-electron mass ratio is `mt_me`. The triton-proton mass
 /// ratio is `mt_mp`. The molar mass is `M_t`. The magnetic moment is
 /// `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton
-/// ratio is `mu_t_muN`. The g-factor is a later table row and is not
-/// stored. The
+/// ratio is `mu_t_muN`. The g-factor is `gt`. The
 /// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 7512.
 pub fn triton_mass() -> Qty<Mass> {
@@ -731,7 +730,7 @@ pub fn triton_mass() -> Qty<Mass> {
 /// mass ratio is `mt_me`. The triton-proton mass ratio is `mt_mp`.
 /// The molar mass is `M_t`. The magnetic moment is `mu_t`.
 /// The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio
-/// is `mu_t_muN`. The g-factor is a later table row and is not stored.
+/// is `mu_t_muN`. The g-factor is `gt`.
 /// The
 /// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 597.
@@ -749,7 +748,7 @@ pub fn triton_mass_in_u() -> Qty<Dimensionless> {
 /// triton-proton mass ratio is `mt_mp`. The molar mass is `M_t`.
 /// The magnetic moment is `mu_t`. The Bohr-magneton ratio is
 /// `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor
-/// is a later table row and is not stored. The versioned ledger stores the one-sigma hull;
+/// is `gt`. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. This is not the CODATA 2022 last-digit 8119.
 pub fn triton_mass_energy_equivalent() -> Qty<Energy> {
     joule(4.500_387_806_0e-10)
@@ -787,7 +786,7 @@ pub fn triton_electron_mass_ratio() -> Qty<Dimensionless> {
 /// not a certificate that the stored centres reconstruct m_t/m_p.
 /// The molar mass is `M_t`. The magnetic moment is `mu_t`.
 /// The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio
-/// is `mu_t_muN`. The g-factor is a later table row and is not stored.
+/// is `mu_t_muN`. The g-factor is `gt`.
 /// The versioned
 /// ledger stores the one-sigma hull; this Qty is that centre. This is
 /// not the CODATA 2022 last-digit 03403.
@@ -802,7 +801,7 @@ pub fn triton_proton_mass_ratio() -> Qty<Dimensionless> {
 /// kg hull, not the u-row, and not a certificate that this equals N_A
 /// times the triton-mass hull. The magnetic moment is `mu_t`.
 /// The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio
-/// is `mu_t_muN`. The g-factor is a later table row and is not stored.
+/// is `mu_t_muN`. The g-factor is `gt`.
 /// The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 71913.
@@ -818,8 +817,7 @@ pub fn triton_molar_mass() -> Qty<
 /// deuteron, proton, neutron, electron, or muon magnetic moment and not
 /// vacuum permeability. This Qty is not a certificate that it equals
 /// g_t μ_N / 2. The Bohr-magneton ratio is `mu_t_muB`. The
-/// nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later table
-/// row and is not stored. The
+/// nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 5178.
 pub fn triton_magnetic_moment(
@@ -833,8 +831,7 @@ pub fn triton_magnetic_moment(
 /// deuteron, proton, neutron, electron, or muon Bohr-magneton ratio and
 /// not the triton magnetic moment. This Qty is not a certificate that
 /// it equals a reconstructed μ_t/μ_B from sibling moments. The
-/// nuclear-magneton ratio is `mu_t_muN`. The g-factor is a later table
-/// row and is not stored. The versioned
+/// nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. The versioned
 /// ledger stores the one-sigma hull; this Qty is that centre. This is
 /// not the CODATA 2022 last-digit 6648.
 pub fn triton_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
@@ -848,11 +845,27 @@ pub fn triton_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
 /// and not the triton magnetic moment or Bohr-magneton ratio. This Qty
 /// is not a certificate that it equals a reconstructed μ_t/μ_N from
 /// sibling moments and not a certificate that it equals the g-factor
-/// gt. The g-factor is a later table row and is not stored. The
+/// gt. The g-factor is `gt`. JPCRD prints different digits from
+/// `mu_t_muN` because I = 1/2; each row has its own Claim identity.
+/// Helion rows are later table rows and are not stored. The
 /// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 4650.
 pub fn triton_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(2.978_962_465_6)
+}
+
+/// Triton g-factor g_t, CODATA 2018.
+///
+/// This is the recommended signed centre from the triton section, not
+/// electron, muon, proton, neutron, or deuteron g-factor and not the
+/// triton nuclear-magneton ratio. This Qty is not a certificate that
+/// it equals 2 μ_t/μ_N from sibling moments. JPCRD prints different
+/// digits from mu_t_muN because I = 1/2; each row has its own Claim
+/// identity. Helion rows are later table rows and are not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 930.
+pub fn triton_g_factor() -> Qty<Dimensionless> {
+    Qty::new(5.957_924_931)
 }
 
 /// Muon mass.
@@ -5563,6 +5576,55 @@ mod tests {
             physis_constants::triton_magnetic_moment_to_nuclear_magneton().hash,
             physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
             "mu_t_muN is not mu_mu_muN"
+        );
+        assert!(
+            physis_constants::lookup("g_t").is_none(),
+            "g_t is not a ledger name; the live name is gt"
+        );
+        let gt = physis_constants::triton_g_factor();
+        let gt_centre = Ratio::new(5_957_924_931, 10i128.pow(9));
+        assert_eq!(
+            triton_g_factor().value(),
+            gt_centre.to_f64(),
+            "gt Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            gt.value.contains(Interval::point(gt_centre)),
+            "gt Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            gt.value.lo, gt.value.hi,
+            "ledger gt stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::triton_g_factor().hash,
+            physis_constants::triton_magnetic_moment_to_nuclear_magneton().hash,
+            "gt is not mu_t_muN"
+        );
+        assert_ne!(
+            physis_constants::triton_g_factor().hash,
+            physis_constants::deuteron_g_factor().hash,
+            "gt is not gd"
+        );
+        assert_ne!(
+            physis_constants::triton_g_factor().hash,
+            physis_constants::electron_g_factor().hash,
+            "gt is not ge"
+        );
+        assert_ne!(
+            physis_constants::triton_g_factor().hash,
+            physis_constants::muon_g_factor().hash,
+            "gt is not gmu"
+        );
+        assert_ne!(
+            physis_constants::triton_g_factor().hash,
+            physis_constants::proton_g_factor().hash,
+            "gt is not gp"
+        );
+        assert_ne!(
+            physis_constants::triton_g_factor().hash,
+            physis_constants::neutron_g_factor().hash,
+            "gt is not gn"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
