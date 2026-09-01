@@ -238,7 +238,7 @@ pub fn shielded_proton_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> 
 /// This is the recommended signed centre for the proton in spherical
 /// H2O at 25 °C, not the free proton nuclear-magneton ratio and not the
 /// shielded Bohr-magneton ratio. This Qty is not a certificate that it
-/// equals gp/2. Gyromagnetic ratios cite ħ and are not stored. Shielded
+/// equals gp/2. Proton gyromagnetic ratio is `gamma_p`. Shielded
 /// g-factor g0p is a glossary identity, not a table XXXI recommended
 /// hull, and is not stored. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre.
@@ -251,8 +251,7 @@ pub fn shielded_proton_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionles
 /// This is the recommended signed centre for the proton in spherical
 /// H2O at 25 °C, not the shielded proton moment and not vacuum
 /// permeability. This Qty is not a certificate of the reconstruction
-/// 1 − μ′_p/μ_p from sibling moments. Gyromagnetic ratios cite ħ and
-/// are not stored. Shielded g-factor g0p is a glossary identity, not a
+/// 1 − μ′_p/μ_p from sibling moments. Proton gyromagnetic ratio is `gamma_p`. Shielded g-factor g0p is a glossary identity, not a
 /// table XXXI recommended hull, and is not stored. The versioned ledger
 /// stores the one-sigma hull; this Qty is that centre.
 pub fn proton_magnetic_shielding_correction() -> Qty<Dimensionless> {
@@ -493,8 +492,7 @@ pub fn neutron_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// the proton in spherical H2O at 25 °C, not the free neutron-proton
 /// magnetic-moment ratio and not the electron to shielded-proton ratio.
 /// This Qty is not a certificate that it equals a reconstructed
-/// μ_n/μ′_p from sibling moments. Gyromagnetic ratios cite ħ and are
-/// not stored. Deuteron mass is `m_d`. The versioned ledger stores the
+/// μ_n/μ′_p from sibling moments. Proton gyromagnetic ratio is `gamma_p`. Deuteron mass is `m_d`. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre.
 pub fn neutron_to_shielded_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
     Qty::new(-0.684_996_94)
@@ -1026,7 +1024,7 @@ pub fn helion_g_factor() -> Qty<Dimensionless> {
 /// moment, not the electron to shielded-helion moment ratio, and not
 /// vacuum permeability. The Bohr-magneton ratio is `mu0h_muB`. The
 /// nuclear-magneton ratio is a later table row and is not stored.
-/// Gyromagnetic ratios cite ħ and are not stored.
+/// Proton gyromagnetic ratio is `gamma_p`.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre as the CODATA decimal. `Ratio::to_f64` on the `10^{35}`
 /// centre is one ulp from this decimal and is not this Qty. This is
@@ -1046,7 +1044,7 @@ pub fn shielded_helion_magnetic_moment(
 /// that it equals a reconstructed μ′_h/μ_B from sibling moments. The
 /// nuclear-magneton ratio is `mu0h_muN`. Shielded helion to proton
 /// ratio rows are later table rows and are not stored.
-/// Gyromagnetic ratios cite ħ and are not stored. The versioned ledger
+/// Proton gyromagnetic ratio is `gamma_p`. The versioned ledger
 /// stores the one-sigma hull; this Qty is that centre. This is not the
 /// CODATA 2022 last-digit 49457.
 pub fn shielded_helion_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
@@ -1079,7 +1077,7 @@ pub fn shielded_helion_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionles
 /// and not helion-proton mass ratio. This Qty is not a certificate that
 /// it equals a reconstructed μ′_h/μ_p from sibling moments. The
 /// shielded helion to shielded proton ratio is `mu0h_mu0p`.
-/// Gyromagnetic ratios cite ħ and are not stored. The
+/// Proton gyromagnetic ratio is `gamma_p`. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 57721.
 pub fn shielded_helion_to_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
@@ -1094,7 +1092,7 @@ pub fn shielded_helion_to_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// ratio, not shielded proton magnetic moment, and not neutron or
 /// electron to shielded-proton moment ratios. This Qty is not a
 /// certificate that it equals a reconstructed μ′_h/μ′_p from sibling
-/// moments. Gyromagnetic ratios cite ħ and are not stored. The alpha
+/// moments. Proton gyromagnetic ratio is `gamma_p`. The alpha
 /// particle mass is `m_alpha`. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 1334.
@@ -1593,9 +1591,24 @@ pub fn nuclear_magneton_in_kelvin_per_tesla() -> Qty<Dimensionless> {
 /// hbar. NIST lists MHz T^{-1}, not Hz T^{-1}. The versioned ledger
 /// stores the one-sigma hull; this Qty is that centre. Ledger unit is
 /// MHz T^{-1}; this Qty is dimensionless, not SI joule per tesla.
-/// Proton gyromagnetic ratio is a later row and is not stored.
+/// Proton gyromagnetic ratio is gamma_p.
 pub fn nuclear_magneton_in_mhz_per_tesla() -> Qty<Dimensionless> {
     Qty::new(7.622_593_229_1)
+}
+
+/// Proton gyromagnetic ratio γ_p, CODATA 2018.
+///
+/// This is the recommended printed Proton, p centre in s^{-1} T^{-1},
+/// not the dimensionless gp hull, not the J T^{-1} mu_p hull, not the
+/// MHz T^{-1} muN_MHz hull, not the Hz/T muB_Hz hull, not e_mp, not a
+/// FormalClaim of 2 mu_p / hbar, and not hbar. The printed formula
+/// cites ħ; the reconstruction is unused. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. Ledger unit is
+/// s^{-1} T^{-1}; this Qty is SI kg^{-1} s A, not dimensionless.
+/// Proton gyromagnetic ratio in MHz/T is a later row and is not stored.
+pub fn proton_gyromagnetic_ratio(
+) -> Qty<physis_core::SI<typenum::N1, typenum::Z0, typenum::P1, typenum::P1>> {
+    Qty::new(2.675_221_874_4e8)
 }
 
 /// Muon mass.
@@ -9352,9 +9365,49 @@ mod tests {
             physis_constants::bohr_magneton_in_hz_per_tesla().hash,
             "muN_MHz is not muB_Hz"
         );
+
+        let gamma_p = physis_constants::proton_gyromagnetic_ratio();
+        let gamma_p_centre = Ratio::new(26_752_218_744, 10i128.pow(2));
+        assert_eq!(
+            proton_gyromagnetic_ratio().value(),
+            2.675_221_874_4e8,
+            "proton gyromagnetic ratio gamma_p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            proton_gyromagnetic_ratio().value(),
+            gamma_p_centre.to_f64(),
+            "gamma_p Qty locksteps to Ratio::to_f64 on the 10^2 centre"
+        );
         assert!(
-            physis_constants::lookup("gamma_p").is_none(),
-            "proton gyromagnetic ratio is a later row"
+            gamma_p.value.contains(Interval::point(gamma_p_centre)),
+            "gamma_p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            gamma_p.value.lo, gamma_p.value.hi,
+            "ledger gamma_p stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            gamma_p.value.lo > Ratio::int(0),
+            "ledger gamma_p stays a positive hull"
+        );
+        assert_ne!(
+            physis_constants::proton_gyromagnetic_ratio().hash,
+            physis_constants::proton_g_factor().hash,
+            "gamma_p is not gp"
+        );
+        assert_ne!(
+            physis_constants::proton_gyromagnetic_ratio().hash,
+            physis_constants::nuclear_magneton_in_mhz_per_tesla().hash,
+            "gamma_p is not muN_MHz"
+        );
+        assert_ne!(
+            physis_constants::proton_gyromagnetic_ratio().hash,
+            physis_constants::proton_charge_to_mass().hash,
+            "gamma_p is not e_mp"
+        );
+        assert!(
+            physis_constants::lookup("gamma_p_MHz").is_none(),
+            "proton gyromagnetic ratio in MHz/T is a later row"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),

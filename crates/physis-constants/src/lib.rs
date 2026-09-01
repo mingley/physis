@@ -945,6 +945,10 @@ fn codata_2018_nuclear_magneton_in_mhz_per_tesla_source() -> SourceRecord {
     codata_2018_jpcrd("ELECTROMAGNETIC", "muN_MHz = 7.6225932291(23)")
 }
 
+fn codata_2018_proton_gyromagnetic_ratio_source() -> SourceRecord {
+    codata_2018_jpcrd("Proton, p", "gamma_p = 2.6752218744(11)e8")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -2453,7 +2457,7 @@ fn codata_2018_proton_magnetic_moment_interval() -> Interval {
 /// moment `mu_mu`, not the electron-proton moment ratio `mu_e_mup`,
 /// not vacuum permeability `mu0`, not an SI defining Ratio, and not
 /// P3N. The shielded proton moment is a later table row stored as
-/// `mu0p`. Gyromagnetic ratios cite ħ and are not stored. The
+/// `mu0p`. Proton gyromagnetic ratio is `gamma_p`. The
 /// proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
 /// footnote e) and is not stored. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
@@ -2482,8 +2486,7 @@ fn codata_2018_proton_bohr_magneton_ratio_interval() -> Interval {
 /// This is the recommended signed dimensionless hull from the proton
 /// section, not electron Bohr-magneton ratio `mu_e_muB`, not muon
 /// Bohr-magneton ratio `mu_mu_muB`, not proton magnetic moment `mu_p`,
-/// not an SI defining Ratio, and not P3N. Gyromagnetic ratios cite ħ and
-/// are not stored. The proton-tau ratio is a PDG reprint of `m_τc²`
+/// not an SI defining Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`. The proton-tau ratio is a PDG reprint of `m_τc²`
 /// (JPCRD table XXXI footnote e) and is not stored. Electron mass is
 /// not stored: `10^{42}` overflows `i128`. Theories still use
 /// `physis_model` `f64` Qty.
@@ -2512,7 +2515,7 @@ fn codata_2018_proton_nuclear_magneton_ratio_interval() -> Interval {
 /// section, not electron nuclear-magneton ratio `mu_e_muN`, not muon
 /// nuclear-magneton ratio `mu_mu_muN`, not proton Bohr-magneton ratio
 /// `mu_p_muB`, not proton magnetic moment `mu_p`, not an SI defining
-/// Ratio, and not P3N. Gyromagnetic ratios cite ħ and are not stored.
+/// Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`.
 /// The proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
 /// footnote e) and is not stored. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
@@ -2542,7 +2545,7 @@ fn codata_2018_proton_g_factor_interval() -> Interval {
 /// proton nuclear-magneton ratio `mu_p_muN`, not a certificate that
 /// this equals `2 μp/μN`, not an SI defining Ratio, and not P3N. The
 /// shielded proton g-factor is a later table row and is not stored.
-/// Gyromagnetic ratios cite ħ and are not stored. The proton-tau
+/// Proton gyromagnetic ratio is `gamma_p`. The proton-tau
 /// ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e)
 /// and is not stored. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
@@ -2605,8 +2608,7 @@ fn codata_2018_shielded_proton_magnetic_moment_interval() -> Interval {
 /// proton magnetic moment `mu_p`, not electron magnetic moment `mu_e`,
 /// not muon magnetic moment `mu_mu`, not the electron to shielded-proton
 /// moment ratio `mu_e_mu0p`, not vacuum permeability `mu0`, not an SI
-/// defining Ratio, and not P3N. Gyromagnetic ratios cite ħ and are not
-/// stored. Shielded g-factor `g0p` is a glossary identity, not a table
+/// defining Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`. Shielded g-factor `g0p` is a glossary identity, not a table
 /// XXXI recommended hull, and is not stored. The
 /// proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
 /// footnote e) and is not stored. Electron mass is not stored:
@@ -2639,8 +2641,7 @@ fn codata_2018_shielded_proton_bohr_magneton_ratio_interval() -> Interval {
 /// `mu_e_muB`, not muon Bohr-magneton ratio `mu_mu_muB`, not shielded
 /// proton magnetic moment `mu0p`, not the electron to shielded-proton
 /// moment ratio `mu_e_mu0p`, not vacuum permeability `mu0`, not an SI
-/// defining Ratio, and not P3N. Gyromagnetic ratios cite ħ and are not
-/// stored. Shielded g-factor `g0p` is a glossary identity, not a table
+/// defining Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`. Shielded g-factor `g0p` is a glossary identity, not a table
 /// XXXI recommended hull, and is not stored. The proton-tau ratio
 /// is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not
 /// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
@@ -2775,8 +2776,7 @@ fn codata_2018_neutron_mass_in_u_interval() -> Interval {
 /// MeV energy equivalent and molar mass are later table rows and are
 /// not stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD
 /// table XXXI footnote e) and is not stored. Reduced neutron Compton
-/// wavelength cites ħ and is not stored. Gyromagnetic ratios cite ħ and
-/// are not stored. Electron mass is not stored: `10^{42}` overflows
+/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. The decade is `10^{11}`; `10^{10}` is the 10× trap
 /// (`1.0086649159` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -2809,8 +2809,7 @@ fn codata_2018_neutron_mass_energy_equivalent_interval() -> Interval {
 /// and not P3N. The molar mass is a later table row and is not stored.
 /// Neutron-tau is a PDG reprint of `m_τc²` (JPCRD
 /// table XXXI footnote e) and is not stored. Reduced neutron Compton
-/// wavelength cites ħ and is not stored. Gyromagnetic ratios cite ħ and
-/// are not stored. Electron mass is not stored: `10^{42}` overflows
+/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. The decade is `10^{21}`; `10^{20}` is the 10× trap
 /// (`1.5053497629e-10` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -2842,8 +2841,7 @@ fn codata_2018_neutron_mass_energy_equivalent_in_mev_interval() -> Interval {
 /// defining Ratio, and not P3N. Neutron-muon is a later table row and is
 /// not stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
 /// footnote e) and is not stored. Reduced neutron Compton wavelength
-/// cites ħ and is not stored. Gyromagnetic ratios cite ħ and are not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`. The
+/// cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows `i128`. The
 /// decade is `10^{8}`; `10^{7}` is the 10× trap (`939.5654205` would
 /// lose a digit). Theories still use `physis_model` `f64` Qty.
 pub fn neutron_mass_energy_equivalent_in_mev() -> Constant<Interval> {
@@ -2906,7 +2904,7 @@ fn codata_2018_neutron_muon_mass_ratio_interval() -> Interval {
 /// P3N. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
 /// footnote e) and is not stored. Neutron-proton mass difference is a
 /// later table row and is not stored. Reduced neutron Compton wavelength cites ħ and
-/// is not stored. Gyromagnetic ratios cite ħ and are not stored.
+/// is not stored. Proton gyromagnetic ratio is `gamma_p`.
 /// Electron mass is not stored: `10^{42}` overflows `i128`. The decade
 /// is `10^{8}`; `10^{7}` is the 10× trap (`8.8924840` would lose a
 /// digit). Theories still use `physis_model` `f64` Qty.
@@ -2939,7 +2937,7 @@ fn codata_2018_neutron_proton_mass_ratio_interval() -> Interval {
 /// stored. Neutron-proton mass difference is `mn_minus_mp`, not this
 /// ratio. The u-row and energy-equivalent rows are later table rows and
 /// are not stored. Reduced neutron Compton wavelength cites ħ and is not
-/// stored. Gyromagnetic ratios cite ħ and are not stored. Electron mass
+/// stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass
 /// is not stored: `10^{42}` overflows `i128`. The decade is `10^{11}`;
 /// `10^{10}` is the 10× trap (`1.0013784193` would lose a digit).
 /// Theories still use `physis_model` `f64` Qty.
@@ -2971,7 +2969,7 @@ fn codata_2018_neutron_proton_mass_difference_interval() -> Interval {
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Energy
 /// equivalents and molar mass are later table rows and are not stored.
 /// Reduced neutron Compton wavelength cites ħ and is not stored.
-/// Gyromagnetic ratios cite ħ and are not stored. Electron mass is not
+/// Proton gyromagnetic ratio is `gamma_p`. Electron mass is not
 /// stored: `10^{42}` overflows `i128`. The decade is `10^{38}`; `10^{37}`
 /// is the 10× trap (`2.3055743e-30` would lose a digit). `10^{39}`
 /// overflows `i128`. Theories still use `physis_model` `f64` Qty.
@@ -3003,7 +3001,7 @@ fn codata_2018_neutron_proton_mass_difference_in_u_interval() -> Interval {
 /// e) and is not stored. The joule hull is `mn_minus_mp_c2`. The MeV
 /// energy equivalent and molar mass are later table rows and are not
 /// stored. Reduced neutron Compton wavelength cites ħ and is not stored.
-/// Gyromagnetic ratios cite ħ and are not stored. Electron mass is not
+/// Proton gyromagnetic ratio is `gamma_p`. Electron mass is not
 /// stored: `10^{42}` overflows `i128`. The decade is `10^{11}`; `10^{10}`
 /// is the 10× trap (`1.3884493e-3` would lose a digit). Theories still
 /// use `physis_model` `f64` Qty.
@@ -3035,8 +3033,7 @@ fn codata_2018_neutron_proton_mass_difference_energy_equivalent_interval() -> In
 /// defining Ratio, and not P3N. Neutron-tau is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Molar mass
 /// is a later table row and is not stored. Reduced neutron Compton
-/// wavelength cites ħ and is not stored. Gyromagnetic ratios cite ħ
-/// and are not stored. Electron mass is not stored: `10^{42}` overflows
+/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. The decade is `10^{21}`; `10^{20}` is the 10× trap
 /// (`2.0721468e-13` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3098,8 +3095,7 @@ fn codata_2018_neutron_molar_mass_interval() -> Interval {
 /// Ratio, and not P3N. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD
 /// table XXXI footnote e) and is not stored. The Compton wavelength is
 /// `lambda_C_n`. Reduced neutron Compton wavelength cites ħ and is
-/// not stored. Gyromagnetic ratios cite ħ
-/// and are not stored. Electron mass is not stored: `10^{42}` overflows
+/// not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. The decade is `10^{14}`; `10^{13}` is the 10× trap
 /// (`1.0086649156e-3` would lose a digit of the reported uncertainty).
 /// Theories still use `physis_model` `f64` Qty.
@@ -3130,8 +3126,7 @@ fn codata_2018_neutron_compton_wavelength_interval() -> Interval {
 /// P3N. The magnetic moment is `mu_n`. Bohr, nuclear, g-factor, and
 /// moment ratios are later table rows and are not stored. The reduced neutron Compton wavelength is ħ/m_n c and is not
 /// stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Gyromagnetic ratios cite ħ and are
-/// not stored. Electron mass is not stored: `10^{42}` overflows
+/// footnote e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
 /// `i128`. The decade is `10^{26}`; `10^{25}` is the 10× trap
 /// (`1.3195909058e-15` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3163,8 +3158,7 @@ fn codata_2018_neutron_magnetic_moment_interval() -> Interval {
 /// Ratio, and not P3N. The Bohr-magneton ratio is `mu_n_muB`. Nuclear-magneton,
 /// g-factor, and moment-ratio rows are later table rows and are not stored.
 /// Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote
-/// e) and is not stored. Gyromagnetic ratios cite ħ and are not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows `i128`.
 /// The decade is `10^{34}`; `10^{33}` is the 10× trap (`σ = 2.3` is
 /// not an integer). This is not the CODATA 2022 last-digit `3`.
 /// Theories still use `physis_model` `f64` Qty.
@@ -3230,7 +3224,7 @@ fn codata_2018_neutron_nuclear_magneton_ratio_interval() -> Interval {
 /// (the g-factor), not an SI defining Ratio, and not P3N. The g-factor is `gn`. Moment-ratio rows are later table
 /// rows and are not stored. Neutron-tau
 /// is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not
-/// stored. Gyromagnetic ratios cite ħ and are not stored. Electron mass
+/// stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass
 /// is not stored: `10^{42}` overflows `i128`. The decade is `10^{8}`;
 /// `10^{7}` is the 10× trap (`σ = 4.5` is not an integer). Theories still
 /// use `physis_model` `f64` Qty.
@@ -3261,8 +3255,7 @@ fn codata_2018_neutron_g_factor_interval() -> Interval {
 /// Ratio, and not P3N. The neutron-electron magnetic-moment ratio is `mu_n_mue`.
 /// Neutron-proton and shielded-proton moment-ratio rows are later
 /// table rows and are not stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Gyromagnetic ratios cite ħ and are not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`. This
+/// footnote e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows `i128`. This
 /// is not the CODATA 2022 last-digit `52`. The decade is `10^{8}`;
 /// `10^{7}` is the 10× trap (`μ` would not be an integer). Theories still
 /// use `physis_model` `f64` Qty.
@@ -3328,7 +3321,7 @@ fn codata_2018_neutron_proton_magnetic_moment_ratio_interval() -> Interval {
 /// `mu_p_mun`, not an SI defining Ratio, and not P3N. The neutron to shielded-proton magnetic-moment ratio is
 /// `mu_n_mu0p`. Neutron-tau is a
 /// PDG reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not
-/// stored. Gyromagnetic ratios cite ħ and are not stored. Electron mass
+/// stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass
 /// is not stored: `10^{42}` overflows `i128`. This is not the CODATA
 /// 2022 last-digit `35`. The decade is `10^{8}`; `10^{7}` is the 10×
 /// trap (`μ` would not be an integer). Theories still use `physis_model`
@@ -3360,7 +3353,7 @@ fn codata_2018_neutron_to_shielded_proton_magnetic_moment_ratio_interval() -> In
 /// shielded-proton magnetic-moment ratio `mu_e_mu0p`, not shielded proton
 /// magnetic moment `mu0p`, not a certificate that this equals a
 /// reconstructed μ_n/μ′_p from sibling moments, not an SI defining Ratio,
-/// and not P3N. Gyromagnetic ratios cite ħ and are not stored.
+/// and not P3N. Proton gyromagnetic ratio is `gamma_p`.
 /// Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e)
 /// and is not stored. Deuteron mass is `m_d`. Later deuteron rows are not
 /// stored. Electron mass is not stored: `10^{42}` overflows `i128`. The
@@ -4604,7 +4597,7 @@ fn codata_2018_shielded_helion_magnetic_moment_interval() -> Interval {
 /// `mu_e_mu0h`, not vacuum permeability `mu0`, not helion g-factor
 /// `gh`, not an SI defining Ratio, and not P3N. The Bohr-magneton ratio
 /// is `mu0h_muB`. The nuclear-magneton ratio is a later table row and
-/// is not stored. Gyromagnetic ratios cite ħ and are not stored.
+/// is not stored. Proton gyromagnetic ratio is `gamma_p`.
 /// Electron mass is not stored: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `11035`. The decade
 /// is `10^{35}`; `10^{34}` is the 10× trap (`σ = 1.3` is not an
@@ -4750,8 +4743,7 @@ fn codata_2018_shielded_helion_to_shielded_proton_magnetic_moment_ratio_interval
 /// shielded-proton `mu_e_mu0p`, not electron to shielded-helion
 /// `mu_e_mu0h`, not helion-proton mass ratio `mh_mp`, not a certificate
 /// that this equals a reconstructed `μ′_h/μ′_p` from sibling moments,
-/// not an SI defining Ratio, and not P3N. Gyromagnetic ratios cite ħ
-/// and are not stored. The alpha particle mass is `m_alpha`. Electron
+/// not an SI defining Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`. The alpha particle mass is `m_alpha`. Electron
 /// mass is not stored: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `1334`. The decade is
 /// `10^{10}`; `10^{9}` is the 10× trap (`μ` would not be an integer;
@@ -5964,7 +5956,7 @@ fn codata_2018_nuclear_magneton_in_mhz_per_tesla_interval() -> Interval {
 /// not Planck `h`, not `hbar`, and not a FormalClaim that reconstructs
 /// `muN/h` from live lookups. NIST lists MHz T⁻¹, not Hz T⁻¹. The ledger
 /// stores the recommended one-sigma hull. The ledger name is `muN_MHz`.
-/// Proton gyromagnetic ratio is a later row. The decade is `10^{10}`;
+/// Proton gyromagnetic ratio is `gamma_p`. The decade is `10^{10}`;
 /// `10^{9}` is the 10× trap (`σ = 2.3` is not an integer). This is not
 /// the CODATA 2022 last-digit `2188`. This is not P3N. Electron mass is
 /// not stored: `10^{42}` overflows `i128`. Theories still use
@@ -5975,6 +5967,44 @@ pub fn nuclear_magneton_in_mhz_per_tesla() -> Constant<Interval> {
         codata_2018_nuclear_magneton_in_mhz_per_tesla_interval(),
         "MHz T^{-1}",
         codata_2018_nuclear_magneton_in_mhz_per_tesla_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 2.6752218744(11)×10⁸ s⁻¹ T⁻¹.
+fn codata_2018_proton_gyromagnetic_ratio_interval() -> Interval {
+    let scale = 10i128.pow(2);
+    let centre = 26_752_218_744i128;
+    let sigma = 11;
+    Interval::new(
+        Ratio::new(centre - sigma, scale),
+        Ratio::new(centre + sigma, scale),
+    )
+}
+
+/// Proton gyromagnetic ratio γ_p, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended printed Proton, p hull listed as proton
+/// gyromagnetic ratio, not g-factor `gp`, not proton magnetic moment
+/// `mu_p`, not nuclear magneton `muN`, not nuclear magneton in MHz/T
+/// `muN_MHz`, not Bohr magneton in Hz/T `muB_Hz`, not proton
+/// charge-to-mass `e_mp`, not an SI defining Ratio, not a terminating
+/// [`SciExact`], not `hbar`, and not a FormalClaim that reconstructs
+/// `2 μp / ℏ` from live lookups. The printed formula cites ħ; the
+/// reconstruction is unused. The ledger stores the recommended
+/// one-sigma hull. The ledger name is `gamma_p`. Proton gyromagnetic
+/// ratio in MHz/T is a later row. Shielded proton gyromagnetic ratio
+/// is a later row. Helion gyromagnetic `gamma0h` cites ħ and is not
+/// stored. The decade is `10^{2}`; `10^{1}` is the 10× trap (`σ = 1.1`
+/// is not an integer). This is not the CODATA 2022 last-digit `8708`.
+/// This is not P3N. Electron mass is not stored: `10^{42}` overflows
+/// `i128`. Theories still use `physis_model` `f64` Qty.
+pub fn proton_gyromagnetic_ratio() -> Constant<Interval> {
+    Constant::new(
+        "gamma_p",
+        codata_2018_proton_gyromagnetic_ratio_interval(),
+        "s^{-1} T^{-1}",
+        codata_2018_proton_gyromagnetic_ratio_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -6301,6 +6331,7 @@ pub const LEDGER: &[&str] = &[
     "muN_m",
     "muN_K",
     "muN_MHz",
+    "gamma_p",
     "au",
     "eV",
     "GM_sun",
@@ -6609,6 +6640,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         )),
         "muN_K" => Some(listing(nuclear_magneton_in_kelvin_per_tesla(), "interval")),
         "muN_MHz" => Some(listing(nuclear_magneton_in_mhz_per_tesla(), "interval")),
+        "gamma_p" => Some(listing(proton_gyromagnetic_ratio(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25932,6 +25964,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -26096,6 +26129,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -26246,6 +26280,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -26390,6 +26425,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -26504,6 +26540,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -26617,6 +26654,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -26753,6 +26791,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26889,6 +26928,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -27028,6 +27068,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -27168,6 +27209,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("gamma0h").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
@@ -27301,6 +27343,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
@@ -27450,6 +27493,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("gn").is_some());
@@ -27581,6 +27625,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_none());
@@ -27604,6 +27649,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -27753,6 +27799,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
@@ -27871,6 +27918,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -27896,6 +27944,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
@@ -28023,11 +28072,13 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28052,6 +28103,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
@@ -28193,11 +28245,13 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28221,6 +28275,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
@@ -28373,11 +28428,13 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28400,6 +28457,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
@@ -28554,11 +28612,13 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28580,6 +28640,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
@@ -28746,11 +28807,13 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28771,6 +28834,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
@@ -28944,6 +29008,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -28963,6 +29028,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
@@ -29150,6 +29216,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29168,6 +29235,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
@@ -29361,6 +29429,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29378,6 +29447,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
@@ -29586,6 +29656,7 @@ mod tests {
         assert!(lookup("RK-90").is_none());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29602,6 +29673,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
@@ -29820,6 +29892,7 @@ mod tests {
         assert!(lookup("KJ-90").is_none());
         assert!(lookup("RK-90").is_none());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -29835,6 +29908,7 @@ mod tests {
         assert!(lookup("Eh_eV").is_none());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
@@ -30058,7 +30132,7 @@ mod tests {
         assert!(lookup("G0").is_none());
         assert!(lookup("KJ-90").is_none());
         assert!(lookup("RK-90").is_none());
-        assert!(lookup("gamma_p").is_none());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -30073,6 +30147,7 @@ mod tests {
         assert!(lookup("m_e").is_none());
         assert!(lookup("Eh_eV").is_none());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
@@ -30082,6 +30157,254 @@ mod tests {
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
+        assert!(lookup("RK").is_some());
+        assert!(lookup("KJ").is_some());
+        assert!(lookup("c2").is_some());
+        assert!(lookup("c1L").is_some());
+        assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("S0_R").is_some());
+        assert!(lookup("n0_atm").is_some());
+        assert!(lookup("gn").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_proton_gyromagnetic_ratio_is_a_one_sigma_interval() {
+        let r = proton_gyromagnetic_ratio();
+        let scale = 10i128.pow(2);
+        let lo = Ratio::new(26_752_218_733, scale);
+        let hi = Ratio::new(26_752_218_755, scale);
+        let centre = Ratio::new(26_752_218_744, scale);
+        assert_eq!(r.name, "gamma_p");
+        assert_eq!(r.unit, "s^{-1} T^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Proton, p"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("gamma_p = 2.6752218744(11)e8")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "gamma_p is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA gamma_p is a positive hull, not the dimensionless gp row"
+        );
+        assert!(
+            !r.value
+                .contains(Interval::point(Ratio::new(26_752_218_708, scale))),
+            "gamma_p hull is not the CODATA 2022 last-digit 8708"
+        );
+        assert_eq!(r.value.to_string(), "[26752218733/100, 5350443751/20]");
+        assert_eq!(r.hash, proton_gyromagnetic_ratio().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "gamma_p",
+                codata_2018_proton_gyromagnetic_ratio_interval(),
+                "s^{-1} T^{-1}",
+                codata_2018_proton_gyromagnetic_ratio_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, proton_g_factor().hash, "gamma_p is not gp");
+        assert_ne!(r.hash, proton_magnetic_moment().hash, "gamma_p is not mu_p");
+        assert_ne!(r.hash, nuclear_magneton().hash, "gamma_p is not muN");
+        assert_ne!(
+            r.hash,
+            nuclear_magneton_in_mhz_per_tesla().hash,
+            "gamma_p is not muN_MHz"
+        );
+        assert_ne!(
+            r.hash,
+            bohr_magneton_in_hz_per_tesla().hash,
+            "gamma_p is not muB_Hz"
+        );
+        assert_ne!(r.hash, proton_charge_to_mass().hash, "gamma_p is not e_mp");
+        assert_ne!(r.hash, newtonian_g().hash, "gamma_p is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "gamma_p is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            proton_g_factor().provenance.source_hash,
+            "gamma_p range is not the gp range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            nuclear_magneton_in_mhz_per_tesla().provenance.source_hash,
+            "gamma_p range is not the muN_MHz range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            proton_charge_to_mass().provenance.source_hash,
+            "gamma_p range is not the e_mp range"
+        );
+        assert_eq!(
+            proton_g_factor().hash.to_hex(),
+            "9a1a482bd1adcc3258834dd9275ce119d29903b398307609f17788e5f4a6874d",
+            "gp hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            proton_magnetic_moment().hash.to_hex(),
+            "bf987c5fccc4ef40691f126024092320bc335b7942323fa90675a28a250e304c",
+            "mu_p hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            nuclear_magneton_in_mhz_per_tesla().hash.to_hex(),
+            "bd63dae42eacb72e6c76f65457ce03a8abd107dbce9faa68ee04e0ed78c9adf1",
+            "muN_MHz hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            nuclear_magneton_in_kelvin_per_tesla().hash.to_hex(),
+            "deb575e22e92050ab049888ba327bad752ec6d478cb3384b64ad7b3d2e6592bd",
+            "muN_K hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            nuclear_magneton_in_inverse_meter_per_tesla().hash.to_hex(),
+            "4cbff17f649eaa3b46d7ec75aeeddc8a8becebcddc7c4538bca1e96097800e0f",
+            "muN_m hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            nuclear_magneton_in_ev_per_tesla().hash.to_hex(),
+            "896e79954d3048b9eb9f1f8d0be11c351690c3bd2db4d3be8f1853395bc51291",
+            "muN_eV hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            nuclear_magneton().hash.to_hex(),
+            "c3185d2ffda0a76ed87ea106513eb25592aec9bbec35f8647a81d367f70f3835",
+            "muN hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            bohr_magneton_in_kelvin_per_tesla().hash.to_hex(),
+            "fd9a45856a999a4b1af21966c2cb3e3cee7f27aa6e8960a3168868dea04aa451",
+            "muB_K hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            bohr_magneton_in_inverse_meter_per_tesla().hash.to_hex(),
+            "5870c955c8af2612ebe76eee32448cabd843ef430611ac3cd01623ae9dfd7bb3",
+            "muB_m hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            bohr_magneton_in_hz_per_tesla().hash.to_hex(),
+            "b51f2cbb2761484c081909689471b593a47521359e481cbbe1c6c0083d6cb749",
+            "muB_Hz hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            bohr_magneton_in_ev_per_tesla().hash.to_hex(),
+            "2eba7e5ba5747c0aabedad751c362d39314d5d212378279e872a2a0c48cdf15b",
+            "muB_eV hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            bohr_magneton().hash.to_hex(),
+            "05bdf64c433e9c8bdf8db2dd7991db310baf2ba41fb0e3cff31d1cd98ef0f9df",
+            "muB hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            proton_charge_to_mass().hash.to_hex(),
+            "e0404fef33540ecdef40b36cb1e14112b9e91713cccab65bb6a920fa44106611",
+            "e_mp hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            neutron_magnetic_moment().hash.to_hex(),
+            "c9a6a49c3c793cee8a4e3f31b1245f16c05c8b90c6e5fb1752fff1f2337b5f2c",
+            "mu_n hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            electron_magnetic_moment().hash.to_hex(),
+            "e48d03baa8e8b2f62d1ea5c19a7010b583cdfba3f4f9c3d2b55877817d36c9b8",
+            "mu_e hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            von_klitzing_constant().hash.to_hex(),
+            "2faf6f39986b543d3370bdd5764f0d075fa94a709d3fadd235ed82026fed2d46",
+            "RK hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            josephson_constant().hash.to_hex(),
+            "eb31c5b04ef0823e6e80a2921172c06fa6ef692e5a7700cb25d183b00a0090d2",
+            "KJ hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            second_radiation_constant().hash.to_hex(),
+            "9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc",
+            "c2 hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            first_radiation_constant_spectral_radiance().hash.to_hex(),
+            "bb3b42d41a8d8ebc3191a2aa98d974733538eaba1098eb89a1574d228479249c",
+            "c1L hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            planck_h().hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef",
+            "h hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            elementary_charge().hash.to_hex(),
+            "412cb379a6bf6cca245ba89fc43539399942e644fa08000cd30bd1d9b25372a5",
+            "e hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            electron_volt().hash.to_hex(),
+            "d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f",
+            "eV hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when gamma_p is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "116f462ed588536a31ea6e33be0ef8c1e26a5adb78b807dc93a8d5df0204457e"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(2).is_some(),
+            "gamma_p decade 10^2 fits i128; 10^1 is the 10x trap"
+        );
+        assert!(lookup("Phi0").is_none());
+        assert!(lookup("G0").is_none());
+        assert!(lookup("KJ-90").is_none());
+        assert!(lookup("RK-90").is_none());
+        assert!(lookup("gamma_p_MHz").is_none());
+        assert!(lookup("gamma0p").is_none());
+        assert!(lookup("gamma_n").is_none());
+        assert!(lookup("sigma").is_none());
+        assert!(lookup("c1").is_none());
+        assert!(lookup("b").is_none());
+        assert!(lookup("b0").is_none());
+        assert!(lookup("S0/R").is_none());
+        assert!(lookup("S0").is_none());
+        assert!(lookup("gamma0h").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("gamma_p").is_some());
+        assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("muN_K").is_some());
+        assert!(lookup("muN_m").is_some());
+        assert!(lookup("muN_eV").is_some());
+        assert!(lookup("muN").is_some());
+        assert!(lookup("muB_K").is_some());
+        assert!(lookup("muB_m").is_some());
+        assert!(lookup("muB_Hz").is_some());
+        assert!(lookup("muB_eV").is_some());
+        assert!(lookup("muB").is_some());
+        assert!(lookup("gp").is_some());
+        assert!(lookup("mu_p").is_some());
+        assert!(lookup("e_mp").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
@@ -30296,7 +30619,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 180);
+        assert_eq!(LEDGER.len(), 181);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -31151,6 +31474,11 @@ mod tests {
             lookup("muN_MHz").unwrap().hash.to_hex(),
             "bd63dae42eacb72e6c76f65457ce03a8abd107dbce9faa68ee04e0ed78c9adf1"
         );
+        assert_eq!(lookup("gamma_p").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("gamma_p").unwrap().hash.to_hex(),
+            "116f462ed588536a31ea6e33be0ef8c1e26a5adb78b807dc93a8d5df0204457e"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -31506,6 +31834,7 @@ mod tests {
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
+        assert!(lookup("gamma_p").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());
