@@ -550,6 +550,17 @@ pub fn deuteron_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
     Qty::new(1_875.612_942_57)
 }
 
+/// Deuteron-electron mass ratio m_d/m_e, CODATA 2018.
+///
+/// This is the recommended centre from the deuteron section, not the
+/// electron-deuteron mass ratio and not a certificate that the stored
+/// centres invert. The deuteron-proton mass ratio is a later table row
+/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. This is not the CODATA 2022 last-digit 655.
+pub fn deuteron_electron_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(3_670.482_967_88)
+}
+
 /// Muon mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -4363,6 +4374,45 @@ mod tests {
             physis_constants::deuteron_mass_energy_equivalent_in_mev().hash,
             physis_constants::muon_mass_energy_equivalent_in_mev().hash,
             "m_d_c2_MeV is not m_mu_c2_MeV"
+        );
+        assert!(
+            physis_constants::lookup("md/me").is_none(),
+            "md/me is not a ledger name; the live name is md_me"
+        );
+        let md_me = physis_constants::deuteron_electron_mass_ratio();
+        let md_me_centre = Ratio::new(367_048_296_788, 10i128.pow(8));
+        assert_eq!(
+            deuteron_electron_mass_ratio().value(),
+            md_me_centre.to_f64(),
+            "md_me Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            md_me.value.contains(Interval::point(md_me_centre)),
+            "md_me Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            md_me.value.lo, md_me.value.hi,
+            "ledger md_me stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_electron_mass_ratio().hash,
+            physis_constants::electron_deuteron_mass_ratio().hash,
+            "md_me is not me_md"
+        );
+        assert_ne!(
+            physis_constants::deuteron_electron_mass_ratio().hash,
+            physis_constants::neutron_electron_mass_ratio().hash,
+            "md_me is not mn_me"
+        );
+        assert_ne!(
+            physis_constants::deuteron_electron_mass_ratio().hash,
+            physis_constants::proton_electron_mass_ratio().hash,
+            "md_me is not mp_me"
+        );
+        assert_ne!(
+            physis_constants::deuteron_electron_mass_ratio().hash,
+            physis_constants::muon_electron_mass_ratio().hash,
+            "md_me is not mmu_me"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
