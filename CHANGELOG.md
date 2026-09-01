@@ -22,6 +22,66 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 helion g-factor is a one-sigma Interval.**
+  `physis-constants` versions `gh` as the CODATA 2018 signed hull
+  `−4.255250615(50)` from JPCRD 50, 033105 table XXXI (Helion, h). This
+  is not helion nuclear-magneton ratio `mu_h_muN`, not triton `gt`, not
+  deuteron `gd`, not electron `ge`, not muon `gmu`, not proton `gp`, not
+  neutron `gn`, not a certificate that the stored centres reconstruct
+  `2 μ_h/μ_N`, not an SI defining Ratio, not the Thomson cross section,
+  and not P3N. JPCRD prints different digits from `mu_h_muN` because
+  `I = 1/2` (`g = 2μ/μN`); each row has its own Claim identity.
+  Shielded-helion rows are later table rows and are not stored. Electron
+  mass is still not stored (`10^{42}` overflows `i128`). Decade `10^{9}`
+  (`10^{8}` is the 10× trap). This is not the CODATA 2022 last-digit
+  `6995`. `physis_model` `helion_g_factor()` Qty locksteps to the
+  recommended centre inside the hull. Adding `gh` to LEDGER changes the
+  ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`,
+  `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`,
+  `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`,
+  `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`,
+  `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`, `M_p`, `lambda_C_p`,
+  `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`, `mu_p_mun`, `mu0p`,
+  `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`, `m_n_u`, `m_n_c2`,
+  `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`, `mn_minus_mp`,
+  `mn_minus_mp_u`, `mn_minus_mp_c2`, `mn_minus_mp_c2_MeV`, `M_n`,
+  `lambda_C_n`, `mu_n`, `mu_n_muB`, `mu_n_muN`, `gn`, `mu_n_mue`,
+  `mu_n_mup`, `mu_n_mu0p`, `m_d`, `m_d_u`, `m_d_c2`, `m_d_c2_MeV`,
+  `md_me`, `md_mp`, `M_d`, `rd`, `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`,
+  `mu_d_mue`, `mu_d_mup`, `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`,
+  `m_t_c2_MeV`, `mt_me`, `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`,
+  `mu_t_muN`, `gt`, `m_h`, `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`,
+  `mh_mp`, `M_h`, `mu_h`, `mu_h_muB`, and `mu_h_muN` hashes are
+  unchanged. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `gh` hash 89764c03ec4774afa24862fca730205f559747ba9256e7378c64629720d31c4f; node 89d787cea08d18f680faa8fa0e4e2bc9e25ed8d4c4f649ba7bfe47ed4096e90f;
+  ledger node 8e7397c6d237ba060d412fb1922dcb1f2a0439a99a6c991f60f5d7d060f675c8. `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`,
+  `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`,
+  `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`,
+  `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`,
+  `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`, `M_p`, `lambda_C_p`,
+  `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`, `mu_p_mun`, `mu0p`,
+  `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`, `m_n_u`, `m_n_c2`,
+  `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`, `mn_minus_mp`,
+  `mn_minus_mp_u`, `mn_minus_mp_c2`, `mn_minus_mp_c2_MeV`, `M_n`,
+  `lambda_C_n`, `mu_n`, `mu_n_muB`, `mu_n_muN`, `gn`, `mu_n_mue`,
+  `mu_n_mup`, `mu_n_mu0p`, `m_d`, `m_d_u`, `m_d_c2`, `m_d_c2_MeV`,
+  `md_me`, `md_mp`, `M_d`, `rd`, `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`,
+  `mu_d_mue`, `mu_d_mup`, `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`,
+  `m_t_c2_MeV`, `mt_me`, `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`,
+  `mu_t_muN`, `gt`, `m_h`, `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`,
+  `mh_mp`, `M_h`, `mu_h`, `mu_h_muB`, and `mu_h_muN` hashes and nodes
+  unchanged.
+
 - **CODATA 2018 helion nuclear-magneton ratio is a one-sigma Interval.**
   `physis-constants` versions `mu_h_muN` as the CODATA 2018 signed hull
   `−2.127625307(25)` from JPCRD 50, 033105 table XXXI (Helion, h). This

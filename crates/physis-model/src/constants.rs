@@ -964,7 +964,7 @@ pub fn helion_molar_mass() -> Qty<
 /// triton, deuteron, neutron, proton, electron, or muon magnetic moment
 /// and not vacuum permeability. This Qty is not a certificate that it
 /// equals g_h μ_N / 2. The Bohr-magneton ratio is `mu_h_muB`. The
-/// nuclear-magneton ratio is a later table row and is not stored. The
+/// nuclear-magneton ratio is `mu_h_muN`. The g-factor is `gh`. The
 /// versioned ledger stores the one-sigma hull; this
 /// Qty is that centre as the CODATA decimal. `Ratio::to_f64` on the
 /// `10^{35}` centre is one ulp below this decimal and is not this Qty.
@@ -981,7 +981,7 @@ pub fn helion_magnetic_moment(
 /// ratio and not the helion magnetic moment. This Qty is not a
 /// certificate that it equals a reconstructed μ_h/μ_B from sibling
 /// moments. The nuclear-magneton ratio is `mu_h_muN`. The g-factor is
-/// a later table row and is not stored. The versioned ledger stores
+/// `gh`. The versioned ledger stores
 /// the one-sigma hull; this Qty is
 /// that centre. This is not the CODATA 2022 last-digit 98083.
 pub fn helion_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
@@ -996,12 +996,26 @@ pub fn helion_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> {
 /// This Qty is not a certificate that it equals a reconstructed μ_h/μ_N
 /// from sibling moments and not a certificate that it equals the
 /// g-factor gh. JPCRD prints different digits from mu_h_muN because
-/// I = 1/2; each row has its own Claim identity. The g-factor is a later
-/// table row and is not stored. The versioned ledger stores the
+/// I = 1/2; each row has its own Claim identity. The g-factor is `gh`.
+/// The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre. This is not the CODATA 2022
 /// last-digit 3498.
 pub fn helion_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(-2.127_625_307)
+}
+
+/// Helion g-factor g_h, CODATA 2018.
+///
+/// This is the recommended signed centre from the helion section, not
+/// electron, muon, proton, neutron, deuteron, or triton g-factor and not
+/// the helion nuclear-magneton ratio. This Qty is not a certificate that
+/// it equals 2 μ_h/μ_N from sibling moments. JPCRD prints different
+/// digits from mu_h_muN because I = 1/2; each row has its own Claim
+/// identity. Shielded-helion rows are later table rows and are not
+/// stored. The versioned ledger stores the one-sigma hull; this Qty is
+/// that centre. This is not the CODATA 2022 last-digit 6995.
+pub fn helion_g_factor() -> Qty<Dimensionless> {
+    Qty::new(-4.255_250_615)
 }
 
 /// Muon mass.
@@ -6352,6 +6366,64 @@ mod tests {
             physis_constants::helion_magnetic_moment_to_nuclear_magneton().hash,
             physis_constants::muon_magnetic_moment_to_nuclear_magneton().hash,
             "mu_h_muN is not mu_mu_muN"
+        );
+        assert!(
+            physis_constants::lookup("g_h").is_none(),
+            "g_h is not a ledger name; the live name is gh"
+        );
+        let gh = physis_constants::helion_g_factor();
+        let gh_centre = Ratio::new(-4_255_250_615, 10i128.pow(9));
+        assert_eq!(
+            helion_g_factor().value(),
+            gh_centre.to_f64(),
+            "gh Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            gh.value.contains(Interval::point(gh_centre)),
+            "gh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            gh.value.lo, gh.value.hi,
+            "ledger gh stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            gh.value.hi < Ratio::int(0),
+            "ledger gh stays the signed helion g-factor"
+        );
+        assert_ne!(
+            physis_constants::helion_g_factor().hash,
+            physis_constants::helion_magnetic_moment_to_nuclear_magneton().hash,
+            "gh is not mu_h_muN"
+        );
+        assert_ne!(
+            physis_constants::helion_g_factor().hash,
+            physis_constants::triton_g_factor().hash,
+            "gh is not gt"
+        );
+        assert_ne!(
+            physis_constants::helion_g_factor().hash,
+            physis_constants::deuteron_g_factor().hash,
+            "gh is not gd"
+        );
+        assert_ne!(
+            physis_constants::helion_g_factor().hash,
+            physis_constants::electron_g_factor().hash,
+            "gh is not ge"
+        );
+        assert_ne!(
+            physis_constants::helion_g_factor().hash,
+            physis_constants::muon_g_factor().hash,
+            "gh is not gmu"
+        );
+        assert_ne!(
+            physis_constants::helion_g_factor().hash,
+            physis_constants::proton_g_factor().hash,
+            "gh is not gp"
+        );
+        assert_ne!(
+            physis_constants::helion_g_factor().hash,
+            physis_constants::neutron_g_factor().hash,
+            "gh is not gn"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
