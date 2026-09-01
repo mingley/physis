@@ -505,10 +505,10 @@ pub fn neutron_to_shielded_proton_magnetic_moment_ratio() -> Qty<Dimensionless> 
 /// This is the recommended kg centre from the deuteron section, not
 /// neutron, proton, or muon mass. This Qty is not a certificate of a
 /// reconstruction from sibling masses or mass ratios. The u-row is
-/// `m_d_u`. Energy equivalent, molar mass, and rms charge radius are
-/// later table rows and are not stored. The versioned ledger stores the
-/// one-sigma hull; this Qty is that centre. This is not the CODATA 2022
-/// last-digit 7768.
+/// `m_d_u`. Energy equivalent is `m_d_c2`. MeV, molar mass, and rms
+/// charge radius are later table rows and are not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 7768.
 pub fn deuteron_mass() -> Qty<Mass> {
     kg(3.343_583_772_4e-27)
 }
@@ -524,6 +524,18 @@ pub fn deuteron_mass() -> Qty<Mass> {
 /// 2022 last-digit 544.
 pub fn deuteron_mass_in_u() -> Qty<Dimensionless> {
     Qty::new(2.013_553_212_745)
+}
+
+/// Deuteron mass energy equivalent m_d c² (J), CODATA 2018.
+///
+/// This is the recommended centre in joules from the deuteron section,
+/// not the kg hull, not the u-row, not neutron, proton, or muon joule
+/// hulls, and not the MeV conversion. This Qty is not a certificate of
+/// a reconstruction from sibling masses. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. This is not the CODATA
+/// 2022 last-digit 23491.
+pub fn deuteron_mass_energy_equivalent() -> Qty<Energy> {
+    joule(3.005_063_231_02e-10)
 }
 
 /// Muon mass.
@@ -4254,6 +4266,50 @@ mod tests {
             physis_constants::deuteron_mass_in_u().hash,
             physis_constants::muon_mass_in_u().hash,
             "m_d_u is not m_mu_u"
+        );
+        assert!(
+            physis_constants::lookup("mdc2").is_none(),
+            "mdc2 is not a ledger name; the live name is m_d_c2"
+        );
+        let m_d_c2 = physis_constants::deuteron_mass_energy_equivalent();
+        let m_d_c2_centre = Ratio::new(300_506_323_102, 10i128.pow(21));
+        assert_eq!(
+            deuteron_mass_energy_equivalent().value(),
+            m_d_c2_centre.to_f64(),
+            "m_d_c2 Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_d_c2.value.contains(Interval::point(m_d_c2_centre)),
+            "m_d_c2 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_d_c2.value.lo, m_d_c2.value.hi,
+            "ledger m_d_c2 stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            physis_constants::deuteron_mass().hash,
+            "m_d_c2 is not m_d"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            physis_constants::deuteron_mass_in_u().hash,
+            "m_d_c2 is not m_d_u"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            physis_constants::neutron_mass_energy_equivalent().hash,
+            "m_d_c2 is not m_n_c2"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            physis_constants::proton_mass_energy_equivalent().hash,
+            "m_d_c2 is not m_p_c2"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass_energy_equivalent().hash,
+            physis_constants::muon_mass_energy_equivalent().hash,
+            "m_d_c2 is not m_mu_c2"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
