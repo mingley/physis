@@ -905,6 +905,10 @@ fn codata_2018_von_klitzing_constant_source() -> SourceRecord {
     codata_2018_jpcrd("ELECTROMAGNETIC", "RK = 25812.80745 exact")
 }
 
+fn codata_2018_bohr_magneton_source() -> SourceRecord {
+    codata_2018_jpcrd("ELECTROMAGNETIC", "muB = 9.2740100783(28)e-24")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5575,8 +5579,7 @@ fn von_klitzing_constant_value() -> Ratio {
 /// exact Ratio. The reduced denominator keeps factors 3, 19, 389, and
 /// 12043, so this is not a terminating [`SciExact`]. The product fits
 /// [`Ratio`] (`10^{14}`). This is not P3N. The JPCRD symbol `RK` is
-/// the ledger name. Bohr magneton `muB` is a later ELECTROMAGNETIC
-/// row (ħ; not stored). Electron mass is not stored: `10^{42}`
+/// the ledger name. The Bohr magneton is `muB`. Electron mass is not stored: `10^{42}`
 /// overflows `i128`. CODATA 2022 prints the same SI-exact ellipsis;
 /// there is no last-digit trap. Theories still use `physis_model`
 /// `f64` Qty.
@@ -5586,6 +5589,43 @@ pub fn von_klitzing_constant() -> Constant<Ratio> {
         von_klitzing_constant_value(),
         "ohm",
         codata_2018_von_klitzing_constant_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 9.2740100783(28)×10⁻²⁴ J T⁻¹.
+fn codata_2018_bohr_magneton_interval() -> Interval {
+    let scale = 10i128.pow(34);
+    let centre = 92_740_100_783i128;
+    let sigma = 28;
+    Interval::new(
+        Ratio::new(centre - sigma, scale),
+        Ratio::new(centre + sigma, scale),
+    )
+}
+
+/// Bohr magneton μ_B, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended printed ELECTROMAGNETIC hull listed as `μB`,
+/// not an SI defining Ratio, not a terminating [`SciExact`], not
+/// electron magnetic moment `mu_e`, not nuclear magneton `muN` (printed
+/// `eℏ/2mp`; ħ; not stored), not magnetic flux quantum `Phi0`, not
+/// conductance quantum `G0`, not Josephson `KJ`, not von Klitzing `RK`,
+/// not Planck `h`, not elementary charge `e`, not electron mass, not
+/// `hbar`, and not a FormalClaim that reconstructs `eℏ/2me` from live
+/// lookups. The printed formula cites ħ and is unused; the ledger stores
+/// the recommended one-sigma hull. The JPCRD symbol `μB` is the ledger
+/// name `muB`. Bohr magneton in eV/T is a later ELECTROMAGNETIC row.
+/// The decade is `10^{34}`; `10^{33}` is the 10× trap (`σ = 2.8` is not
+/// an integer). This is not the CODATA 2022 last-digit `0657`. This is
+/// not P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// Theories still use `physis_model` `f64` Qty.
+pub fn bohr_magneton() -> Constant<Interval> {
+    Constant::new(
+        "muB",
+        codata_2018_bohr_magneton_interval(),
+        "J T^{-1}",
+        codata_2018_bohr_magneton_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5902,6 +5942,7 @@ pub const LEDGER: &[&str] = &[
     "c2",
     "KJ",
     "RK",
+    "muB",
     "au",
     "eV",
     "GM_sun",
@@ -6194,6 +6235,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "c2" => Some(listing(second_radiation_constant(), "ratio")),
         "KJ" => Some(listing(josephson_constant(), "ratio")),
         "RK" => Some(listing(von_klitzing_constant(), "ratio")),
+        "muB" => Some(listing(bohr_magneton(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25507,6 +25549,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -25661,6 +25704,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25801,6 +25845,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25935,6 +25980,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -26039,6 +26085,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -26142,6 +26189,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -26268,6 +26316,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26394,6 +26443,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26523,6 +26573,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -26653,6 +26704,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("gamma0h").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
@@ -26776,6 +26828,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
@@ -26915,6 +26968,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("gn").is_some());
@@ -27036,6 +27090,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_none());
@@ -27049,6 +27104,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -27188,6 +27244,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
@@ -27296,6 +27353,7 @@ mod tests {
         assert!(lookup("G0").is_none());
         assert!(lookup("KJ-90").is_none());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -27311,6 +27369,7 @@ mod tests {
         assert!(lookup("Eh_eV").is_none());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
@@ -27428,7 +27487,7 @@ mod tests {
         assert!(lookup("G0").is_none());
         assert!(lookup("KJ-90").is_none());
         assert!(lookup("RK-90").is_none());
-        assert!(lookup("muB").is_none());
+        assert!(lookup("muB").is_some());
         assert!(lookup("muN").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
@@ -27443,6 +27502,156 @@ mod tests {
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_none());
         assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
+        assert!(lookup("KJ").is_some());
+        assert!(lookup("c2").is_some());
+        assert!(lookup("c1L").is_some());
+        assert!(lookup("S0_R_atm").is_some());
+        assert!(lookup("S0_R").is_some());
+        assert!(lookup("n0_atm").is_some());
+        assert!(lookup("gn").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_bohr_magneton_is_a_one_sigma_interval() {
+        let r = bohr_magneton();
+        let scale = 10i128.pow(34);
+        let lo = Ratio::new(92_740_100_755, scale);
+        let hi = Ratio::new(92_740_100_811, scale);
+        let centre = Ratio::new(92_740_100_783, scale);
+        assert_eq!(r.name, "muB");
+        assert_eq!(r.unit, "J T^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("ELECTROMAGNETIC")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("muB = 9.2740100783(28)e-24")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "muB is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA muB is a positive hull, not the signed electron moment"
+        );
+        assert!(
+            !r.value
+                .contains(Interval::point(Ratio::new(92_740_100_657, scale))),
+            "muB hull is not the CODATA 2022 last-digit 0657"
+        );
+        assert_eq!(r.value.to_string(), "[18548020151/2000000000000000000000000000000000, 92740100811/10000000000000000000000000000000000]");
+        assert_eq!(r.hash, bohr_magneton().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "muB",
+                codata_2018_bohr_magneton_interval(),
+                "J T^{-1}",
+                codata_2018_bohr_magneton_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, electron_magnetic_moment().hash, "muB is not mu_e");
+        assert_ne!(r.hash, von_klitzing_constant().hash, "muB is not RK");
+        assert_ne!(r.hash, josephson_constant().hash, "muB is not KJ");
+        assert_ne!(r.hash, planck_h().hash, "muB is not h");
+        assert_ne!(r.hash, elementary_charge().hash, "muB is not e");
+        assert_ne!(r.hash, vacuum_impedance().hash, "muB is not Z0");
+        assert_ne!(r.hash, newtonian_g().hash, "muB is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "muB is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            von_klitzing_constant().provenance.source_hash,
+            "muB range is not the RK range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            electron_magnetic_moment().provenance.source_hash,
+            "muB range is not the mu_e range"
+        );
+        assert_eq!(
+            von_klitzing_constant().hash.to_hex(),
+            "2faf6f39986b543d3370bdd5764f0d075fa94a709d3fadd235ed82026fed2d46",
+            "RK hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            josephson_constant().hash.to_hex(),
+            "eb31c5b04ef0823e6e80a2921172c06fa6ef692e5a7700cb25d183b00a0090d2",
+            "KJ hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            second_radiation_constant().hash.to_hex(),
+            "9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc",
+            "c2 hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            first_radiation_constant_spectral_radiance().hash.to_hex(),
+            "bb3b42d41a8d8ebc3191a2aa98d974733538eaba1098eb89a1574d228479249c",
+            "c1L hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            planck_h().hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef",
+            "h hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            elementary_charge().hash.to_hex(),
+            "412cb379a6bf6cca245ba89fc43539399942e644fa08000cd30bd1d9b25372a5",
+            "e hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            electron_magnetic_moment().hash.to_hex(),
+            "e48d03baa8e8b2f62d1ea5c19a7010b583cdfba3f4f9c3d2b55877817d36c9b8",
+            "mu_e hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when muB is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "05bdf64c433e9c8bdf8db2dd7991db310baf2ba41fb0e3cff31d1cd98ef0f9df"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(34).is_some(),
+            "muB decade 10^34 fits i128; 10^33 is the 10x trap"
+        );
+        assert!(lookup("Phi0").is_none());
+        assert!(lookup("G0").is_none());
+        assert!(lookup("KJ-90").is_none());
+        assert!(lookup("RK-90").is_none());
+        assert!(lookup("muB_eV").is_none());
+        assert!(lookup("muN").is_none());
+        assert!(lookup("sigma").is_none());
+        assert!(lookup("c1").is_none());
+        assert!(lookup("b").is_none());
+        assert!(lookup("b0").is_none());
+        assert!(lookup("S0/R").is_none());
+        assert!(lookup("S0").is_none());
+        assert!(lookup("gamma0h").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
@@ -27657,7 +27866,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 170);
+        assert_eq!(LEDGER.len(), 171);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -28462,6 +28671,11 @@ mod tests {
             lookup("RK").unwrap().hash.to_hex(),
             "2faf6f39986b543d3370bdd5764f0d075fa94a709d3fadd235ed82026fed2d46"
         );
+        assert_eq!(lookup("muB").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("muB").unwrap().hash.to_hex(),
+            "05bdf64c433e9c8bdf8db2dd7991db310baf2ba41fb0e3cff31d1cd98ef0f9df"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -28807,6 +29021,7 @@ mod tests {
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
+        assert!(lookup("muB").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());

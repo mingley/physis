@@ -1471,11 +1471,22 @@ pub fn josephson_constant(
 /// prints an ellipsis; the ledger stores the exact Ratio. This is not
 /// a terminating SciExact (3, 19, 389, and 12043 remain in the reduced
 /// denominator). The versioned ledger stores the exact Ratio; this Qty
-/// is the IEEE rounding of that Ratio. Bohr magneton is a later
-/// ELECTROMAGNETIC row and is not stored.
+/// is the IEEE rounding of that Ratio. The Bohr magneton is muB.
 pub fn von_klitzing_constant(
 ) -> Qty<physis_core::SI<typenum::P1, typenum::P2, typenum::N3, typenum::N2>> {
     Qty::new(25_812.807_459_304_506)
+}
+
+/// Bohr magneton μ_B (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended printed ELECTROMAGNETIC centre, not electron
+/// magnetic moment, not nuclear magneton, not a FormalClaim of
+/// e hbar / 2 m_e, and not hbar. The printed formula cites hbar and is
+/// unused; the versioned ledger stores the one-sigma hull; this Qty is
+/// that centre. Bohr magneton in eV/T is a later ELECTROMAGNETIC row
+/// and is not stored.
+pub fn bohr_magneton() -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(9.274_010_078_3e-24)
 }
 
 /// Muon mass.
@@ -8865,9 +8876,48 @@ mod tests {
             physis_constants::lookup("G0").is_none(),
             "conductance quantum printed formula cites pi and hbar and is not stored"
         );
+
+        let mu_b = physis_constants::bohr_magneton();
+        let mu_b_centre = Ratio::new(92_740_100_783, 10i128.pow(34));
+        assert_eq!(
+            bohr_magneton().value(),
+            9.274_010_078_3e-24,
+            "Bohr magneton muB Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            bohr_magneton().value(),
+            mu_b_centre.to_f64(),
+            "muB Qty locksteps to Ratio::to_f64 on the 10^34 centre"
+        );
         assert!(
-            physis_constants::lookup("muB").is_none(),
-            "Bohr magneton printed formula cites hbar and is not stored"
+            mu_b.value.contains(Interval::point(mu_b_centre)),
+            "muB Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_b.value.lo, mu_b.value.hi,
+            "ledger muB stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            mu_b.value.lo > Ratio::int(0),
+            "ledger muB stays a positive hull"
+        );
+        assert_ne!(
+            physis_constants::bohr_magneton().hash,
+            physis_constants::electron_magnetic_moment().hash,
+            "muB is not mu_e"
+        );
+        assert_ne!(
+            physis_constants::bohr_magneton().hash,
+            physis_constants::von_klitzing_constant().hash,
+            "muB is not RK"
+        );
+        assert!(
+            physis_constants::lookup("muB_eV").is_none(),
+            "Bohr magneton in eV/T is a later ELECTROMAGNETIC row"
+        );
+        assert!(
+            physis_constants::lookup("muN").is_none(),
+            "nuclear magneton printed formula cites hbar and is not stored"
         );
         assert!(
             physis_constants::lookup("S0/R").is_none(),
