@@ -595,11 +595,26 @@ pub fn deuteron_molar_mass() -> Qty<
 /// This is the recommended centre in metres from the deuteron section,
 /// not proton rms charge radius and not classical electron radius.
 /// This Qty is not a certificate of a deuteron-proton radius
-/// difference. Magnetic-moment rows are later table rows and are not
-/// stored. The versioned ledger stores the one-sigma hull; this Qty is
-/// that centre. This is not the CODATA 2022 last-digit 78.
+/// difference. The magnetic moment is `mu_d`. Bohr-magneton and later
+/// moment rows are later table rows and are not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 78.
 pub fn deuteron_rms_charge_radius() -> Qty<Length> {
     meters(2.127_99e-15)
+}
+
+/// Deuteron magnetic moment μ_d (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended signed centre from the deuteron section, not
+/// proton, neutron, electron, or muon magnetic moment and not vacuum
+/// permeability. This Qty is not a certificate that it equals
+/// g_d μ_N / 2 and is not the electron-deuteron moment ratio. The
+/// Bohr-magneton ratio is a later table row and is not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 7.
+pub fn deuteron_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(4.330_735_094e-27)
 }
 
 /// Muon mass.
@@ -4561,6 +4576,45 @@ mod tests {
             physis_constants::deuteron_rms_charge_radius().hash,
             physis_constants::deuteron_molar_mass().hash,
             "rd is not M_d"
+        );
+        assert!(
+            physis_constants::lookup("mu-d").is_none(),
+            "mu-d is not a ledger name; the live name is mu_d"
+        );
+        let mu_d = physis_constants::deuteron_magnetic_moment();
+        let mu_d_centre = Ratio::new(4_330_735_094, 10i128.pow(36));
+        assert_eq!(
+            deuteron_magnetic_moment().value(),
+            mu_d_centre.to_f64(),
+            "mu_d Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_d.value.contains(Interval::point(mu_d_centre)),
+            "mu_d Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_d.value.lo, mu_d.value.hi,
+            "ledger mu_d stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_magnetic_moment().hash,
+            physis_constants::proton_magnetic_moment().hash,
+            "mu_d is not mu_p"
+        );
+        assert_ne!(
+            physis_constants::deuteron_magnetic_moment().hash,
+            physis_constants::neutron_magnetic_moment().hash,
+            "mu_d is not mu_n"
+        );
+        assert_ne!(
+            physis_constants::deuteron_magnetic_moment().hash,
+            physis_constants::electron_magnetic_moment().hash,
+            "mu_d is not mu_e"
+        );
+        assert_ne!(
+            physis_constants::deuteron_magnetic_moment().hash,
+            physis_constants::electron_deuteron_magnetic_moment_ratio().hash,
+            "mu_d is not mu_e_mud"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
