@@ -22,6 +22,77 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 nuclear magneton in K/T is a one-sigma Interval.**
+  `physis-constants` versions `muN_K` as the CODATA 2018 hull
+  `3.6582677756(11)×10^{-4}` K T⁻¹ from JPCRD 50, 033105 table XXXI
+  (ELECTROMAGNETIC). This is the recommended printed companion, not
+  J T⁻¹ `muN`, not inverse-meter `muN_m`, not K/T `muB_K`, not an SI
+  defining Ratio, not a terminating SciExact, not Boltzmann `k`, not
+  `hbar`, and not a FormalClaim reconstructing `muN/k` from live
+  lookups. The ledger name is `muN_K`. Nuclear magneton in MHz/T is a later
+  ELECTROMAGNETIC row and is not stored. Decade `10^{14}` (`10^{13}` is
+  the 10× trap). This is not the CODATA 2022 last-digit `7706`. Electron
+  mass is still not stored (`10^{42}` overflows `i128`). `physis_model`
+  `nuclear_magneton_in_kelvin_per_tesla()` Qty locksteps to the
+  recommended centre inside the hull. Adding `muN_K` to LEDGER changes
+  the ledger bundle pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`,
+  `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`,
+  `me_mn`, `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`,
+  `lambdabar_C`, `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`,
+  `ge`, `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`,
+  `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`, `M_p`,
+  `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`,
+  `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`,
+  `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`,
+  `mu_h_muB`, `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`,
+  `mu0h_mup`, `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`,
+  `m_alpha_c2_MeV`, `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`,
+  `m_u_c2`, `m_u_c2_MeV`, `M_u`, `M_12C`, `NAh`, `NAk`, `NAe`, `p0`,
+  `atm`, `Vm`, `n0`, `Vm_atm`, `n0_atm`, `S0_R`, `S0_R_atm`, `c1L`,
+  `c2`, `KJ`, `RK`, `muB`, `muB_eV`, `muB_Hz`, `muB_m`, `muB_K`,
+  `muN`, `muN_eV`, and `muN_m` hashes are unchanged. Theories still evaluate with
+  `f64` Qty. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `muN_K` hash deb575e22e92050ab049888ba327bad752ec6d478cb3384b64ad7b3d2e6592bd; node e1076582e911fb1259ed2db8919b357e754aee37032996e48ae58a8759dadd68; ledger node
+  b9164f27818ac68c0e4d8b0801fde0a7f85260dfb331591387f41b8d3e182f54. `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`,
+  `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`,
+  `me_md`, `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`,
+  `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`,
+  `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`,
+  `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`, `M_p`,
+  `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`,
+  `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`,
+  `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`,
+  `mn_minus_mp`, `mn_minus_mp_u`, `mn_minus_mp_c2`,
+  `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`, `mu_n`, `mu_n_muB`,
+  `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`, `mu_n_mu0p`, `m_d`,
+  `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`, `md_mp`, `M_d`, `rd`,
+  `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`, `mu_d_mue`, `mu_d_mup`,
+  `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, `m_t_c2_MeV`, `mt_me`,
+  `mt_mp`, `M_t`, `mu_t`, `mu_t_muB`, `mu_t_muN`, `gt`, `m_h`,
+  `m_h_u`, `m_h_c2`, `m_h_c2_MeV`, `mh_me`, `mh_mp`, `M_h`, `mu_h`,
+  `mu_h_muB`, `mu_h_muN`, `gh`, `mu0h`, `mu0h_muB`, `mu0h_muN`,
+  `mu0h_mup`, `mu0h_mu0p`, `m_alpha`, `m_alpha_u`, `m_alpha_c2`,
+  `m_alpha_c2_MeV`, `malpha_me`, `malpha_mp`, `M_alpha`, `m_u`,
+  `m_u_c2`, `m_u_c2_MeV`, `M_u`, `M_12C`, `NAh`, `NAk`, `NAe`, `p0`,
+  `atm`, `Vm`, `n0`, `Vm_atm`, `n0_atm`, `S0_R`, `S0_R_atm`, `c1L`,
+  `c2`, `KJ`, `RK`, `muB`, `muB_eV`, `muB_Hz`, `muB_m`, `muB_K`,
+  `muN`, `muN_eV`, and `muN_m` hashes and nodes unchanged.
+
 - **CODATA 2018 nuclear magneton in inverse meter per tesla is a one-sigma Interval.**
   `physis-constants` versions `muN_m` as the CODATA 2018 hull
   `2.54262341353(78)×10^{-2}` m⁻¹ T⁻¹ from JPCRD 50, 033105 table XXXI
