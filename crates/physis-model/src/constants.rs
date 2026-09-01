@@ -1337,11 +1337,24 @@ pub fn standard_atmosphere() -> Qty<Pressure> {
 /// not Faraday NAe, and not molar gas NAk. The table prints an ellipsis;
 /// the ledger stores the full terminating decimal. The versioned ledger
 /// stores the exact Ratio; this Qty is the IEEE rounding of that SI
-/// decimal. Loschmidt constant is a later table row and is not stored.
+/// decimal. Loschmidt constant is `n0`.
 pub fn molar_volume_ideal_gas() -> Qty<
     physis_core::SI<typenum::Z0, typenum::P3, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
 > {
     Qty::new(0.022_710_954_641_485_575)
+}
+
+/// Loschmidt constant n0 (m⁻³) at 273.15 K and 100 kPa, SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL Ratio listed as n0 at T = 273.15 K
+/// and p = 100 kPa, equal to p0 / (k T) and to N_A / Vm, not the
+/// 101.325 kPa companion, not molar volume Vm, not Boltzmann k, and not
+/// Avogadro N_A. The table prints an ellipsis; the ledger stores the
+/// exact Ratio. This is not a terminating SciExact. The versioned ledger
+/// stores the exact Ratio; this Qty is the IEEE rounding of that Ratio.
+/// The 101.325 kPa molar volume is a later table row and is not stored.
+pub fn loschmidt_constant() -> Qty<physis_core::SI<typenum::Z0, typenum::N3, typenum::Z0>> {
+    Qty::new(2.651_645_804_883_734e25)
 }
 
 /// Muon mass.
@@ -8329,9 +8342,47 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "Vm is not G"
         );
+
+        let n_0 = physis_constants::loschmidt_constant();
+        let n_0_value = Ratio::new(10i128.pow(36), 1_380_649i128 * 27_315i128);
+        assert_eq!(n_0.value, n_0_value, "ledger n0 is the exact SI Ratio");
+        assert_eq!(
+            loschmidt_constant().value(),
+            n_0_value.to_f64(),
+            "n0 Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            loschmidt_constant().value(),
+            2.651_645_804_883_734e25,
+            "n0 Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("n0").is_none(),
-            "n0 Loschmidt constant is a later PHYSICOCHEMICAL row"
+            n_0.value > Ratio::int(0),
+            "ledger n0 stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant().hash,
+            physis_constants::molar_volume_ideal_gas().hash,
+            "n0 is not Vm"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant().hash,
+            physis_constants::boltzmann().hash,
+            "n0 is not k"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant().hash,
+            physis_constants::avogadro().hash,
+            "n0 is not N_A"
+        );
+        assert_ne!(
+            physis_constants::loschmidt_constant().hash,
+            physis_constants::newtonian_g().hash,
+            "n0 is not G"
+        );
+        assert!(
+            physis_constants::lookup("Vm_atm").is_none(),
+            "101.325 kPa molar volume is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

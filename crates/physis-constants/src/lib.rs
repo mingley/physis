@@ -869,6 +869,10 @@ fn codata_2018_molar_volume_ideal_gas_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "Vm = 22.71095464e-3 exact")
 }
 
+fn codata_2018_loschmidt_constant_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "n0 = 2.651645804e25 exact")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5236,7 +5240,7 @@ fn molar_volume_ideal_gas_value() -> Ratio {
 /// `22.710 954 64… × 10^{-3}`; the ledger stores the full terminating
 /// decimal `R T / p0`. That product fits [`Ratio`] (`10^{21}`). This is
 /// not P3N. The JPCRD symbol `Vm` is the ledger name. Loschmidt
-/// constant is a later table row and is not stored. Electron mass is
+/// constant is `n0`. Electron mass is
 /// not stored: `10^{42}` overflows `i128`. CODATA 2022 prints the same
 /// SI-exact ellipsis; there is no last-digit trap. Theories still use
 /// `physis_model` `f64` Qty.
@@ -5246,6 +5250,37 @@ pub fn molar_volume_ideal_gas() -> Constant<Ratio> {
         molar_volume_ideal_gas_value(),
         "m^{3} mol^{-1}",
         codata_2018_molar_volume_ideal_gas_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 Loschmidt constant p0 / (k T) as an exact Ratio.
+fn loschmidt_constant_value() -> Ratio {
+    Ratio::new(10i128.pow(36), 1_380_649i128 * 27_315i128)
+}
+
+/// Loschmidt constant n0 at 273.15 K and 100 kPa, SI 2019 exact Ratio.
+///
+/// This is the exact PHYSICOCHEMICAL value listed as `n0` at
+/// T = 273.15 K and p = 100 kPa (`p0`), equal to `p0 / (k T)` and to
+/// `N_A / Vm`, not the 101.325 kPa companion, not molar volume `Vm`,
+/// not Boltzmann `k`, not Avogadro `N_A`, not an SI defining constant,
+/// and not a FormalClaim that reconstructs `N_A / Vm` from live
+/// lookups. The table prints `2.651 645 804… × 10^{25}`; the ledger
+/// stores the exact Ratio. The denominator is not a pure power of ten
+/// (`k` contributes 1380649 and T contributes 27315), so this is not
+/// a terminating [`SciExact`]. The product fits [`Ratio`] (`10^{36}`).
+/// This is not P3N. The JPCRD symbol `n0` is the ledger name. The
+/// 101.325 kPa molar volume is a later table row and is not stored.
+/// Electron mass is not stored: `10^{42}` overflows `i128`. CODATA
+/// 2022 prints the same SI-exact ellipsis; there is no last-digit
+/// trap. Theories still use `physis_model` `f64` Qty.
+pub fn loschmidt_constant() -> Constant<Ratio> {
+    Constant::new(
+        "n0",
+        loschmidt_constant_value(),
+        "m^{-3}",
+        codata_2018_loschmidt_constant_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5553,6 +5588,7 @@ pub const LEDGER: &[&str] = &[
     "p0",
     "atm",
     "Vm",
+    "n0",
     "au",
     "eV",
     "GM_sun",
@@ -5833,6 +5869,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "p0" => Some(listing(standard_state_pressure(), "ratio")),
         "atm" => Some(listing(standard_atmosphere(), "ratio")),
         "Vm" => Some(listing(molar_volume_ideal_gas(), "ratio")),
+        "n0" => Some(listing(loschmidt_constant(), "ratio")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -25137,7 +25174,8 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("Vm").is_some());
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
+        assert!(lookup("Vm_atm").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -25283,7 +25321,8 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("Vm").is_some());
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
+        assert!(lookup("Vm_atm").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25415,7 +25454,8 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("Vm").is_some());
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
+        assert!(lookup("Vm_atm").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25541,7 +25581,8 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("Vm").is_some());
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
+        assert!(lookup("Vm_atm").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -25637,7 +25678,8 @@ mod tests {
         assert!(lookup("bar").is_none());
         assert!(lookup("atm").is_some());
         assert!(lookup("Vm").is_some());
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
+        assert!(lookup("Vm_atm").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -25732,7 +25774,8 @@ mod tests {
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("Vm").is_some());
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
+        assert!(lookup("Vm_atm").is_none());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -25850,8 +25893,9 @@ mod tests {
             10i128.checked_pow(21).is_some(),
             "Vm = R T / p0 is 22710954641485575060/10^21; that denominator fits i128"
         );
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
         assert!(lookup("Vm_atm").is_none());
+        assert!(lookup("n0_atm").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -25865,6 +25909,127 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("NAk").is_some());
         assert!(lookup("NAe").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+        assert!(lookup("n0").is_some());
+    }
+
+    #[test]
+    fn codata_2018_loschmidt_constant_is_an_exact_ratio() {
+        let r = loschmidt_constant();
+        let value = Ratio::new(10i128.pow(36), 1_380_649i128 * 27_315i128);
+        assert_eq!(r.name, "n0");
+        assert_eq!(r.unit, "m^{-3}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("n0 = 2.651645804e25 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(
+            r.value.to_string(),
+            "200000000000000000000000000000000000/7542485487"
+        );
+        assert!(r.value > Ratio::int(0), "n0 is a positive exact Ratio");
+        assert_ne!(
+            r.value,
+            Ratio::int(2_651_645_804i128 * 10i128.pow(16)),
+            "n0 is the full SI Ratio, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, loschmidt_constant().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "n0",
+                loschmidt_constant_value(),
+                "m^{-3}",
+                codata_2018_loschmidt_constant_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, molar_volume_ideal_gas().hash, "n0 is not Vm");
+        assert_ne!(r.hash, boltzmann().hash, "n0 is not k");
+        assert_ne!(r.hash, avogadro().hash, "n0 is not N_A");
+        assert_ne!(r.hash, standard_state_pressure().hash, "n0 is not p0");
+        assert_ne!(r.hash, standard_atmosphere().hash, "n0 is not atm");
+        assert_ne!(r.hash, newtonian_g().hash, "n0 is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "n0 is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            molar_volume_ideal_gas().provenance.source_hash,
+            "n0 range is not the Vm range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            boltzmann().provenance.source_hash,
+            "n0 range is not the k range"
+        );
+        assert_eq!(
+            molar_volume_ideal_gas().hash.to_hex(),
+            "0b56b98a81e8961ca9be8efeb6775ea197dbf0f96a913cae13944d40e71479a5",
+            "Vm hash must stay pinned when n0 is added"
+        );
+        assert_eq!(
+            standard_atmosphere().hash.to_hex(),
+            "0bb71f6a38e105217751cdd7fb11c3cff6eefd0cd8aab0ae2ae366d28119ba2d",
+            "atm hash must stay pinned when n0 is added"
+        );
+        assert_eq!(
+            standard_state_pressure().hash.to_hex(),
+            "21e32b495cec5be6d2655b0f3fc2e6d27541b76c8582ad17562002a30b5a1217",
+            "p0 hash must stay pinned when n0 is added"
+        );
+        assert_eq!(
+            boltzmann().hash.to_hex(),
+            "0d6156b1dea5afb156a9bbdcde78709fcfbac53df129a27698ea3fd76e812061",
+            "k hash must stay pinned when n0 is added"
+        );
+        assert_eq!(
+            avogadro().hash.to_hex(),
+            "410e2191c8cf7c074a32f621413239e74a7fefe735cacfaad4f503c47c9351dc",
+            "N_A hash must stay pinned when n0 is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when n0 is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when n0 is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "886c42750e98f22584361f3cba1c202a4b75fbcdb5485e4fa06df7645129e3f3"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(36).is_some(),
+            "n0 = p0 / (k T) is 10^36 / (1380649 * 27315); that numerator fits i128"
+        );
+        assert!(lookup("Vm_atm").is_none());
+        assert!(lookup("n0_atm").is_none());
+        assert!(lookup("Torr").is_none());
+        assert!(lookup("mmHg").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("n0").is_some());
+        assert!(lookup("Vm").is_some());
+        assert!(lookup("atm").is_some());
+        assert!(lookup("p0").is_some());
+        assert!(lookup("k").is_some());
+        assert!(lookup("N_A").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
     }
@@ -26071,7 +26236,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 161);
+        assert_eq!(LEDGER.len(), 162);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -26831,6 +26996,11 @@ mod tests {
             lookup("Vm").unwrap().hash.to_hex(),
             "0b56b98a81e8961ca9be8efeb6775ea197dbf0f96a913cae13944d40e71479a5"
         );
+        assert_eq!(lookup("n0").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("n0").unwrap().hash.to_hex(),
+            "886c42750e98f22584361f3cba1c202a4b75fbcdb5485e4fa06df7645129e3f3"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -27167,8 +27337,9 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("Vm").is_some());
-        assert!(lookup("n0").is_none());
+        assert!(lookup("n0").is_some());
         assert!(lookup("Vm_atm").is_none());
+        assert!(lookup("n0_atm").is_none());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());
