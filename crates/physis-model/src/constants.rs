@@ -1061,13 +1061,29 @@ pub fn shielded_helion_magnetic_moment_to_bohr_magneton() -> Qty<Dimensionless> 
 /// the shielded Bohr-magneton ratio, and not helion g-factor gh. This
 /// Qty is not a certificate that it equals gh/2 or a reconstructed
 /// μ′_h/μ_N from sibling moments. JPCRD prints different digits from
-/// mu_h_muN because this is the shielded row. Shielded helion to proton
-/// ratio rows are later table rows and are not stored. Gyromagnetic
+/// mu_h_muN because this is the shielded row. The shielded helion to
+/// proton ratio is `mu0h_mup`. The shielded helion to shielded proton
+/// ratio is a later table row and is not stored. Gyromagnetic
 /// ratios cite ħ and are not stored. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre. This is not the CODATA 2022
 /// last-digit 7624.
 pub fn shielded_helion_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
     Qty::new(-2.127_497_719)
+}
+
+/// Shielded helion to proton magnetic-moment ratio μ′_h/μ_p, CODATA 2018.
+///
+/// This is the recommended signed centre for the helion in a spherical
+/// gas sample at 25 °C, not the free helion nuclear-magneton ratio, not
+/// neutron-proton, electron-proton, or deuteron-proton moment ratios,
+/// and not helion-proton mass ratio. This Qty is not a certificate that
+/// it equals a reconstructed μ′_h/μ_p from sibling moments. The
+/// shielded helion to shielded proton ratio is a later table row and is
+/// not stored. Gyromagnetic ratios cite ħ and are not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// This is not the CODATA 2022 last-digit 57721.
+pub fn shielded_helion_to_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
+    Qty::new(-0.761_766_561_8)
 }
 
 /// Muon mass.
@@ -6650,6 +6666,64 @@ mod tests {
             physis_constants::shielded_helion_magnetic_moment_to_nuclear_magneton().hash,
             physis_constants::helion_g_factor().hash,
             "mu0h_muN is not gh"
+        );
+        assert!(
+            physis_constants::lookup("mu0h/mup").is_none(),
+            "mu0h/mup is not a ledger name; the live name is mu0h_mup"
+        );
+        let mu0h_mup = physis_constants::shielded_helion_to_proton_magnetic_moment_ratio();
+        let mu0h_mup_centre = Ratio::new(-7_617_665_618, 10i128.pow(10));
+        assert_eq!(
+            shielded_helion_to_proton_magnetic_moment_ratio().value(),
+            -0.761_766_561_8,
+            "mu0h_mup Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            shielded_helion_to_proton_magnetic_moment_ratio().value(),
+            mu0h_mup_centre.to_f64(),
+            "mu0h_mup Qty locksteps to Ratio::to_f64 on the 10^10 centre"
+        );
+        assert!(
+            mu0h_mup.value.contains(Interval::point(mu0h_mup_centre)),
+            "mu0h_mup Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu0h_mup.value.lo, mu0h_mup.value.hi,
+            "ledger mu0h_mup stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            mu0h_mup.value.hi < Ratio::int(0),
+            "ledger mu0h_mup stays the signed shielded helion to proton ratio"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_to_proton_magnetic_moment_ratio().hash,
+            physis_constants::shielded_helion_magnetic_moment().hash,
+            "mu0h_mup is not mu0h"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_to_proton_magnetic_moment_ratio().hash,
+            physis_constants::shielded_helion_magnetic_moment_to_nuclear_magneton().hash,
+            "mu0h_mup is not mu0h_muN"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_to_proton_magnetic_moment_ratio().hash,
+            physis_constants::neutron_proton_magnetic_moment_ratio().hash,
+            "mu0h_mup is not mu_n_mup"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_to_proton_magnetic_moment_ratio().hash,
+            physis_constants::electron_proton_magnetic_moment_ratio().hash,
+            "mu0h_mup is not mu_e_mup"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_to_proton_magnetic_moment_ratio().hash,
+            physis_constants::deuteron_proton_magnetic_moment_ratio().hash,
+            "mu0h_mup is not mu_d_mup"
+        );
+        assert_ne!(
+            physis_constants::shielded_helion_to_proton_magnetic_moment_ratio().hash,
+            physis_constants::helion_g_factor().hash,
+            "mu0h_mup is not gh"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
