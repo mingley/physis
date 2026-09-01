@@ -494,10 +494,22 @@ pub fn neutron_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// magnetic-moment ratio and not the electron to shielded-proton ratio.
 /// This Qty is not a certificate that it equals a reconstructed
 /// μ_n/μ′_p from sibling moments. Gyromagnetic ratios cite ħ and are
-/// not stored. The versioned ledger stores the one-sigma hull; this Qty
-/// is that centre.
+/// not stored. Deuteron mass is `m_d`. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
 pub fn neutron_to_shielded_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
     Qty::new(-0.684_996_94)
+}
+
+/// Deuteron mass, CODATA 2018.
+///
+/// This is the recommended kg centre from the deuteron section, not
+/// neutron, proton, or muon mass. This Qty is not a certificate of a
+/// reconstruction from sibling masses or mass ratios. The u-row, energy
+/// equivalent, molar mass, and rms charge radius are later table rows
+/// and are not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. This is not the CODATA 2022 last-digit 7768.
+pub fn deuteron_mass() -> Qty<Mass> {
+    kg(3.343_583_772_4e-27)
 }
 
 /// Muon mass.
@@ -4150,6 +4162,45 @@ mod tests {
             physis_constants::neutron_to_shielded_proton_magnetic_moment_ratio().hash,
             physis_constants::neutron_electron_magnetic_moment_ratio().hash,
             "mu_n_mu0p is not mu_n_mue"
+        );
+        assert!(
+            physis_constants::lookup("md").is_none(),
+            "md is not a ledger name; the live name is m_d"
+        );
+        let m_d = physis_constants::deuteron_mass();
+        let m_d_centre = Ratio::new(33_435_837_724, 10i128.pow(37));
+        assert_eq!(
+            deuteron_mass().value(),
+            m_d_centre.to_f64(),
+            "m_d Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            m_d.value.contains(Interval::point(m_d_centre)),
+            "m_d Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_d.value.lo, m_d.value.hi,
+            "ledger m_d stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass().hash,
+            physis_constants::neutron_mass().hash,
+            "m_d is not m_n"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass().hash,
+            physis_constants::proton_mass().hash,
+            "m_d is not m_p"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass().hash,
+            physis_constants::muon_mass().hash,
+            "m_d is not m_mu"
+        );
+        assert_ne!(
+            physis_constants::deuteron_mass().hash,
+            physis_constants::electron_deuteron_mass_ratio().hash,
+            "m_d is not me_md"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
