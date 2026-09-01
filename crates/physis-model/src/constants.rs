@@ -949,13 +949,28 @@ pub fn helion_proton_mass_ratio() -> Qty<Dimensionless> {
 /// This is the recommended centre from the helion section, not triton,
 /// deuteron, neutron, proton, electron, or muon molar mass, not the kg
 /// hull, not the u-row, and not a certificate that this equals N_A times
-/// the helion-mass hull. The magnetic moment is a later table row and is
-/// not stored. The versioned ledger stores the one-sigma hull; this Qty
-/// is that centre. This is not the CODATA 2022 last-digit 25010.
+/// the helion-mass hull. The magnetic moment is `mu_h`. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 25010.
 pub fn helion_molar_mass() -> Qty<
     physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
 > {
     Qty::new(3.014_932_246_13e-3)
+}
+
+/// Helion magnetic moment μ_h (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended signed centre from the helion section, not
+/// triton, deuteron, neutron, proton, electron, or muon magnetic moment
+/// and not vacuum permeability. This Qty is not a certificate that it
+/// equals g_h μ_N / 2. The Bohr-magneton ratio is a later table row and
+/// is not stored. The versioned ledger stores the one-sigma hull; this
+/// Qty is that centre as the CODATA decimal. `Ratio::to_f64` on the
+/// `10^{35}` centre is one ulp below this decimal and is not this Qty.
+/// This is not the CODATA 2022 last-digit 55198.
+pub fn helion_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(-1.074_617_532e-26)
 }
 
 /// Muon mass.
@@ -6110,6 +6125,69 @@ mod tests {
             physis_constants::helion_molar_mass().hash,
             physis_constants::helion_proton_mass_ratio().hash,
             "M_h is not mh_mp"
+        );
+        assert!(
+            physis_constants::lookup("muh").is_none(),
+            "muh is not a ledger name; the live name is mu_h"
+        );
+        let mu_h = physis_constants::helion_magnetic_moment();
+        let mu_h_centre = Ratio::new(-1_074_617_532, 10i128.pow(35));
+        assert_eq!(
+            helion_magnetic_moment().value(),
+            -1.074_617_532e-26,
+            "mu_h Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_h.value.contains(Interval::point(mu_h_centre)),
+            "mu_h Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_h.value.lo, mu_h.value.hi,
+            "ledger mu_h stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            mu_h.value.hi < Ratio::int(0),
+            "ledger mu_h stays the signed helion moment"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::triton_magnetic_moment().hash,
+            "mu_h is not mu_t"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::deuteron_magnetic_moment().hash,
+            "mu_h is not mu_d"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::neutron_magnetic_moment().hash,
+            "mu_h is not mu_n"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::proton_magnetic_moment().hash,
+            "mu_h is not mu_p"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::electron_magnetic_moment().hash,
+            "mu_h is not mu_e"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::muon_magnetic_moment().hash,
+            "mu_h is not mu_mu"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_h is not mu0"
+        );
+        assert_ne!(
+            physis_constants::helion_magnetic_moment().hash,
+            physis_constants::helion_molar_mass().hash,
+            "mu_h is not M_h"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
