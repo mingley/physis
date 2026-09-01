@@ -1094,11 +1094,25 @@ pub fn shielded_helion_to_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// ratio, not shielded proton magnetic moment, and not neutron or
 /// electron to shielded-proton moment ratios. This Qty is not a
 /// certificate that it equals a reconstructed μ′_h/μ′_p from sibling
-/// moments. Gyromagnetic ratios cite ħ and are not stored. The
-/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// moments. Gyromagnetic ratios cite ħ and are not stored. The alpha
+/// particle mass is `m_alpha`. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 1334.
 pub fn shielded_helion_to_shielded_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
     Qty::new(-0.761_786_131_3)
+}
+
+/// Alpha particle mass m_α (kg), CODATA 2018.
+///
+/// This is the recommended kg centre from the alpha-particle section,
+/// not helion, triton, deuteron, neutron, proton, or muon mass and not
+/// the electron-alpha mass ratio. This Qty is not a certificate of a
+/// reconstruction from sibling masses or mass ratios. The u-row, energy
+/// equivalent, mass ratios, and molar mass are later table rows and are
+/// not stored. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre. This is not the CODATA 2022 last-digit 3450.
+pub fn alpha_particle_mass() -> Qty<Mass> {
+    kg(6.644_657_335_7e-27)
 }
 
 /// Muon mass.
@@ -6798,6 +6812,64 @@ mod tests {
             physis_constants::shielded_helion_to_shielded_proton_magnetic_moment_ratio().hash,
             physis_constants::helion_g_factor().hash,
             "mu0h_mu0p is not gh"
+        );
+        assert!(
+            physis_constants::lookup("malpha").is_none(),
+            "malpha is not a ledger name; the live name is m_alpha"
+        );
+        let m_alpha = physis_constants::alpha_particle_mass();
+        let m_alpha_centre = Ratio::new(66_446_573_357, 10i128.pow(37));
+        assert_eq!(
+            alpha_particle_mass().value(),
+            6.644_657_335_7e-27,
+            "m_alpha Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            alpha_particle_mass().value(),
+            m_alpha_centre.to_f64(),
+            "m_alpha Qty locksteps to Ratio::to_f64 on the 10^37 centre"
+        );
+        assert!(
+            m_alpha.value.contains(Interval::point(m_alpha_centre)),
+            "m_alpha Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_alpha.value.lo, m_alpha.value.hi,
+            "ledger m_alpha stays an Interval; the Qty is not that Interval"
+        );
+        assert!(
+            m_alpha.value.lo > Ratio::int(0),
+            "ledger m_alpha stays the signed alpha particle mass"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass().hash,
+            physis_constants::helion_mass().hash,
+            "m_alpha is not m_h"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass().hash,
+            physis_constants::triton_mass().hash,
+            "m_alpha is not m_t"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass().hash,
+            physis_constants::deuteron_mass().hash,
+            "m_alpha is not m_d"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass().hash,
+            physis_constants::proton_mass().hash,
+            "m_alpha is not m_p"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass().hash,
+            physis_constants::electron_alpha_mass_ratio().hash,
+            "m_alpha is not me_malpha"
+        );
+        assert_ne!(
+            physis_constants::alpha_particle_mass().hash,
+            physis_constants::newtonian_g().hash,
+            "m_alpha is not G"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

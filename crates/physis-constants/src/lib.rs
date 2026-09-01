@@ -797,6 +797,10 @@ fn codata_2018_shielded_helion_to_shielded_proton_magnetic_moment_ratio_source()
     codata_2018_jpcrd("Helion, h", "mu0h/mu0p = -0.7617861313(33)")
 }
 
+fn codata_2018_alpha_particle_mass_source() -> SourceRecord {
+    codata_2018_jpcrd("Alpha particle, a", "m_alpha = 6.6446573357(20)e-27")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -4603,7 +4607,8 @@ fn codata_2018_shielded_helion_to_shielded_proton_magnetic_moment_ratio_interval
 /// `mu_e_mu0h`, not helion-proton mass ratio `mh_mp`, not a certificate
 /// that this equals a reconstructed `μ′_h/μ′_p` from sibling moments,
 /// not an SI defining Ratio, and not P3N. Gyromagnetic ratios cite ħ
-/// and are not stored. Electron mass is not stored: `10^{42}` overflows
+/// and are not stored. The alpha particle mass is `m_alpha`. Electron
+/// mass is not stored: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `1334`. The decade is
 /// `10^{10}`; `10^{9}` is the 10× trap (`μ` would not be an integer;
 /// `σ = 3.3` is not an integer). Theories still use `physis_model`
@@ -4614,6 +4619,39 @@ pub fn shielded_helion_to_shielded_proton_magnetic_moment_ratio() -> Constant<In
         codata_2018_shielded_helion_to_shielded_proton_magnetic_moment_ratio_interval(),
         "1",
         codata_2018_shielded_helion_to_shielded_proton_magnetic_moment_ratio_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 6.6446573357(20)×10⁻²⁷ kg.
+fn codata_2018_alpha_particle_mass_interval() -> Interval {
+    let scale = 10i128.pow(37);
+    let mu = 66_446_573_357i128;
+    let sigma = 20;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Alpha particle mass m_α, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended kg hull from the alpha-particle section, not
+/// helion mass `m_h`, not triton mass `m_t`, not deuteron mass `m_d`,
+/// not neutron mass `m_n`, not proton mass `m_p`, not muon mass `m_mu`,
+/// not electron-alpha mass ratio `me_malpha`, not a certificate of a
+/// reconstruction from sibling masses or mass ratios, not an SI defining
+/// Ratio, and not P3N. The u-row, energy equivalent, mass ratios, and
+/// molar mass are later table rows and are not stored. Relative atomic
+/// mass is not stored under a different name (NIST prints the same
+/// digits as the u-row). Electron mass is not stored: `10^{42}` overflows
+/// `i128`. This is not the CODATA 2022 last-digit `3450`. The decade is
+/// `10^{37}`; `10^{36}` is the 10× trap (`μ` would not be an integer).
+/// `10^{39}` overflows `i128`. Theories still use `physis_model` `f64`
+/// Qty.
+pub fn alpha_particle_mass() -> Constant<Interval> {
+    Constant::new(
+        "m_alpha",
+        codata_2018_alpha_particle_mass_interval(),
+        "kg",
+        codata_2018_alpha_particle_mass_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -4903,6 +4941,7 @@ pub const LEDGER: &[&str] = &[
     "mu0h_muN",
     "mu0h_mup",
     "mu0h_mu0p",
+    "m_alpha",
     "au",
     "eV",
     "GM_sun",
@@ -5156,6 +5195,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             shielded_helion_to_shielded_proton_magnetic_moment_ratio(),
             "interval",
         )),
+        "m_alpha" => Some(listing(alpha_particle_mass(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -22376,6 +22416,151 @@ mod tests {
     }
 
     #[test]
+    fn codata_2018_alpha_particle_mass_is_a_one_sigma_interval() {
+        let r = alpha_particle_mass();
+        let scale = 10i128.pow(37);
+        let lo = Ratio::new(66_446_573_337, scale);
+        let hi = Ratio::new(66_446_573_377, scale);
+        let centre = Ratio::new(66_446_573_357, scale);
+        assert_eq!(r.name, "m_alpha");
+        assert_eq!(r.unit, "kg");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("Alpha particle, a")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("m_alpha = 6.6446573357(20)e-27")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "m_alpha is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA m_alpha is the signed alpha particle mass, not -m_alpha"
+        );
+        assert_eq!(r.value.to_string(), "[66446573337/10000000000000000000000000000000000000, 66446573377/10000000000000000000000000000000000000]");
+        assert_eq!(r.hash, alpha_particle_mass().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "m_alpha",
+                codata_2018_alpha_particle_mass_interval(),
+                "kg",
+                codata_2018_alpha_particle_mass_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, helion_mass().hash, "m_alpha is not m_h");
+        assert_ne!(r.hash, triton_mass().hash, "m_alpha is not m_t");
+        assert_ne!(r.hash, deuteron_mass().hash, "m_alpha is not m_d");
+        assert_ne!(r.hash, neutron_mass().hash, "m_alpha is not m_n");
+        assert_ne!(r.hash, proton_mass().hash, "m_alpha is not m_p");
+        assert_ne!(r.hash, muon_mass().hash, "m_alpha is not m_mu");
+        assert_ne!(
+            r.hash,
+            electron_alpha_mass_ratio().hash,
+            "m_alpha is not me_malpha"
+        );
+        assert_ne!(
+            r.hash,
+            shielded_helion_to_shielded_proton_magnetic_moment_ratio().hash,
+            "m_alpha is not mu0h_mu0p"
+        );
+        assert_ne!(r.hash, newtonian_g().hash, "m_alpha is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            helion_mass().provenance.source_hash,
+            "m_alpha range is not the m_h range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            electron_alpha_mass_ratio().provenance.source_hash,
+            "m_alpha range is not the me_malpha range"
+        );
+        assert_eq!(
+            helion_mass().hash.to_hex(),
+            "1a53756d23bdbbc188edb9cc55d1f3a9e5cc952d386bf885530507a4cded2492",
+            "m_h hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            triton_mass().hash.to_hex(),
+            "8f7874deeb241abcd6ab910a824ee8badc1c135ca735604a9e4116b86d6255bc",
+            "m_t hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            deuteron_mass().hash.to_hex(),
+            "0710831944a3d44d75fd1e63f10fd9f06edc9b0d93028dd57749f807b1a37432",
+            "m_d hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            neutron_mass().hash.to_hex(),
+            "a03f5c1c27081122d30ec7656df798ad4ad99413bb03790a40b3da58b76d1a0f",
+            "m_n hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            muon_mass().hash.to_hex(),
+            "b1e0e67d46205c048709815e1215184c1b77afbcb0f197099085fbfc7d3bb016",
+            "m_mu hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            electron_alpha_mass_ratio().hash.to_hex(),
+            "3407529f38a47a2cf983c5418482d3d9bab5243e08258bbe88c06a2f42e0baa3",
+            "me_malpha hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            shielded_helion_to_shielded_proton_magnetic_moment_ratio()
+                .hash
+                .to_hex(),
+            "18c53bbc40a6c0c95dc9af5019cf6a9482b3ae1918cd6381c949250e95bebd90",
+            "mu0h_mu0p hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when m_alpha is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "8f3ec14a8381c0b83aba64d6f42a44dcd12b59e65bcf4ff11ab7edb36b4296c4"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(37).is_some(),
+            "m_alpha = 6.6446573357e-27 is 66446573357/10^37; that denominator fits i128"
+        );
+        assert!(lookup("malpha").is_none());
+        assert!(lookup("m-alpha").is_none());
+        assert!(lookup("m_a").is_none());
+        assert!(lookup("Ar_alpha").is_none());
+        assert!(lookup("gamma0h").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("m_alpha").is_some());
+        assert!(lookup("m_h").is_some());
+        assert!(lookup("m_t").is_some());
+        assert!(lookup("m_d").is_some());
+        assert!(lookup("m_n").is_some());
+        assert!(lookup("m_p").is_some());
+        assert!(lookup("m_mu").is_some());
+        assert!(lookup("me_malpha").is_some());
+        assert!(lookup("mu0h_mu0p").is_some());
+        assert!(lookup("G").is_some());
+    }
+
+    #[test]
     fn iau2012_au_is_an_exact_ratio() {
         let au = astronomical_unit();
         assert_eq!(au.name, "au");
@@ -22577,7 +22762,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 143);
+        assert_eq!(LEDGER.len(), 144);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -23247,6 +23432,11 @@ mod tests {
             lookup("mu0h_mu0p").unwrap().hash.to_hex(),
             "18c53bbc40a6c0c95dc9af5019cf6a9482b3ae1918cd6381c949250e95bebd90"
         );
+        assert_eq!(lookup("m_alpha").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("m_alpha").unwrap().hash.to_hex(),
+            "8f3ec14a8381c0b83aba64d6f42a44dcd12b59e65bcf4ff11ab7edb36b4296c4"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -23522,6 +23712,11 @@ mod tests {
         assert!(lookup("mu-0h-mu0p").is_none());
         assert!(lookup("mu0h_mu_0p").is_none());
         assert!(lookup("gamma0h").is_none());
+        assert!(lookup("m_alpha").is_some());
+        assert!(lookup("malpha").is_none());
+        assert!(lookup("m-alpha").is_none());
+        assert!(lookup("m_a").is_none());
+        assert!(lookup("Ar_alpha").is_none());
         assert!(lookup("mmu").is_none());
         assert!(lookup("m-mu").is_none());
         assert!(lookup("muon-mass").is_none());
