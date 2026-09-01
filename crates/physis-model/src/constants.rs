@@ -1313,9 +1313,21 @@ pub fn faraday_constant() -> Qty<
 /// Newtonian G. JPCRD prints no symbol; p0 is the ledger name. bar is
 /// not a ledger name. The versioned ledger stores the exact Ratio;
 /// this Qty is the integer to_f64 of that pascal count. The standard
-/// atmosphere is a later table row and is not stored.
+/// atmosphere is `atm`.
 pub fn standard_state_pressure() -> Qty<Pressure> {
     pascal(100_000.0)
+}
+
+/// Standard atmosphere atm (Pa), CODATA 2018 exact.
+///
+/// This is the exact PHYSICOCHEMICAL conventional pressure 101 325 Pa,
+/// not standard-state pressure p0, not Faraday NAe, and not Newtonian
+/// G. JPCRD prints no symbol; atm is the ledger name. Torr and mmHg
+/// are not ledger names. The versioned ledger stores the exact Ratio;
+/// this Qty is the integer to_f64 of that pascal count. The molar
+/// volume of ideal gas is a later table row and is not stored.
+pub fn standard_atmosphere() -> Qty<Pressure> {
+    pascal(101_325.0)
 }
 
 /// Muon mass.
@@ -8205,9 +8217,59 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "p0 is not G"
         );
+
         assert!(
-            physis_constants::lookup("atm").is_none(),
-            "atm standard atmosphere is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("Torr").is_none(),
+            "Torr is not a ledger name; the live name is atm"
+        );
+        let std_atm = physis_constants::standard_atmosphere();
+        assert_eq!(
+            std_atm.value,
+            Ratio::int(101_325),
+            "ledger atm is exactly 101325 Pa"
+        );
+        assert_eq!(
+            standard_atmosphere().value(),
+            std_atm.value.to_f64(),
+            "atm Qty is the integer to_f64 of 101325 Pa"
+        );
+        assert_eq!(
+            standard_atmosphere().value(),
+            101_325.0,
+            "atm Qty locksteps to the exact pascal count"
+        );
+        assert!(
+            std_atm.value > Ratio::int(0),
+            "ledger atm stays a positive exact Ratio"
+        );
+        assert_ne!(
+            std_atm.value,
+            Ratio::int(100_000),
+            "atm is not standard-state pressure p0"
+        );
+        assert_ne!(
+            physis_constants::standard_atmosphere().hash,
+            physis_constants::standard_state_pressure().hash,
+            "atm is not p0"
+        );
+        assert_ne!(
+            physis_constants::standard_atmosphere().hash,
+            physis_constants::faraday_constant().hash,
+            "atm is not NAe"
+        );
+        assert_ne!(
+            physis_constants::standard_atmosphere().hash,
+            physis_constants::astronomical_unit().hash,
+            "atm is not au"
+        );
+        assert_ne!(
+            physis_constants::standard_atmosphere().hash,
+            physis_constants::newtonian_g().hash,
+            "atm is not G"
+        );
+        assert!(
+            physis_constants::lookup("Vm").is_none(),
+            "Vm molar volume of ideal gas is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
