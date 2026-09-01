@@ -22,6 +22,61 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 triton-electron mass ratio is a one-sigma Interval.**
+  `physis-constants` versions `mt_me` as the CODATA 2018 hull
+  `5496.92153573(27)` from JPCRD 50, 033105 table XXXI (Triton, t).
+  This is not the electron-triton ratio `me_mt`, not a certificate that
+  the stored centres invert, not deuteron `md_me`, not neutron `mn_me`,
+  not proton `mp_me`, not muon `mmu_me`, not triton mass, not MeV energy
+  equivalent, not an SI defining Ratio, not the Thomson cross section,
+  and not P3N. The triton-proton mass ratio is a later table row and is
+  not stored. Electron mass is still not stored (`10^{42}` overflows
+  `i128`). Decade `10^{8}` (`10^{7}` is the 10× trap). This is not the
+  CODATA 2022 last-digit `53551`. `physis_model`
+  `triton_electron_mass_ratio()` Qty locksteps to the recommended centre
+  inside the hull. Adding `mt_me` to LEDGER changes the ledger bundle
+  pin. The `G`, `mu0`, `epsilon0`, `Z0`, `alpha`, `inv_alpha`, `cRinf`,
+  `hcRinf`, `Rinf`, `a0`, `Eh`, `me_mmu`, `me_mp`, `me_mn`, `me_md`,
+  `me_mt`, `me_mh`, `me_malpha`, `e_me`, `M_e`, `lambdabar_C`,
+  `lambda_C`, `re`, `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`,
+  `mu_e_mmu`, `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`,
+  `mu_e_mu0h`, `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`, `mu_mu_muB`,
+  `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`, `m_p_u`, `m_p_c2`,
+  `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`, `e_mp`, `M_p`,
+  `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`, `mu_p_muN`, `gp`, `mu_p_mun`,
+  `mu0p`, `mu0p_muB`, `mu0p_muN`, `sigma0p`, `m_n`, `m_n_u`, `m_n_c2`,
+  `m_n_c2_MeV`, `mn_me`, `mn_mmu`, `mn_mp`, `mn_minus_mp`,
+  `mn_minus_mp_u`, `mn_minus_mp_c2`, `mn_minus_mp_c2_MeV`, `M_n`,
+  `lambda_C_n`, `mu_n`, `mu_n_muB`, `mu_n_muN`, `gn`, `mu_n_mue`,
+  `mu_n_mup`, `mu_n_mu0p`, `m_d`, `m_d_u`, `m_d_c2`, `m_d_c2_MeV`,
+  `md_me`, `md_mp`, `M_d`, `rd`, `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`,
+  `mu_d_mue`, `mu_d_mup`, `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`, and
+  `m_t_c2_MeV` hashes are unchanged. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `mt_me` hash 93547acb180d081377858fe38ebb143d9f8c1309a209cb635157b8d2627aed58; node e204ed8ecdc5afb1b11914f6ba7980f0931aaabbf7ff74d0b8d2fca75025bd3a;
+  ledger node 8c732d26dbac256e5c75053f4ff35438e4c969fae5351ada36b62359f8dd87e0. `G`, `mu0`, `epsilon0`, `Z0`,
+  `alpha`, `inv_alpha`, `cRinf`, `hcRinf`, `Rinf`, `a0`, `Eh`,
+  `me_mmu`, `me_mp`, `me_mn`, `me_md`, `me_mt`, `me_mh`,
+  `me_malpha`, `e_me`, `M_e`, `lambdabar_C`, `lambda_C`, `re`,
+  `mu_e`, `mu_e_muB`, `mu_e_muN`, `ae`, `ge`, `mu_e_mmu`,
+  `mu_e_mup`, `mu_e_mu0p`, `mu_e_mun`, `mu_e_mud`, `mu_e_mu0h`,
+  `m_mu`, `m_mu_u`, `m_mu_c2`, `m_mu_c2_MeV`, `mmu_me`,
+  `mmu_mp`, `mmu_mn`, `M_mu`, `lambda_C_mu`, `mu_mu`,
+  `mu_mu_muB`, `mu_mu_muN`, `amu`, `gmu`, `mu_mu_mup`, `m_p`,
+  `m_p_u`, `m_p_c2`, `m_p_c2_MeV`, `mp_me`, `mp_mmu`, `mp_mn`,
+  `e_mp`, `M_p`, `lambda_C_p`, `rp`, `mu_p`, `mu_p_muB`,
+  `mu_p_muN`, `gp`, `mu_p_mun`, `mu0p`, `mu0p_muB`, `mu0p_muN`,
+  `sigma0p`, `m_n`, `m_n_u`, `m_n_c2`, `m_n_c2_MeV`, `mn_me`,
+  `mn_mmu`, `mn_mp`, `mn_minus_mp`, `mn_minus_mp_u`,
+  `mn_minus_mp_c2`, `mn_minus_mp_c2_MeV`, `M_n`, `lambda_C_n`,
+  `mu_n`, `mu_n_muB`, `mu_n_muN`, `gn`, `mu_n_mue`, `mu_n_mup`,
+  `mu_n_mu0p`, `m_d`, `m_d_u`, `m_d_c2`, `m_d_c2_MeV`, `md_me`,
+  `md_mp`, `M_d`, `rd`, `mu_d`, `mu_d_muB`, `mu_d_muN`, `gd`,
+  `mu_d_mue`, `mu_d_mup`, `mu_d_mun`, `m_t`, `m_t_u`, `m_t_c2`,
+  and `m_t_c2_MeV` hashes and nodes unchanged.
+
 - **CODATA 2018 triton mass energy equivalent in MeV is a one-sigma Interval.**
   `physis-constants` versions `m_t_c2_MeV` as the CODATA 2018 hull
   `2808.92113298(85)` MeV from JPCRD 50, 033105 table XXXI (Triton, t).

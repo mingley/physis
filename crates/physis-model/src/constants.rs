@@ -708,8 +708,9 @@ pub fn deuteron_neutron_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// deuteron, neutron, proton, or muon mass and not the electron-triton
 /// mass ratio. This Qty is not a certificate of a reconstruction from
 /// sibling masses or mass ratios. The u-row is `m_t_u`. Energy
-/// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. Mass
-/// ratios, molar mass, and magnetic-moment rows are later table rows
+/// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
+/// triton-electron mass ratio is `mt_me`. The triton-proton mass
+/// ratio, molar mass, and magnetic-moment rows are later table rows
 /// and are not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. This is not the CODATA 2022 last-digit
 /// 7512.
@@ -724,10 +725,11 @@ pub fn triton_mass() -> Qty<Mass> {
 /// Qty is not a certificate of a reconstruction from sibling masses.
 /// Ledger unit is u; this Qty is dimensionless, not kg. Relative atomic
 /// mass is not stored under a different name. Energy equivalent is
-/// `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. Mass ratios, molar
-/// mass, and magnetic-moment rows are later table rows and are not
-/// stored. The versioned ledger stores the one-sigma hull; this Qty is
-/// that centre. This is not the CODATA 2022 last-digit 597.
+/// `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The triton-electron
+/// mass ratio is `mt_me`. The triton-proton mass ratio, molar mass,
+/// and magnetic-moment rows are later table rows and are not stored.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. This is not the CODATA 2022 last-digit 597.
 pub fn triton_mass_in_u() -> Qty<Dimensionless> {
     Qty::new(3.015_500_716_21)
 }
@@ -738,7 +740,8 @@ pub fn triton_mass_in_u() -> Qty<Dimensionless> {
 /// not the kg hull, not the u-row, not deuteron, neutron, proton, or
 /// muon joule hulls. This Qty is not a certificate of a reconstruction
 /// from sibling masses. Ledger unit is J. The MeV conversion is
-/// `m_t_c2_MeV`. Mass ratios are later table rows and are not stored.
+/// `m_t_c2_MeV`. The triton-electron mass ratio is `mt_me`. The
+/// triton-proton mass ratio is a later table row and is not stored.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 8119.
 pub fn triton_mass_energy_equivalent() -> Qty<Energy> {
@@ -753,9 +756,21 @@ pub fn triton_mass_energy_equivalent() -> Qty<Energy> {
 /// reconstruction from sibling masses. Ledger unit is MeV; this Qty is
 /// dimensionless, not SI joule. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre. This is not the CODATA
-/// 2022 last-digit 13668.
+/// 2022 last-digit 13668. The triton-electron mass ratio is `mt_me`.
 pub fn triton_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
     Qty::new(2_808.921_132_98)
+}
+
+/// Triton-electron mass ratio m_t/m_e, CODATA 2018.
+///
+/// This is the recommended centre from the triton section, not the
+/// electron-triton mass ratio and not a certificate that the stored
+/// centres invert. The triton-proton mass ratio is a later table row
+/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. This is not the CODATA 2022 last-digit
+/// 53551.
+pub fn triton_electron_mass_ratio() -> Qty<Dimensionless> {
+    Qty::new(5_496.921_535_73)
 }
 
 /// Muon mass.
@@ -5180,6 +5195,50 @@ mod tests {
             physis_constants::triton_mass_energy_equivalent_in_mev().hash,
             physis_constants::electron_volt().hash,
             "m_t_c2_MeV is not eV"
+        );
+        assert!(
+            physis_constants::lookup("mt/me").is_none(),
+            "mt/me is not a ledger name; the live name is mt_me"
+        );
+        let mt_me = physis_constants::triton_electron_mass_ratio();
+        let mt_me_centre = Ratio::new(549_692_153_573, 10i128.pow(8));
+        assert_eq!(
+            triton_electron_mass_ratio().value(),
+            mt_me_centre.to_f64(),
+            "mt_me Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mt_me.value.contains(Interval::point(mt_me_centre)),
+            "mt_me Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mt_me.value.lo, mt_me.value.hi,
+            "ledger mt_me stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::triton_electron_mass_ratio().hash,
+            physis_constants::electron_triton_mass_ratio().hash,
+            "mt_me is not me_mt"
+        );
+        assert_ne!(
+            physis_constants::triton_electron_mass_ratio().hash,
+            physis_constants::deuteron_electron_mass_ratio().hash,
+            "mt_me is not md_me"
+        );
+        assert_ne!(
+            physis_constants::triton_electron_mass_ratio().hash,
+            physis_constants::neutron_electron_mass_ratio().hash,
+            "mt_me is not mn_me"
+        );
+        assert_ne!(
+            physis_constants::triton_electron_mass_ratio().hash,
+            physis_constants::proton_electron_mass_ratio().hash,
+            "mt_me is not mp_me"
+        );
+        assert_ne!(
+            physis_constants::triton_electron_mass_ratio().hash,
+            physis_constants::muon_electron_mass_ratio().hash,
+            "mt_me is not mmu_me"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),

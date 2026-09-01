@@ -705,6 +705,10 @@ fn codata_2018_triton_mass_energy_equivalent_in_mev_source() -> SourceRecord {
     codata_2018_jpcrd("Triton, t", "mtc2_MeV = 2808.92113298(85)")
 }
 
+fn codata_2018_triton_electron_mass_ratio_source() -> SourceRecord {
+    codata_2018_jpcrd("Triton, t", "mt/me = 5496.92153573(27)")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -3632,7 +3636,8 @@ fn codata_2018_triton_mass_interval() -> Interval {
 /// mass `m_mu`, not electron-triton mass ratio `me_mt`, not a
 /// certificate of a reconstruction from sibling masses or mass ratios,
 /// not an SI defining Ratio, and not P3N. The u-row is `m_t_u`. The energy
-/// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. Mass ratios,
+/// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
+/// triton-electron mass ratio is `mt_me`. The triton-proton mass ratio,
 /// molar mass, and magnetic-moment rows are later table rows and are not stored. Electron mass is not stored:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `7512`. The decade is `10^{37}`; `10^{36}` is the 10× trap (`μ` would
@@ -3664,7 +3669,8 @@ fn codata_2018_triton_mass_in_u_interval() -> Interval {
 /// not electron molar mass, not relative atomic mass under a different
 /// name, not a certificate of a reconstruction from sibling masses or
 /// mass ratios, not an SI defining Ratio, and not P3N. The energy
-/// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. Mass ratios,
+/// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
+/// triton-electron mass ratio is `mt_me`. The triton-proton mass ratio,
 /// molar mass, and magnetic-moment rows are later table rows and are not stored.
 /// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `597`. The decade is `10^{11}`; `10^{10}`
@@ -3697,8 +3703,9 @@ fn codata_2018_triton_mass_energy_equivalent_interval() -> Interval {
 /// equivalent `m_mu_c2`, not the Rydberg energy equivalent, not Hartree,
 /// not the exact electronvolt Ratio, not a certificate of a
 /// reconstruction from sibling masses, not an SI defining Ratio, and
-/// not P3N. The MeV conversion is `m_t_c2_MeV`. Mass ratios, molar mass,
-/// and magnetic-moment rows are later table rows and are not stored.
+/// not P3N. The MeV conversion is `m_t_c2_MeV`. The triton-electron mass
+/// ratio is `mt_me`. The triton-proton mass ratio, molar mass, and
+/// magnetic-moment rows are later table rows and are not stored.
 /// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `8119`. The decade is `10^{20}`; `10^{19}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
@@ -3728,8 +3735,8 @@ fn codata_2018_triton_mass_energy_equivalent_in_mev_interval() -> Interval {
 /// `m_n_c2_MeV`, not proton MeV `m_p_c2_MeV`, not muon MeV `m_mu_c2_MeV`,
 /// not Hartree, not the exact electronvolt Ratio, not a certificate of a
 /// reconstruction from sibling masses, not an SI defining Ratio, and not
-/// P3N. The triton-electron mass ratio is a later table row and is not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`. This
+/// P3N. The triton-electron mass ratio is `mt_me`. The triton-proton
+/// mass ratio is a later table row and is not stored. Electron mass is not stored: `10^{42}` overflows `i128`. This
 /// is not the CODATA 2022 last-digit `13668`. The decade is `10^{8}`;
 /// `10^{7}` is the 10× trap (`μ` would not be an integer). Theories still
 /// use `physis_model` `f64` Qty.
@@ -3739,6 +3746,38 @@ pub fn triton_mass_energy_equivalent_in_mev() -> Constant<Interval> {
         codata_2018_triton_mass_energy_equivalent_in_mev_interval(),
         "MeV",
         codata_2018_triton_mass_energy_equivalent_in_mev_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 5496.92153573(27).
+fn codata_2018_triton_electron_mass_ratio_interval() -> Interval {
+    let scale = 10i128.pow(8);
+    let mu = 549_692_153_573i128;
+    let sigma = 27;
+    Interval::new(Ratio::new(mu - sigma, scale), Ratio::new(mu + sigma, scale))
+}
+
+/// Triton-electron mass ratio m_t/m_e, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended dimensionless hull from the triton section,
+/// not the electron-triton ratio `me_mt`, not a certificate that the
+/// stored centres invert, not the deuteron-electron ratio `md_me`, not
+/// the neutron-electron ratio `mn_me`, not the proton-electron ratio
+/// `mp_me`, not the muon-electron ratio `mmu_me`, not triton mass, not
+/// MeV energy equivalent, not an SI defining Ratio, and not P3N. The
+/// triton-proton mass ratio is a later table row and is not stored.
+/// Molar mass and magnetic-moment rows are later table rows and are not
+/// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// This is not the CODATA 2022 last-digit `53551`. The decade is
+/// `10^{8}`; `10^{7}` is the 10× trap (`μ` would not be an integer).
+/// Theories still use `physis_model` `f64` Qty.
+pub fn triton_electron_mass_ratio() -> Constant<Interval> {
+    Constant::new(
+        "mt_me",
+        codata_2018_triton_electron_mass_ratio_interval(),
+        "1",
+        codata_2018_triton_electron_mass_ratio_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -4005,6 +4044,7 @@ pub const LEDGER: &[&str] = &[
     "m_t_u",
     "m_t_c2",
     "m_t_c2_MeV",
+    "mt_me",
     "au",
     "eV",
     "GM_sun",
@@ -4211,6 +4251,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "m_t_u" => Some(listing(triton_mass_in_u(), "interval")),
         "m_t_c2" => Some(listing(triton_mass_energy_equivalent(), "interval")),
         "m_t_c2_MeV" => Some(listing(triton_mass_energy_equivalent_in_mev(), "interval")),
+        "mt_me" => Some(listing(triton_electron_mass_ratio(), "interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -18014,7 +18055,7 @@ mod tests {
         assert!(lookup("mtc2_MeV").is_none());
         assert!(lookup("m_t_c2/MeV").is_none());
         assert!(lookup("m-t-c2-MeV").is_none());
-        assert!(lookup("mt_me").is_none());
+        assert!(lookup("mt_me").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -18027,6 +18068,152 @@ mod tests {
         assert!(lookup("m_p_c2_MeV").is_some());
         assert!(lookup("m_mu_c2_MeV").is_some());
         assert!(lookup("eV").is_some());
+        assert!(lookup("G").is_some());
+    }
+
+    #[test]
+    fn codata_2018_triton_electron_mass_ratio_is_a_one_sigma_interval() {
+        let r = triton_electron_mass_ratio();
+        let scale = 10i128.pow(8);
+        let lo = Ratio::new(549_692_153_546, scale);
+        let hi = Ratio::new(549_692_153_600, scale);
+        let centre = Ratio::new(549_692_153_573, scale);
+        assert_eq!(r.name, "mt_me");
+        assert_eq!(r.unit, "1");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("Triton, t"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("mt/me = 5496.92153573(27)")
+        );
+        assert_eq!(r.value, Interval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "mt_me is measured, not SI-exact");
+        assert!(r.value.contains(Interval::point(centre)));
+        assert!(!r.value.contains(Interval::point(Ratio::int(0))));
+        assert!(
+            r.value.lo > Ratio::int(0),
+            "CODATA mt_me is a positive mass-ratio hull"
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "[274846076773/50000000, 85889399/15625]"
+        );
+        assert_eq!(r.hash, triton_electron_mass_ratio().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "mt_me",
+                codata_2018_triton_electron_mass_ratio_interval(),
+                "1",
+                codata_2018_triton_electron_mass_ratio_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(
+            r.hash,
+            electron_triton_mass_ratio().hash,
+            "mt_me is not me_mt"
+        );
+        assert_ne!(
+            r.hash,
+            deuteron_electron_mass_ratio().hash,
+            "mt_me is not md_me"
+        );
+        assert_ne!(
+            r.hash,
+            neutron_electron_mass_ratio().hash,
+            "mt_me is not mn_me"
+        );
+        assert_ne!(
+            r.hash,
+            proton_electron_mass_ratio().hash,
+            "mt_me is not mp_me"
+        );
+        assert_ne!(
+            r.hash,
+            muon_electron_mass_ratio().hash,
+            "mt_me is not mmu_me"
+        );
+        assert_ne!(
+            r.hash,
+            triton_mass_energy_equivalent_in_mev().hash,
+            "mt_me is not m_t_c2_MeV"
+        );
+        assert_ne!(r.hash, triton_mass().hash, "mt_me is not m_t");
+        assert_ne!(r.hash, newtonian_g().hash, "mt_me is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            electron_triton_mass_ratio().provenance.source_hash,
+            "mt_me range is not the me_mt range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            deuteron_electron_mass_ratio().provenance.source_hash,
+            "mt_me range is not the md_me range"
+        );
+        assert_eq!(
+            electron_triton_mass_ratio().hash.to_hex(),
+            "2f8187d744269836cf0fbc123f8cb7d60107215e65be109daf2ae67c8116afd1",
+            "me_mt hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            deuteron_electron_mass_ratio().hash.to_hex(),
+            "9c0f207cbd339c3665d3cc96b38c98fddbf31894f385c84fa5197f61a212236d",
+            "md_me hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            neutron_electron_mass_ratio().hash.to_hex(),
+            "024275bcd4128d6844efaf9740b16e69a8cfbb349d257465ad96a3cbada32b00",
+            "mn_me hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            proton_electron_mass_ratio().hash.to_hex(),
+            "8b8047d3ebeca5e157da8e85248892e5731d87114960e63335d74a49631f27b6",
+            "mp_me hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            muon_electron_mass_ratio().hash.to_hex(),
+            "0ac70815382ab74fd46513f298dd351685fcc54ab0e64b6fc00b64b4fccc426f",
+            "mmu_me hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            triton_mass_energy_equivalent_in_mev().hash.to_hex(),
+            "818597e9129aeea9aa601ed37421b0cdba5f257cddc2437fd22d635d8a205136",
+            "m_t_c2_MeV hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            triton_mass().hash.to_hex(),
+            "8f7874deeb241abcd6ab910a824ee8badc1c135ca735604a9e4116b86d6255bc",
+            "m_t hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when mt_me is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "93547acb180d081377858fe38ebb143d9f8c1309a209cb635157b8d2627aed58"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("mt/me").is_none());
+        assert!(lookup("m_t_me").is_none());
+        assert!(lookup("m-t-me").is_none());
+        assert!(lookup("mt_mp").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("mt_me").is_some());
+        assert!(lookup("me_mt").is_some());
+        assert!(lookup("md_me").is_some());
+        assert!(lookup("mn_me").is_some());
+        assert!(lookup("mp_me").is_some());
+        assert!(lookup("mmu_me").is_some());
+        assert!(lookup("m_t_c2_MeV").is_some());
         assert!(lookup("G").is_some());
     }
 
@@ -18232,7 +18419,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 120);
+        assert_eq!(LEDGER.len(), 121);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -18787,6 +18974,11 @@ mod tests {
             lookup("m_t_c2_MeV").unwrap().hash.to_hex(),
             "818597e9129aeea9aa601ed37421b0cdba5f257cddc2437fd22d635d8a205136"
         );
+        assert_eq!(lookup("mt_me").unwrap().kind, "interval");
+        assert_eq!(
+            lookup("mt_me").unwrap().hash.to_hex(),
+            "93547acb180d081377858fe38ebb143d9f8c1309a209cb635157b8d2627aed58"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -18966,7 +19158,10 @@ mod tests {
         assert!(lookup("mtc2_MeV").is_none());
         assert!(lookup("m_t_c2/MeV").is_none());
         assert!(lookup("m-t-c2-MeV").is_none());
-        assert!(lookup("mt_me").is_none());
+        assert!(lookup("mt/me").is_none());
+        assert!(lookup("m_t_me").is_none());
+        assert!(lookup("m-t-me").is_none());
+        assert!(lookup("mt_mp").is_none());
         assert!(lookup("mue_mun").is_none());
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());
