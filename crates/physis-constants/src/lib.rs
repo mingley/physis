@@ -845,6 +845,10 @@ fn codata_2018_carbon_12_molar_mass_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "M12C = 11.9999999958(36)e-3")
 }
 
+fn codata_2018_molar_planck_constant_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "NAh = 3.990312712e-10 exact")
+}
+
 /// CODATA 2018 one-sigma hull of 6.67430(15)×10⁻¹¹ m³ kg⁻¹ s⁻².
 fn codata_2018_g_interval() -> Interval {
     let scale = 10i128.pow(16);
@@ -5053,8 +5057,8 @@ fn codata_2018_carbon_12_molar_mass_interval() -> Interval {
 /// that this equals `12 × M_u` or `N_A × m(¹²C)`, not an SI defining
 /// Ratio, and not P3N. The JPCRD symbol `M(12C)` is not a ledger name.
 /// Relative atomic mass Ar(¹²C) is 12 by definition and is not stored
-/// under a second name. Molar Planck constant is a later table row and
-/// is not stored. Electron mass is not stored: `10^{42}` overflows
+/// under a second name. The molar Planck constant is `NAh`. Electron
+/// mass is not stored: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `126`. The decade is
 /// `10^{13}` matching the printed 10-decimal × `10^{-3}` form; `10^{12}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
@@ -5065,6 +5069,35 @@ pub fn carbon_12_molar_mass() -> Constant<Interval> {
         codata_2018_carbon_12_molar_mass_interval(),
         "kg mol^{-1}",
         codata_2018_carbon_12_molar_mass_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 molar Planck constant N_A × h as a terminating decimal.
+fn molar_planck_constant_value() -> Ratio {
+    Ratio::new(602_214_076i128 * 662_607_015i128, 10i128.pow(27))
+}
+
+/// Molar Planck constant NAh, SI 2019 exact Ratio.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as `NAh`, not Planck
+/// `h`, not Avogadro `N_A`, not `ħ`, not Hartree, not the molar mass
+/// constant `M_u`, not carbon-12 `M_12C`, not an SI defining constant,
+/// and not a FormalClaim that reconstructs `N_A × h` from live lookups.
+/// The table prints `3.990 312 712…`; the ledger stores the full
+/// terminating decimal `N_A × h`. That product fits [`Ratio`]
+/// (`10^{27}`); Planck `h` does not (`10^{42}`). This is not P3N. The
+/// JPCRD symbol `NAh` is the ledger name. Molar gas constant is a later
+/// table row and is not stored. Electron mass is not stored: `10^{42}`
+/// overflows `i128`. CODATA 2022 prints the same SI-exact ellipsis;
+/// there is no last-digit trap. Theories still use `physis_model` `f64`
+/// Qty.
+pub fn molar_planck_constant() -> Constant<Ratio> {
+    Constant::new(
+        "NAh",
+        molar_planck_constant_value(),
+        "J Hz^{-1} mol^{-1}",
+        codata_2018_molar_planck_constant_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -5366,6 +5399,7 @@ pub const LEDGER: &[&str] = &[
     "m_u_c2_MeV",
     "M_u",
     "M_12C",
+    "NAh",
     "au",
     "eV",
     "GM_sun",
@@ -5640,6 +5674,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         )),
         "M_u" => Some(listing(molar_mass_constant(), "interval")),
         "M_12C" => Some(listing(carbon_12_molar_mass(), "interval")),
+        "NAh" => Some(listing(molar_planck_constant(), "ratio")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -24938,7 +24973,8 @@ mod tests {
         assert!(lookup("M12C").is_none());
         assert!(lookup("M-12C").is_none());
         assert!(lookup("M_12C/mol").is_none());
-        assert!(lookup("NAh").is_none());
+        assert!(lookup("NAh").is_some());
+        assert!(lookup("NAk").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -24956,6 +24992,141 @@ mod tests {
         assert!(lookup("M_mu").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("N_A").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+        assert!(lookup("NAh").is_some());
+    }
+
+    #[test]
+    fn codata_2018_molar_planck_constant_is_an_exact_ratio() {
+        let r = molar_planck_constant();
+        let value = Ratio::new(602_214_076i128 * 662_607_015i128, 10i128.pow(27));
+        assert_eq!(r.name, "NAh");
+        assert_eq!(r.unit, "J Hz^{-1} mol^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("NAh = 3.990312712e-10 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(
+            r.value,
+            SciExact::new(39_903_127_128_934_314, -26)
+                .to_ratio()
+                .expect("NAh fits Ratio")
+        );
+        assert_eq!(
+            r.value.to_string(),
+            "19951563564467157/50000000000000000000000000"
+        );
+        assert!(r.value > Ratio::int(0), "NAh is a positive exact Ratio");
+        assert_ne!(
+            r.value,
+            Ratio::new(3_990_312_712, 10i128.pow(19)),
+            "NAh is the full SI product, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, molar_planck_constant().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "NAh",
+                molar_planck_constant_value(),
+                "J Hz^{-1} mol^{-1}",
+                codata_2018_molar_planck_constant_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, avogadro().hash, "NAh is not N_A");
+        assert_ne!(r.hash, planck_h().hash, "NAh is not h");
+        assert_ne!(r.hash, carbon_12_molar_mass().hash, "NAh is not M_12C");
+        assert_ne!(r.hash, molar_mass_constant().hash, "NAh is not M_u");
+        assert_ne!(r.hash, electron_volt().hash, "NAh is not eV");
+        assert_ne!(r.hash, hartree_energy().hash, "NAh is not Hartree");
+        assert_ne!(r.hash, newtonian_g().hash, "NAh is not G");
+        assert_ne!(
+            r.provenance.source_hash,
+            carbon_12_molar_mass().provenance.source_hash,
+            "NAh range is not the M_12C range"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            avogadro().provenance.source_hash,
+            "NAh locator is not the SI brochure N_A locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            planck_h().provenance.source_hash,
+            "NAh locator is not the SI brochure h locator"
+        );
+        assert_eq!(
+            carbon_12_molar_mass().hash.to_hex(),
+            "bec80fb1c51bead2000a5ba56e2fd680fd79d5538dd3e0e0cd9ceca1fb983d43",
+            "M_12C hash must stay pinned when NAh is added"
+        );
+        assert_eq!(
+            molar_mass_constant().hash.to_hex(),
+            "db927829cb6a1d796a00ab6509b3a9faf0e2f09ed7bb3dc5aca6154abb9e388e",
+            "M_u hash must stay pinned when NAh is added"
+        );
+        assert_eq!(
+            avogadro().hash.to_hex(),
+            "410e2191c8cf7c074a32f621413239e74a7fefe735cacfaad4f503c47c9351dc",
+            "N_A hash must stay pinned when NAh is added"
+        );
+        assert_eq!(
+            planck_h().hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef",
+            "h hash must stay pinned when NAh is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when NAh is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when NAh is added"
+        );
+        assert_eq!(
+            atomic_mass_constant().hash.to_hex(),
+            "fcefc139b85d5be198ab911fed33049d37641b01dcd0b87e12630db6dfd467d3",
+            "m_u hash must stay pinned when NAh is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "9290f6b333a3a26c429b761769bd641d7a642b68d6e34cbea852119c170d6228"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(
+            10i128.checked_pow(27).is_some(),
+            "NAh = N_A h is 399031271289343140/10^27; that denominator fits i128"
+        );
+        assert!(
+            10i128.checked_pow(42).is_none(),
+            "h still overflows i128; NAh is not stored as SciExact for that reason"
+        );
+        assert!(lookup("NA_h").is_none());
+        assert!(lookup("N_A_h").is_none());
+        assert!(lookup("N_A*h").is_none());
+        assert!(lookup("NAk").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("mn_mt").is_none());
+        assert!(lookup("sigma_e").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("Eh_eV").is_none());
+        assert!(lookup("NAh").is_some());
+        assert!(lookup("M_12C").is_some());
+        assert!(lookup("M_u").is_some());
+        assert!(lookup("N_A").is_some());
+        assert!(lookup("h").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
     }
@@ -25162,7 +25333,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 155);
+        assert_eq!(LEDGER.len(), 156);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -25892,6 +26063,11 @@ mod tests {
             lookup("M_12C").unwrap().hash.to_hex(),
             "bec80fb1c51bead2000a5ba56e2fd680fd79d5538dd3e0e0cd9ceca1fb983d43"
         );
+        assert_eq!(lookup("NAh").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("NAh").unwrap().hash.to_hex(),
+            "9290f6b333a3a26c429b761769bd641d7a642b68d6e34cbea852119c170d6228"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -26216,7 +26392,10 @@ mod tests {
         assert!(lookup("M12C").is_none());
         assert!(lookup("M-12C").is_none());
         assert!(lookup("M_12C/mol").is_none());
-        assert!(lookup("NAh").is_none());
+        assert!(lookup("NAh").is_some());
+        assert!(lookup("NA_h").is_none());
+        assert!(lookup("N_A_h").is_none());
+        assert!(lookup("NAk").is_none());
         assert!(lookup("mmu").is_none());
         assert!(lookup("m-mu").is_none());
         assert!(lookup("muon-mass").is_none());

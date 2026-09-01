@@ -1255,10 +1255,25 @@ pub fn molar_mass_constant() -> Qty<
 /// hull, not Avogadro N_A, and not a certificate that this equals 12
 /// times M_u. The versioned ledger stores the one-sigma hull; this Qty
 /// is that centre. This is not the CODATA 2022 last-digit 126.
+/// The molar Planck constant is `NAh`.
 pub fn carbon_12_molar_mass() -> Qty<
     physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
 > {
     Qty::new(11.999_999_995_8e-3)
+}
+
+/// Molar Planck constant N_A h (J Hz⁻¹ mol⁻¹), SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL product listed as NAh, not Planck
+/// h, not Avogadro N_A, not ħ, not Hartree, and not a FormalClaim that
+/// reconstructs N_A times h. The table prints an ellipsis; the ledger
+/// stores the full terminating decimal. The versioned ledger stores the
+/// exact Ratio; this Qty is the IEEE rounding of that SI decimal. Molar
+/// gas constant is a later table row and is not stored.
+pub fn molar_planck_constant() -> Qty<
+    physis_core::SI<typenum::P1, typenum::P2, typenum::N1, typenum::Z0, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(3.990_312_712_893_431_4e-10)
 }
 
 /// Muon mass.
@@ -7913,9 +7928,69 @@ mod tests {
             physis_constants::newtonian_g().hash,
             "M_12C is not G"
         );
+
         assert!(
-            physis_constants::lookup("NAh").is_none(),
-            "NAh molar Planck constant is a later PHYSICOCHEMICAL row"
+            physis_constants::lookup("NA_h").is_none(),
+            "NA_h is not a ledger name; the live name is NAh"
+        );
+        let n_a_h = physis_constants::molar_planck_constant();
+        let n_a_h_value = Ratio::new(602_214_076i128 * 662_607_015i128, 10i128.pow(27));
+        assert_eq!(
+            n_a_h.value, n_a_h_value,
+            "ledger NAh is the exact SI product"
+        );
+        assert_eq!(
+            SciExact::new(39_903_127_128_934_314, -26).to_ratio(),
+            Some(n_a_h.value),
+            "NAh fits Ratio; SciExact and Ratio are the same decimal"
+        );
+        assert_eq!(
+            molar_planck_constant().value(),
+            SciExact::new(39_903_127_128_934_314, -26).to_f64(),
+            "NAh Qty is the IEEE rounding of the SI decimal, not Ratio::to_f64 of the reduced fraction"
+        );
+        assert_eq!(
+            molar_planck_constant().value(),
+            3.990_312_712_893_431_4e-10,
+            "NAh Qty locksteps to the SI 2019 terminating decimal literal"
+        );
+        assert!(
+            n_a_h.value > Ratio::int(0),
+            "ledger NAh stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::molar_planck_constant().hash,
+            physis_constants::avogadro().hash,
+            "NAh is not N_A"
+        );
+        assert_ne!(
+            physis_constants::molar_planck_constant().hash,
+            physis_constants::planck_h().hash,
+            "NAh is not h"
+        );
+        assert_ne!(
+            physis_constants::molar_planck_constant().hash,
+            physis_constants::carbon_12_molar_mass().hash,
+            "NAh is not M_12C"
+        );
+        assert_ne!(
+            physis_constants::molar_planck_constant().hash,
+            physis_constants::molar_mass_constant().hash,
+            "NAh is not M_u"
+        );
+        assert_ne!(
+            physis_constants::molar_planck_constant().hash,
+            physis_constants::electron_volt().hash,
+            "NAh is not eV"
+        );
+        assert_ne!(
+            physis_constants::molar_planck_constant().hash,
+            physis_constants::newtonian_g().hash,
+            "NAh is not G"
+        );
+        assert!(
+            physis_constants::lookup("NAk").is_none(),
+            "NAk molar gas constant is a later PHYSICOCHEMICAL row"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
