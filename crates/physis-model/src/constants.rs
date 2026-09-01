@@ -710,10 +710,11 @@ pub fn deuteron_neutron_magnetic_moment_ratio() -> Qty<Dimensionless> {
 /// sibling masses or mass ratios. The u-row is `m_t_u`. Energy
 /// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
 /// triton-electron mass ratio is `mt_me`. The triton-proton mass
-/// ratio is `mt_mp`. The molar mass is `M_t`. Magnetic-moment rows
-/// are later table rows and are not stored. The versioned ledger
-/// stores the one-sigma hull; this Qty is that centre. This is not
-/// the CODATA 2022 last-digit 7512.
+/// ratio is `mt_mp`. The molar mass is `M_t`. The magnetic moment is
+/// `mu_t`. Bohr-magneton, nuclear-magneton, and g-factor rows are
+/// later table rows and are not stored. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. This is not the
+/// CODATA 2022 last-digit 7512.
 pub fn triton_mass() -> Qty<Mass> {
     kg(5.007_356_744_6e-27)
 }
@@ -727,7 +728,8 @@ pub fn triton_mass() -> Qty<Mass> {
 /// mass is not stored under a different name. Energy equivalent is
 /// `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The triton-electron
 /// mass ratio is `mt_me`. The triton-proton mass ratio is `mt_mp`.
-/// The molar mass is `M_t`. Magnetic-moment rows are later table
+/// The molar mass is `M_t`. The magnetic moment is `mu_t`.
+/// Bohr-magneton, nuclear-magneton, and g-factor rows are later table
 /// rows and are not stored. The versioned ledger stores the one-sigma
 /// hull; this Qty is that centre. This is not the CODATA 2022
 /// last-digit 597.
@@ -743,7 +745,8 @@ pub fn triton_mass_in_u() -> Qty<Dimensionless> {
 /// from sibling masses. Ledger unit is J. The MeV conversion is
 /// `m_t_c2_MeV`. The triton-electron mass ratio is `mt_me`. The
 /// triton-proton mass ratio is `mt_mp`. The molar mass is `M_t`.
-/// Magnetic-moment rows are later table rows and are not stored. The
+/// The magnetic moment is `mu_t`. Bohr-magneton, nuclear-magneton,
+/// and g-factor rows are later table rows and are not stored. The
 /// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 8119.
 pub fn triton_mass_energy_equivalent() -> Qty<Energy> {
@@ -780,9 +783,10 @@ pub fn triton_electron_mass_ratio() -> Qty<Dimensionless> {
 /// This is the recommended centre from the triton section, not the
 /// deuteron-proton, neutron-proton, or proton-neutron mass ratio, and
 /// not a certificate that the stored centres reconstruct m_t/m_p.
-/// The molar mass is `M_t`. Magnetic-moment rows are later table rows
-/// and are not stored. The versioned ledger stores the one-sigma hull;
-/// this Qty is that centre. This is not the CODATA 2022 last-digit
+/// The molar mass is `M_t`. The magnetic moment is `mu_t`.
+/// Bohr-magneton, nuclear-magneton, and g-factor rows are later table
+/// rows and are not stored. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. This is not the CODATA 2022 last-digit
 /// 03403.
 pub fn triton_proton_mass_ratio() -> Qty<Dimensionless> {
     Qty::new(2.993_717_034_14)
@@ -793,7 +797,8 @@ pub fn triton_proton_mass_ratio() -> Qty<Dimensionless> {
 /// This is the recommended centre in kg mol⁻¹ from the triton
 /// section, not neutron, proton, electron, or muon molar mass, not the
 /// kg hull, not the u-row, and not a certificate that this equals N_A
-/// times the triton-mass hull. Magnetic-moment rows are later table
+/// times the triton-mass hull. The magnetic moment is `mu_t`.
+/// Bohr-magneton, nuclear-magneton, and g-factor rows are later table
 /// rows and are not stored. The versioned ledger stores the one-sigma
 /// hull; this Qty is that centre. This is not the CODATA 2022
 /// last-digit 71913.
@@ -801,6 +806,20 @@ pub fn triton_molar_mass() -> Qty<
     physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
 > {
     Qty::new(3.015_500_715_17e-3)
+}
+
+/// Triton magnetic moment μ_t (J T⁻¹ = A m²), CODATA 2018.
+///
+/// This is the recommended signed centre from the triton section, not
+/// deuteron, proton, neutron, electron, or muon magnetic moment and not
+/// vacuum permeability. This Qty is not a certificate that it equals
+/// g_t μ_N / 2. Bohr-magneton, nuclear-magneton, and g-factor rows are
+/// later table rows and are not stored. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. This is not the CODATA
+/// 2022 last-digit 5178.
+pub fn triton_magnetic_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::Z0, typenum::P1>> {
+    Qty::new(1.504_609_520_2e-26)
 }
 
 /// Muon mass.
@@ -5352,6 +5371,60 @@ mod tests {
             physis_constants::triton_molar_mass().hash,
             physis_constants::triton_mass().hash,
             "M_t is not m_t"
+        );
+        assert!(
+            physis_constants::lookup("mut").is_none(),
+            "mut is not a ledger name; the live name is mu_t"
+        );
+        let mu_t = physis_constants::triton_magnetic_moment();
+        let mu_t_centre = Ratio::new(15_046_095_202, 10i128.pow(36));
+        assert_eq!(
+            triton_magnetic_moment().value(),
+            mu_t_centre.to_f64(),
+            "mu_t Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mu_t.value.contains(Interval::point(mu_t_centre)),
+            "mu_t Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_t.value.lo, mu_t.value.hi,
+            "ledger mu_t stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::triton_magnetic_moment().hash,
+            physis_constants::deuteron_magnetic_moment().hash,
+            "mu_t is not mu_d"
+        );
+        assert_ne!(
+            physis_constants::triton_magnetic_moment().hash,
+            physis_constants::proton_magnetic_moment().hash,
+            "mu_t is not mu_p"
+        );
+        assert_ne!(
+            physis_constants::triton_magnetic_moment().hash,
+            physis_constants::neutron_magnetic_moment().hash,
+            "mu_t is not mu_n"
+        );
+        assert_ne!(
+            physis_constants::triton_magnetic_moment().hash,
+            physis_constants::electron_magnetic_moment().hash,
+            "mu_t is not mu_e"
+        );
+        assert_ne!(
+            physis_constants::triton_magnetic_moment().hash,
+            physis_constants::muon_magnetic_moment().hash,
+            "mu_t is not mu_mu"
+        );
+        assert_ne!(
+            physis_constants::triton_magnetic_moment().hash,
+            physis_constants::vacuum_permeability().hash,
+            "mu_t is not mu0"
+        );
+        assert_ne!(
+            physis_constants::triton_magnetic_moment().hash,
+            physis_constants::triton_molar_mass().hash,
+            "mu_t is not M_t"
         );
         assert!(
             physis_constants::lookup("g0p").is_none(),
