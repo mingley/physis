@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  45060d873e6137d2b07ab12e07dd75f7b987b0addd33f0ccde6cd15eac3393e6"),
+            text.contains("constant  ledger  fa2f9f86a3dc30ea51062fce0ca61b9287fe37f40f7ab69b18ff9cd5ba412e19"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -14690,6 +14690,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let mu_d_mup = lab
+            .exec(Command::Constant {
+                name: Some("mu_d_mup".into()),
+            })
+            .text()
+            .to_string();
+        assert!(mu_d_mup.contains("constant  mu_d_mup  node "), "{mu_d_mup}");
+        assert!(
+            mu_d_mup.contains(
+                "hash     714492efa58a8f73eec0856f5a3587db0ba4eeddaf47fef8867ce1f1e5e52120"
+            ),
+            "{mu_d_mup}"
+        );
+        assert!(mu_d_mup.contains("kind     interval"), "{mu_d_mup}");
+        assert!(mu_d_mup.contains("table    XXXI"), "{mu_d_mup}");
+        assert!(
+            mu_d_mup.contains("range    mu_d/mup = 0.30701220939(79)"),
+            "{mu_d_mup}"
+        );
+        assert!(mu_d_mup.contains("unit     1"), "{mu_d_mup}");
+        assert!(
+            mu_d_mup.contains("value    [1535061043/5000000000, 15350610509/50000000000]"),
+            "{mu_d_mup}"
+        );
+        assert!(mu_d_mup.contains("rebuild  ok"), "{mu_d_mup}");
+        assert!(mu_d_mup.contains("not P3N"), "{mu_d_mup}");
+        assert!(!mu_d_mup.contains("receipt"), "{mu_d_mup}");
+        assert!(!mu_d_mup.contains("theorem"), "{mu_d_mup}");
+        let mu_d_mup_id = constant_node_id(&mu_d_mup);
+        assert_eq!(
+            mu_d_mup_id.to_hex(),
+            "5d500b4b42060fbd1225eb945e6d95322456a99148415d18d11e04039c43be7a",
+            "journaling must not change the mu_d_mup constant payload"
+        );
+        assert_eq!(
+            lab.store.get(mu_d_mup_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -17157,7 +17196,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "45060d873e6137d2b07ab12e07dd75f7b987b0addd33f0ccde6cd15eac3393e6",
+            "fa2f9f86a3dc30ea51062fce0ca61b9287fe37f40f7ab69b18ff9cd5ba412e19",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -18092,7 +18131,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "45060d873e6137d2b07ab12e07dd75f7b987b0addd33f0ccde6cd15eac3393e6",
+            "fa2f9f86a3dc30ea51062fce0ca61b9287fe37f40f7ab69b18ff9cd5ba412e19",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -18916,6 +18955,14 @@ mod tests {
         .expect("pinned mu_d_mue node");
         assert_eq!(
             lab2.store.get(mu_d_mue).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let mu_d_mup = physis_core::artifact::ArtifactId::from_hex(
+            "5d500b4b42060fbd1225eb945e6d95322456a99148415d18d11e04039c43be7a",
+        )
+        .expect("pinned mu_d_mup node");
+        assert_eq!(
+            lab2.store.get(mu_d_mup).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -20469,7 +20516,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  45060d873e6137d2b07ab12e07dd75f7b987b0addd33f0ccde6cd15eac3393e6"),
+            text.contains("constant  ledger  fa2f9f86a3dc30ea51062fce0ca61b9287fe37f40f7ab69b18ff9cd5ba412e19"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
