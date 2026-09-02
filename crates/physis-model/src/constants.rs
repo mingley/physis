@@ -588,10 +588,28 @@ pub fn atomic_unit_of_charge_density(
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is V m^{-1}; this Qty is
 /// electric field (M L T^{-3} I^{-1}). auE, au-E, E_au, and
-/// electric_field are not second names.
+/// electric_field are not second names. The atomic-unit electric-field
+/// gradient listing is au_EFG.
 pub fn atomic_unit_of_electric_field(
 ) -> Qty<physis_core::SI<typenum::P1, typenum::P1, typenum::N3, typenum::N1>> {
     Qty::new(5.142_206_747_63e11)
+}
+
+/// Atomic unit of electric field gradient Eh / (e a0^2) (V m^{-2}),
+/// CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_E,
+/// not au_rho, and not a FormalClaim that reconstructs that quotient
+/// from a live lookup. Atomic unit of time still cites hbar and is not
+/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is V m^{-2}; this Qty is
+/// electric field gradient (M T^{-3} I^{-1}). auEFG, au-EFG, au_dE, and
+/// electric_field_gradient are not second names.
+pub fn atomic_unit_of_electric_field_gradient(
+) -> Qty<physis_core::SI<typenum::P1, typenum::Z0, typenum::N3, typenum::N1>> {
+    Qty::new(9.717_362_429_2e21)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -11126,6 +11144,49 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; au_E is not an a/sqrt(8) certificate"
+        );
+        let au_efg = physis_constants::atomic_unit_of_electric_field_gradient();
+        let au_efg_centre = Ratio::int(97_173_624_292 * 10i128.pow(11));
+        assert_eq!(
+            atomic_unit_of_electric_field_gradient().value(),
+            au_efg_centre.to_f64(),
+            "au_EFG Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_electric_field_gradient().value(),
+            9.717_362_429_2e21,
+            "au_EFG Qty locksteps to Ratio::to_f64 on the integer 10^11 centre"
+        );
+        assert!(
+            au_efg.value.contains(Interval::point(au_efg_centre)),
+            "au_EFG Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_efg.value.lo, au_efg.value.hi,
+            "ledger au_EFG stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_field_gradient().hash,
+            physis_constants::atomic_unit_of_electric_field().hash,
+            "au_EFG is not au_E"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_field_gradient().hash,
+            physis_constants::atomic_unit_of_charge_density().hash,
+            "au_EFG is not au_rho"
+        );
+        assert_eq!(physis_constants::lookup("au_EFG").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("auEFG").is_none(),
+            "auEFG is not a ledger name; the live name is au_EFG"
+        );
+        assert!(
+            physis_constants::lookup("electric_field_gradient").is_none(),
+            "electric_field_gradient is not a second name for au_EFG"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_EFG is not an a/sqrt(8) certificate"
         );
 
         assert!(
