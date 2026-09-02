@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 kilogram-hartree relationship is a one-sigma Interval.**
+  `physis-constants` versions `kg_Eh` as the CODATA 2018 one-sigma hull
+  `2.0614857887409(40)×10^{34}` E_h from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended kilogram-hartree
+  listing, not a Ratio reciprocal of unstored hartree-kilogram, not
+  atomic mass unit-hartree `u_Eh`, not joule-hartree `J_Eh`, not
+  kilogram-joule `kg_J`, not kg atomic mass constant `m_u`, and not a
+  FormalClaim reconstructing `c² / Eh` from live lookups. Hartree-kilogram
+  is not stored: Ratio scale overflows `i128`. The integer decade is
+  `10^{21}` on the `10^{34}` form; `10^{22}` is the 10× trap (`σ = 4.0`
+  is not an integer). This is not the CODATA 2022 last-digit `7415` as
+  the stored centre; the 2018 hull still contains that 2022 centre. The
+  ledger name is `kg_Eh`; `kgEh`, `kg-Eh`, and `kilogram_Eh` are not
+  second names. `physis_model` `kilogram_in_hartree()` Qty locksteps to
+  the CODATA centre inside the hull. Adding `kg_Eh` to LEDGER changes
+  the ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `kg_Eh` hash
+  0abb167c6721131a4310043821b59f97a18ac4a594c041de9b3101303bf8250a;
+  node d25f1232a25f8dafd253a2cc588d36f8f31844981dd8ccf1e54f9a75c95d3dc9;
+  ledger node
+  83b0e06e4a2c34ac0bff3221163a4db4284ba1e0424ccb0a21d8a62a01b712d8.
+  `u_Eh` hash
+  15c1d5e49dca9b631334cf8c46bd90a65e8ff6658fb7a64ba43a5a37862c60a1 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic mass unit-hartree relationship is a one-sigma Interval.**
   `physis-constants` versions `u_Eh` as the CODATA 2018 one-sigma hull
   `3.4231776874(10)×10^{7}` E_h from JPCRD 50, 033105 table XXXV
