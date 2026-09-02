@@ -80,6 +80,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron volt-hertz relationship is an exact Ratio.**
+  `physis-constants` versions `eV_Hz` as the SI-exact Ratio `e/h` =
+  `10681177560000000000000/44173801` Hz from JPCRD 50, 033105
+  table XXXV (energy conversion factors). The table prints
+  `2.417 989 242… × 10^{14}`; the ledger stores the full quotient.
+  The reduced denominator keeps factors 7 and 6310543 (the odd primes
+  remaining in SI `h` after cancelling 3 and 5), so this is not a
+  terminating SciExact. This is not Planck in eV/Hz `h_eVHz`, not SI
+  Planck `h`, not `k_Hz`, not Josephson `KJ`, not BIPM electronvolt,
+  not an SI defining constant, and not a FormalClaim reconstructing
+  `e/h` from live lookups. Joule-hertz `J_Hz` is not stored: `10^{41}`
+  overflows `i128`. Electron volt-inverse meter is not stored: it is
+  the reciprocal of ledger `m_eV` from the same table. Electron
+  volt-kilogram is not stored: `e/c²` overflows `i128`. The ledger name
+  is `eV_Hz`; `eVHz`, `eV-Hz`, and `1/h_eVHz` are not second names.
+  `physis_model` `electron_volt_in_hertz()` Qty locksteps to
+  `Ratio::to_f64` of that Ratio. Adding `eV_Hz` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `eV_Hz` hash d323fa85e441848900b49787ac5c058ae78c2bb59d3f46627a5c5ba68ef339d5; node d98001e49653a95a3bb1543e45fbb993cdecdfc79d3303e36cd0738fec4b09c6; ledger node
+  75d3b67f7061b36f19f554be28e1a5621d845574f583fa54bb4c7264adebe018. `J_K` hash 294b1e620f7a8cacd4c276a74a0f43eba7e28c5969d83a1983a9df046dbb5f26
+  and `h_eVHz` hash bc3fb761f651c84f885a4749f6099f7eef62b31467e2df1ca778aede28ce2964
+  unchanged.
+
 - **CODATA 2018 joule-kelvin relationship is an exact Ratio.**
   `physis-constants` versions `J_K` as the SI-exact Ratio `1/k` =
   `100000000000000000000000000000/1380649` K from JPCRD 50, 033105

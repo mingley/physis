@@ -125,6 +125,24 @@ pub fn joule_in_kelvin() -> Qty<Dimensionless> {
     Qty::new(7.242_970_516_039_92e22)
 }
 
+/// Electron volt-hertz relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the electron
+/// volt-hertz relationship, not Planck in eV/Hz h_eVHz, not SI Planck h,
+/// not Boltzmann in Hz/K k_Hz, not Josephson KJ, not BIPM electronvolt
+/// eV, and not a FormalClaim that reconstructs e/h from live lookups.
+/// The table prints an ellipsis; the ledger stores the exact Ratio.
+/// This is not a terminating SciExact (7 and 6310543 remain in the
+/// reduced denominator). Joule-hertz J_Hz is not stored: 10^41
+/// overflows i128. Electron volt-inverse meter is not stored: it is
+/// the reciprocal of ledger m_eV. The versioned ledger stores the exact
+/// Ratio; this Qty is the IEEE rounding of that Ratio. Ledger unit is
+/// Hz; this Qty is dimensionless, not SI hertz. eVHz and 1/h_eVHz are
+/// not second names.
+pub fn electron_volt_in_hertz() -> Qty<Dimensionless> {
+    Qty::new(2.417_989_242_084_918_4e14)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9339,6 +9357,60 @@ mod tests {
         assert!(
             physis_constants::lookup("J_Hz").is_none(),
             "J_Hz is not stored: 10^41 overflows i128"
+        );
+
+        let ev_hz = physis_constants::electron_volt_in_hertz();
+        let ev_hz_value = Ratio::new(1_602_176_634i128 * 10i128.pow(14), 662_607_015);
+        assert_eq!(
+            ev_hz.value, ev_hz_value,
+            "ledger eV_Hz is the exact SI Ratio"
+        );
+        assert_eq!(
+            electron_volt_in_hertz().value(),
+            ev_hz_value.to_f64(),
+            "eV_Hz Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            electron_volt_in_hertz().value(),
+            2.417_989_242_084_918_4e14,
+            "eV_Hz Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
+        assert!(
+            ev_hz.value > Ratio::int(0),
+            "ledger eV_Hz stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_hertz().hash,
+            physis_constants::planck_in_ev_per_hz().hash,
+            "eV_Hz is not h_eVHz"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_hertz().hash,
+            physis_constants::planck_h().hash,
+            "eV_Hz is not h"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_hertz().hash,
+            physis_constants::joule_in_electronvolt().hash,
+            "eV_Hz is not J_eV"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_hertz().hash,
+            physis_constants::boltzmann_in_hz_per_kelvin().hash,
+            "eV_Hz is not k_Hz"
+        );
+        assert_eq!(physis_constants::lookup("eV_Hz").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("eVHz").is_none(),
+            "eVHz is not a ledger name; the live name is eV_Hz"
+        );
+        assert!(
+            physis_constants::lookup("eV_m").is_none(),
+            "eV_m is not stored: reciprocal of m_eV from the same table"
+        );
+        assert!(
+            physis_constants::lookup("eV_kg").is_none(),
+            "eV_kg is not stored: e/c^2 overflows i128"
         );
 
         assert!(
