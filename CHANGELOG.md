@@ -80,6 +80,34 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 lattice parameter of silicon is a one-sigma Interval.**
+  `physis-constants` versions `a_Si` as the CODATA 2018 one-sigma hull
+  `5.431020511(89)×10^{-10}` m from JPCRD 50, 033105 table XXXIII
+  (x-ray-related quantities). This is the recommended lattice parameter
+  of an ideal single crystal of naturally occurring Si in vacuum at
+  22.5 °C, not Bohr radius `a0`, not classical electron radius `re`,
+  and not a FormalClaim reconstructing `d220 * √8` from a live lookup.
+  The {220} lattice spacing is a separately recommended hull and is not
+  stored. The decade is `10^{19}`; `10^{18}` is the 10× trap. 2018 and
+  2022 print the same last-digit `511`; the 2018 hull contains that
+  centre. The ledger name is `a_Si`; `aSi`, `a-Si`, and `lattice_si`
+  are not second names. `physis_model` `lattice_parameter_of_silicon()`
+  Qty locksteps to the CODATA centre inside the hull. Adding `a_Si` to
+  LEDGER changes the ledger bundle pin. Theories still evaluate with
+  `f64` Qty. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `a_Si` hash
+  8d9072d01e48779f7404ab918ba023a055f197cd2c8d9f19796431939f568344;
+  node 786af851dcfebdab86280502344a362caf43e618690b85f0f3c699828c5bec29;
+  ledger node
+  58290942461f9847b63d0fbc97b2ead26afc2f8a6b13da64164ceeeb6a5493e7.
+  `Eh_kg` hash
+  fc95a867392143c42d4006b7b085cf529610c633533ddbe2066b92390535509f and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 hartree-kilogram relationship is a one-sigma SciInterval.**
   `physis-constants` versions `Eh_kg` as the CODATA 2018 one-sigma hull
   `4.8508702095432(94)×10^{-35}` kg from JPCRD 50, 033105 table XXXV

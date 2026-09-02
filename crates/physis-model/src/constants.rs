@@ -473,6 +473,20 @@ pub fn hartree_in_kilogram() -> Qty<Dimensionless> {
     Qty::new(4.850_870_209_543_2e-35)
 }
 
+/// Lattice parameter of silicon a_Si (m), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIII x-ray-related centre
+/// for an ideal single crystal of naturally occurring Si in vacuum at
+/// 22.5 °C, not Bohr radius a0, not classical electron radius re, not
+/// proton rms rp, and not a FormalClaim that reconstructs d220 * sqrt(8)
+/// from a live lookup. The {220} lattice spacing is not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// Ledger unit is m; this Qty is a length. aSi, a-Si, and lattice_si
+/// are not second names.
+pub fn lattice_parameter_of_silicon() -> Qty<Length> {
+    meters(5.431_020_511e-10)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10666,6 +10680,50 @@ mod tests {
         assert!(
             physis_constants::lookup("hartree_kg").is_none(),
             "hartree_kg is not a second name for Eh_kg"
+        );
+
+        let a_si = physis_constants::lattice_parameter_of_silicon();
+        let a_si_centre = Ratio::new(5_431_020_511, 10i128.pow(19));
+        assert_eq!(
+            lattice_parameter_of_silicon().value(),
+            a_si_centre.to_f64(),
+            "a_Si Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            lattice_parameter_of_silicon().value(),
+            5.431_020_511e-10,
+            "a_Si Qty locksteps to Ratio::to_f64 on the integer 10^19 centre"
+        );
+        assert!(
+            a_si.value.contains(Interval::point(a_si_centre)),
+            "a_Si Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            a_si.value.lo, a_si.value.hi,
+            "ledger a_Si stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::lattice_parameter_of_silicon().hash,
+            physis_constants::bohr_radius().hash,
+            "a_Si is not a0"
+        );
+        assert_ne!(
+            physis_constants::lattice_parameter_of_silicon().hash,
+            physis_constants::classical_electron_radius().hash,
+            "a_Si is not re"
+        );
+        assert_eq!(physis_constants::lookup("a_Si").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("aSi").is_none(),
+            "aSi is not a ledger name; the live name is a_Si"
+        );
+        assert!(
+            physis_constants::lookup("lattice_si").is_none(),
+            "lattice_si is not a second name for a_Si"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; a_Si is not an a/sqrt(8) certificate"
         );
 
         assert!(
