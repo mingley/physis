@@ -403,6 +403,20 @@ pub fn joule_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(6.700_535_256_5e9)
 }
 
+/// Kelvin-atomic mass unit relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the kelvin-atomic mass unit relationship, not K_Eh, not J_K, not
+/// k, not J_u, and not a FormalClaim that reconstructs k / (c^2 m_u)
+/// from live lookups. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is u; this Qty is
+/// dimensionless, not a mass dimension. Ku, K-u, and kelvin_u are not
+/// second names. Atomic mass unit-kelvin is not stored under a second
+/// name.
+pub fn kelvin_in_atomic_mass_unit() -> Qty<Dimensionless> {
+    Qty::new(9.251_087_301_4e-14)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10393,6 +10407,46 @@ mod tests {
         assert!(
             physis_constants::lookup("joule_u").is_none(),
             "joule_u is not a second name for J_u"
+        );
+
+        let k_u = physis_constants::kelvin_in_atomic_mass_unit();
+        let k_u_centre = Ratio::new(92_510_873_014, 10i128.pow(24));
+        assert_eq!(
+            kelvin_in_atomic_mass_unit().value(),
+            k_u_centre.to_f64(),
+            "K_u Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            kelvin_in_atomic_mass_unit().value(),
+            9.251_087_301_4e-14,
+            "K_u Qty locksteps to Ratio::to_f64 on the 10^-14 centre"
+        );
+        assert!(
+            k_u.value.contains(Interval::point(k_u_centre)),
+            "K_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            k_u.value.lo, k_u.value.hi,
+            "ledger K_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::kelvin_in_atomic_mass_unit().hash,
+            physis_constants::joule_in_atomic_mass_unit().hash,
+            "K_u is not J_u"
+        );
+        assert_ne!(
+            physis_constants::kelvin_in_atomic_mass_unit().hash,
+            physis_constants::kelvin_in_hartree().hash,
+            "K_u is not K_Eh"
+        );
+        assert_eq!(physis_constants::lookup("K_u").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("Ku").is_none(),
+            "Ku is not a ledger name; the live name is K_u"
+        );
+        assert!(
+            physis_constants::lookup("kelvin_u").is_none(),
+            "kelvin_u is not a second name for K_u"
         );
 
         assert!(
