@@ -80,6 +80,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 hartree-hertz relationship is a one-sigma Interval.**
+  `physis-constants` versions `Eh_Hz` as the CODATA 2018 one-sigma hull
+  `6.579683920502(13)×10^{15}` Hz from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the hertz-hartree pair, not a Ratio reciprocal of `Hz_Eh`, not
+  joule `Eh`, not `Eh_eV`, not Rydberg frequency `cRinf`, and not a
+  FormalClaim reconstructing `Eh / h` from live lookups. Hertz-kilogram
+  is not stored: `h/c²` overflows `i128`. The integer decade is `10^{3}`
+  on the `10^{15}` form; `10^{2}` is the 10× trap. This is not the
+  CODATA 2022 last-digit `4999` as the stored centre; the 2018 hull
+  still contains that 2022 centre. The ledger name is `Eh_Hz`; `EhHz`,
+  `Eh-Hz`, and `hartree_Hz` are not second names. `physis_model`
+  `hartree_in_hertz()` Qty locksteps to the CODATA centre inside the
+  hull. Adding `Eh_Hz` to LEDGER changes the ledger bundle pin. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `Eh_Hz` hash
+  9d3d98fd812ac48876d0130c20977f62d5ba838f61c6604868ad6ff050e8358a;
+  node 1e4278900e9f26858816ca32a4ba47cb573ac63172ecd5585a92c455ed1fce70;
+  ledger node
+  7b9231f8691b9584779f3bab5276e978f1055e92f2d42624f90fd71cccad4fef.
+  `Hz_Eh` hash
+  1b7fb5c9bc08aea3d58daae4cbb5bb4d59fec7d1ffddea3db40acea388b29473 and
+  `u_Hz` hash
+  5e8602ee280fe9f615ca619efa4c69b84bdfac7e4601772fc5b9a3d3c7be866a
+  unchanged.
+
 - **CODATA 2018 atomic mass unit-hertz relationship is a one-sigma Interval.**
   `physis-constants` versions `u_Hz` as the CODATA 2018 one-sigma hull
   `2.25234271871(68)×10^{23}` Hz from JPCRD 50, 033105 table XXXV
