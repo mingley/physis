@@ -7,11 +7,11 @@
 //! in tests; evaluators still use these `f64` Qty values, not that ledger.
 
 use physis_core::dim::{
-    Action, Dimensionless, Energy, EnergyDensity, Force, Frequency, HeatCapacity, Length,
+    Action, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency, HeatCapacity, Length,
     LuminosityDensity, Mass, Momentum, Power, Pressure, RadiationConstant, StefanBoltzmann, Time,
     Velocity,
 };
-use physis_core::qty::{joule, kg, meters, newton, pascal, seconds, Qty};
+use physis_core::qty::{ampere, joule, kg, meters, newton, pascal, seconds, Qty};
 
 /// Speed of light in vacuum (exact, SI).
 /// The kilogram-joule relationship is `kg_J`.
@@ -542,9 +542,23 @@ pub fn copper_x_unit() -> Qty<Length> {
 /// that quotient from a live lookup. The {220} lattice spacing is not
 /// stored. The versioned ledger stores the one-sigma hull; this Qty is
 /// that centre. Ledger unit is m; this Qty is a length. xuMo, xu-Mo, and
-/// molybdenum_xu are not second names.
+/// molybdenum_xu are not second names. The atomic-unit current listing
+/// is au_I.
 pub fn molybdenum_x_unit() -> Qty<Length> {
     meters(1.002_099_52e-13)
+}
+
+/// Atomic unit of current e Eh / hbar (A), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Hartree Eh, not au_p, not au_F,
+/// not molybdenum x unit xu_Mo, and not a FormalClaim that reconstructs
+/// that quotient from a live lookup. Atomic unit of time still cites
+/// hbar and is not stored. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. Ledger unit is A; this Qty is a
+/// current. auI, au-I, au_i, and atomic_current are not second names.
+pub fn atomic_unit_of_current() -> Qty<Current> {
+    ampere(6.623_618_237_510e-3)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -10867,6 +10881,7 @@ mod tests {
             "A-star is not a second name for Astar"
         );
         assert_eq!(physis_constants::lookup("xu_Mo").unwrap().kind, "interval");
+        assert_eq!(physis_constants::lookup("au_I").unwrap().kind, "interval");
 
         let xu_cu = physis_constants::copper_x_unit();
         let xu_cu_centre = Ratio::new(100_207_697, 10i128.pow(21));
@@ -10949,6 +10964,49 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; xu_Mo is not an a/sqrt(8) certificate"
+        );
+        let au_i = physis_constants::atomic_unit_of_current();
+        let au_i_centre = Ratio::new(6_623_618_237_510, 10i128.pow(15));
+        assert_eq!(
+            atomic_unit_of_current().value(),
+            au_i_centre.to_f64(),
+            "au_I Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_current().value(),
+            6.623_618_237_510e-3,
+            "au_I Qty locksteps to Ratio::to_f64 on the integer 10^15 centre"
+        );
+        assert!(
+            au_i.value.contains(Interval::point(au_i_centre)),
+            "au_I Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_i.value.lo, au_i.value.hi,
+            "ledger au_I stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_current().hash,
+            physis_constants::molybdenum_x_unit().hash,
+            "au_I is not xu_Mo"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_current().hash,
+            physis_constants::atomic_unit_of_momentum().hash,
+            "au_I is not au_p"
+        );
+        assert_eq!(physis_constants::lookup("au_I").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("auI").is_none(),
+            "auI is not a ledger name; the live name is au_I"
+        );
+        assert!(
+            physis_constants::lookup("atomic_current").is_none(),
+            "atomic_current is not a second name for au_I"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_I is not an a/sqrt(8) certificate"
         );
 
         assert!(

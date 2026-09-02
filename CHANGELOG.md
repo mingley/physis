@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of current is a one-sigma Interval.**
+  `physis-constants` versions `au_I` as the CODATA 2018 one-sigma hull
+  `6.623618237510(13)×10^{-3}` A from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of current
+  defined as `e E_h / ħ`, not elementary charge `e`, not molybdenum
+  x unit `xu_Mo`, and not a FormalClaim reconstructing that quotient
+  from a live lookup. Atomic unit of time still cites ħ and is not
+  stored. Atomic unit of electric potential is a second name for
+  `Eh_eV` and is not stored. The {220} lattice spacing is not stored.
+  The decade is `10^{15}`; `10^{14}` is the 10× trap. 2018 last-digit
+  is `7510`; 2022 last-digit `75082` is contained. The ledger name is
+  `au_I`; `auI`, `au-I`, `au_i`, and `atomic_current` are not second
+  names. `physis_model` `atomic_unit_of_current()` Qty locksteps to the
+  CODATA centre inside the hull. Adding `au_I` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `au_I` hash
+  3acb601feadcd30599636ce6217327ba99f8a27962026b7459beaf38afc75e5a;
+  node 6e99ebfc71c14f562d668d9758d7820d9f9dff791205f38d621981d703e874e2;
+  ledger node
+  0db0c914448fea446a47a610beab7b31ba3e9682d7e205f824c5f31c5d2c4535.
+  `xu_Mo` hash
+  fd3f7d6bace240afd207aaf8b1dbbc018516ec6e5b9273435cf0351ef678d471 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 molybdenum x unit is a one-sigma Interval.**
   `physis-constants` versions `xu_Mo` as the CODATA 2018 one-sigma hull
   `1.00209952(53)×10^{-13}` m from JPCRD 50, 033105 table XXXIII
