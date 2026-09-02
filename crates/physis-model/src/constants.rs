@@ -279,6 +279,19 @@ pub fn inverse_meter_in_hartree() -> Qty<Dimensionless> {
     Qty::new(4.556_335_252_912e-8)
 }
 
+/// Hartree-kelvin relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the hartree-kelvin relationship, not J_K, not eV_K, not Hz_K, not
+/// k, not joule Eh, and not a FormalClaim that reconstructs Eh / k from
+/// live lookups. The versioned ledger stores the one-sigma hull; this
+/// Qty is that centre. Ledger unit is K; this Qty is dimensionless, not
+/// a temperature dimension. EhK, Eh-K, and hartree_K are not second
+/// names. The inverse listing is not stored.
+pub fn hartree_in_kelvin() -> Qty<Dimensionless> {
+    Qty::new(3.157_750_248_040_7e5)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9917,6 +9930,46 @@ mod tests {
         assert!(
             physis_constants::lookup("inv_m_hartree").is_none(),
             "inv_m_hartree is not a second name for m_Eh"
+        );
+
+        let eh_k = physis_constants::hartree_in_kelvin();
+        let eh_k_centre = Ratio::new(31_577_502_480_407, 10i128.pow(8));
+        assert_eq!(
+            hartree_in_kelvin().value(),
+            eh_k_centre.to_f64(),
+            "Eh_K Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            hartree_in_kelvin().value(),
+            3.157_750_248_040_7e5,
+            "Eh_K Qty locksteps to Ratio::to_f64 on the 10^8 centre"
+        );
+        assert!(
+            eh_k.value.contains(Interval::point(eh_k_centre)),
+            "Eh_K Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            eh_k.value.lo, eh_k.value.hi,
+            "ledger Eh_K stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::hartree_in_kelvin().hash,
+            physis_constants::joule_in_kelvin().hash,
+            "Eh_K is not J_K"
+        );
+        assert_ne!(
+            physis_constants::hartree_in_kelvin().hash,
+            physis_constants::inverse_meter_in_hartree().hash,
+            "Eh_K is not m_Eh"
+        );
+        assert_eq!(physis_constants::lookup("Eh_K").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("EhK").is_none(),
+            "EhK is not a ledger name; the live name is Eh_K"
+        );
+        assert!(
+            physis_constants::lookup("K_Eh").is_none(),
+            "K_Eh is not stored; the inverse listing is not a second name"
         );
 
         assert!(
