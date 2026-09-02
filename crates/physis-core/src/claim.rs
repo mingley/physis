@@ -97,10 +97,10 @@ impl VerdictKind {
 /// There is no [`serde::Deserialize`] impl: JSON cannot mint a
 /// `certified-numeric` overlay or an `adversarially-reviewed` tag.
 /// Theories construct verdicts with [`Verdict::from_claim`] and the
-/// overlay builders (`with_certified_numeric`, `with_cross_checked`,
-/// `with_empirical`, `with_statistical_nll`). Derivation, empirical, semantic,
-/// enclosure, and NLL fields are private: a public assignment cannot mint
-/// those overlays.
+/// overlay builders (`with_certified_numeric`, `with_interval_enclosure`,
+/// `with_cross_checked`, `with_empirical`, `with_statistical_nll`).
+/// Derivation, empirical, semantic, enclosure, and NLL fields are private:
+/// a public assignment cannot mint those overlays.
 ///
 /// ```compile_fail
 /// let c = physis_core::claim::Claim::new(
@@ -122,6 +122,17 @@ impl VerdictKind {
 /// );
 /// let mut v = physis_core::claim::Verdict::holds(&c, "ran");
 /// v.statistical_nll = Some("1".into());
+/// ```
+///
+/// ```compile_fail
+/// let c = physis_core::claim::Claim::new(
+///     "x",
+///     "y",
+///     physis_core::LayerId::Mathematical,
+///     physis_core::ClaimClass::Mathematical,
+/// );
+/// let mut v = physis_core::claim::Verdict::holds(&c, "ran");
+/// v.numeric_lo = Some("1".into());
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Verdict {
@@ -259,6 +270,16 @@ impl Verdict {
     pub fn with_certified_numeric(mut self, lo: impl Into<String>, hi: impl Into<String>) -> Self {
         debug_assert_eq!(self.kind, VerdictKind::Holds);
         self.derivation = DerivationAssurance::CertifiedNumeric;
+        self.numeric_lo = Some(lo.into());
+        self.numeric_hi = Some(hi.into());
+        self
+    }
+
+    /// Overlay independently parseable interval endpoints without
+    /// assigning [`DerivationAssurance::CertifiedNumeric`]. Does not mint
+    /// P3N, a kernel proof, Canonical, or P4. The overlay is not the
+    /// certificate: an independent `[lo, hi]` Ratio parse is the check.
+    pub fn with_interval_enclosure(mut self, lo: impl Into<String>, hi: impl Into<String>) -> Self {
         self.numeric_lo = Some(lo.into());
         self.numeric_hi = Some(hi.into());
         self
@@ -700,6 +721,22 @@ mod tests {
         assert_eq!(v.statistical_nll(), Some("2933042"));
         assert_eq!(v.derivation(), DerivationAssurance::Executed);
         assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+    }
+
+    #[test]
+    fn interval_enclosure_is_not_certified_numeric() {
+        let c = Claim::new(
+            "gut.weinberg-angle-mz-interval",
+            "GQW centre vs PDG Gaussian.",
+            LayerId::Effective,
+            ClaimClass::EmpiricalPrediction,
+        );
+        let v = Verdict::fails(&c, "disjoint").with_interval_enclosure("1/5", "1/4");
+        assert_eq!(v.numeric_lo(), Some("1/5"));
+        assert_eq!(v.numeric_hi(), Some("1/4"));
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(v.kind, VerdictKind::Fails);
     }
 
     #[test]

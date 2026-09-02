@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **Independent Interval enclose of the GQW input-interval overlay.**
+  `physis enclose` independently parses live `Interval` endpoints on
+  `gut.weinberg-angle-mz-interval` via `Interval::parse_display` of
+  `[lo, hi]`. `Verdict::with_interval_enclosure` stores those display
+  strings without assigning `CertifiedNumeric`, so the cell stays
+  `statistical computed` and `inspect trust P3N` stays count 4. Super-K,
+  unique-vacuum, and Poincaré still refuse. The overlay is not the
+  certificate. Not a kernel proof, not Canonical, not P4. Loop encloses
+  the overlay with the P3N Ratio cells. GUT-scale 3/8 certificate pin
+  unchanged
+  `0967e9f42ec9ff0fd8e29fecc5bb5a3ed9aba4974ac77b0e5217a4bb634ec202`.
+  GQW interval certificate
+  `abb134fa6d8b112c92c0dfbefb789a4446cbed54aaeb83528658bd65d2b1ace3`.
+  Verified: parse_display rejects unreduced and reversed dumps; role
+  gates; P3N count.
+
 - **SciInterval is a closed hull of overflow-scale SciExact endpoints.**
   `physis-numeric` stores measured hulls whose Ratio scale overflows
   `i128` as canonical terminating-decimal endpoints. `parse_display` of

@@ -12,7 +12,7 @@ use physis_core::judgment::{
 };
 use physis_core::knob::{KnobDomain, KnobValue};
 use physis_core::AxiomLedger;
-use physis_numeric::Ratio;
+use physis_numeric::{Interval, Ratio};
 use physis_proof::{
     catalog_tree_binding, catalog_trees_in, lookup_matching, Challenge, UntrustedProof, CATALOG,
 };
@@ -58,8 +58,10 @@ pub struct Lab {
     axioms: AxiomLedger,
     role: Role,
     budget: ResearchBudget,
-    /// Independent Ratio parses keyed by statement hash. Not a kernel
-    /// receipt store and not the `CertifiedNumeric` overlay that earns P3N.
+    /// Independent Ratio / Interval parses keyed by statement hash. Not a
+    /// kernel receipt store and not the `CertifiedNumeric` overlay that
+    /// earns P3N. An Interval enclose of a GQW overlay does not flip that
+    /// flag.
     numeric_certs: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
     /// Independent SourceRecord rebuilds keyed by statement hash. Not P3S.
     cited_sources: BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
@@ -334,7 +336,8 @@ impl Lab {
                     let _ = self.build_evidence_graph(&claim);
                 }
                 JournalEvent::Enclose { claim, .. } => {
-                    // Rebuild from live CertifiedNumeric overlay strings.
+                    // Rebuild from live enclosure overlay strings
+                    // (CertifiedNumeric Ratio or independent Interval).
                     // The recorded certificate hash is not deserialized.
                     let _ = self.build_numeric_certificates(&claim);
                 }
@@ -655,6 +658,10 @@ impl Lab {
                                 text.push_str(
                                     "  enclose:     none (overlay is not an independent Ratio parse)\n",
                                 );
+                            } else if v.numeric_lo().is_some() && v.numeric_hi().is_some() {
+                                text.push_str(
+                                    "  enclose:     none (overlay is not an independent Interval parse)\n",
+                                );
                             }
                             if let Some(id) = self.cited_sources.get(&c.statement_hash()) {
                                 text.push_str(&format!("  source:      {id}\n"));
@@ -917,6 +924,9 @@ impl Lab {
             derivation,
             semantic,
             dual_checked_receipt: self.receipts.by_statement(claim.statement_hash()).is_some(),
+            // P3N is the CertifiedNumeric overlay, not the presence of a
+            // NumericCertificate node. Independent Interval enclose of
+            // the GQW input-interval overlay must not earn P3N.
             numeric_certificate: derivation == physis_core::DerivationAssurance::CertifiedNumeric,
         })
     }
@@ -1135,10 +1145,11 @@ impl Lab {
         Ok((out, graph))
     }
 
-    /// Independently parse live `CertifiedNumeric` enclosure strings as
-    /// [`Ratio`]. Stores a content-addressed [`NodeKind::NumericCertificate`].
-    /// Does not mint a kernel receipt, Canonical, or P4, and does not
-    /// change the P3N overlay.
+    /// Independently parse live enclosure overlay strings as [`Ratio`]
+    /// endpoints and a canonical [`physis_numeric::Interval`]. Stores a
+    /// content-addressed [`NodeKind::NumericCertificate`]. Does not mint
+    /// a kernel receipt, Canonical, or P4. A non-`CertifiedNumeric`
+    /// Interval parse does not change the P3N overlay.
     fn enclose_claim(&mut self, claim_id: &str) -> Response {
         match self.build_numeric_certificates(claim_id) {
             Ok((out, cert)) => {
@@ -1180,17 +1191,18 @@ impl Lab {
         let mut text = format!("enclose  {claim_id}\n");
         let mut cert_ids: Vec<physis_core::artifact::ArtifactId> = Vec::new();
         for (theory, hash, derivation, lo, hi) in rows {
-            if derivation != DerivationAssurance::CertifiedNumeric {
+            let certified = derivation == DerivationAssurance::CertifiedNumeric;
+            let (Some(lo), Some(hi)) = (lo, hi) else {
+                if certified {
+                    return Err(format!(
+                        "enclose {claim_id}: {theory} certified-numeric overlay has no enclosure strings"
+                    ));
+                }
                 text.push_str(&format!(
                     "  skipped  {theory}  derivation {} (not certified-numeric)\n",
                     derivation.as_str()
                 ));
                 continue;
-            }
-            let (Some(lo), Some(hi)) = (lo, hi) else {
-                return Err(format!(
-                    "enclose {claim_id}: {theory} certified-numeric overlay has no enclosure strings"
-                ));
             };
             let Some(lo_r) = Ratio::parse_display(&lo) else {
                 return Err(format!(
@@ -1205,6 +1217,13 @@ impl Lab {
             if lo_r > hi_r {
                 return Err(format!(
                     "enclose {claim_id}: {theory} reversed enclosure [{lo}, {hi}]"
+                ));
+            }
+            let enclosure = Interval::new(lo_r, hi_r);
+            let display = format!("[{lo}, {hi}]");
+            if Interval::parse_display(&display) != Some(enclosure) {
+                return Err(format!(
+                    "enclose {claim_id}: {theory} enclosure '{display}' is not a canonical Interval"
                 ));
             }
             let stmt = self.store.insert(Node::new(
@@ -1224,7 +1243,13 @@ impl Lab {
             text.push_str(&format!("    theory       {theory}\n"));
             text.push_str(&format!("    enclosure    [{lo}, {hi}]\n"));
             text.push_str(&format!("    certificate  {}\n", cert.to_hex()));
-            text.push_str("    not a kernel proof; not P4; not Canonical\n");
+            if certified {
+                text.push_str("    not a kernel proof; not P4; not Canonical\n");
+            } else {
+                text.push_str(
+                    "    interval-certified; not P3N; not a kernel proof; not P4; not Canonical\n",
+                );
+            }
         }
 
         if cert_ids.is_empty() {
@@ -2112,7 +2137,7 @@ impl Lab {
         let mut enclose_slugs = BTreeSet::new();
         for t in self.theories.values() {
             for (c, v) in t.evaluate_all() {
-                if v.derivation() == DerivationAssurance::CertifiedNumeric {
+                if v.numeric_lo().is_some() && v.numeric_hi().is_some() {
                     enclose_slugs.insert(c.id_str().to_string());
                 }
             }
@@ -3803,6 +3828,10 @@ mod tests {
             "{why_min}"
         );
         assert!(why_min.contains("nll:"), "{why_min}");
+        assert!(
+            why_min.contains("independent Interval parse"),
+            "GQW overlay is not an independent enclose until numerical-verifier runs: {why_min}"
+        );
         assert!(
             !why_min.contains("certified-numeric"),
             "GQW NLL is not P3N: {why_min}"
@@ -9562,6 +9591,10 @@ mod tests {
             "loop must independently parse P3N Ratio strings: {text}"
         );
         assert!(
+            text.contains("enclose  gut.weinberg-angle-mz-interval"),
+            "loop must independently parse the GQW Interval overlay: {text}"
+        );
+        assert!(
             text.contains("enclose  consistency.anomaly-cancellation"),
             "{text}"
         );
@@ -10486,7 +10519,6 @@ mod tests {
         for (claim, why_token) in [
             ("predictivity.unique-vacuum", "no certified-numeric"),
             ("gut.proton-lifetime-sk", "no certified-numeric"),
-            ("gut.weinberg-angle-mz-interval", "no certified-numeric"),
             ("dec.closed-equals-exact", "no certified-numeric"),
         ] {
             let resp = lab.exec(Command::Enclose {
@@ -10495,6 +10527,37 @@ mod tests {
             assert_eq!(resp.exit_code(), 1, "{claim} {}", resp.text());
             assert!(resp.text().contains(why_token), "{claim} {}", resp.text());
         }
+
+        let mz = lab
+            .exec(Command::Enclose {
+                claim: "gut.weinberg-angle-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(mz.contains("interval-certified"), "{mz}");
+        assert!(mz.contains("not P3N"), "{mz}");
+        assert!(mz.contains("not a kernel proof"), "{mz}");
+        assert!(mz.contains("not P4"), "{mz}");
+        assert!(!mz.contains("receipt"), "{mz}");
+        assert!(!mz.contains("enclosure    [3/8, 3/8]"), "{mz}");
+        let mz_id = numeric_certificate_id(&mz);
+        assert_eq!(
+            lab.store.get(mz_id).map(|n| n.kind),
+            Some(NodeKind::NumericCertificate)
+        );
+        assert_ne!(
+            mz_id.to_hex(),
+            "0967e9f42ec9ff0fd8e29fecc5bb5a3ed9aba4974ac77b0e5217a4bb634ec202",
+            "GQW interval certificate is not the GUT-scale 3/8 pin"
+        );
+        assert_eq!(
+            mz_id.to_hex(),
+            "abb134fa6d8b112c92c0dfbefb789a4446cbed54aaeb83528658bd65d2b1ace3"
+        );
+        assert!(
+            mz.contains("c017e0a4ecc0131928df53903defcbb45c3b92cb290b16d329a40baa81747270"),
+            "GQW interval FormalClaim identity must stay pinned: {mz}"
+        );
 
         let p3n = lab
             .exec(Command::Inspect {
@@ -10509,6 +10572,29 @@ mod tests {
         );
         assert!(!p3n.contains("gut.proton-lifetime-sk"), "{p3n}");
         assert!(!p3n.contains("gut.weinberg-angle-mz"), "{p3n}");
+
+        let why_mz = lab
+            .exec(Command::Why {
+                claim: "gut.weinberg-angle-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            why_mz.contains(&format!("enclose:     {mz_id}")),
+            "{why_mz}"
+        );
+        assert!(
+            why_mz.contains("judgment:   statistical computed"),
+            "{why_mz}"
+        );
+        assert!(!why_mz.contains("certified-numeric"), "{why_mz}");
+        assert!(
+            !why_mz
+                .lines()
+                .any(|l| l.contains("trust:") && l.contains("P3N")),
+            "Interval enclose must not earn P3N: {why_mz}"
+        );
+        assert!(!why_mz.contains("P4"), "{why_mz}");
 
         let why = lab
             .exec(Command::Why {

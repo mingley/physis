@@ -127,7 +127,9 @@ registered PDG `sin²θ_W(M_Z)` hull under the interval-subset rule, **and**
 the exact Gaussian NLL of that centre rounded to five decimal places versus
 the PDG σ. Compatible means the prediction lies inside the data, not that
 the intervals merely overlap. The NLL is a `statistical computed` judgment,
-not P3N. Minimal SU(5) is **excluded**. The one-loop MSSM enclosure
+not P3N. `physis enclose` independently parses the input-interval endpoints
+as a canonical `Interval`; that is not `CertifiedNumeric` and is not P3N.
+Minimal SU(5) is **excluded**. The one-loop MSSM enclosure
 overlaps the PDG hull but is not contained in it, so the cell is
 **undecidable** / `inconclusive` (`InsufficientPrecision`) while the
 heuristic 3% cell can still **hold**. The input enclosure is not a

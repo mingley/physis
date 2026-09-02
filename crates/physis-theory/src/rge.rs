@@ -477,6 +477,12 @@ mod tests {
             sm_i.disjoint(pdg),
             "SU(5) input interval {sm_i} vs PDG {pdg}"
         );
+        assert_eq!(
+            Interval::parse_display(&sm_i.to_string()),
+            Some(sm_i),
+            "GQW input interval Display must independently parse"
+        );
+        assert_eq!(Interval::parse_display(&mssm_i.to_string()), Some(mssm_i));
         assert!(
             !mssm_i.disjoint(pdg) && !pdg.contains(mssm_i),
             "one-loop MSSM with sourced PDG input σ overlaps 10^-5 but is not contained: {mssm_i} vs {pdg}"

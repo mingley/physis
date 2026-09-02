@@ -112,7 +112,7 @@ pub enum JournalEvent {
         /// forged hash cannot mint the graph.
         graph_hash: String,
     },
-    /// An independent Ratio parse of a `CertifiedNumeric` enclosure.
+    /// An independent Ratio or Interval parse of a live enclosure overlay.
     /// Restore rebuilds from live overlay strings. The recorded
     /// certificate hash is not deserialized as authority and is not a
     /// kernel receipt, Canonical, or P4.

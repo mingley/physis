@@ -18,7 +18,8 @@
 //!   interval-subset of the sourced PDG 2022 `α_s` / `α_em⁻¹` one-sigma
 //!   hulls against the PDG mixing-angle hull, and the exact
 //!   Gaussian NLL of the algebraic centre rounded to the PDG `10^{-5}`
-//!   scale versus the PDG σ. Super-K
+//!   scale versus the PDG σ. `physis enclose` independently parses the
+//!   input-interval endpoints; that is not P3N. Super-K
 //!   is a one-sided limit and is not that Gaussian. Overlap is not
 //!   containment. The 3% heuristic hit stays on `gut.weinberg-angle-mz`.
 //!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: the
@@ -504,6 +505,7 @@ impl Theory for Su5Gut {
                     )
                 };
                 let v = v.with_empirical(rec.status()).with_evidence(evidence);
+                let v = v.with_interval_enclosure(envelope.lo.to_string(), envelope.hi.to_string());
                 match rec.nll {
                     Some(nll) => v.with_statistical_nll(nll),
                     None => v,
@@ -807,6 +809,15 @@ mod tests {
         assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
         assert_eq!(v.derivation(), DerivationAssurance::Executed);
         assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        let lo = v.numeric_lo().expect("GQW interval overlay");
+        let hi = v.numeric_hi().expect("GQW interval overlay");
+        assert_ne!(lo, hi, "input-interval hull is not a point Ratio");
+        assert_eq!(
+            physis_numeric::Interval::parse_display(&format!("[{lo}, {hi}]"))
+                .map(|i| i.to_string()),
+            Some(format!("[{lo}, {hi}]")),
+            "overlay must be a canonical Interval dump"
+        );
         let min_nll = v.statistical_nll().expect("PDG Gaussian NLL");
         assert!(
             v.evidence

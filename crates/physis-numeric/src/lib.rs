@@ -4,8 +4,12 @@
 //! SI-exact values whose [`Ratio`] denominator does not fit in `i128`.
 //! [`SciInterval`] is a closed hull of those decimals: CODATA electron
 //! mass needs `10^{41}`, which does not fit in a [`Ratio`] denominator.
-//! [`Ratio`] order uses a 256-bit product when `i128` cross-multiply
-//! overflows, so a CODATA-scale mass hull is independently checkable.
+//! [`Interval::parse_display`] independently checks a `[lo, hi]` overlay
+//! whose endpoints are canonical [`Ratio`] dumps. That is the GQW
+//! input-interval enclose path: the overlay is not the certificate, and
+//! it is not P3N. [`Ratio`] order uses a 256-bit product when `i128`
+//! cross-multiply overflows, so a CODATA-scale mass hull is independently
+//! checkable.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -522,6 +526,23 @@ impl Interval {
         }
     }
 
+    /// Parse `[lo, hi]` matching [`Display`]. Each endpoint must be a
+    /// canonical [`Ratio`] dump (`3/8`, not `6/16`). Independent check of
+    /// an enclosure overlay: the overlay is not the certificate, and a
+    /// non-point hull is not P3N.
+    pub fn parse_display(s: &str) -> Option<Self> {
+        let rest = s.strip_prefix('[')?.strip_suffix(']')?;
+        let (lo, hi) = rest.split_once(", ")?;
+        let lo = Ratio::parse_display(lo)?;
+        let hi = Ratio::parse_display(hi)?;
+        let parsed = Self::new(lo, hi);
+        if parsed.to_string() == s {
+            Some(parsed)
+        } else {
+            None
+        }
+    }
+
     /// Conservative hull of a machine float. Prefer [`Ratio`] for threshold
     /// claims. One ulp of slack, stored as a dyadic rational interval.
     pub fn from_f64_approx(x: f64) -> Self {
@@ -821,6 +842,29 @@ mod tests {
         assert!(Interval::new(Ratio::int(-1), Ratio::int(1)).contains_zero());
         assert!(!a.contains_zero());
         assert_eq!(a.to_string(), "[1, 2]");
+        assert_eq!(Interval::parse_display("[1, 2]"), Some(a));
+        assert_eq!(
+            Interval::parse_display("[3/8, 3/8]"),
+            Some(Interval::point(Ratio::new(3, 8)))
+        );
+        assert_eq!(
+            Interval::parse_display("[6/16, 3/8]"),
+            None,
+            "unreduced is not Display"
+        );
+        assert_eq!(
+            Interval::parse_display("[0.23122, 0.23122]"),
+            None,
+            "decimal is not a Ratio"
+        );
+        assert_eq!(
+            Interval::parse_display("[2, 1]"),
+            None,
+            "reversed is not Display"
+        );
+        assert_eq!(Interval::parse_display("[1,2]"), None);
+        assert!(Interval::parse_display("[3/8, 3/8] ").is_none());
+        assert_eq!(Interval::parse_display(""), None);
     }
 
     #[test]

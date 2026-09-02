@@ -47,7 +47,7 @@ pub enum NodeKind {
     /// A rebuilt evidence graph: competing encodings and evaluations of
     /// one lab slug. Not deserialized as authority; never Canonical or P4.
     Evidence,
-    /// An independent Ratio parse of a `CertifiedNumeric` enclosure.
+    /// An independent Ratio or Interval parse of a live enclosure overlay.
     /// Not a kernel receipt, not Canonical, and not P4. Restore rebuilds
     /// from live overlay strings; a recorded hash is not deserialized.
     NumericCertificate,
