@@ -145,6 +145,18 @@ pub fn atomic_unit_of_velocity() -> Qty<Velocity> {
     Qty::new(2.187_691_263_64e6)
 }
 
+/// Atomic unit of permittivity e^2/(a0 Eh) (F m^{-1}), CODATA 2018.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not vacuum permittivity, not Y0, and not a 4 pi reconstruction.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. Atomic unit of time still cites hbar and is not stored.
+/// aueps is not a second name.
+pub fn atomic_unit_of_permittivity(
+) -> Qty<physis_core::SI<typenum::N1, typenum::N3, typenum::P4, typenum::P2>> {
+    Qty::new(1.112_650_055_45e-10)
+}
+
 /// Proton mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -10714,6 +10726,48 @@ mod tests {
         assert!(
             physis_constants::lookup("alpha_c").is_none(),
             "alpha_c is not a ledger name; the live name is au_v"
+        );
+
+        let aueps = physis_constants::atomic_unit_of_permittivity();
+        let aueps_centre = physis_numeric::Ratio::new(111_265_005_545, 10i128.pow(21));
+        assert_eq!(
+            atomic_unit_of_permittivity().value(),
+            1.112_650_055_45e-10,
+            "au_eps Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_unit_of_permittivity().value(),
+            aueps_centre.to_f64(),
+            "au_eps Qty locksteps to Ratio::to_f64 on the 10^-21 centre"
+        );
+        assert!(
+            aueps
+                .value
+                .contains(physis_numeric::Interval::point(aueps_centre)),
+            "au_eps Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            aueps.value.lo, aueps.value.hi,
+            "ledger au_eps stays an Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_permittivity().hash,
+            physis_constants::vacuum_permittivity().hash,
+            "au_eps is not epsilon0"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_permittivity().hash,
+            physis_constants::atomic_unit_of_velocity().hash,
+            "au_eps is not au_v"
+        );
+        assert_eq!(physis_constants::lookup("au_eps").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("aueps").is_none(),
+            "aueps is not a ledger name; the live name is au_eps"
+        );
+        assert!(
+            physis_constants::lookup("4pi_eps").is_none(),
+            "4pi_eps is not a ledger name; the live name is au_eps"
         );
 
         assert!(

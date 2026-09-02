@@ -29,6 +29,28 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of permittivity is a one-sigma Interval.**
+  `physis-constants` versions `au_eps` as the CODATA 2018 hull
+  `1.11265005545(17)×10^{-10}` F m^{-1} from JPCRD 50, 033105 table XXXIV
+  (Atomic units). This is the printed recommended permittivity hull
+  listed as e^2/(a0 Eh), not vacuum `epsilon0`, not `Y0`, not
+  astronomical `au`, not `au_v`, not an SI defining Ratio, not a
+  terminating SciExact, and not a FormalClaim reconstructing that
+  quotient or 4 pi epsilon0 from live lookups. Atomic unit of time
+  still cites hbar and is not stored. The ledger name is `au_eps`;
+  `aueps`, `au_e0`, `eps_au`, and `4pi_eps` are not second names.
+  Decade `10^{21}` (`10^{20}` is the 10x trap). This is not the CODATA
+  2022 last-digit `05620` as the stored centre; the 2018 hull does not
+  contain that 2022 centre. `physis_model` `atomic_unit_of_permittivity()`
+  Qty locksteps to `Ratio::to_f64` of the recommended centre inside the
+  hull. Adding `au_eps` to LEDGER changes the ledger bundle pin. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4. Verified: `au_eps` hash 82d6ab46e3ea0d80d80423bea9f6fa44a2e4e4004660c4b39b7a326deb95cd06; node 2a20f893702481b4fe30277d0cf5264392f1d4a10e4c2c27f314c4f023e72a0c; ledger
+  node 86ab86113fd53d92b3b7d4871e916cbbfedf7a02401cffb0f6e449b5011a8ef8. `au_v` hash
+  5b8ea3a788076f8159c305e8a97f324a80989c29b6c8fee509a3e15714417ba9
+  unchanged.
+
 - **CODATA 2018 atomic unit of velocity is a one-sigma Interval.**
   `physis-constants` versions `au_v` as the CODATA 2018 hull
   `2.18769126364(33)×10^{6}` m s^{-1} from JPCRD 50, 033105 table XXXIV
