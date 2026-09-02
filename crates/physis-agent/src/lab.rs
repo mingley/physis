@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  0db0c914448fea446a47a610beab7b31ba3e9682d7e205f824c5f31c5d2c4535"),
+            text.contains("constant  ledger  f7ef3b5b2a03f147c65b05cf6028248cf5285807bac3c095cb208c1b66afe7e2"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -18269,6 +18269,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let au_rho = lab
+            .exec(Command::Constant {
+                name: Some("au_rho".into()),
+            })
+            .text()
+            .to_string();
+        assert!(au_rho.contains("constant  au_rho  node "), "{au_rho}");
+        assert!(
+            au_rho.contains(
+                "hash     438f5e555b9af97c484c28fcd7227ed3fe7797300b9b738d5d0e0a8bc4dade4c"
+            ),
+            "{au_rho}"
+        );
+        assert!(au_rho.contains("kind     interval"), "{au_rho}");
+        assert!(au_rho.contains("table    XXXIV"), "{au_rho}");
+        assert!(
+            au_rho.contains("range    au_rho = 1.08120238457(49)e12"),
+            "{au_rho}"
+        );
+        assert!(au_rho.contains("unit     C m^{-3}"), "{au_rho}");
+        assert!(
+            au_rho.contains("value    [1081202384080, 1081202385060]"),
+            "{au_rho}"
+        );
+        assert!(au_rho.contains("rebuild  ok"), "{au_rho}");
+        assert!(au_rho.contains("not P3N"), "{au_rho}");
+        assert!(!au_rho.contains("receipt"), "{au_rho}");
+        assert!(!au_rho.contains("theorem"), "{au_rho}");
+        let au_rho_id = constant_node_id(&au_rho);
+        assert_eq!(
+            au_rho_id.to_hex(),
+            "c9a89a107638023a042ec932406cf5f08ab5351d453b497401a9c231dc29f2b0",
+            "journaling must not change the au_rho constant payload"
+        );
+        assert_eq!(
+            lab.store.get(au_rho_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let n_a_e = lab
             .exec(Command::Constant {
                 name: Some("NAe".into()),
@@ -22572,7 +22611,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "0db0c914448fea446a47a610beab7b31ba3e9682d7e205f824c5f31c5d2c4535",
+            "f7ef3b5b2a03f147c65b05cf6028248cf5285807bac3c095cb208c1b66afe7e2",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -23507,7 +23546,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "0db0c914448fea446a47a610beab7b31ba3e9682d7e205f824c5f31c5d2c4535",
+            "f7ef3b5b2a03f147c65b05cf6028248cf5285807bac3c095cb208c1b66afe7e2",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -24987,6 +25026,14 @@ mod tests {
         .expect("pinned au_I node");
         assert_eq!(
             lab2.store.get(au_i).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let au_rho = physis_core::artifact::ArtifactId::from_hex(
+            "c9a89a107638023a042ec932406cf5f08ab5351d453b497401a9c231dc29f2b0",
+        )
+        .expect("pinned au_rho node");
+        assert_eq!(
+            lab2.store.get(au_rho).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let n_a_e = physis_core::artifact::ArtifactId::from_hex(
@@ -26916,7 +26963,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  0db0c914448fea446a47a610beab7b31ba3e9682d7e205f824c5f31c5d2c4535"),
+            text.contains("constant  ledger  f7ef3b5b2a03f147c65b05cf6028248cf5285807bac3c095cb208c1b66afe7e2"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

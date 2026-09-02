@@ -557,8 +557,25 @@ pub fn molybdenum_x_unit() -> Qty<Length> {
 /// hbar and is not stored. The versioned ledger stores the one-sigma
 /// hull; this Qty is that centre. Ledger unit is A; this Qty is a
 /// current. auI, au-I, au_i, and atomic_current are not second names.
+/// The atomic-unit charge-density listing is au_rho.
 pub fn atomic_unit_of_current() -> Qty<Current> {
     ampere(6.623_618_237_510e-3)
+}
+
+/// Atomic unit of charge density e / a0^3 (C m^{-3}), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Bohr a0, not au_I, not au_p, and not
+/// a FormalClaim that reconstructs that quotient from a live lookup.
+/// Atomic unit of time still cites hbar and is not stored. Atomic unit
+/// of electric potential is a second name for Eh_eV and is not stored.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. Ledger unit is C m^{-3}; this Qty is charge over volume
+/// (L^{-3} T I). aurho, au-rho, au_n, and charge_density are not second
+/// names.
+pub fn atomic_unit_of_charge_density(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::N3, typenum::P1, typenum::P1>> {
+    Qty::new(1.081_202_384_57e12)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -11007,6 +11024,49 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; au_I is not an a/sqrt(8) certificate"
+        );
+        let au_rho = physis_constants::atomic_unit_of_charge_density();
+        let au_rho_centre = Ratio::int(1_081_202_384_570);
+        assert_eq!(
+            atomic_unit_of_charge_density().value(),
+            au_rho_centre.to_f64(),
+            "au_rho Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_charge_density().value(),
+            1.081_202_384_57e12,
+            "au_rho Qty locksteps to Ratio::to_f64 on the integer centre"
+        );
+        assert!(
+            au_rho.value.contains(Interval::point(au_rho_centre)),
+            "au_rho Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_rho.value.lo, au_rho.value.hi,
+            "ledger au_rho stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_charge_density().hash,
+            physis_constants::atomic_unit_of_current().hash,
+            "au_rho is not au_I"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_charge_density().hash,
+            physis_constants::atomic_unit_of_momentum().hash,
+            "au_rho is not au_p"
+        );
+        assert_eq!(physis_constants::lookup("au_rho").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("aurho").is_none(),
+            "aurho is not a ledger name; the live name is au_rho"
+        );
+        assert!(
+            physis_constants::lookup("charge_density").is_none(),
+            "charge_density is not a second name for au_rho"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_rho is not an a/sqrt(8) certificate"
         );
 
         assert!(
