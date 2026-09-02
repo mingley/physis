@@ -192,8 +192,22 @@ pub fn hertz_in_kelvin() -> Qty<Dimensionless> {
 /// ledger stores the exact Ratio; this Qty is the IEEE rounding of that
 /// Ratio. Ledger unit is m^{-1}; this Qty is dimensionless, not SI
 /// inverse metre. Hzm, m_Hz, and 1/c are not second names.
+/// The hertz-hartree relationship is Hz_Eh.
 pub fn hertz_in_inverse_meter() -> Qty<Dimensionless> {
     Qty::new(3.335_640_951_981_520_4e-9)
+}
+
+/// Hertz-hartree relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the hertz-hartree relationship, not joule Eh, not the eV companion
+/// Eh_eV, not SI-exact Hz_m, not Hz_K, and not a FormalClaim that
+/// reconstructs h / Eh from live lookups. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. Ledger unit is E_h;
+/// this Qty is dimensionless, not a hartree-energy dimension. HzEh,
+/// Eh_Hz, and hartree_Hz are not second names.
+pub fn hertz_in_hartree() -> Qty<Dimensionless> {
+    Qty::new(1.519_829_846_057_000_2e-16)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -9596,6 +9610,51 @@ mod tests {
         assert!(
             physis_constants::lookup("eV_m").is_none(),
             "eV_m is not stored: reciprocal of m_eV from the same table"
+        );
+
+        let hz_eh = physis_constants::hertz_in_hartree();
+        let hz_eh_centre = Ratio::new(15_198_298_460_570, 10i128.pow(29));
+        assert_eq!(
+            hertz_in_hartree().value(),
+            hz_eh_centre.to_f64(),
+            "Hz_Eh Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            hertz_in_hartree().value(),
+            1.519_829_846_057_000_2e-16,
+            "Hz_Eh Qty locksteps to Ratio::to_f64 on the 10^29 centre"
+        );
+        assert!(
+            hz_eh.value.contains(Interval::point(hz_eh_centre)),
+            "Hz_Eh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            hz_eh.value.lo, hz_eh.value.hi,
+            "ledger Hz_Eh stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_hartree().hash,
+            physis_constants::hartree_energy().hash,
+            "Hz_Eh is not Eh"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_hartree().hash,
+            physis_constants::hartree_energy_in_ev().hash,
+            "Hz_Eh is not Eh_eV"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_hartree().hash,
+            physis_constants::hertz_in_inverse_meter().hash,
+            "Hz_Eh is not Hz_m"
+        );
+        assert_eq!(physis_constants::lookup("Hz_Eh").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("HzEh").is_none(),
+            "HzEh is not a ledger name; the live name is Hz_Eh"
+        );
+        assert!(
+            physis_constants::lookup("Eh_Hz").is_none(),
+            "Eh_Hz is not stored: inverse hartree-hertz is a later table row"
         );
 
         assert!(
