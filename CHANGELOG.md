@@ -22,6 +22,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Boltzmann constant in eV/K is an exact Ratio.**
+  `physis-constants` versions `k_eV` as the SI-exact Ratio `k/e` =
+  `1380649/16021766340` eV K^{-1} from JPCRD 50, 033105 table XXXI
+  (PHYSICOCHEMICAL). The table prints `8.617 333 262… × 10^{-5}`; the
+  ledger stores the full product. The reduced denominator keeps factors
+  3, 19, 389, and 12043 (the same primes as `RK`, because both divide
+  by `e`), so this is not a terminating SciExact. This is not SI
+  joule-per-kelvin `k`, not `eV`, not `NAk`, not `NAe`, not `RK`, not
+  an SI defining constant, and not a FormalClaim reconstructing `k / e`
+  from live lookups. The ledger name is `k_eV`. Boltzmann in Hz/K and
+  `k/hc` are not stored. CODATA 2022 prints the same SI-exact ellipsis;
+  there is no last-digit trap. `physis_model`
+  `boltzmann_in_ev_per_kelvin()` Qty locksteps to `Ratio::to_f64` of the
+  reduced fraction. Adding `k_eV` to LEDGER changes the ledger bundle
+  pin. Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4.
+  Verified: `k_eV` hash 6af2dc4a70fb23c2c85ff1537e3b6c4c32068d11cbe0a9abca6d651f5cdceed6; node 5c6b4f0b437c59c5d406f7bccad046a88f962664f7bceb604cadc09f91d3dcea;
+  ledger node c33f05b6a3385cb765aec7cf22e637a6b43e72d2cc9923ee11c0bad2032f24f0. `NAk` hash
+  28c95a46c67bec666b887658cc44664000bf821eac09b9023cf401b89231efc3,
+  `k` hash 0d6156b1dea5afb156a9bbdcde78709fcfbac53df129a27698ea3fd76e812061,
+  `eV` hash d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f,
+  `NAe` hash dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4,
+  `c2` hash 9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc,
+  and `RK` hash 2faf6f39986b543d3370bdd5764f0d075fa94a709d3fadd235ed82026fed2d46
+  unchanged.
+
 - **CODATA 2018 electron mass energy equivalent in MeV is a one-sigma Interval.**
   `physis-constants` versions `m_e_c2_MeV` as the CODATA 2018 hull
   `0.51099895000(15)` MeV from JPCRD 50, 033105 table XXXI

@@ -102,7 +102,10 @@
 //! exact [`Ratio`] `3.828×10^26` W from the same table: a conversion
 //! ruler, not a measured solar luminosity. The electronvolt is an exact
 //! [`Ratio`] `1.602176634×10^{-19}` J (BIPM table 8), the same SI 2019
-//! decimal as `e` with unit joule, not coulomb. Theories still use
+//! decimal as `e` with unit joule, not coulomb. CODATA 2018 Boltzmann
+//! constant in eV/K `k_eV` is an exact [`Ratio`] `k/e` from JPCRD table
+//! XXXI PHYSICOCHEMICAL: SI-exact, not a terminating SciExact (reduced
+//! denominator keeps 3, 19, 389, and 12043). Theories still use
 //! `physis_model` `f64` Qty constants. This crate does not mint a kernel
 //! proof. Overlapping `physis_model` Qty floats are lockstepped in
 //! `physis-model` tests; theories still evaluate with those Qty.
@@ -880,6 +883,10 @@ fn codata_2018_molar_planck_constant_source() -> SourceRecord {
 
 fn codata_2018_molar_gas_constant_source() -> SourceRecord {
     codata_2018_jpcrd("PHYSICOCHEMICAL", "NAk = 8.314462618 exact")
+}
+
+fn codata_2018_boltzmann_in_ev_per_kelvin_source() -> SourceRecord {
+    codata_2018_jpcrd("PHYSICOCHEMICAL", "k_eV = 8.617333262e-5 exact")
 }
 
 fn codata_2018_faraday_constant_source() -> SourceRecord {
@@ -5269,7 +5276,7 @@ fn molar_gas_constant_value() -> Ratio {
 /// `8.314 462 618…`; the ledger stores the full terminating decimal
 /// `N_A × k`. That product fits [`Ratio`] (`10^{14}`). This is not P3N.
 /// The JPCRD symbol `NAk` is the ledger name; `R` is not a second name.
-/// The Faraday constant is `NAe`. Electron
+/// Boltzmann constant in eV/K is `k_eV`. Electron
 /// mass is not stored: `10^{42}` overflows `i128`. CODATA 2022 prints
 /// the same SI-exact ellipsis; there is no last-digit trap. Theories
 /// still use `physis_model` `f64` Qty.
@@ -5279,6 +5286,38 @@ pub fn molar_gas_constant() -> Constant<Ratio> {
         molar_gas_constant_value(),
         "J mol^{-1} K^{-1}",
         codata_2018_molar_gas_constant_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 Boltzmann constant in eV/K as k / e.
+fn boltzmann_in_ev_per_kelvin_value() -> Ratio {
+    Ratio::new(1_380_649, 1_602_176_634i128 * 10)
+}
+
+/// Boltzmann constant in eV/K, SI 2019 exact Ratio.
+///
+/// This is the exact PHYSICOCHEMICAL companion listed as `k` in eV/K,
+/// not SI joule-per-kelvin `k`, not electronvolt `eV`, not molar gas
+/// `NAk`, not Faraday `NAe`, not von Klitzing `RK`, not second
+/// radiation `c2`, not an SI defining constant, not a terminating
+/// [`SciExact`], and not a FormalClaim that reconstructs `k / e` from
+/// live lookups. The table prints `8.617 333 262… × 10^{-5}`; the
+/// ledger stores the full SI Ratio. The reduced denominator keeps
+/// factors 3, 19, 389, and 12043 (the same primes as `RK`, because both
+/// divide by `e`), so this is not a terminating [`SciExact`]. The
+/// product fits [`Ratio`]. This is not P3N. The ledger name is `k_eV`.
+/// Boltzmann in Hz/K and `k/hc` are later table rows and are not
+/// stored. The Faraday constant is `NAe`. Electron mass is not stored:
+/// `10^{42}` overflows `i128`. CODATA 2022 prints the same SI-exact
+/// ellipsis; there is no last-digit trap. Theories still use
+/// `physis_model` `f64` Qty.
+pub fn boltzmann_in_ev_per_kelvin() -> Constant<Ratio> {
+    Constant::new(
+        "k_eV",
+        boltzmann_in_ev_per_kelvin_value(),
+        "eV K^{-1}",
+        codata_2018_boltzmann_in_ev_per_kelvin_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -6889,6 +6928,7 @@ pub const LEDGER: &[&str] = &[
     "M_12C",
     "NAh",
     "NAk",
+    "k_eV",
     "NAe",
     "p0",
     "atm",
@@ -7203,6 +7243,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "M_12C" => Some(listing(carbon_12_molar_mass(), "interval")),
         "NAh" => Some(listing(molar_planck_constant(), "ratio")),
         "NAk" => Some(listing(molar_gas_constant(), "ratio")),
+        "k_eV" => Some(listing(boltzmann_in_ev_per_kelvin(), "ratio")),
         "NAe" => Some(listing(faraday_constant(), "ratio")),
         "p0" => Some(listing(standard_state_pressure(), "ratio")),
         "atm" => Some(listing(standard_atmosphere(), "ratio")),
@@ -26977,6 +27018,7 @@ mod tests {
         assert!(lookup("M_12C/mol").is_none());
         assert!(lookup("NAh").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
@@ -27160,6 +27202,7 @@ mod tests {
         assert!(lookup("N_A_h").is_none());
         assert!(lookup("N_A*h").is_none());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
@@ -27216,6 +27259,7 @@ mod tests {
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
     }
 
     #[test]
@@ -27378,6 +27422,7 @@ mod tests {
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("N_A").is_some());
         assert!(lookup("k").is_some());
@@ -27385,6 +27430,133 @@ mod tests {
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("NAe").is_some());
+    }
+
+    #[test]
+    fn codata_2018_boltzmann_constant_in_ev_per_kelvin_is_an_exact_ratio() {
+        let r = boltzmann_in_ev_per_kelvin();
+        let value = Ratio::new(1_380_649, 1_602_176_634i128 * 10);
+        assert_eq!(r.name, "k_eV");
+        assert_eq!(r.unit, "eV K^{-1}");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("PHYSICOCHEMICAL")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("k_eV = 8.617333262e-5 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(r.value.to_string(), "1380649/16021766340");
+        assert!(r.value > Ratio::int(0), "k_eV is a positive exact Ratio");
+        assert_ne!(
+            r.value,
+            Ratio::new(8_617_333_262, 10i128.pow(14)),
+            "k_eV is the full SI Ratio, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, boltzmann_in_ev_per_kelvin().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "k_eV",
+                boltzmann_in_ev_per_kelvin_value(),
+                "eV K^{-1}",
+                codata_2018_boltzmann_in_ev_per_kelvin_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, boltzmann().hash, "k_eV is not k");
+        assert_ne!(r.hash, electron_volt().hash, "k_eV is not eV");
+        assert_ne!(r.hash, elementary_charge().hash, "k_eV is not e");
+        assert_ne!(r.hash, molar_gas_constant().hash, "k_eV is not NAk");
+        assert_ne!(r.hash, faraday_constant().hash, "k_eV is not NAe");
+        assert_ne!(
+            r.hash,
+            von_klitzing_constant().hash,
+            "k_eV is not RK even though both keep 3, 19, 389, and 12043"
+        );
+        assert_ne!(r.hash, second_radiation_constant().hash, "k_eV is not c2");
+        assert_ne!(r.hash, newtonian_g().hash, "k_eV is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "k_eV is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            boltzmann().provenance.source_hash,
+            "k_eV locator is not the SI brochure k locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            electron_volt().provenance.source_hash,
+            "k_eV locator is not the BIPM eV locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            molar_gas_constant().provenance.source_hash,
+            "k_eV range is not the NAk range"
+        );
+        assert_eq!(
+            molar_gas_constant().hash.to_hex(),
+            "28c95a46c67bec666b887658cc44664000bf821eac09b9023cf401b89231efc3",
+            "NAk hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            boltzmann().hash.to_hex(),
+            "0d6156b1dea5afb156a9bbdcde78709fcfbac53df129a27698ea3fd76e812061",
+            "k hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            electron_volt().hash.to_hex(),
+            "d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f",
+            "eV hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            faraday_constant().hash.to_hex(),
+            "dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4",
+            "NAe hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            second_radiation_constant().hash.to_hex(),
+            "9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc",
+            "c2 hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            von_klitzing_constant().hash.to_hex(),
+            "2faf6f39986b543d3370bdd5764f0d075fa94a709d3fadd235ed82026fed2d46",
+            "RK hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when k_eV is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "6af2dc4a70fb23c2c85ff1537e3b6c4c32068d11cbe0a9abca6d651f5cdceed6"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("k_Hz").is_none());
+        assert!(lookup("k/hc").is_none());
+        assert!(lookup("k/h").is_none());
+        assert!(lookup("k_eVK").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("k_eV").is_some());
+        assert!(lookup("NAk").is_some());
+        assert!(lookup("NAe").is_some());
+        assert!(lookup("k").is_some());
+        assert!(lookup("eV").is_some());
+        assert!(lookup("RK").is_some());
+        assert!(lookup("c2").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
     }
 
     #[test]
@@ -27542,6 +27714,7 @@ mod tests {
         assert!(lookup("m_e_c2_MeV").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("N_A").is_some());
         assert!(lookup("e").is_some());
@@ -27677,6 +27850,7 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
@@ -27811,6 +27985,7 @@ mod tests {
         assert!(lookup("p0").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("Vm").is_some());
@@ -27966,6 +28141,7 @@ mod tests {
         assert!(lookup("atm").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
@@ -28281,6 +28457,7 @@ mod tests {
         assert!(lookup("atm").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -35249,7 +35426,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 195);
+        assert_eq!(LEDGER.len(), 196);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -35989,6 +36166,11 @@ mod tests {
             lookup("NAk").unwrap().hash.to_hex(),
             "28c95a46c67bec666b887658cc44664000bf821eac09b9023cf401b89231efc3"
         );
+        assert_eq!(lookup("k_eV").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("k_eV").unwrap().hash.to_hex(),
+            "6af2dc4a70fb23c2c85ff1537e3b6c4c32068d11cbe0a9abca6d651f5cdceed6"
+        );
         assert_eq!(lookup("NAe").unwrap().kind, "ratio");
         assert_eq!(
             lookup("NAe").unwrap().hash.to_hex(),
@@ -36513,6 +36695,10 @@ mod tests {
         assert!(lookup("NA_h").is_none());
         assert!(lookup("N_A_h").is_none());
         assert!(lookup("NAk").is_some());
+        assert!(lookup("k_eV").is_some());
+        assert!(lookup("k_Hz").is_none());
+        assert!(lookup("k/hc").is_none());
+        assert!(lookup("k/h").is_none());
         assert!(lookup("R").is_none());
         assert!(lookup("N_A_k").is_none());
         assert!(lookup("NAe").is_some());
