@@ -438,12 +438,26 @@ pub fn electron_volt_in_atomic_mass_unit() -> Qty<Dimensionless> {
 /// Eh_m, not Hz_m, not m_u, not u_Hz, and not a FormalClaim that
 /// reconstructs c^2 m_u / (h c) from live lookups. Inverse meter-atomic
 /// mass unit cannot be named m_u and is not stored under a second name.
-/// Atomic mass unit-kelvin is a later table row and is not stored. The
+/// The atomic mass unit-kelvin listing is u_K. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// Ledger unit is m^{-1}; this Qty is dimensionless, not an
 /// inverse-length dimension. um, u-m, and amu_m are not second names.
 pub fn atomic_mass_unit_in_inverse_meter() -> Qty<Dimensionless> {
     Qty::new(7.513_006_610_4e14)
+}
+
+/// Atomic mass unit-kelvin relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the atomic mass unit-kelvin relationship, not K_u inverted as a
+/// Ratio, not Eh_K, not K_Eh, not J_K, not k, and not a FormalClaim that
+/// reconstructs c^2 m_u / k from live lookups. Inverse meter-atomic
+/// mass unit cannot be named m_u and is not stored under a second name.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. Ledger unit is K; this Qty is dimensionless, not a
+/// temperature dimension. uK, u-K, and amu_K are not second names.
+pub fn atomic_mass_unit_in_kelvin() -> Qty<Dimensionless> {
+    Qty::new(1.080_954_019_16e13)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -10556,6 +10570,46 @@ mod tests {
         assert!(
             physis_constants::lookup("amu_m").is_none(),
             "amu_m is not a second name for u_m"
+        );
+
+        let u_k = physis_constants::atomic_mass_unit_in_kelvin();
+        let u_k_centre = Ratio::int(108_095_401_916i128 * 10i128.pow(2));
+        assert_eq!(
+            atomic_mass_unit_in_kelvin().value(),
+            u_k_centre.to_f64(),
+            "u_K Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_mass_unit_in_kelvin().value(),
+            1.080_954_019_16e13,
+            "u_K Qty locksteps to Ratio::to_f64 on the integer 10^13 centre"
+        );
+        assert!(
+            u_k.value.contains(Interval::point(u_k_centre)),
+            "u_K Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            u_k.value.lo, u_k.value.hi,
+            "ledger u_K stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_kelvin().hash,
+            physis_constants::kelvin_in_atomic_mass_unit().hash,
+            "u_K is not K_u"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_kelvin().hash,
+            physis_constants::atomic_mass_unit_in_inverse_meter().hash,
+            "u_K is not u_m"
+        );
+        assert_eq!(physis_constants::lookup("u_K").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("uK").is_none(),
+            "uK is not a ledger name; the live name is u_K"
+        );
+        assert!(
+            physis_constants::lookup("amu_K").is_none(),
+            "amu_K is not a second name for u_K"
         );
 
         assert!(

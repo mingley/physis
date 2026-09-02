@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic mass unit-kelvin relationship is a one-sigma Interval.**
+  `physis-constants` versions `u_K` as the CODATA 2018 one-sigma hull
+  `1.08095401916(33)×10^{13}` K from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the kelvin-atomic mass unit companion pair, not a Ratio reciprocal
+  of `K_u`, not hartree-kelvin `Eh_K`, not kelvin-hartree `K_Eh`, not
+  joule-kelvin `J_K`, not Boltzmann `k`, and not a FormalClaim
+  reconstructing `c² m_u / k` from live lookups. Inverse meter-atomic
+  mass unit cannot be named `m_u` and is not stored under a second name.
+  The decade is `10^{2}`; `10^{1}` is the 10× trap (`σ = 3.3` is not an
+  integer). This is not the CODATA 2022 last-digit `2067` as the stored
+  centre; the 2018 hull excludes that 2022 centre. The ledger name is
+  `u_K`; `uK`, `u-K`, and `amu_K` are not second names. `physis_model`
+  `atomic_mass_unit_in_kelvin()` Qty locksteps to the CODATA centre
+  inside the hull. Adding `u_K` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified:
+  `u_K` hash
+  eceb5956e7b5b435a32c4d8b9b4a8f97cd96a597334919a667d804f13e1a495b;
+  node 4d6058f8883ec3209ea999ba52721aab5843129d8aa32ca20769e345dc1acbfa;
+  ledger node
+  1ba7978999d148662a71b48380d1b81bd026e9960a7fcd5bf9791db14dbad2d1.
+  `u_m` hash
+  3380878aa06e31c17144288a338b9b4614e21389fa72a9d2c16e1444c6b07035 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic mass unit-inverse meter relationship is a one-sigma Interval.**
   `physis-constants` versions `u_m` as the CODATA 2018 one-sigma hull
   `7.5130066104(23)×10^{14}` m^{-1} from JPCRD 50, 033105 table XXXV
