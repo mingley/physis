@@ -80,6 +80,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of electric quadrupole moment is a one-sigma SciInterval.**
+  `physis-constants` versions `ea02` as the CODATA 2018 one-sigma hull
+  `4.4865515246(14)×10^{-40}` C m^{2} from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of electric quadrupole
+  moment defined as `e a0²`, not elementary charge `e`, not atomic unit of
+  electric dipole moment `ea0`, and not a FormalClaim reconstructing that
+  product from a live lookup. A Ratio denominator `10^{50}` overflows `i128`,
+  so the ledger stores a SciInterval. Atomic unit of time still cites ħ and
+  is not stored. Atomic unit of electric potential is a second name for
+  `Eh_eV` and is not stored. The {220} lattice spacing is not stored. Decade
+  `10^{49}` on the printed 5246-digit is the 10× trap. 2018 last-digit is
+  `5246`; 2022 last-digit `5185` is excluded. The ledger name is `ea02`;
+  `ea0_2`, `e_a0_2`, `au_Q`, `au_eq`, `ea0sq`, and `electric_quadrupole` are
+  not second names. `physis_model` `atomic_unit_of_electric_quadrupole_moment()`
+  Qty locksteps to the CODATA centre inside the hull. Adding `ea02` to LEDGER
+  changes the ledger bundle pin. Theories still evaluate with `f64` Qty. That
+  is not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `ea02` hash
+  eb5d43dc3a14917258bbbf6b0b2d98d3cc5c54b1ce734bd3287159b43d201bbc;
+  node fb03c45ef722877d0484588e7f81625fc15d1fd21fdc5513b548c4f9ea4be38a;
+  ledger node
+  98958f2327584dd1039acd44fed2caaf0101e618230eaae96ae36190a6a417d2.
+  `ea0` hash
+  509271eab9ef8873e10798db919a211b1e5c10670f3da41c7fc9e420a10ae566 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of electric dipole moment is a one-sigma SciInterval.**
   `physis-constants` versions `ea0` as the CODATA 2018 one-sigma hull
   `8.4783536255(13)×10^{-30}` C m from JPCRD 50, 033105 table XXXIV

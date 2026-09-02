@@ -624,10 +624,28 @@ pub fn atomic_unit_of_electric_field_gradient(
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is C m; this Qty is electric
 /// dipole moment (L T I). ea_0, e_a0, au_d, au_dip, au_ea0, and
-/// electric_dipole are not second names.
+/// electric_dipole are not second names. The atomic-unit electric-quadrupole
+/// listing is ea02.
 pub fn atomic_unit_of_electric_dipole_moment(
 ) -> Qty<physis_core::SI<typenum::Z0, typenum::P1, typenum::P1, typenum::P1>> {
     Qty::new(8.478_353_625_5e-30)
+}
+
+/// Atomic unit of electric quadrupole moment e a0^2 (C m^2), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Bohr a0, not Hartree Eh, not ea0,
+/// not au_EFG, and not a FormalClaim that reconstructs that product from
+/// a live lookup. Ratio scale 10^50 overflows i128; the versioned ledger
+/// stores a SciInterval. Atomic unit of time still cites hbar and is not
+/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is C m^{2}; this Qty is electric
+/// quadrupole moment (L^2 T I). ea0_2, e_a0_2, au_Q, au_eq, ea0sq, and
+/// electric_quadrupole are not second names.
+pub fn atomic_unit_of_electric_quadrupole_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::P1, typenum::P1>> {
+    Qty::new(4.486_551_524_6e-40)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -11251,6 +11269,52 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; ea0 is not an a/sqrt(8) certificate"
+        );
+        let ea02 = physis_constants::atomic_unit_of_electric_quadrupole_moment();
+        let ea02_centre = SciExact::new(44_865_515_246, -50);
+        assert_eq!(
+            atomic_unit_of_electric_quadrupole_moment().value(),
+            ea02_centre.to_f64(),
+            "ea02 Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_electric_quadrupole_moment().value(),
+            4.486_551_524_6e-40,
+            "ea02 Qty locksteps to SciExact::to_f64 on the 10^-50 centre"
+        );
+        assert!(
+            ea02.value.contains(SciInterval::point(ea02_centre)),
+            "ea02 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            ea02.value.lo, ea02.value.hi,
+            "ledger ea02 stays a SciInterval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_quadrupole_moment().hash,
+            physis_constants::atomic_unit_of_electric_dipole_moment().hash,
+            "ea02 is not ea0"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_quadrupole_moment().hash,
+            physis_constants::elementary_charge().hash,
+            "ea02 is not e"
+        );
+        assert_eq!(
+            physis_constants::lookup("ea02").unwrap().kind,
+            "sci-interval"
+        );
+        assert!(
+            physis_constants::lookup("ea0_2").is_none(),
+            "ea0_2 is not a ledger name; the live name is ea02"
+        );
+        assert!(
+            physis_constants::lookup("electric_quadrupole").is_none(),
+            "electric_quadrupole is not a second name for ea02"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; ea02 is not an a/sqrt(8) certificate"
         );
 
         assert!(
