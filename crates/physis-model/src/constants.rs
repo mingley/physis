@@ -173,8 +173,27 @@ pub fn electron_volt_in_kelvin() -> Qty<Dimensionless> {
 /// ledger c2. The versioned ledger stores the exact Ratio; this Qty is
 /// the IEEE rounding of that Ratio. Ledger unit is K; this Qty is
 /// dimensionless, not SI kelvin. HzK and 1/k_Hz are not second names.
+/// The hertz-inverse meter relationship is Hz_m.
 pub fn hertz_in_kelvin() -> Qty<Dimensionless> {
     Qty::new(4.799_243_073_366_221e-11)
+}
+
+/// Hertz-inverse meter relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the
+/// hertz-inverse meter relationship, not SI metre-per-second c, not
+/// inverse meter-joule m_J, not Boltzmann in inverse meter per kelvin
+/// k_m, not second radiation c2, and not a FormalClaim that reconstructs
+/// 1/c from live lookups. The table prints an ellipsis; the ledger
+/// stores the exact Ratio. This is not a terminating SciExact (7, 73,
+/// and 293339 remain in the denominator). Inverse meter-hertz is SI c
+/// and is not stored as a second name. Electron volt-inverse meter is
+/// the reciprocal of ledger m_eV and is not stored. The versioned
+/// ledger stores the exact Ratio; this Qty is the IEEE rounding of that
+/// Ratio. Ledger unit is m^{-1}; this Qty is dimensionless, not SI
+/// inverse metre. Hzm, m_Hz, and 1/c are not second names.
+pub fn hertz_in_inverse_meter() -> Qty<Dimensionless> {
+    Qty::new(3.335_640_951_981_520_4e-9)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -9531,6 +9550,52 @@ mod tests {
         assert!(
             physis_constants::lookup("HzK").is_none(),
             "HzK is not a ledger name; the live name is Hz_K"
+        );
+
+        let hz_m = physis_constants::hertz_in_inverse_meter();
+        let hz_m_value = Ratio::new(1, 299_792_458);
+        assert_eq!(hz_m.value, hz_m_value, "ledger Hz_m is the exact SI Ratio");
+        assert_eq!(
+            hertz_in_inverse_meter().value(),
+            hz_m_value.to_f64(),
+            "Hz_m Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            hertz_in_inverse_meter().value(),
+            3.335_640_951_981_520_4e-9,
+            "Hz_m Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
+        assert!(
+            hz_m.value > Ratio::int(0),
+            "ledger Hz_m stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_inverse_meter().hash,
+            physis_constants::speed_of_light().hash,
+            "Hz_m is not c"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_inverse_meter().hash,
+            physis_constants::inverse_meter_in_joule().hash,
+            "Hz_m is not m_J"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_inverse_meter().hash,
+            physis_constants::hertz_in_kelvin().hash,
+            "Hz_m is not Hz_K"
+        );
+        assert_eq!(physis_constants::lookup("Hz_m").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("Hzm").is_none(),
+            "Hzm is not a ledger name; the live name is Hz_m"
+        );
+        assert!(
+            physis_constants::lookup("m_Hz").is_none(),
+            "m_Hz is not stored: inverse meter-hertz is SI c"
+        );
+        assert!(
+            physis_constants::lookup("eV_m").is_none(),
+            "eV_m is not stored: reciprocal of m_eV from the same table"
         );
 
         assert!(

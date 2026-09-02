@@ -80,6 +80,30 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 hertz-inverse meter relationship is an exact Ratio.**
+  `physis-constants` versions `Hz_m` as the SI-exact Ratio `1/c` =
+  `1/299792458` m⁻¹ from JPCRD 50, 033105 table XXXV (energy conversion
+  factors). The table prints `3.335 640 951… × 10^{-9}`; the ledger
+  stores the full quotient. The reduced denominator keeps factors 7, 73,
+  and 293339 (the odd primes in SI `c`), so this is not a terminating
+  SciExact. This is not SI `c`, not inverse meter-joule `m_J`, not
+  Boltzmann in inverse meter per kelvin `k_m`, not second radiation
+  `c2`, not kilogram-joule `kg_J`, not an SI defining constant, and not
+  a FormalClaim reconstructing `1/c` from live lookups. Inverse
+  meter-hertz is not stored: it is SI `c`. Hertz-kilogram is not stored:
+  `h/c²` overflows `i128`. Electron volt-inverse meter is not stored: it
+  is the reciprocal of ledger `m_eV`. The ledger name is `Hz_m`; `Hzm`,
+  `Hz-m`, `m_Hz`, and `1/c` are not second names. `physis_model`
+  `hertz_in_inverse_meter()` Qty locksteps to `Ratio::to_f64` of that
+  Ratio. Adding `Hz_m` to LEDGER changes the ledger bundle pin. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `Hz_m` hash e41772022e94f6c2f45b5a728b61f8258bfac9269c643b84e39d530798bf8421;
+  node 846bab463c0a51c951864c1258a50764889007111b9f543013c1f060ab63428e; ledger node 1d9fd5e457ac1e55a84d4a7629b89950e28566db69525d1d130caef9114add7a. `Hz_K` hash
+  d45e08d73394c3c40e187d824d9b9a36160ab82a41ab6ede4f6869d55d772e0c and
+  `c` hash 691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1
+  unchanged.
+
 - **CODATA 2018 hertz-kelvin relationship is an exact Ratio.**
   `physis-constants` versions `Hz_K` as the SI-exact Ratio `h/k` =
   `132521403/2761298000000000000` K from JPCRD 50, 033105 table XXXV
