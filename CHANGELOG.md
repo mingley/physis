@@ -80,6 +80,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of magnetic flux density is a one-sigma Interval.**
+  `physis-constants` versions `au_B` as the CODATA 2018 one-sigma hull
+  `2.35051756758(71)×10^{5}` T from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of mag. flux density
+  listed as `ħ/(e a0²)`, not magnetic dipole `au_mu`, not Bohr magneton
+  `muB`, and not a FormalClaim reconstructing that quotient from a live
+  lookup. The printed formula cites ħ and is unused. Atomic unit of time
+  still cites ħ and is not stored. Atomic unit of electric potential is a
+  second name for `Eh_eV` and is not stored. The {220} lattice spacing is
+  not stored. Decade `10^{5}` on the printed 56758-digit is the 10× trap.
+  2018 last-digit is `56758`; 2022 last-digit `57077` is excluded. The
+  ledger name is `au_B`; `auB`, `au-B`, `au_T`, `tesla_au`, `mag_flux`,
+  `magnetic_flux_density`, `hbar_ea02`, and `B_au` are not second names.
+  `physis_model` `atomic_unit_of_magnetic_flux_density()` Qty locksteps to
+  the CODATA centre inside the hull. Adding `au_B` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is not
+  a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `au_B` hash
+  74c93d71b77f529ed79af1686c451dbc4a36f36ff80f9e94f39976bf97e9afc3;
+  node a4a2d3b8eb217eccc9467f6a48c04b6916a691e35eb30c6d40e70b3b60daa3a0;
+  ledger node
+  351779056aee4f1853b1c3699284134ea0aa751e203ded2ce45bd93b4825b6f3.
+  `au_mu` hash
+  6a48549025982a0761b17bf80c9ce18bc9dee346e3e9cd906a37a07c1a186e58 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of magnetic dipole moment is a one-sigma Interval.**
   `physis-constants` versions `au_mu` as the CODATA 2018 one-sigma hull
   `1.85480201566(56)×10^{-23}` J T^{-1} from JPCRD 50, 033105 table XXXIV

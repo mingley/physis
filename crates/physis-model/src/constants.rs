@@ -727,6 +727,22 @@ pub fn atomic_unit_of_magnetic_dipole_moment(
     Qty::new(1.854_802_015_66e-23)
 }
 
+/// Atomic unit of magnetic flux density hbar / (e a0^2) (tesla),
+/// CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not magnetic dipole au_mu, not Bohr magneton muB, not Bohr a0, and
+/// not a FormalClaim that reconstructs hbar / (e a0^2) from a live
+/// lookup. The printed formula cites hbar and is unused; the versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. Ledger
+/// unit is T; this Qty is magnetic flux density (M T^{-2} I^{-1}).
+/// auB, au-B, au_T, tesla_au, mag_flux, magnetic_flux_density,
+/// hbar_ea02, and B_au are not second names.
+pub fn atomic_unit_of_magnetic_flux_density(
+) -> Qty<physis_core::SI<typenum::P1, typenum::Z0, typenum::N2, typenum::N1>> {
+    Qty::new(2.350_517_567_58e5)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -11580,6 +11596,49 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; au_mu is not an a/sqrt(8) certificate"
+        );
+        let au_b = physis_constants::atomic_unit_of_magnetic_flux_density();
+        let au_b_centre = Ratio::new(235_051_756_758, 10i128.pow(6));
+        assert_eq!(
+            atomic_unit_of_magnetic_flux_density().value(),
+            au_b_centre.to_f64(),
+            "au_B Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_magnetic_flux_density().value(),
+            2.350_517_567_58e5,
+            "au_B Qty locksteps to Ratio::to_f64 on the integer 10^6 centre"
+        );
+        assert!(
+            au_b.value.contains(Interval::point(au_b_centre)),
+            "au_B Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_b.value.lo, au_b.value.hi,
+            "ledger au_B stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_magnetic_flux_density().hash,
+            physis_constants::atomic_unit_of_magnetic_dipole_moment().hash,
+            "au_B is not au_mu"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_magnetic_flux_density().hash,
+            physis_constants::bohr_magneton().hash,
+            "au_B is not muB"
+        );
+        assert_eq!(physis_constants::lookup("au_B").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("auB").is_none(),
+            "auB is not a ledger name; the live name is au_B"
+        );
+        assert!(
+            physis_constants::lookup("hbar_ea02").is_none(),
+            "hbar_ea02 is not a second name for au_B"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_B is not an a/sqrt(8) certificate"
         );
 
         assert!(
