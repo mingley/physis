@@ -518,6 +518,21 @@ pub fn angstrom_star() -> Qty<Length> {
     meters(1.000_014_95e-10)
 }
 
+/// Copper x unit xu(Cu) (m), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIII x-ray-related centre
+/// defined as λ(CuKα1)/1537.400, not Bohr radius a0, not Angstrom star
+/// Astar, not lattice parameter a_Si, not classical electron radius re,
+/// and not a FormalClaim that reconstructs that quotient from a live
+/// lookup. The molybdenum x unit is a later table XXXIII row and is not
+/// stored. The {220} lattice spacing is not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. Ledger
+/// unit is m; this Qty is a length. xuCu, xu-Cu, and copper_xu are not
+/// second names.
+pub fn copper_x_unit() -> Qty<Length> {
+    meters(1.002_076_97e-13)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10838,8 +10853,52 @@ mod tests {
             "A-star is not a second name for Astar"
         );
         assert!(
-            physis_constants::lookup("xu_Cu").is_none(),
-            "xu_Cu is not stored; Astar is not a copper x-unit certificate"
+            physis_constants::lookup("xu_Mo").is_none(),
+            "xu_Mo is not stored; Astar is not a molybdenum x-unit certificate"
+        );
+
+        let xu_cu = physis_constants::copper_x_unit();
+        let xu_cu_centre = Ratio::new(100_207_697, 10i128.pow(21));
+        assert_eq!(
+            copper_x_unit().value(),
+            xu_cu_centre.to_f64(),
+            "xu_Cu Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            copper_x_unit().value(),
+            1.002_076_97e-13,
+            "xu_Cu Qty locksteps to Ratio::to_f64 on the integer 10^21 centre"
+        );
+        assert!(
+            xu_cu.value.contains(Interval::point(xu_cu_centre)),
+            "xu_Cu Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            xu_cu.value.lo, xu_cu.value.hi,
+            "ledger xu_Cu stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::copper_x_unit().hash,
+            physis_constants::angstrom_star().hash,
+            "xu_Cu is not Astar"
+        );
+        assert_ne!(
+            physis_constants::copper_x_unit().hash,
+            physis_constants::bohr_radius().hash,
+            "xu_Cu is not a0"
+        );
+        assert_eq!(physis_constants::lookup("xu_Cu").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("xuCu").is_none(),
+            "xuCu is not a ledger name; the live name is xu_Cu"
+        );
+        assert!(
+            physis_constants::lookup("copper_xu").is_none(),
+            "copper_xu is not a second name for xu_Cu"
+        );
+        assert!(
+            physis_constants::lookup("xu_Mo").is_none(),
+            "xu_Mo is not stored; xu_Cu is not a molybdenum x-unit certificate"
         );
 
         assert!(
