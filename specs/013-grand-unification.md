@@ -42,6 +42,7 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 | `gut.weinberg-angle-mz-interval` | the same one-loop *algebraic* centre, enclosed by sourced PDG 2022 `α_s` / `α_em⁻¹` one-sigma hulls, vs the PDG mixing-angle hull **and** the exact Gaussian NLL of that centre rounded to PDG `10^{-5}` vs PDG σ | **empirical receipt** (interval-subset) plus **statistical computed** (not P3N). Minimal SU(5) **excluded**; one-loop MSSM **inconclusive** (input-σ hull overlaps `10^{-5}` but is not contained). MSSM has the smaller NLL. The heuristic 3% cell can still hold. Super-K is not this Gaussian. Not GUT-scale `3/8`. Domain: `M_Z` |
 | `gut.coupling-unification` | the three couplings meet at one scale | **computed** (one-loop RGE), knob-sensitive |
 | `gut.coupling-unification-interval` | the same one-loop *algebraic* `α_3(M_Z)` centre, enclosed by sourced PDG 2024 `sin²θ_W` / PDG 2022 `α_em⁻¹` one-sigma hulls, vs the PDG `α_s` hull **and** the exact Gaussian NLL of that centre rounded to PDG `10^{-4}` vs PDG σ | **empirical receipt** (interval-subset) plus **statistical computed** (not P3N). Minimal SU(5) **excluded**; one-loop MSSM **inconclusive** (input-σ hull overlaps `α_s` but is not contained). Complementary to GQW (predicts `α_3` from the mixing angle, not the mixing angle from `α_s`). The heuristic 3% cell can still hold. Not GUT-scale `3/8`. Domain: `M_Z` |
+| `gut.inverse-alpha-em-mz-interval` | the same one-loop *algebraic* `α_em⁻¹(M_Z)` centre, enclosed by sourced PDG 2024 `sin²θ_W` / PDG 2022 `α_s` one-sigma hulls, vs the PDG `α_em⁻¹` hull **and** the exact Gaussian NLL of that centre rounded to PDG `10^{-3}` vs PDG σ | **empirical receipt** (interval-subset) plus **statistical computed** (not P3N). Minimal SU(5) **excluded**; one-loop MSSM **excluded** (input-σ hull is disjoint from the tight PDG `α_em⁻¹` hull). Complementary to GQW and `α_3` (predicts `α_em⁻¹` from `α_s` and the mixing angle). The heuristic 3% `α_3` cell can still hold. Not GUT-scale `3/8`. Domain: `M_Z` |
 | `gut.proton-decay-viable` | predicted `τ_p` consistent with experiment | knob-sensitive (tied to computed `M_GUT`), `heuristic` |
 | `gut.proton-lifetime-sk` | dim-6 `τ/B(p→e+π0)` from `M_GUT^4` vs Super-Kamiokande **dataset** | **empirical receipt**. Takenaka et al. Phys. Rev. D 102, 112011 (2020), 90% CL `> 2.4×10³⁴ yr`. Minimal SU(5) **excluded**; MSSM dim-6 **compatible**. Decade envelope for missing matrix elements. Not P3N, not dim-5, not `p→μ+π0`. Domain: `p→e+π0` / dim-6 / Super-K 90% CL. |
 
@@ -108,6 +109,18 @@ the prediction lies inside the data. Minimal SU(5) is **excluded**. The
 one-loop MSSM enclosure overlaps the PDG `α_s` hull but is not contained
 in it, so the cell is **undecidable** / `inconclusive` while the
 heuristic 3% cell can still **hold**. Not P3N, not GUT-scale `3/8`.
+
+`gut.inverse-alpha-em-mz-interval` is the third vertex: the same
+one-loop algebraic centre (a π-free `Ratio` of recorded PDG `α_s` and
+`sin²θ_W`) enclosed by the sourced PDG 2024 mixing-angle hull and the
+PDG 2022 `α_s` hull, compared to the registered PDG `α_em⁻¹(M_Z)` hull
+under the interval-subset rule, **and** the exact Gaussian NLL of that
+centre rounded to three decimal places versus the PDG σ. Complementary
+to GQW and `α_3`. Compatible means the prediction lies inside the data.
+Minimal SU(5) is **excluded**. One-loop MSSM is still **excluded**: the
+input-σ image of `α_em⁻¹` stays disjoint from the tight PDG hull, while
+the heuristic 3% `α_3` cell can still **hold**. Not P3N, not GUT-scale
+`3/8`.
 
 ## Georgi–Quinn–Weinberg: `3/8` run down to `M_Z`
 
@@ -186,7 +199,9 @@ beta coefficients from SM to MSSM brings the computed `α_3(M_Z)` and
 `gut.weinberg-angle-mz-interval` flips `fails → undecidable`: the sourced
 PDG input-σ hull now overlaps the mixing-angle measurement but is not
 contained in it. `gut.coupling-unification-interval` flips the same way
-against the PDG `α_s` hull. The Super-K cell
+against the PDG `α_s` hull. `gut.inverse-alpha-em-mz-interval` stays
+`fails` / `excluded` (NLL changes; kind and empirical status do not).
+The Super-K cell
 `gut.proton-lifetime-sk` flips `fails → holds` on the empirical axis
 (`excluded → compatible`): the dim-6 `M_GUT^4` envelope sits below the
 Takenaka et al. 90% CL hull for minimal SU(5) and inside it for MSSM dim-6.

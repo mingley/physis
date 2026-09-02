@@ -2159,6 +2159,7 @@ impl Lab {
         }
         cite_slugs.insert("gut.weinberg-angle-mz-interval".into());
         cite_slugs.insert("gut.coupling-unification-interval".into());
+        cite_slugs.insert("gut.inverse-alpha-em-mz-interval".into());
         cite_slugs.insert("gut.proton-lifetime-sk".into());
         for slug in cite_slugs {
             match self.build_cite(&slug) {
@@ -2202,6 +2203,7 @@ impl Lab {
         judge_slugs.insert("gut.proton-lifetime-sk".into());
         judge_slugs.insert("gut.weinberg-angle-mz-interval".into());
         judge_slugs.insert("gut.coupling-unification-interval".into());
+        judge_slugs.insert("gut.inverse-alpha-em-mz-interval".into());
         judge_slugs.insert("gut.weinberg-angle".into());
         judge_slugs.insert("dec.closed-equals-exact".into());
         for slug in judge_slugs {
@@ -2973,6 +2975,10 @@ mod tests {
             "GQW running, the input-interval enclosure, and the 3% hit are not P3N: {p3n}"
         );
         assert!(
+            !p3n.contains("gut.inverse-alpha-em"),
+            "one-loop inv-alpha-em interval is not P3N: {p3n}"
+        );
+        assert!(
             !p3n.lines()
                 .any(|l| l.contains("type-iib") && l.contains("consistency.anomaly-cancellation")),
             "Green-Schwarz stays encoded, not a Ratio certificate: {p3n}"
@@ -3427,6 +3433,28 @@ mod tests {
             "α_3 interval cell must name M_Z, not encoding-wide: {a3b}"
         );
 
+        let invem = lab
+            .exec(Command::Why {
+                claim: "gut.inverse-alpha-em-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        let invemb = why_theory_block(&invem, "su5-gut");
+        assert!(
+            invemb.contains("  datasets:") && invemb.contains("pdg-2022-inv-alpha-em-mz"),
+            "{invemb}"
+        );
+        assert!(
+            invemb.contains("pdg-2024-sin2theta") && invemb.contains("pdg-2022-alpha-s-mz"),
+            "input listings must be on the identity: {invemb}"
+        );
+        assert!(invemb.contains("M_Z"), "{invemb}");
+        assert!(invemb.contains("regimes:"), "{invemb}");
+        assert!(
+            !invemb.contains("not yet a machine-checked regime"),
+            "inv-alpha-em interval cell must name M_Z, not encoding-wide: {invemb}"
+        );
+
         let sk = lab
             .exec(Command::Why {
                 claim: "gut.proton-lifetime-sk".into(),
@@ -3781,6 +3809,16 @@ mod tests {
             "expected coupling-unification-interval Fails→Undecidable, got {diffs:?}"
         );
         assert!(
+            diffs
+                .iter()
+                .any(|d| d.claim == "gut.inverse-alpha-em-mz-interval"
+                    && d.from == VerdictKind::Fails
+                    && d.to == VerdictKind::Fails
+                    && d.from_empirical.as_deref() == Some("excluded")
+                    && d.to_empirical.as_deref() == Some("excluded")),
+            "expected inverse-alpha-em-mz-interval to stay excluded, got {diffs:?}"
+        );
+        assert!(
             diffs.iter().any(|d| d.claim == "gut.proton-lifetime-sk"
                 && d.from == VerdictKind::Fails
                 && d.to == VerdictKind::Holds
@@ -3838,6 +3876,10 @@ mod tests {
             class.contains("gut.coupling-unification-interval"),
             "{class}"
         );
+        assert!(
+            class.contains("gut.inverse-alpha-em-mz-interval"),
+            "{class}"
+        );
         assert!(class.contains("gut.proton-lifetime-sk"), "{class}");
 
         let before = lab
@@ -3885,6 +3927,10 @@ mod tests {
         assert!(
             after.contains("gut.coupling-unification-interval"),
             "{after}"
+        );
+        assert!(
+            !after.contains("gut.inverse-alpha-em-mz-interval"),
+            "one-loop inv-alpha-em stays excluded under MSSM, not too coarse: {after}"
         );
         assert!(after.contains("count 2"), "{after}");
 
@@ -3942,6 +3988,10 @@ mod tests {
         assert!(
             !missing.contains("gut.coupling-unification-interval"),
             "the α_3 interval cell has a PDG dataset: {missing}"
+        );
+        assert!(
+            !missing.contains("gut.inverse-alpha-em-mz-interval"),
+            "the inv-alpha-em interval cell has a PDG dataset: {missing}"
         );
 
         let why = lab
@@ -9649,6 +9699,10 @@ mod tests {
             "loop must independently parse the one-loop α_3 Interval overlay: {text}"
         );
         assert!(
+            text.contains("enclose  gut.inverse-alpha-em-mz-interval"),
+            "loop must independently parse the one-loop inv-alpha-em Interval overlay: {text}"
+        );
+        assert!(
             text.contains("enclose  consistency.anomaly-cancellation"),
             "{text}"
         );
@@ -10091,13 +10145,14 @@ mod tests {
             .to_string();
         assert!(stat.contains("gut.weinberg-angle-mz-interval"), "{stat}");
         assert!(stat.contains("gut.coupling-unification-interval"), "{stat}");
+        assert!(stat.contains("gut.inverse-alpha-em-mz-interval"), "{stat}");
         assert!(
             !stat.contains("gut.proton-lifetime-sk"),
             "Super-K is interval-subset, not a Gaussian NLL: {stat}"
         );
         assert!(
-            stat.lines().any(|l| l.trim() == "count 2"),
-            "PDG GQW and one-loop α_3 NLL cells are statistical computed: {stat}"
+            stat.lines().any(|l| l.trim() == "count 3"),
+            "PDG GQW, one-loop α_3, and inv-alpha-em NLL cells are statistical computed: {stat}"
         );
 
         let excluded = lab
@@ -10115,6 +10170,10 @@ mod tests {
         assert!(
             !excluded.contains("gut.coupling-unification-interval"),
             "α_3 NLL is statistical computed, not empirical excluded: {excluded}"
+        );
+        assert!(
+            !excluded.contains("gut.inverse-alpha-em-mz-interval"),
+            "inv-alpha-em NLL is statistical computed, not empirical excluded: {excluded}"
         );
 
         let proved = lab
@@ -10154,6 +10213,10 @@ mod tests {
         assert!(
             !after.contains("gut.coupling-unification-interval"),
             "α_3 NLL is not a kernel proof: {after}"
+        );
+        assert!(
+            !after.contains("gut.inverse-alpha-em-mz-interval"),
+            "inv-alpha-em NLL is not a kernel proof: {after}"
         );
 
         let unknown = lab.exec(Command::Inspect {
@@ -10658,6 +10721,47 @@ mod tests {
             "α_3 interval FormalClaim identity must stay pinned: {a3}"
         );
 
+        let invem = lab
+            .exec(Command::Enclose {
+                claim: "gut.inverse-alpha-em-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(invem.contains("interval-certified"), "{invem}");
+        assert!(invem.contains("not P3N"), "{invem}");
+        assert!(invem.contains("not a kernel proof"), "{invem}");
+        assert!(invem.contains("not P4"), "{invem}");
+        assert!(!invem.contains("receipt"), "{invem}");
+        assert!(!invem.contains("enclosure    [3/8, 3/8]"), "{invem}");
+        let invem_id = numeric_certificate_id(&invem);
+        assert_eq!(
+            lab.store.get(invem_id).map(|n| n.kind),
+            Some(NodeKind::NumericCertificate)
+        );
+        assert_ne!(
+            invem_id.to_hex(),
+            "0967e9f42ec9ff0fd8e29fecc5bb5a3ed9aba4974ac77b0e5217a4bb634ec202",
+            "inv-alpha-em interval certificate is not the GUT-scale 3/8 pin"
+        );
+        assert_ne!(
+            invem_id.to_hex(),
+            "abb134fa6d8b112c92c0dfbefb789a4446cbed54aaeb83528658bd65d2b1ace3",
+            "inv-alpha-em interval certificate is not the GQW interval pin"
+        );
+        assert_ne!(
+            invem_id.to_hex(),
+            "1ad86215fce82a37f806343448386d924c59c2abdc3f7c3a1b1cf77924fb997c",
+            "inv-alpha-em interval certificate is not the α_3 interval pin"
+        );
+        assert_eq!(
+            invem_id.to_hex(),
+            "166b6853d0b9a21996e896fc7d13e7011309472f9201c21e61938ccf629b569b"
+        );
+        assert!(
+            invem.contains("cdee77621ca682a565cb75b277f5c583fd6dc179dccd3c523dc3d63375149f8a"),
+            "inv-alpha-em interval FormalClaim identity must stay pinned: {invem}"
+        );
+
         let p3n = lab
             .exec(Command::Inspect {
                 axis: Some("trust".into()),
@@ -10672,6 +10776,7 @@ mod tests {
         assert!(!p3n.contains("gut.proton-lifetime-sk"), "{p3n}");
         assert!(!p3n.contains("gut.weinberg-angle-mz"), "{p3n}");
         assert!(!p3n.contains("gut.coupling-unification"), "{p3n}");
+        assert!(!p3n.contains("gut.inverse-alpha-em"), "{p3n}");
 
         let why_mz = lab
             .exec(Command::Why {
@@ -10718,6 +10823,29 @@ mod tests {
             "Interval enclose must not earn P3N: {why_a3}"
         );
         assert!(!why_a3.contains("P4"), "{why_a3}");
+
+        let why_invem = lab
+            .exec(Command::Why {
+                claim: "gut.inverse-alpha-em-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            why_invem.contains(&format!("enclose:     {invem_id}")),
+            "{why_invem}"
+        );
+        assert!(
+            why_invem.contains("judgment:   statistical computed"),
+            "{why_invem}"
+        );
+        assert!(!why_invem.contains("certified-numeric"), "{why_invem}");
+        assert!(
+            !why_invem
+                .lines()
+                .any(|l| l.contains("trust:") && l.contains("P3N")),
+            "Interval enclose must not earn P3N: {why_invem}"
+        );
+        assert!(!why_invem.contains("P4"), "{why_invem}");
 
         let why = lab
             .exec(Command::Why {
@@ -10883,6 +11011,15 @@ mod tests {
             .to_string();
         assert!(als.contains("pdg-2022-alpha-s-mz"), "{als}");
         assert!(als.contains("PDG Review"), "{als}");
+
+        let invem = lab
+            .exec(Command::Cite {
+                claim: "gut.inverse-alpha-em-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(invem.contains("pdg-2022-inv-alpha-em-mz"), "{invem}");
+        assert!(invem.contains("PDG Review"), "{invem}");
 
         let d2 = lab
             .exec(Command::Cite {
@@ -25101,6 +25238,14 @@ mod tests {
             .text()
             .to_string();
         assert!(als.contains("statistical computed"), "{als}");
+
+        let invem = lab
+            .exec(Command::Judge {
+                claim: "gut.inverse-alpha-em-mz-interval".into(),
+            })
+            .text()
+            .to_string();
+        assert!(invem.contains("statistical computed"), "{invem}");
 
         let gut = lab
             .exec(Command::Judge {

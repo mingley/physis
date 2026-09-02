@@ -286,12 +286,14 @@ pub fn super_kamiokande_proton_lifetime() -> Dataset {
 /// Live dataset whose [`SourceRecord`] is the empirical provenance of
 /// `claim_id`. The GUT-scale `3/8` cell is not this registry. GQW at `M_Z`
 /// compares to the PDG mixing-angle listing; one-loop `α_3(M_Z)` compares
-/// to the PDG 2022 `α_s` listing. The complementary PDG listings are
+/// to the PDG 2022 `α_s` listing. One-loop `α_em⁻¹(M_Z)` compares to the
+/// PDG 2022 `α_em⁻¹` listing. The complementary PDG listings are
 /// *inputs* to those predictions, not this map.
 pub fn dataset_for_claim(claim_id: &str) -> Option<Dataset> {
     match claim_id {
         "gut.weinberg-angle-mz-interval" => Some(pdg_2024_sin2theta()),
         "gut.coupling-unification-interval" => Some(pdg_2022_alpha_s_mz()),
+        "gut.inverse-alpha-em-mz-interval" => Some(pdg_2022_inv_alpha_em_mz()),
         "gut.proton-lifetime-sk" => Some(super_kamiokande_proton_lifetime()),
         _ => None,
     }
@@ -508,6 +510,9 @@ mod tests {
         let als = dataset_for_claim("gut.coupling-unification-interval").expect("α_s cell");
         assert_eq!(als.id, PDG_2022_ALPHA_S_MZ);
         assert!(als.source.recheck().is_ok());
+        let invem = dataset_for_claim("gut.inverse-alpha-em-mz-interval").expect("α_em cell");
+        assert_eq!(invem.id, PDG_2022_INV_ALPHA_EM_MZ);
+        assert!(invem.source.recheck().is_ok());
     }
 
     #[test]

@@ -12,6 +12,24 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **Independent Interval enclose of one-loop inverse-alpha unification.**
+  Third vertex of the one-loop triangle: `α_s` and `sin²θ_W` predict
+  `α_em⁻¹(M_Z)` as a π-free Ratio (`2π` cancels).
+  `gut.inverse-alpha-em-mz-interval` is an EmpiricalPrediction with sourced
+  PDG 2024 / 2022 input-σ hulls versus the tight PDG `α_em⁻¹` hull, plus
+  exact Gaussian NLL at the PDG `10^{-3}` scale. `physis enclose`
+  independently parses the overlay; not CertifiedNumeric, not P3N (count
+  stays 4). Minimal SU(5) is excluded; one-loop MSSM is still excluded
+  (`α_em` is known far more precisely than `α_s`). The 3% heuristic cell
+  can still hold on `gut.coupling-unification`. GQW and coupling-unification
+  interval FormalClaim identity and certificate pins unchanged. GUT-scale
+  3/8 certificate pin unchanged. Inverse-alpha interval FormalClaim identity
+  `cdee77621ca682a565cb75b277f5c583fd6dc179dccd3c523dc3d63375149f8a`.
+  Interval certificate
+  `166b6853d0b9a21996e896fc7d13e7011309472f9201c21e61938ccf629b569b`.
+  Verified: unit tests; inspect judgment statistical-computed count 3;
+  inspect gap insufficient-precision after SUSY stays count 2; role gates.
+
 - **Independent Interval enclose of one-loop coupling unification.**
   Complementary to GQW: `α_em⁻¹` and `sin²θ_W` predict `α_3(M_Z)` as a
   π-free Ratio (`2π` cancels). `gut.coupling-unification-interval` is an

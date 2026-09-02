@@ -105,8 +105,10 @@ mixing-angle cell `gut.weinberg-angle-mz-interval` is a Gaussian NLL
 (`statistical computed`) of the algebraic GQW `Ratio` centre versus
 `σ = 10^{-5}` (the centre is rounded to that PDG scale for the
 likelihood), still not P3N; complementary `gut.coupling-unification-interval`
-is the same kind of NLL of the one-loop `α_3` centre versus PDG `α_s`.
-Super-K is not that Gaussian.
+is the same kind of NLL of the one-loop `α_3` centre versus PDG `α_s`;
+the third vertex `gut.inverse-alpha-em-mz-interval` is the NLL of the
+one-loop `α_em⁻¹` centre versus the tight PDG `α_em⁻¹` hull (one-loop
+MSSM is still excluded there). Super-K is not that Gaussian.
 
 `physis epistemics` tallies the whole lab by class, derivation, and semantic
 assurance (currently hundreds of `executed` model-internal evaluations).

@@ -26,7 +26,11 @@
 //! so that centre is also a `Ratio`. The empirical sibling encloses it
 //! by the sourced PDG 2024 mixing-angle hull and the PDG 2022
 //! `α_em⁻¹` hull, versus the PDG `α_s` hull — not a 3% remainder
-//! certificate, and not the GQW mixing-angle cell. `M_U` still uses
+//! certificate, and not the GQW mixing-angle cell. The third vertex
+//! predicts `α_em⁻¹(M_Z)` from `α_s` and `sin²θ_W`: `2π` cancels
+//! the same way. That enclosure is compared to the tight PDG
+//! `α_em⁻¹` hull — one-loop MSSM is still disjoint there, because
+//! `α_em` is known much more precisely than `α_s`. `M_U` still uses
 //! `ln`/`exp` and is approximate evidence.
 //!
 //! One loop is an approximation: two-loop terms and SUSY thresholds shift the
@@ -222,6 +226,45 @@ impl GaugeRunning {
         let b3i = Interval::point(b3);
         let inv_a3 = a1 - ((b1i - b3i) / (b1i - b2i)) * (a1 - a2);
         Interval::point(Ratio::int(1)) / inv_a3
+    }
+
+    /// One-loop `α_em⁻¹(M_Z)` from `α_s` and `sin²θ_W` as an exact Ratio.
+    ///
+    /// Inverse of [`Self::predicted_alpha3_mz_exact`]: the same
+    /// π-free algebra with the comparison datum swapped. This does
+    /// **not** use the measured `α_em⁻¹`. That is the comparison
+    /// datum. Complementary to GQW (predicts the mixing angle) and
+    /// coupling unification (predicts `α_3`). Not P3N: the inputs
+    /// are recorded PDG decimals, not a remainder certificate.
+    pub fn predicted_inv_alpha_em_mz_exact(&self) -> Ratio {
+        let [b1, b2, b3] = self.one_loop_betas_ratio();
+        let alpha_s = strong_coupling_mz_ratio();
+        let s2 = weak_mixing_angle_sin2_mz_ratio();
+        let c2 = Ratio::int(1) - s2;
+        let r = (b1 - b3) / (b1 - b2);
+        let three_fifth = Ratio::new(3, 5);
+        let coeff = three_fifth * c2 - r * (three_fifth * c2 - s2);
+        (Ratio::int(1) / alpha_s) / coeff
+    }
+
+    /// One-loop `α_em⁻¹(M_Z)` as an interval, propagating the sourced
+    /// PDG 2022 one-sigma hull of `α_s` and the PDG 2024 hull of
+    /// `sin²θ_W` through the exact rational function. This is input
+    /// uncertainty, not a two-loop remainder certificate, and not
+    /// P3N. Complementary to [`Self::predicted_alpha3_mz_interval`].
+    pub fn predicted_inv_alpha_em_mz_interval(&self) -> Interval {
+        let [b1, b2, b3] = self.one_loop_betas_ratio();
+        let alpha_s = pdg_2022_alpha_s_mz().statistical;
+        let s2 = pdg_2024_sin2theta().statistical;
+        let one = Interval::point(Ratio::int(1));
+        let three_fifth = Interval::point(Ratio::new(3, 5));
+        let c2 = one - s2;
+        let b1i = Interval::point(b1);
+        let b2i = Interval::point(b2);
+        let b3i = Interval::point(b3);
+        let r = (b1i - b3i) / (b1i - b2i);
+        let coeff = three_fifth * c2 - r * (three_fifth * c2 - s2);
+        (one / alpha_s) / coeff
     }
 
     /// Measured `sin²θ_W(M_Z)` (PDG MS-bar). Input to `α_1`/`α_2`; *not* used
@@ -603,6 +646,65 @@ mod tests {
         assert!(!sm_i.contains(pdg) && !pdg.contains(sm_i));
         let folklore = sm
             .predicted_alpha3_mz_exact()
+            .enclosure()
+            .relative_envelope(Ratio::new(3, 100));
+        assert!(folklore.contains(sm_i));
+        assert!(!sm_i.contains(folklore));
+    }
+
+    #[test]
+    fn inverse_alpha_em_is_an_exact_pi_free_ratio() {
+        let sm = GaugeRunning::standard_model();
+        let mssm = GaugeRunning::mssm();
+        let sm_exact = sm.predicted_inv_alpha_em_mz_exact();
+        let mssm_exact = mssm.predicted_inv_alpha_em_mz_exact();
+        assert_eq!(sm_exact, Ratio::new(54500000000, 705939219));
+        assert_eq!(mssm_exact, Ratio::new(100000000, 788751));
+        assert_eq!(sm_exact.round_to(1000), Ratio::new(38601, 500));
+        assert_eq!(mssm_exact.round_to(1000), Ratio::new(126783, 1000));
+        let alpha_s = strong_coupling_mz_ratio();
+        let s2 = weak_mixing_angle_sin2_mz_ratio();
+        let c2 = Ratio::int(1) - s2;
+        let [b1, b2, b3] = SM_ONE_LOOP_B;
+        let r = (b1 - b3) / (b1 - b2);
+        let three_fifth = Ratio::new(3, 5);
+        let coeff = three_fifth * c2 - r * (three_fifth * c2 - s2);
+        let rebuilt = (Ratio::int(1) / alpha_s) / coeff;
+        assert_eq!(rebuilt, sm_exact);
+        let pdg = pdg_2022_inv_alpha_em_mz().statistical;
+        assert!(pdg.disjoint(sm_exact.enclosure()));
+        assert!(
+            pdg.disjoint(mssm_exact.enclosure()),
+            "one-loop MSSM inv-alpha-em centre sits below the PDG 1σ hull; the input-interval cell is also disjoint"
+        );
+    }
+
+    #[test]
+    fn inverse_alpha_em_input_interval_contains_the_centre_and_misses_the_pdg_hull() {
+        let sm = GaugeRunning::standard_model();
+        let mssm = GaugeRunning::mssm();
+        let sm_i = sm.predicted_inv_alpha_em_mz_interval();
+        let mssm_i = mssm.predicted_inv_alpha_em_mz_interval();
+        assert!(sm_i.contains(sm.predicted_inv_alpha_em_mz_exact().enclosure()));
+        assert!(mssm_i.contains(mssm.predicted_inv_alpha_em_mz_exact().enclosure()));
+        let pdg = pdg_2022_inv_alpha_em_mz().statistical;
+        assert!(
+            sm_i.disjoint(pdg),
+            "SU(5) input interval {sm_i} vs PDG inv-alpha-em {pdg}"
+        );
+        assert_eq!(
+            Interval::parse_display(&sm_i.to_string()),
+            Some(sm_i),
+            "inverse-alpha input interval Display must independently parse"
+        );
+        assert_eq!(Interval::parse_display(&mssm_i.to_string()), Some(mssm_i));
+        assert!(
+            mssm_i.disjoint(pdg),
+            "one-loop MSSM with sourced PDG input σ is still disjoint from the tight inv-alpha-em hull: {mssm_i} vs {pdg}"
+        );
+        assert!(!sm_i.contains(pdg) && !pdg.contains(sm_i));
+        let folklore = sm
+            .predicted_inv_alpha_em_mz_exact()
             .enclosure()
             .relative_envelope(Ratio::new(3, 100));
         assert!(folklore.contains(sm_i));

@@ -138,7 +138,9 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
   `gut.proton-decay-viable`, and `gut.weinberg-angle-mz` fails → holds
   (heuristics). `gut.weinberg-angle-mz-interval` and
   `gut.coupling-unification-interval` flip fails →
-  undecidable (PDG overlap without containment). The GUT-scale `3/8`
+  undecidable (PDG overlap without containment).
+  `gut.inverse-alpha-em-mz-interval` stays excluded (the PDG `α_em⁻¹`
+  hull is tighter than one-loop MSSM input σ). The GUT-scale `3/8`
   theorem is independent of this knob. A missing 10 is not this knob:
   `add-missing-10` is an IR mutation.
 
