@@ -157,6 +157,17 @@ pub fn atomic_unit_of_permittivity(
     Qty::new(1.112_650_055_45e-10)
 }
 
+/// Atomic unit of momentum hbar/a0 (kg m s^{-1}), CODATA 2018.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not natural-unit momentum, and not a reconstruction of that
+/// quotient. The versioned ledger stores the one-sigma hull; this
+/// Qty is that centre. Atomic unit of time still cites hbar and is
+/// not stored. aup is not a second name.
+pub fn atomic_unit_of_momentum() -> Qty<Momentum> {
+    Qty::new(1.992_851_914_10e-24)
+}
+
 /// Proton mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -10768,6 +10779,44 @@ mod tests {
         assert!(
             physis_constants::lookup("4pi_eps").is_none(),
             "4pi_eps is not a ledger name; the live name is au_eps"
+        );
+
+        let aup = physis_constants::atomic_unit_of_momentum();
+        let aup_centre = physis_numeric::Ratio::new(199_285_191_410, 10i128.pow(35));
+        assert_eq!(
+            atomic_unit_of_momentum().value(),
+            1.992_851_914_10e-24,
+            "au_p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_unit_of_momentum().value(),
+            aup_centre.to_f64(),
+            "au_p Qty locksteps to Ratio::to_f64 on the 10^-35 centre"
+        );
+        assert!(
+            aup.value
+                .contains(physis_numeric::Interval::point(aup_centre)),
+            "au_p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(aup.value.lo, aup.value.hi, "ledger au_p stays an Interval");
+        assert_ne!(
+            physis_constants::atomic_unit_of_momentum().hash,
+            physis_constants::natural_unit_of_momentum().hash,
+            "au_p is not nu_p"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_momentum().hash,
+            physis_constants::atomic_unit_of_permittivity().hash,
+            "au_p is not au_eps"
+        );
+        assert_eq!(physis_constants::lookup("au_p").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("aup").is_none(),
+            "aup is not a ledger name; the live name is au_p"
+        );
+        assert!(
+            physis_constants::lookup("hbar_a0").is_none(),
+            "hbar_a0 is not a ledger name; the live name is au_p"
         );
 
         assert!(
