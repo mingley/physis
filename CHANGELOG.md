@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of electric field is a one-sigma Interval.**
+  `physis-constants` versions `au_E` as the CODATA 2018 one-sigma hull
+  `5.14220674763(78)×10^{11}` V m^{-1} from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of electric field
+  defined as `E_h / (e a0)`, not elementary charge `e`, not atomic unit
+  of charge density `au_rho`, and not a FormalClaim reconstructing that
+  quotient from a live lookup. Atomic unit of time still cites ħ and is
+  not stored. Atomic unit of electric potential is a second name for
+  `Eh_eV` and is not stored. The {220} lattice spacing is not stored.
+  Dividing the e11 centre by 10 is the 10× trap. 2018 last-digit is
+  `763`; 2022 last-digit `112` is excluded. The ledger name is `au_E`;
+  `auE`, `au-E`, `E_au`, and `electric_field` are not second names.
+  `physis_model` `atomic_unit_of_electric_field()` Qty locksteps to the
+  CODATA centre inside the hull. Adding `au_E` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `au_E` hash
+  bf01829e8a7462f14332d4429ba4e33ca0e624fdb465701f891181bc7725bb48;
+  node b2201788613356ad96465078c7c0797ef43122a352b5bf53ccb4f3e0c7ef208e;
+  ledger node
+  705eff2408bc4e0f26a002942a77e0f3a2e944784b5afb6abb298a664691617f.
+  `au_rho` hash
+  438f5e555b9af97c484c28fcd7227ed3fe7797300b9b738d5d0e0a8bc4dade4c and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of charge density is a one-sigma Interval.**
   `physis-constants` versions `au_rho` as the CODATA 2018 one-sigma hull
   `1.08120238457(49)×10^{12}` C m^{-3} from JPCRD 50, 033105 table XXXIV

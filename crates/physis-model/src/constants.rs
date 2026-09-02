@@ -572,10 +572,26 @@ pub fn atomic_unit_of_current() -> Qty<Current> {
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. Ledger unit is C m^{-3}; this Qty is charge over volume
 /// (L^{-3} T I). aurho, au-rho, au_n, and charge_density are not second
-/// names.
+/// names. The atomic-unit electric-field listing is au_E.
 pub fn atomic_unit_of_charge_density(
 ) -> Qty<physis_core::SI<typenum::Z0, typenum::N3, typenum::P1, typenum::P1>> {
     Qty::new(1.081_202_384_57e12)
+}
+
+/// Atomic unit of electric field Eh / (e a0) (V m^{-1}), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_rho,
+/// not au_I, and not a FormalClaim that reconstructs that quotient from
+/// a live lookup. Atomic unit of time still cites hbar and is not
+/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is V m^{-1}; this Qty is
+/// electric field (M L T^{-3} I^{-1}). auE, au-E, E_au, and
+/// electric_field are not second names.
+pub fn atomic_unit_of_electric_field(
+) -> Qty<physis_core::SI<typenum::P1, typenum::P1, typenum::N3, typenum::N1>> {
+    Qty::new(5.142_206_747_63e11)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -11067,6 +11083,49 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; au_rho is not an a/sqrt(8) certificate"
+        );
+        let au_e = physis_constants::atomic_unit_of_electric_field();
+        let au_e_centre = Ratio::int(514_220_674_763);
+        assert_eq!(
+            atomic_unit_of_electric_field().value(),
+            au_e_centre.to_f64(),
+            "au_E Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_electric_field().value(),
+            5.142_206_747_63e11,
+            "au_E Qty locksteps to Ratio::to_f64 on the integer centre"
+        );
+        assert!(
+            au_e.value.contains(Interval::point(au_e_centre)),
+            "au_E Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_e.value.lo, au_e.value.hi,
+            "ledger au_E stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_field().hash,
+            physis_constants::atomic_unit_of_charge_density().hash,
+            "au_E is not au_rho"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_field().hash,
+            physis_constants::atomic_unit_of_current().hash,
+            "au_E is not au_I"
+        );
+        assert_eq!(physis_constants::lookup("au_E").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("auE").is_none(),
+            "auE is not a ledger name; the live name is au_E"
+        );
+        assert!(
+            physis_constants::lookup("electric_field").is_none(),
+            "electric_field is not a second name for au_E"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_E is not an a/sqrt(8) certificate"
         );
 
         assert!(
