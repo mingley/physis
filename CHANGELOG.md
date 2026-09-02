@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 hartree-atomic mass unit relationship is a one-sigma Interval.**
+  `physis-constants` versions `Eh_u` as the CODATA 2018 one-sigma hull
+  `2.92126232205(88)×10^{-8}` u from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the next unique measured
+  conversion hull, not kelvin-hartree `K_Eh`, not kg atomic mass
+  constant `m_u`, not hertz-atomic mass unit `Hz_u`, not atomic mass
+  unit-hertz `u_Hz`, not joule `Eh`, not the eV companion `Eh_eV`, and
+  not a FormalClaim reconstructing `Eh / (c² m_u)` from live lookups.
+  Inverse atomic-mass-unit-hartree is not stored. Hartree-kilogram is
+  not stored: Ratio scale overflows `i128`. The decade is `10^{19}`;
+  `10^{18}` is the 10× trap (`σ = 8.8` is not an integer). This is not
+  the CODATA 2022 last-digit `1797` as the stored centre; the 2018 hull
+  excludes that 2022 centre. The ledger name is `Eh_u`; `Ehu`, `Eh-u`,
+  `hartree_u`, and `u_Eh` are not second names. `physis_model`
+  `hartree_in_atomic_mass_unit()` Qty locksteps to the CODATA centre
+  inside the hull. Adding `Eh_u` to LEDGER changes the ledger bundle
+  pin. Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4. Verified: `Eh_u` hash
+  a3c699716e28cb116c1c86af4014cea3c65677566d268105e86fb13db75a1047;
+  node 2c8618557602554a8d101ef34a276b06bcc981cce6ba57d6d93f01de95d3f8a1;
+  ledger node
+  b647dc2b754be01df5596df66e77a3040dc65e8b4f0f8771e920ca22e16d9c62.
+  `K_Eh` hash
+  9f4581b1e00277c9a3df0c954203e107ae847ba3ddaf197df6636f02d8418aa9 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 kelvin-hartree relationship is a one-sigma Interval.**
   `physis-constants` versions `K_Eh` as the CODATA 2018 one-sigma hull
   `3.1668115634556(61)×10^{-6}` E_h from JPCRD 50, 033105 table XXXV
