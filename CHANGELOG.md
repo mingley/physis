@@ -80,6 +80,28 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 joule-kelvin relationship is an exact Ratio.**
+  `physis-constants` versions `J_K` as the SI-exact Ratio `1/k` =
+  `100000000000000000000000000000/1380649` K from JPCRD 50, 033105
+  table XXXV (energy conversion factors). The table prints
+  `7.242 970 516… × 10^{22}`; the ledger stores the full reciprocal.
+  The reduced denominator keeps factors 73 and 18913 (the odd primes
+  in SI `k`'s numerator), so this is not a terminating SciExact. This
+  is not SI Boltzmann `k`, not `k_eV`, not `k_Hz`, not `k_m`, not
+  second radiation `c2`, not Josephson `KJ`, not an SI defining
+  constant, and not a FormalClaim reconstructing `1/k` from live
+  lookups. Joule-hertz `J_Hz` is not stored: after reducing `10^{42}/h`
+  the numerator is `10^{41}`, which overflows `i128`. The ledger name
+  is `J_K`; `JK`, `J-K`, and `1/k` are not second names.
+  `physis_model` `joule_in_kelvin()` Qty locksteps to
+  `Ratio::to_f64` of that Ratio. Adding `J_K` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `J_K` hash 294b1e620f7a8cacd4c276a74a0f43eba7e28c5969d83a1983a9df046dbb5f26; node f830b9ca4ce8383d69a8818628c66a968b039f3f30aa7a22d591a70f629031a4; ledger node
+  580ba644fdc63e19b04b64a842d1dfa1728bb689f4d21f7c4802f59d0e59b3ff. `J_eV` hash b775a4c8372acd2d0ba110b108d3971cca85e2fa26a340d9a771522eefdd23e6
+  unchanged.
+
 - **CODATA 2018 joule-electron volt relationship is an exact Ratio.**
   `physis-constants` versions `J_eV` as the SI-exact Ratio `1/e` =
   `5000000000000000000000000000/801088317` eV from JPCRD 50, 033105

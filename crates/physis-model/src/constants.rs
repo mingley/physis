@@ -108,6 +108,23 @@ pub fn joule_in_electronvolt() -> Qty<Dimensionless> {
     Qty::new(6.241_509_074_460_762e18)
 }
 
+/// Joule-kelvin relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the joule-
+/// kelvin relationship, not SI joule-per-kelvin k, not Boltzmann in
+/// eV/K k_eV, not Boltzmann in Hz/K k_Hz, not Boltzmann in inverse
+/// meter per kelvin k_m, not second radiation c2, not Josephson KJ,
+/// and not a FormalClaim that reconstructs 1/k from live lookups.
+/// The table prints an ellipsis; the ledger stores the exact Ratio.
+/// This is not a terminating SciExact (73 and 18913 remain in the
+/// reduced denominator). Joule-hertz J_Hz is not stored: 10^41
+/// overflows i128. The versioned ledger stores the exact Ratio; this
+/// Qty is the IEEE rounding of that Ratio. Ledger unit is K; this Qty
+/// is dimensionless, not SI kelvin. JK and 1/k are not second names.
+pub fn joule_in_kelvin() -> Qty<Dimensionless> {
+    Qty::new(7.242_970_516_039_92e22)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9275,6 +9292,53 @@ mod tests {
         assert!(
             physis_constants::lookup("kg_eV").is_none(),
             "kg_eV is not stored: c^2/e overflows i128"
+        );
+
+        let j_k = physis_constants::joule_in_kelvin();
+        let j_k_value = Ratio::new(10i128.pow(29), 1_380_649);
+        assert_eq!(j_k.value, j_k_value, "ledger J_K is the exact SI Ratio");
+        assert_eq!(
+            joule_in_kelvin().value(),
+            j_k_value.to_f64(),
+            "J_K Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            joule_in_kelvin().value(),
+            7.242_970_516_039_92e22,
+            "J_K Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
+        assert!(
+            j_k.value > Ratio::int(0),
+            "ledger J_K stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::joule_in_kelvin().hash,
+            physis_constants::boltzmann().hash,
+            "J_K is not k"
+        );
+        assert_ne!(
+            physis_constants::joule_in_kelvin().hash,
+            physis_constants::joule_in_electronvolt().hash,
+            "J_K is not J_eV"
+        );
+        assert_ne!(
+            physis_constants::joule_in_kelvin().hash,
+            physis_constants::boltzmann_in_ev_per_kelvin().hash,
+            "J_K is not k_eV"
+        );
+        assert_ne!(
+            physis_constants::joule_in_kelvin().hash,
+            physis_constants::josephson_constant().hash,
+            "J_K is not KJ"
+        );
+        assert_eq!(physis_constants::lookup("J_K").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("JK").is_none(),
+            "JK is not a ledger name; the live name is J_K"
+        );
+        assert!(
+            physis_constants::lookup("J_Hz").is_none(),
+            "J_Hz is not stored: 10^41 overflows i128"
         );
 
         assert!(
