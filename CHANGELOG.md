@@ -22,6 +22,30 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 inverse meter-joule relationship is SciExact.**
+  `physis-constants` versions `m_J` as the SI-exact SciExact `h c` =
+  `19864458571489287e-41` J from JPCRD 50, 033105 table XXXV (energy
+  conversion factors). The table prints `1.986 445 857… × 10^{-25}`;
+  the ledger stores the full terminating decimal. After stripping one
+  trailing ten the denominator is `10^{41}`, which overflows `i128`, so
+  this is not a Ratio (same reason Planck `h` is SciExact). This is not
+  SI joule-second `h`, not metre-per-second `c`, not kilogram-joule
+  `kg_J`, not first-radiation `c1L`, not second radiation `c2`, not an
+  SI defining constant, and not a FormalClaim reconstructing `h * c`
+  from live lookups. The ledger name is `m_J`; `m` and `hc` are not
+  second names. `physis_model` `inverse_meter_in_joule()` Qty locksteps
+  to `SciExact::to_f64` of that decimal. Adding `m_J` to LEDGER changes
+  the ledger bundle pin. Theories still evaluate with `f64` Qty. That
+  is not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `m_J` hash 1b1ae8c0a216320aad8dd8ac91944989de7278e7d89575e0824bcf77e764deeb; node 8a296c0621b84a7c7bbc3ad279afa1cb8c353b843806863981fed43ad1e1ffc3; ledger node
+  1871021e6340088265e894dd8309480d891a33923cd9faad8238efa8cee23f8d. `h` hash
+  50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef,
+  `c` hash 691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1,
+  `c1L` hash bb3b42d41a8d8ebc3191a2aa98d974733538eaba1098eb89a1574d228479249c,
+  and `kg_J` hash a54eee6c8f3046f2c68745c29a8040b9b486fd013f72511e1d7372366a34bc7f
+  unchanged.
+
 - **CODATA 2018 kilogram-joule relationship is an exact Ratio.**
   `physis-constants` versions `kg_J` as the SI-exact integer Ratio
   `c*c` = `89875517873681764` J from JPCRD 50, 033105 table XXXV

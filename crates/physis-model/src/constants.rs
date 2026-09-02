@@ -58,6 +58,21 @@ pub fn kilogram_in_joule() -> Qty<Dimensionless> {
     Qty::new(8.987_551_787_368_176e16)
 }
 
+/// Inverse meter-joule relationship, SI 2019 SciExact.
+///
+/// This is the exact table XXXV energy conversion listed as the inverse
+/// meter-joule relationship, not SI joule-second h, not metre-per-second
+/// c, not kilogram-joule kg_J, not first-radiation c1L = 2hc^2, not
+/// second radiation c2, and not a FormalClaim that reconstructs h * c
+/// from live lookups. The table prints an ellipsis; the ledger stores
+/// the full terminating decimal as SciExact because 10^41 overflows
+/// i128. This Qty is the IEEE rounding of that SI decimal. Ledger unit
+/// is J; this Qty is dimensionless, not SI joule-second. m is not a
+/// second name.
+pub fn inverse_meter_in_joule() -> Qty<Dimensionless> {
+    Qty::new(1.986_445_857_148_928_6e-25)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9019,6 +9034,46 @@ mod tests {
         assert!(
             physis_constants::lookup("kg").is_none(),
             "kg is not a ledger name; the live name is kg_J"
+        );
+
+        let m_j = physis_constants::inverse_meter_in_joule();
+        let m_j_value = SciExact::new(662_607_015i128 * 299_792_458i128, -42);
+        assert_eq!(m_j.value, m_j_value, "ledger m_J is the exact SI product");
+        assert_eq!(m_j.value.to_ratio(), None, "m_J does not fit Ratio");
+        assert_eq!(
+            inverse_meter_in_joule().value(),
+            m_j_value.to_f64(),
+            "m_J Qty is the IEEE rounding of the SI decimal"
+        );
+        assert_eq!(
+            inverse_meter_in_joule().value(),
+            1.986_445_857_148_928_6e-25,
+            "m_J Qty locksteps to SciExact::to_f64 of the SI decimal"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_joule().hash,
+            physis_constants::planck_h().hash,
+            "m_J is not h"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_joule().hash,
+            physis_constants::first_radiation_constant_spectral_radiance().hash,
+            "m_J is not c1L"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_joule().hash,
+            physis_constants::kilogram_in_joule().hash,
+            "m_J is not kg_J"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_joule().hash,
+            physis_constants::speed_of_light().hash,
+            "m_J is not c"
+        );
+        assert_eq!(physis_constants::lookup("m_J").unwrap().kind, "sci-exact");
+        assert!(
+            physis_constants::lookup("m").is_none(),
+            "m is not a ledger name; the live name is m_J"
         );
 
         assert!(

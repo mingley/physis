@@ -8,7 +8,10 @@
 //! JPCRD table XXXI UNIVERSAL: SI-exact, not a terminating SciExact
 //! (reduced denominator keeps 2, 3, 5, 19, 389, and 12043). CODATA 2018
 //! kilogram-joule relationship `kg_J` is an exact [`Ratio`] `c*c` from
-//! JPCRD table XXXV: SI-exact integer 89875517873681764 J. `ħ` is not
+//! JPCRD table XXXV: SI-exact integer 89875517873681764 J. CODATA 2018
+//! inverse meter-joule relationship `m_J` is an exact [`SciExact`]
+//! `h c` from JPCRD table XXXV: `19864458571489287e-41` J (`10^{41}`
+//! overflows `i128`, same reason Planck `h` is SciExact). `ħ` is not
 //! a terminating decimal. CODATA 2018 Newtonian `G` is a one-sigma
 //! [`Interval`], not an exact Ratio. CODATA 2018 vacuum permeability
 //! `μ₀` is a one-sigma [`Interval`] `1.25663706212(19)×10^{-6}` N A⁻²
@@ -323,7 +326,8 @@ fn kilogram_in_joule_value() -> Ratio {
 /// the ledger stores the full integer. The value is the integer
 /// `89875517873681764` (terminating, like `c`); the ledger stores
 /// [`Ratio`] as it does for `c`, not [`SciExact`]. This is not P3N. The
-/// ledger name is `kg_J`. `kg` is not a second name. Magnetic flux
+/// ledger name is `kg_J`. `kg` is not a second name. The inverse
+/// meter-joule relationship is `m_J`. Magnetic flux
 /// quantum `Phi0` and conductance quantum `G0` still cite π and ħ and
 /// are not stored. Reduced Planck in eV s is not stored: it cites `ħ`.
 /// Electron mass is not stored: `10^{42}` overflows `i128`. CODATA 2022
@@ -335,6 +339,38 @@ pub fn kilogram_in_joule() -> Constant<Ratio> {
         kilogram_in_joule_value(),
         "J",
         codata_2018_kilogram_in_joule_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// Exact SI 2019 inverse meter-joule energy equivalent as h * c.
+fn inverse_meter_in_joule_value() -> SciExact {
+    SciExact::new(662_607_015i128 * 299_792_458i128, -42)
+}
+
+/// Inverse meter-joule relationship, SI 2019 SciExact.
+///
+/// This is the exact table XXXV energy conversion listed as the inverse
+/// meter-joule relationship, not SI joule-second `h`, not metre-per-second
+/// `c`, not kilogram-joule `kg_J`, not first-radiation `c1L` = `2hc²`,
+/// not second radiation `c2`, not an SI defining constant, and not a
+/// FormalClaim that reconstructs `h * c` from live lookups. The table
+/// prints `1.986 445 857… × 10^{-25}`; the ledger stores the full
+/// terminating decimal `h c`. That product does not fit [`Ratio`]: after
+/// stripping one trailing ten the denominator is `10^{41}`, which
+/// overflows `i128` (same reason Planck `h` is SciExact). This is not
+/// P3N. The ledger name is `m_J`. `m` and `hc` are not second names.
+/// Magnetic flux quantum `Phi0` and conductance quantum `G0` still cite
+/// π and ħ and are not stored. Reduced Planck in eV s is not stored: it
+/// cites `ħ`. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// CODATA 2022 prints the same SI-exact ellipsis; there is no last-digit
+/// trap. Theories still use `physis_model` `f64` Qty.
+pub fn inverse_meter_in_joule() -> Constant<SciExact> {
+    Constant::new(
+        "m_J",
+        inverse_meter_in_joule_value(),
+        "J",
+        codata_2018_inverse_meter_in_joule_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -390,6 +426,14 @@ fn codata_2018_kilogram_in_joule_source() -> SourceRecord {
         "XXXV",
         "Energy conversion factors",
         "kg_J = 8.987551787e16 exact",
+    )
+}
+
+fn codata_2018_inverse_meter_in_joule_source() -> SourceRecord {
+    codata_2018_jpcrd_table(
+        "XXXV",
+        "Energy conversion factors",
+        "m_J = 1.986445857e-25 exact",
     )
 }
 
@@ -6952,6 +6996,7 @@ pub const LEDGER: &[&str] = &[
     "h",
     "h_eVHz",
     "kg_J",
+    "m_J",
     "G",
     "mu0",
     "epsilon0",
@@ -7172,6 +7217,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "h" => Some(listing(planck_h(), "sci-exact")),
         "h_eVHz" => Some(listing(planck_in_ev_per_hz(), "ratio")),
         "kg_J" => Some(listing(kilogram_in_joule(), "ratio")),
+        "m_J" => Some(listing(inverse_meter_in_joule(), "sci-exact")),
         "G" => Some(listing(newtonian_g(), "interval")),
         "mu0" => Some(listing(vacuum_permeability(), "interval")),
         "epsilon0" => Some(listing(vacuum_permittivity(), "interval")),
@@ -27198,6 +27244,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
@@ -27386,6 +27433,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("atm").is_some());
@@ -27447,6 +27495,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
     }
 
     #[test]
@@ -27614,6 +27663,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("N_A").is_some());
         assert!(lookup("k").is_some());
@@ -27736,6 +27786,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("k/hc").is_none());
         assert!(lookup("k/h").is_none());
         assert!(lookup("k_eVK").is_none());
@@ -27747,6 +27798,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("NAk").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("k").is_some());
@@ -27878,6 +27930,7 @@ mod tests {
         assert!(lookup("k_hc").is_none());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_none());
@@ -27885,6 +27938,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("k").is_some());
@@ -28041,12 +28095,14 @@ mod tests {
         assert!(lookup("k/h").is_none());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_none());
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("k_Hz").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("c2").is_some());
@@ -28193,6 +28249,7 @@ mod tests {
         assert!(lookup("m_e").is_none());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("h").is_some());
         assert!(lookup("e").is_some());
         assert!(lookup("eV").is_some());
@@ -28336,12 +28393,151 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_none());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("c").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("h").is_some());
         assert!(lookup("eV").is_some());
         assert!(lookup("k_m").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_inverse_meter_joule_relationship_is_sci_exact() {
+        let r = inverse_meter_in_joule();
+        let value = SciExact::new(662_607_015i128 * 299_792_458i128, -42);
+        assert_eq!(r.name, "m_J");
+        assert_eq!(r.unit, "J");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXV"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("Energy conversion factors")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("m_J = 1.986445857e-25 exact")
+        );
+        assert_eq!(r.value, value);
+        assert_eq!(r.value, SciExact::new(19_864_458_571_489_287, -41));
+        assert_eq!(r.value.to_string(), "19864458571489287e-41");
+        assert_eq!(r.value.to_ratio(), None, "m_J denominator overflows i128");
+        assert!(
+            10i128.checked_pow(41).is_none(),
+            "m_J = h c is 19864458571489287e-41; 10^41 overflows i128"
+        );
+        assert_ne!(
+            r.value,
+            SciExact::new(1_986_445_857, -34),
+            "m_J is the full SI product, not the printed ellipsis truncation"
+        );
+        assert_eq!(r.hash, inverse_meter_in_joule().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "m_J",
+                inverse_meter_in_joule_value(),
+                "J",
+                codata_2018_inverse_meter_in_joule_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, planck_h().hash, "m_J is not h");
+        assert_ne!(r.hash, speed_of_light().hash, "m_J is not c");
+        assert_ne!(
+            r.hash,
+            first_radiation_constant_spectral_radiance().hash,
+            "m_J is not c1L even though both are h-c SciExact products"
+        );
+        assert_ne!(r.hash, kilogram_in_joule().hash, "m_J is not kg_J");
+        assert_ne!(r.hash, second_radiation_constant().hash, "m_J is not c2");
+        assert_ne!(r.hash, planck_in_ev_per_hz().hash, "m_J is not h_eVHz");
+        assert_ne!(r.hash, newtonian_g().hash, "m_J is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "m_J is not au");
+        assert_ne!(
+            r.provenance.source_hash,
+            planck_h().provenance.source_hash,
+            "m_J locator is not the SI brochure h locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            speed_of_light().provenance.source_hash,
+            "m_J locator is not the SI brochure c locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            first_radiation_constant_spectral_radiance()
+                .provenance
+                .source_hash,
+            "m_J locator is not the c1L locator"
+        );
+        assert_ne!(
+            r.provenance.source_hash,
+            kilogram_in_joule().provenance.source_hash,
+            "m_J range is not the kg_J range"
+        );
+        assert_eq!(
+            planck_h().hash.to_hex(),
+            "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef",
+            "h hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            speed_of_light().hash.to_hex(),
+            "691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1",
+            "c hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            first_radiation_constant_spectral_radiance().hash.to_hex(),
+            "bb3b42d41a8d8ebc3191a2aa98d974733538eaba1098eb89a1574d228479249c",
+            "c1L hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            kilogram_in_joule().hash.to_hex(),
+            "a54eee6c8f3046f2c68745c29a8040b9b486fd013f72511e1d7372366a34bc7f",
+            "kg_J hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            second_radiation_constant().hash.to_hex(),
+            "9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc",
+            "c2 hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            planck_in_ev_per_hz().hash.to_hex(),
+            "bc3fb761f651c84f885a4749f6099f7eef62b31467e2df1ca778aede28ce2964",
+            "h_eVHz hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when m_J is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "1b1ae8c0a216320aad8dd8ac91944989de7278e7d89575e0824bcf77e764deeb"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("m").is_none());
+        assert!(lookup("hc").is_none());
+        assert!(lookup("mJ").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("hbar_eV").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_J").is_some());
+        assert!(lookup("kg_J").is_some());
+        assert!(lookup("h").is_some());
+        assert!(lookup("c").is_some());
+        assert!(lookup("c1L").is_some());
+        assert!(lookup("c2").is_some());
+        assert!(lookup("h_eVHz").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
     }
@@ -28506,6 +28702,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("N_A").is_some());
         assert!(lookup("e").is_some());
@@ -28646,6 +28843,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
@@ -28785,6 +28983,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("Vm").is_some());
@@ -28945,6 +29144,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
@@ -29265,6 +29465,7 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -36233,7 +36434,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 200);
+        assert_eq!(LEDGER.len(), 201);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -36257,6 +36458,11 @@ mod tests {
         assert_eq!(
             lookup("kg_J").unwrap().hash.to_hex(),
             "a54eee6c8f3046f2c68745c29a8040b9b486fd013f72511e1d7372366a34bc7f"
+        );
+        assert_eq!(lookup("m_J").unwrap().kind, "sci-exact");
+        assert_eq!(
+            lookup("m_J").unwrap().hash.to_hex(),
+            "1b1ae8c0a216320aad8dd8ac91944989de7278e7d89575e0824bcf77e764deeb"
         );
         assert_eq!(
             lookup("G").unwrap().hash.to_hex(),
@@ -37527,10 +37733,12 @@ mod tests {
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("k_Hz").is_some());
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
+        assert!(lookup("m_J").is_some());
         assert!(lookup("k/hc").is_none());
         assert!(lookup("k/h").is_none());
         assert!(lookup("R").is_none());
