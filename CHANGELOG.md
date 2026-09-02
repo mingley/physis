@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron volt-hartree relationship is a one-sigma Interval.**
+  `physis-constants` versions `eV_Eh` as the CODATA 2018 one-sigma hull
+  `3.6749322175655(71)×10^{-2}` E_h from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the hartree-electron volt pair, not a Ratio reciprocal of `Eh_eV`,
+  not hartree-atomic mass unit `Eh_u`, not joule `Eh`, not SI-exact
+  electronvolt `eV`, not joule-electron volt `J_eV`, and not a
+  FormalClaim reconstructing `e / Eh` from live lookups. Inverse
+  atomic-mass-unit-hartree is not stored. Hartree-kilogram is not
+  stored: Ratio scale overflows `i128`. The decade is `10^{15}`;
+  `10^{14}` is the 10× trap (`σ = 7.1` is not an integer). This is not
+  the CODATA 2022 last-digit `5665` as the stored centre; the 2018 hull
+  still contains that 2022 centre. The ledger name is `eV_Eh`; `eVEh`,
+  `eV-Eh`, and `electron_volt_Eh` are not second names. `physis_model`
+  `electron_volt_in_hartree()` Qty locksteps to the CODATA centre inside
+  the hull. Adding `eV_Eh` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `eV_Eh` hash
+  8c15bdef7dbec61c106d7df00c024ac4aad0ff46fb280a6e950f11248024a201;
+  node a9e5d2c994add3d47fe7ad539d3417cebf9aa69aee2b2b10154d04190c80172e;
+  ledger node
+  df5da730bbdd833a26ed840b7126d9970e114e3f5ec772dde5c1927254c51332.
+  `Eh_u` hash
+  a3c699716e28cb116c1c86af4014cea3c65677566d268105e86fb13db75a1047 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 hartree-atomic mass unit relationship is a one-sigma Interval.**
   `physis-constants` versions `Eh_u` as the CODATA 2018 one-sigma hull
   `2.92126232205(88)×10^{-8}` u from JPCRD 50, 033105 table XXXV

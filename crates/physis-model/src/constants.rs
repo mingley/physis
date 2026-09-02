@@ -319,6 +319,20 @@ pub fn hartree_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(2.921_262_322_05e-8)
 }
 
+/// Electron volt-hartree relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the electron volt-hartree relationship, not Eh_eV, not Eh_u, not
+/// joule Eh, not SI-exact eV, not J_eV, and not a FormalClaim that
+/// reconstructs e / Eh from live lookups. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. Ledger unit is E_h;
+/// this Qty is dimensionless, not a hartree-energy dimension. eVEh,
+/// eV-Eh, and electron_volt_Eh are not second names. Inverse
+/// atomic-mass-unit-hartree is not stored.
+pub fn electron_volt_in_hartree() -> Qty<Dimensionless> {
+    Qty::new(3.674_932_217_565_5e-2)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10073,6 +10087,46 @@ mod tests {
         assert!(
             physis_constants::lookup("u_Eh").is_none(),
             "u_Eh is not a second name for Eh_u"
+        );
+
+        let ev_eh = physis_constants::electron_volt_in_hartree();
+        let ev_eh_centre = Ratio::new(36_749_322_175_655, 10i128.pow(15));
+        assert_eq!(
+            electron_volt_in_hartree().value(),
+            ev_eh_centre.to_f64(),
+            "eV_Eh Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            electron_volt_in_hartree().value(),
+            3.674_932_217_565_5e-2,
+            "eV_Eh Qty locksteps to Ratio::to_f64 on the 10^15 centre"
+        );
+        assert!(
+            ev_eh.value.contains(Interval::point(ev_eh_centre)),
+            "eV_Eh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            ev_eh.value.lo, ev_eh.value.hi,
+            "ledger eV_Eh stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_hartree().hash,
+            physis_constants::hartree_energy_in_ev().hash,
+            "eV_Eh is not Eh_eV"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_hartree().hash,
+            physis_constants::hartree_in_atomic_mass_unit().hash,
+            "eV_Eh is not Eh_u"
+        );
+        assert_eq!(physis_constants::lookup("eV_Eh").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("eVEh").is_none(),
+            "eVEh is not a ledger name; the live name is eV_Eh"
+        );
+        assert!(
+            physis_constants::lookup("electron_volt_Eh").is_none(),
+            "electron_volt_Eh is not a second name for eV_Eh"
         );
 
         assert!(
