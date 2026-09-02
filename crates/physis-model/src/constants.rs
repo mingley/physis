@@ -91,6 +91,23 @@ pub fn inverse_meter_in_electronvolt() -> Qty<Dimensionless> {
     Qty::new(1.239_841_984_332_002_6e-6)
 }
 
+/// Joule-electron volt relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the joule-
+/// electron volt relationship, not BIPM/SI electronvolt eV, not inverse
+/// meter-electron volt m_eV, not Planck in eV/Hz h_eVHz, not Boltzmann
+/// in eV/K k_eV, not kilogram-joule kg_J, and not a FormalClaim that
+/// reconstructs 1/e from live lookups. The table prints an ellipsis;
+/// the ledger stores the exact Ratio. This is not a terminating
+/// SciExact (3, 19, 389, and 12043 remain in the reduced denominator).
+/// Kilogram-electron volt kg_eV is not stored: c^2/e overflows i128.
+/// The versioned ledger stores the exact Ratio; this Qty is the IEEE
+/// rounding of that Ratio. Ledger unit is eV; this Qty is dimensionless,
+/// not SI coulomb. JeV and 1/eV are not second names.
+pub fn joule_in_electronvolt() -> Qty<Dimensionless> {
+    Qty::new(6.241_509_074_460_762e18)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9211,6 +9228,53 @@ mod tests {
         assert!(
             physis_constants::lookup("meV").is_none(),
             "meV is not a ledger name; the live name is m_eV"
+        );
+
+        let j_ev = physis_constants::joule_in_electronvolt();
+        let j_ev_value = Ratio::new(10i128.pow(28), 1_602_176_634);
+        assert_eq!(j_ev.value, j_ev_value, "ledger J_eV is the exact SI Ratio");
+        assert_eq!(
+            joule_in_electronvolt().value(),
+            j_ev_value.to_f64(),
+            "J_eV Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            joule_in_electronvolt().value(),
+            6.241_509_074_460_762e18,
+            "J_eV Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
+        assert!(
+            j_ev.value > Ratio::int(0),
+            "ledger J_eV stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::joule_in_electronvolt().hash,
+            physis_constants::electron_volt().hash,
+            "J_eV is not eV"
+        );
+        assert_ne!(
+            physis_constants::joule_in_electronvolt().hash,
+            physis_constants::inverse_meter_in_electronvolt().hash,
+            "J_eV is not m_eV"
+        );
+        assert_ne!(
+            physis_constants::joule_in_electronvolt().hash,
+            physis_constants::planck_in_ev_per_hz().hash,
+            "J_eV is not h_eVHz"
+        );
+        assert_ne!(
+            physis_constants::joule_in_electronvolt().hash,
+            physis_constants::boltzmann_in_ev_per_kelvin().hash,
+            "J_eV is not k_eV"
+        );
+        assert_eq!(physis_constants::lookup("J_eV").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("JeV").is_none(),
+            "JeV is not a ledger name; the live name is J_eV"
+        );
+        assert!(
+            physis_constants::lookup("kg_eV").is_none(),
+            "kg_eV is not stored: c^2/e overflows i128"
         );
 
         assert!(

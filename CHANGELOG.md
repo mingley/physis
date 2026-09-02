@@ -80,6 +80,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 joule-electron volt relationship is an exact Ratio.**
+  `physis-constants` versions `J_eV` as the SI-exact Ratio `1/e` =
+  `5000000000000000000000000000/801088317` eV from JPCRD 50, 033105
+  table XXXV (energy conversion factors). The table prints
+  `6.241 509 074… × 10^{18}`; the ledger stores the full reciprocal.
+  The reduced denominator keeps factors 3, 19, 389, and 12043 (the
+  same odd primes as `h_eVHz`, `RK`, `k_eV`, and `m_eV`, because all
+  divide by `e`), so this is not a terminating SciExact. This is not
+  BIPM/SI electronvolt `eV`, not inverse meter-electron volt `m_eV`,
+  not `h_eVHz`, not `k_eV`, not an SI defining constant, and not a
+  FormalClaim reconstructing `1/e` from live lookups. Kilogram-electron
+  volt `kg_eV` is not stored: `c²/e` overflows `i128`. The ledger name
+  is `J_eV`; `JeV`, `J-eV`, and `1/eV` are not second names.
+  `physis_model` `joule_in_electronvolt()` Qty locksteps to
+  `Ratio::to_f64` of that Ratio. Adding `J_eV` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `J_eV` hash b775a4c8372acd2d0ba110b108d3971cca85e2fa26a340d9a771522eefdd23e6; node e140741974a7632531ce17777058213576c61bca740b33f5ceb671c5d7924260; ledger node
+  4e527b60a8c70100d110cd50b272cc414b037ef4c556bc206982b524374a8349. `m_eV` hash
+  12c1ae591caa23af86b67134aea0b013f49ede015195013efc865ec6b1340dff,
+  `eV` hash d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f,
+  and `h_eVHz` hash bc3fb761f651c84f885a4749f6099f7eef62b31467e2df1ca778aede28ce2964
+  unchanged.
+
 - **CODATA 2018 natural unit of time is a one-sigma Interval.**
   `physis-constants` versions `nu_t` as the CODATA 2018 hull
   `1.28808866819(39)×10^{-21}` s from JPCRD 50, 033105 table XXXIV
