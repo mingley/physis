@@ -21,8 +21,25 @@ pub fn hbar() -> Qty<Action> {
 }
 
 /// Planck constant h (exact, SI 2019). Units: J·s = kg m² s⁻¹.
+/// The Planck constant in eV/Hz is `h_eVHz`.
 pub fn planck_h() -> Qty<Action> {
     Qty::new(6.626_070_15e-34)
+}
+
+/// Planck constant in eV/Hz, SI 2019 exact.
+///
+/// This is the exact UNIVERSAL companion listed as Planck constant in
+/// eV/Hz, not SI joule-second h, not elementary charge e, not
+/// electronvolt eV, not eV/K k_eV, not Josephson KJ, not von Klitzing
+/// RK, and not a FormalClaim that reconstructs h / e or 2/KJ from live
+/// lookups. The table prints an ellipsis; the ledger stores the exact
+/// Ratio. This is not a terminating SciExact (2, 3, 5, 19, 389, and
+/// 12043 remain in the reduced denominator). The versioned ledger
+/// stores the exact Ratio; this Qty is the IEEE rounding of that Ratio.
+/// Ledger unit is eV Hz^{-1}; this Qty is dimensionless, not SI joule
+/// second. Reduced Planck in eV s is not stored.
+pub fn planck_in_ev_per_hz() -> Qty<Dimensionless> {
+    Qty::new(4.135_667_696_923_858e-15)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -8894,6 +8911,52 @@ mod tests {
         assert!(
             physis_constants::lookup("k/hc").is_none(),
             "k/hc is a JPCRD alias of k_m, not a second ledger name"
+        );
+
+        let h_evhz = physis_constants::planck_in_ev_per_hz();
+        let h_evhz_value = Ratio::new(662_607_015i128, 1_602_176_634i128 * 10i128.pow(14));
+        assert_eq!(
+            h_evhz.value, h_evhz_value,
+            "ledger h_eVHz is the exact SI Ratio"
+        );
+        assert_eq!(
+            planck_in_ev_per_hz().value(),
+            h_evhz_value.to_f64(),
+            "h_eVHz Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            planck_in_ev_per_hz().value(),
+            4.135_667_696_923_858e-15,
+            "h_eVHz Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
+        assert!(
+            h_evhz.value > Ratio::int(0),
+            "ledger h_eVHz stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::planck_in_ev_per_hz().hash,
+            physis_constants::planck_h().hash,
+            "h_eVHz is not h"
+        );
+        assert_ne!(
+            physis_constants::planck_in_ev_per_hz().hash,
+            physis_constants::elementary_charge().hash,
+            "h_eVHz is not e"
+        );
+        assert_ne!(
+            physis_constants::planck_in_ev_per_hz().hash,
+            physis_constants::electron_volt().hash,
+            "h_eVHz is not eV"
+        );
+        assert_ne!(
+            physis_constants::planck_in_ev_per_hz().hash,
+            physis_constants::josephson_constant().hash,
+            "h_eVHz is not KJ"
+        );
+        assert_eq!(physis_constants::lookup("h_eVHz").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("h_eV").is_none(),
+            "h_eV is not a ledger name; the live name is h_eVHz"
         );
 
         assert!(

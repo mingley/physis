@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  331c3a6e3acf0505ae4c9b71c7e0cb16747f32f48998845c8122274c7193bfc6"),
+            text.contains("constant  ledger  f2168303d72f0eaa78d9cb766dbecc16ed607697a65acf9d3ef87d2ed7f232d4"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -16527,6 +16527,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let h_evhz = lab
+            .exec(Command::Constant {
+                name: Some("h_eVHz".into()),
+            })
+            .text()
+            .to_string();
+        assert!(h_evhz.contains("constant  h_eVHz  node "), "{h_evhz}");
+        assert!(
+            h_evhz.contains(
+                "hash     bc3fb761f651c84f885a4749f6099f7eef62b31467e2df1ca778aede28ce2964"
+            ),
+            "{h_evhz}"
+        );
+        assert!(h_evhz.contains("kind     ratio"), "{h_evhz}");
+        assert!(h_evhz.contains("table    XXXI"), "{h_evhz}");
+        assert!(
+            h_evhz.contains("range    h_eVHz = 4.135667696e-15 exact"),
+            "{h_evhz}"
+        );
+        assert!(h_evhz.contains("unit     eV Hz^{-1}"), "{h_evhz}");
+        assert!(
+            h_evhz.contains("value    44173801/10681177560000000000000"),
+            "{h_evhz}"
+        );
+        assert!(h_evhz.contains("rebuild  ok"), "{h_evhz}");
+        assert!(h_evhz.contains("not P3N"), "{h_evhz}");
+        assert!(!h_evhz.contains("receipt"), "{h_evhz}");
+        assert!(!h_evhz.contains("theorem"), "{h_evhz}");
+        let h_evhz_id = constant_node_id(&h_evhz);
+        assert_eq!(
+            h_evhz_id.to_hex(),
+            "a0f9b64c98abf1c57a0c07310fa6daea9d1613255bd4b2048eaf2f845b58e59d",
+            "journaling must not change the h_eVHz constant payload"
+        );
+        assert_eq!(
+            lab.store.get(h_evhz_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let n_a_e = lab
             .exec(Command::Constant {
                 name: Some("NAe".into()),
@@ -20481,7 +20520,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "331c3a6e3acf0505ae4c9b71c7e0cb16747f32f48998845c8122274c7193bfc6",
+            "f2168303d72f0eaa78d9cb766dbecc16ed607697a65acf9d3ef87d2ed7f232d4",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -21416,7 +21455,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "331c3a6e3acf0505ae4c9b71c7e0cb16747f32f48998845c8122274c7193bfc6",
+            "f2168303d72f0eaa78d9cb766dbecc16ed607697a65acf9d3ef87d2ed7f232d4",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -22608,6 +22647,14 @@ mod tests {
         .expect("pinned k_m node");
         assert_eq!(
             lab2.store.get(k_m).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let h_evhz = physis_core::artifact::ArtifactId::from_hex(
+            "a0f9b64c98abf1c57a0c07310fa6daea9d1613255bd4b2048eaf2f845b58e59d",
+        )
+        .expect("pinned h_eVHz node");
+        assert_eq!(
+            lab2.store.get(h_evhz).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let n_a_e = physis_core::artifact::ArtifactId::from_hex(
@@ -24465,7 +24512,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  331c3a6e3acf0505ae4c9b71c7e0cb16747f32f48998845c8122274c7193bfc6"),
+            text.contains("constant  ledger  f2168303d72f0eaa78d9cb766dbecc16ed607697a65acf9d3ef87d2ed7f232d4"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

@@ -22,6 +22,32 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Planck constant in eV/Hz is an exact Ratio.**
+  `physis-constants` versions `h_eVHz` as the SI-exact Ratio `h/e` =
+  `44173801/10681177560000000000000` eV Hz^{-1} from JPCRD 50, 033105
+  table XXXI (UNIVERSAL). The table prints `4.135 667 696… × 10^{-15}`;
+  the ledger stores the full product. The reduced denominator keeps
+  factors 2, 3, 5, 19, 389, and 12043 (the same odd primes as `RK` and
+  `k_eV`, because all divide by `e`), so this is not a terminating
+  SciExact. This is not SI joule-second `h`, not elementary charge `e`,
+  not `eV`, not `k_eV`, not `KJ`, not `RK`, not an SI defining constant,
+  and not a FormalClaim reconstructing `h / e` or `2/KJ` from live
+  lookups. The ledger name is `h_eVHz`. Reduced Planck in eV s is not
+  stored. CODATA 2022 prints the same SI-exact ellipsis; there is no
+  last-digit trap. `physis_model` `planck_in_ev_per_hz()` Qty locksteps
+  to `Ratio::to_f64` of the reduced fraction. Adding `h_eVHz` to LEDGER
+  changes the ledger bundle pin. Theories still evaluate with `f64` Qty.
+  That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `h_eVHz` hash bc3fb761f651c84f885a4749f6099f7eef62b31467e2df1ca778aede28ce2964; node a0f9b64c98abf1c57a0c07310fa6daea9d1613255bd4b2048eaf2f845b58e59d;
+  ledger node f2168303d72f0eaa78d9cb766dbecc16ed607697a65acf9d3ef87d2ed7f232d4. `h` hash
+  50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef,
+  `e` hash 412cb379a6bf6cca245ba89fc43539399942e644fa08000cd30bd1d9b25372a5,
+  `k_m` hash 533849bdd6300f5e1e48545708d539f94017879558130c41b62dbe7f7742b501,
+  `KJ` hash eb31c5b04ef0823e6e80a2921172c06fa6ef692e5a7700cb25d183b00a0090d2,
+  and `RK` hash 2faf6f39986b543d3370bdd5764f0d075fa94a709d3fadd235ed82026fed2d46
+  unchanged.
+
 - **CODATA 2018 Boltzmann constant in inverse meter per kelvin is an exact Ratio.**
   `physis-constants` versions `k_m` as the SI-exact Ratio `k/(h c)` =
   `18913000000000000/272115870842319` m^{-1} K^{-1} from JPCRD 50, 033105
