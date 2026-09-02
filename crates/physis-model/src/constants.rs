@@ -7,11 +7,11 @@
 //! in tests; evaluators still use these `f64` Qty values, not that ledger.
 
 use physis_core::dim::{
-    Action, Dimensionless, Energy, EnergyDensity, Frequency, HeatCapacity, Length,
+    Action, Dimensionless, Energy, EnergyDensity, Force, Frequency, HeatCapacity, Length,
     LuminosityDensity, Mass, Momentum, Power, Pressure, RadiationConstant, StefanBoltzmann, Time,
     Velocity,
 };
-use physis_core::qty::{joule, kg, meters, pascal, seconds, Qty};
+use physis_core::qty::{joule, kg, meters, newton, pascal, seconds, Qty};
 
 /// Speed of light in vacuum (exact, SI).
 /// The kilogram-joule relationship is `kg_J`.
@@ -121,6 +121,17 @@ pub fn electron_mass() -> Qty<Mass> {
 /// is not stored. nup is not a second name.
 pub fn natural_unit_of_momentum() -> Qty<Momentum> {
     Qty::new(2.730_924_530_75e-22)
+}
+
+/// Atomic unit of force E_h / a_0 (N), CODATA 2018.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not the energy hull, not the length hull, and not astronomical au.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. Atomic unit of time still cites hbar and is not stored.
+/// auf is not a second name.
+pub fn atomic_unit_of_force() -> Qty<Force> {
+    newton(8.238_723_498_3e-8)
 }
 
 /// Proton mass.
@@ -10616,6 +10627,44 @@ mod tests {
         assert!(
             physis_constants::lookup("p_e").is_none(),
             "p_e is not a ledger name; the live name is nu_p"
+        );
+
+        let auf = physis_constants::atomic_unit_of_force();
+        let auf_centre = physis_numeric::Ratio::new(82_387_234_983, 10i128.pow(18));
+        assert_eq!(
+            atomic_unit_of_force().value(),
+            8.238_723_498_3e-8,
+            "au_F Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_unit_of_force().value(),
+            auf_centre.to_f64(),
+            "au_F Qty locksteps to Ratio::to_f64 on the 10^-18 centre"
+        );
+        assert!(
+            auf.value
+                .contains(physis_numeric::Interval::point(auf_centre)),
+            "au_F Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(auf.value.lo, auf.value.hi, "ledger au_F stays an Interval");
+        assert_ne!(
+            physis_constants::atomic_unit_of_force().hash,
+            physis_constants::hartree_energy().hash,
+            "au_F is not Eh"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_force().hash,
+            physis_constants::natural_unit_of_momentum().hash,
+            "au_F is not nu_p"
+        );
+        assert_eq!(physis_constants::lookup("au_F").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("auf").is_none(),
+            "auf is not a ledger name; the live name is au_F"
+        );
+        assert!(
+            physis_constants::lookup("au_f").is_none(),
+            "au_f is not a ledger name; the live name is au_F"
         );
 
         assert!(
