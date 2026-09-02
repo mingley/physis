@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Angstrom star is a one-sigma Interval.**
+  `physis-constants` versions `Astar` as the CODATA 2018 one-sigma hull
+  `1.00001495(90)×10^{-10}` m from JPCRD 50, 033105 table XXXIII
+  (x-ray-related quantities). This is the recommended Angstrom star
+  defined as `λ(WKα1)/0.2090100`, not Bohr radius `a0`, not lattice
+  parameter `a_Si`, and not a FormalClaim reconstructing that quotient
+  from a live lookup. The copper and molybdenum x units are later table
+  XXXIII rows and are not stored. The {220} lattice spacing is a
+  separately recommended hull and is not stored. The decade is `10^{18}`;
+  `10^{17}` is the 10× trap. 2018 and 2022 print the same last-digit
+  `95`; the 2018 hull contains that centre. The ledger name is `Astar`;
+  `Angstromstar`, `A-star`, and `A_star` are not second names.
+  `physis_model` `angstrom_star()` Qty locksteps to the CODATA centre
+  inside the hull. Adding `Astar` to LEDGER changes the ledger bundle
+  pin. Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4.
+  Verified:
+  `Astar` hash
+  10ae8bb08a4d7b093cd5ba3735496af76ec987748473f532f10731286da3dfb7;
+  node 789ad47fe6f7845ec4649f92f321a4c3ba4a496bdaa01f96342a5c17ab2b9ae6;
+  ledger node
+  840383efca29c75ef36aa0080ae2fa5fe92ba404d02a4dfa4f13aeae03573dbe.
+  `Vm_Si` hash
+  36d2371a832cfaa4ea7cd680b7cabaada3b9eaa5d4c9750c0a7e38c94c080222 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 molar volume of silicon is a one-sigma Interval.**
   `physis-constants` versions `Vm_Si` as the CODATA 2018 one-sigma hull
   `1.205883199(60)×10^{-5}` m³ mol⁻¹ from JPCRD 50, 033105 table XXXIII

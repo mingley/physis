@@ -503,6 +503,21 @@ pub fn molar_volume_of_silicon() -> Qty<
     Qty::new(1.205_883_199e-5)
 }
 
+/// Angstrom star Å* (m), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIII x-ray-related centre
+/// defined as λ(WKα1)/0.2090100, not Bohr radius a0, not lattice
+/// parameter a_Si, not classical electron radius re, and not a
+/// FormalClaim that reconstructs that quotient from a live lookup. The
+/// copper and molybdenum x units are later table XXXIII rows and are
+/// not stored. The {220} lattice spacing is not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. Ledger
+/// unit is m; this Qty is a length. Angstromstar, A-star, and A_star
+/// are not second names.
+pub fn angstrom_star() -> Qty<Length> {
+    meters(1.000_014_95e-10)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10782,6 +10797,50 @@ mod tests {
             "molar_si is not a second name for Vm_Si"
         );
         assert_eq!(physis_constants::lookup("Vm").unwrap().kind, "ratio");
+
+        let astar = physis_constants::angstrom_star();
+        let astar_centre = Ratio::new(100_001_495, 10i128.pow(18));
+        assert_eq!(
+            angstrom_star().value(),
+            astar_centre.to_f64(),
+            "Astar Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            angstrom_star().value(),
+            1.000_014_95e-10,
+            "Astar Qty locksteps to Ratio::to_f64 on the integer 10^18 centre"
+        );
+        assert!(
+            astar.value.contains(Interval::point(astar_centre)),
+            "Astar Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            astar.value.lo, astar.value.hi,
+            "ledger Astar stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::angstrom_star().hash,
+            physis_constants::bohr_radius().hash,
+            "Astar is not a0"
+        );
+        assert_ne!(
+            physis_constants::angstrom_star().hash,
+            physis_constants::lattice_parameter_of_silicon().hash,
+            "Astar is not a_Si"
+        );
+        assert_eq!(physis_constants::lookup("Astar").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("Angstromstar").is_none(),
+            "Angstromstar is not a ledger name; the live name is Astar"
+        );
+        assert!(
+            physis_constants::lookup("A-star").is_none(),
+            "A-star is not a second name for Astar"
+        );
+        assert!(
+            physis_constants::lookup("xu_Cu").is_none(),
+            "xu_Cu is not stored; Astar is not a copper x-unit certificate"
+        );
 
         assert!(
             physis_constants::lookup("F").is_none(),
