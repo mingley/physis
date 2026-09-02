@@ -12,6 +12,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **SciInterval is a closed hull of overflow-scale SciExact endpoints.**
+  `physis-numeric` stores measured hulls whose Ratio scale overflows
+  `i128` as canonical terminating-decimal endpoints. `parse_display` of
+  `[lo, hi]` is the independent check of a dump string. This is not
+  Interval of Ratio. Electron mass `m_e` is the first ledger user.
+  Not a kernel proof, not Canonical, not P4.
+
 - **Ratio order does not saturate on CODATA mass scale.**
   Cross-multiplying `a.num * b.den` for a `10^{38}` denominator
   overflows `i128`. Comparison now uses a 256-bit product instead of
@@ -21,6 +28,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   only. Not a kernel proof, not Canonical, not P4.
 
 ### Constants
+
+- **CODATA 2018 electron mass is a one-sigma SciInterval.**
+  `physis-constants` versions `m_e` as the CODATA 2018 hull
+  `9.1093837015(28)×10^{-31}` kg from JPCRD 50, 033105 table XXXI
+  (Electron, e-). A Ratio denominator `10^{41}` overflows `i128`, so
+  this is a `SciInterval` of terminating decimals, not an Interval of
+  Ratio, not `m_e_u`, not joule `m_e_c2`, not MeV `m_e_c2_MeV`, not
+  `M_e`, not `m_p`, not `m_u`, not atomic unit of mass under a second
+  name, not an SI defining Ratio, not a terminating SciExact, and not a
+  FormalClaim reconstructing `m_e_u * m_u` from live lookups. The
+  ledger name is `m_e`. Quantum of circulation still cites pi hbar /
+  m_e and is not stored. Decade `10^{41}` (`10^{40}` is the 10x trap).
+  This is not the CODATA 2022 last-digit `7139` as the stored centre;
+  the 2018 hull does not contain that 2022 centre.
+  `physis_model` `electron_mass()` Qty locksteps to `SciExact::to_f64`
+  of the recommended centre inside the hull. Adding `m_e` to LEDGER
+  changes the ledger bundle pin. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `m_e` hash 961f48a48d6ca0a563b2ae710ebc3a908369fcfd0bd9d7c59ba2b663a6c275bd; node 25b4aa84438ef207187bb7361b283608c551cf3a992d1bbf9aead9228af322aa; ledger
+  node a6fb51023657427125615284015db8adf97725032138669a1dce85c88c668a14. `m_e_u` hash
+  f0f8df112f644065bd01e2b903312927e5ef5d21d7792484aca0e8e7d29934d5,
+  `m_e_c2` hash 935f7db8457024efb853abe9ee42c24e5efec5c4a831a94a308eb46efa6db0d5,
+  and `m_e_c2_MeV` hash c076e0b56ff109b6f16661d0e7874b9f352cf53c4f862c38203c082a17d87f6b
+  unchanged.
 
 - **CODATA 2018 inverse meter-electron volt relationship is an exact Ratio.**
   `physis-constants` versions `m_eV` as the SI-exact Ratio `h c / e` =

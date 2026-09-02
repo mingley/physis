@@ -79,6 +79,11 @@
 //! CODATA 2018 electron mass energy equivalent in MeV `m_e_c2_MeV` is a
 //! one-sigma [`Interval`] `0.51099895000(15)` MeV from the same section:
 //! a measured hull, not joule `m_e_c2`, not `m_mu_c2_MeV`.
+//! CODATA 2018 electron mass `m_e` is a one-sigma [`SciInterval`]
+//! `9.1093837015(28)×10^{-31}` kg from the same section: a measured
+//! hull whose Ratio scale `10^{41}` overflows `i128`, not `m_e_u`, not
+//! joule `m_e_c2`, not `M_e`, not a terminating SciExact SI defining
+//! constant.
 //! CODATA 2018 reduced Compton
 //! wavelength `ƛ_C` is a one-sigma [`Interval`]
 //! `3.8615926796(12)×10^{-13}` m from the same section: a measured hull,
@@ -104,7 +109,7 @@
 //! CODATA 2018 proton mass `m_p` is a
 //! one-sigma [`Interval`] `1.67262192369(51)×10^{-27}` kg (JPCRD table
 //! XXXI, Proton, p): a measured hull, not an SI defining Ratio.
-//! Electron mass is not stored: `10^{42}` overflows `i128`. The IAU 2012 astronomical unit is
+//! The IAU 2012 astronomical unit is
 //! an exact [`Ratio`] `149597870700` m (BIPM table 8). The parsec is
 //! `(648000/π) au` and is not a Ratio. IAU 2015 `(GM)_☉^N` is an exact
 //! [`Ratio`] `1.3271244×10^20` m³ s⁻² (AJ 152, 41 table 1): a
@@ -133,7 +138,7 @@
 #![warn(missing_docs)]
 
 use physis_core::artifact::ArtifactId;
-use physis_numeric::{Interval, Ratio, SciExact};
+use physis_numeric::{Interval, Ratio, SciExact, SciInterval};
 use physis_provenance::{Citation, SourceLocator, SourceRecord};
 use serde::{Deserialize, Serialize};
 
@@ -302,7 +307,7 @@ fn planck_in_ev_per_hz_value() -> Ratio {
 /// `k_eV`, because all divide by `e`), so this is not a terminating
 /// [`SciExact`]. The product fits [`Ratio`] (`10^{14}`). This is not
 /// P3N. The ledger name is `h_eVHz`. Reduced Planck in eV s is not
-/// stored: it cites `ħ`. Electron mass is not stored: `10^{42}` overflows
+/// stored: it cites `ħ`. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. CODATA 2022 prints the same SI-exact ellipsis; there is no
 /// last-digit trap. Theories still use `physis_model` `f64` Qty.
 pub fn planck_in_ev_per_hz() -> Constant<Ratio> {
@@ -334,7 +339,7 @@ fn kilogram_in_joule_value() -> Ratio {
 /// meter-joule relationship is `m_J`. Magnetic flux
 /// quantum `Phi0` and conductance quantum `G0` still cite π and ħ and
 /// are not stored. Reduced Planck in eV s is not stored: it cites `ħ`.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. CODATA 2022
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. CODATA 2022
 /// prints the same SI-exact ellipsis; there is no last-digit trap.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn kilogram_in_joule() -> Constant<Ratio> {
@@ -367,7 +372,7 @@ fn inverse_meter_in_joule_value() -> SciExact {
 /// The inverse meter-electron volt relationship is `m_eV`. Magnetic flux
 /// quantum `Phi0` and conductance quantum `G0` still cite
 /// π and ħ and are not stored. Reduced Planck in eV s is not stored: it
-/// cites `ħ`. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// cites `ħ`. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// CODATA 2022 prints the same SI-exact ellipsis; there is no last-digit
 /// trap. Theories still use `physis_model` `f64` Qty.
 pub fn inverse_meter_in_joule() -> Constant<SciExact> {
@@ -404,7 +409,7 @@ fn inverse_meter_in_electronvolt_value() -> Ratio {
 /// P3N. The ledger name is `m_eV`. `m`, `meV`, and `m_e` are not second
 /// names. Magnetic flux quantum `Phi0` and conductance quantum `G0`
 /// still cite π and ħ and are not stored. Reduced Planck in eV s is not
-/// stored: it cites `ħ`. Electron mass is not stored: `10^{42}` overflows
+/// stored: it cites `ħ`. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. CODATA 2022 prints the same SI-exact ellipsis; there is no
 /// last-digit trap. Theories still use `physis_model` `f64` Qty.
 pub fn inverse_meter_in_electronvolt() -> Constant<Ratio> {
@@ -517,6 +522,10 @@ fn codata_2018_electron_mass_energy_equivalent_source() -> SourceRecord {
 
 fn codata_2018_electron_mass_energy_equivalent_in_mev_source() -> SourceRecord {
     codata_2018_jpcrd("Electron, e-", "m_e_c2_MeV = 0.51099895000(15)")
+}
+
+fn codata_2018_electron_mass_source() -> SourceRecord {
+    codata_2018_jpcrd("Electron, e-", "m_e = 9.1093837015(28)e-31")
 }
 
 fn codata_2018_rydberg_source() -> SourceRecord {
@@ -2044,7 +2053,7 @@ fn codata_2018_muon_mass_interval() -> Interval {
 ///
 /// This is the recommended kg hull, not the electron-muon mass ratio,
 /// not the proton mass, not the u-row, not an SI defining Ratio, and
-/// not P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn muon_mass() -> Constant<Interval> {
     Constant::new(
@@ -2092,7 +2101,7 @@ fn codata_2018_muon_mass_energy_equivalent_interval() -> Interval {
 ///
 /// This is the recommended hull in joules, not the kg hull, not the
 /// u-row, not the MeV conversion, not the Rydberg energy equivalent,
-/// not an SI defining Ratio, and not P3N. Electron mass is not stored:
+/// not an SI defining Ratio, and not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn muon_mass_energy_equivalent() -> Constant<Interval> {
@@ -2117,7 +2126,7 @@ fn codata_2018_muon_mass_energy_equivalent_in_mev_interval() -> Interval {
 ///
 /// This is the recommended hull in MeV, not the joule hull, not the
 /// exact electronvolt Ratio, not Hartree, not an SI defining Ratio,
-/// and not P3N. Electron mass is not stored: `10^{42}` overflows
+/// and not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn muon_mass_energy_equivalent_in_mev() -> Constant<Interval> {
     Constant::new(
@@ -2142,7 +2151,7 @@ fn codata_2018_muon_electron_mass_ratio_interval() -> Interval {
 /// This is the recommended dimensionless hull from the muon section, not
 /// the electron-muon ratio `me_mmu`, not a certificate that the stored
 /// centres invert, not the electron-muon magnetic-moment ratio, not an
-/// SI defining Ratio, and not P3N. Electron mass is not stored:
+/// SI defining Ratio, and not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn muon_electron_mass_ratio() -> Constant<Interval> {
@@ -2196,7 +2205,7 @@ fn codata_2018_muon_neutron_mass_ratio_interval() -> Interval {
 /// the electron-neutron ratio `me_mn`, not the muon-proton ratio, not
 /// a certificate that the stored centres divide, not an SI defining
 /// Ratio, and not P3N. The muon-tau ratio is a PDG reprint and is not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// stored. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn muon_neutron_mass_ratio() -> Constant<Interval> {
     Constant::new(
@@ -2222,7 +2231,7 @@ fn codata_2018_muon_molar_mass_interval() -> Interval {
 /// the muon mass in u (`m_mu_u` carries the same mantissa at a
 /// different unit and scale), not `N_A × m_μ` as a derived product,
 /// not electron molar mass `M_e`, not an SI defining Ratio, and not
-/// P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn muon_molar_mass() -> Constant<Interval> {
     Constant::new(
@@ -2273,7 +2282,7 @@ fn codata_2018_muon_magnetic_moment_interval() -> Interval {
 /// This is the recommended signed hull in J T⁻¹ from the muon section,
 /// not electron magnetic moment `mu_e`, not the electron-muon
 /// magnetic-moment ratio `mu_e_mmu`, not vacuum permeability `mu0`,
-/// not an SI defining Ratio, and not P3N. Electron mass is not stored:
+/// not an SI defining Ratio, and not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn muon_magnetic_moment() -> Constant<Interval> {
@@ -2328,7 +2337,7 @@ fn codata_2018_muon_nuclear_magneton_ratio_interval() -> Interval {
 /// section, not electron nuclear-magneton ratio `mu_e_muN`, not muon
 /// Bohr-magneton ratio `mu_mu_muB`, not muon magnetic moment `mu_mu`,
 /// not the muon g-factor, not the muon anomaly, not an SI defining
-/// Ratio, and not P3N. Electron mass is not stored: `10^{42}` overflows
+/// Ratio, and not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn muon_magnetic_moment_to_nuclear_magneton() -> Constant<Interval> {
     Constant::new(
@@ -2353,7 +2362,7 @@ fn codata_2018_muon_anomaly_interval() -> Interval {
 /// This is the recommended dimensionless hull, not electron anomaly
 /// `ae`, not the signed Bohr-magneton ratio, not the muon g-factor,
 /// not muon magnetic moment `mu_mu`, not an SI defining Ratio, and
-/// not P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn muon_magnetic_moment_anomaly() -> Constant<Interval> {
     Constant::new(
@@ -2378,7 +2387,7 @@ fn codata_2018_muon_g_factor_interval() -> Interval {
 /// This is the recommended signed dimensionless hull, not electron
 /// g-factor `ge`, not muon anomaly `amu`, not the signed Bohr-magneton
 /// ratio, not muon magnetic moment `mu_mu`, not an SI defining Ratio,
-/// and not P3N. Electron mass is not stored: `10^{42}` overflows
+/// and not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn muon_g_factor() -> Constant<Interval> {
     Constant::new(
@@ -2404,7 +2413,7 @@ fn codata_2018_muon_proton_magnetic_moment_ratio_interval() -> Interval {
 /// This is the recommended signed dimensionless hull from the muon
 /// section, not electron-proton ratio `mu_e_mup`, not muon-proton mass
 /// ratio `mmu_mp`, not muon g-factor `gmu`, not muon anomaly `amu`,
-/// not an SI defining Ratio, and not P3N. Electron mass is not stored:
+/// not an SI defining Ratio, and not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn muon_proton_magnetic_moment_ratio() -> Constant<Interval> {
@@ -2428,7 +2437,7 @@ fn codata_2018_proton_mass_interval() -> Interval {
 /// Proton mass m_p, CODATA 2018 one-sigma enclosure.
 ///
 /// This is the recommended kg hull, not the u-row, not an SI defining
-/// Ratio, and not P3N. Electron mass is not stored: `10^{42}` overflows
+/// Ratio, and not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn proton_mass() -> Constant<Interval> {
     Constant::new(
@@ -2453,7 +2462,7 @@ fn codata_2018_proton_mass_in_u_interval() -> Interval {
 /// This is the recommended hull in u from the proton section, not the
 /// kg hull, not muon mass in u, not electron molar mass, not relative
 /// atomic mass under a different name, not an SI defining Ratio, and
-/// not P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn proton_mass_in_u() -> Constant<Interval> {
     Constant::new(
@@ -2612,7 +2621,7 @@ fn codata_2018_proton_charge_to_mass_interval() -> Interval {
 /// this equals `e/m_p` from the SI-exact charge and the proton-mass
 /// hull, not an SI defining Ratio, and not P3N. The proton-tau ratio
 /// is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e) and is
-/// not stored. Electron mass is not stored: `10^{42}` overflows
+/// not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn proton_charge_to_mass() -> Constant<Interval> {
     Constant::new(
@@ -2640,7 +2649,7 @@ fn codata_2018_proton_molar_mass_interval() -> Interval {
 /// `N_A × m_p`, not an SI defining Ratio, and not P3N. Reduced proton
 /// Compton remains unstored (`ħ`). The proton-tau ratio is a PDG
 /// reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not stored.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. Theories
 /// still use `physis_model` `f64` Qty.
 pub fn proton_molar_mass() -> Constant<Interval> {
     Constant::new(
@@ -2725,7 +2734,7 @@ fn codata_2018_proton_magnetic_moment_interval() -> Interval {
 /// P3N. The shielded proton moment is a later table row stored as
 /// `mu0p`. Proton gyromagnetic ratio is `gamma_p`. The
 /// proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Electron mass is not stored:
+/// footnote e) and is not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn proton_magnetic_moment() -> Constant<Interval> {
@@ -2783,7 +2792,7 @@ fn codata_2018_proton_nuclear_magneton_ratio_interval() -> Interval {
 /// `mu_p_muB`, not proton magnetic moment `mu_p`, not an SI defining
 /// Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`.
 /// The proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Electron mass is not stored:
+/// footnote e) and is not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn proton_magnetic_moment_to_nuclear_magneton() -> Constant<Interval> {
@@ -2813,7 +2822,7 @@ fn codata_2018_proton_g_factor_interval() -> Interval {
 /// shielded proton g-factor is a later table row and is not stored.
 /// Proton gyromagnetic ratio is `gamma_p`. The proton-tau
 /// ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e)
-/// and is not stored. Electron mass is not stored: `10^{42}` overflows
+/// and is not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn proton_g_factor() -> Constant<Interval> {
     Constant::new(
@@ -2877,7 +2886,7 @@ fn codata_2018_shielded_proton_magnetic_moment_interval() -> Interval {
 /// defining Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`. Shielded g-factor `g0p` is a glossary identity, not a table
 /// XXXI recommended hull, and is not stored. The
 /// proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Electron mass is not stored:
+/// footnote e) and is not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn shielded_proton_magnetic_moment() -> Constant<Interval> {
@@ -2910,7 +2919,7 @@ fn codata_2018_shielded_proton_bohr_magneton_ratio_interval() -> Interval {
 /// defining Ratio, and not P3N. Proton gyromagnetic ratio is `gamma_p`. Shielded g-factor `g0p` is a glossary identity, not a table
 /// XXXI recommended hull, and is not stored. The proton-tau ratio
 /// is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// stored. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn shielded_proton_magnetic_moment_to_bohr_magneton() -> Constant<Interval> {
     Constant::new(
@@ -2944,7 +2953,7 @@ fn codata_2018_shielded_proton_nuclear_magneton_ratio_interval() -> Interval {
 /// cite ħ and are not stored. Shielded g-factor `g0p` is a glossary
 /// identity, not a table XXXI recommended hull, and is not stored. The
 /// proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Electron mass is not stored:
+/// footnote e) and is not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn shielded_proton_magnetic_moment_to_nuclear_magneton() -> Constant<Interval> {
@@ -2977,7 +2986,7 @@ fn codata_2018_proton_magnetic_shielding_correction_interval() -> Interval {
 /// cite ħ and are not stored. Shielded g-factor `g0p` is a glossary
 /// identity, not a table XXXI recommended hull, and is not stored. The
 /// proton-tau ratio is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Electron mass is not stored:
+/// footnote e) and is not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model`
 /// `f64` Qty.
 pub fn proton_magnetic_shielding_correction() -> Constant<Interval> {
@@ -3010,7 +3019,7 @@ fn codata_2018_neutron_mass_interval() -> Interval {
 /// and are not stored. Neutron-tau is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Reduced
 /// neutron Compton wavelength cites ħ and is not stored. Gyromagnetic
-/// ratios cite ħ and are not stored. Electron mass is not stored:
+/// ratios cite ħ and are not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. The decade is `10^{38}`; `10^{37}` is the
 /// 10× trap (`1.67492749804e-27` would lose a digit). `10^{39}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
@@ -3042,7 +3051,7 @@ fn codata_2018_neutron_mass_in_u_interval() -> Interval {
 /// MeV energy equivalent and molar mass are later table rows and are
 /// not stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD
 /// table XXXI footnote e) and is not stored. Reduced neutron Compton
-/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
+/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. The decade is `10^{11}`; `10^{10}` is the 10× trap
 /// (`1.0086649159` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3075,7 +3084,7 @@ fn codata_2018_neutron_mass_energy_equivalent_interval() -> Interval {
 /// and not P3N. The molar mass is a later table row and is not stored.
 /// Neutron-tau is a PDG reprint of `m_τc²` (JPCRD
 /// table XXXI footnote e) and is not stored. Reduced neutron Compton
-/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
+/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. The decade is `10^{21}`; `10^{20}` is the 10× trap
 /// (`1.5053497629e-10` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3107,7 +3116,7 @@ fn codata_2018_neutron_mass_energy_equivalent_in_mev_interval() -> Interval {
 /// defining Ratio, and not P3N. Neutron-muon is a later table row and is
 /// not stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
 /// footnote e) and is not stored. Reduced neutron Compton wavelength
-/// cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows `i128`. The
+/// cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. The
 /// decade is `10^{8}`; `10^{7}` is the 10× trap (`939.5654205` would
 /// lose a digit). Theories still use `physis_model` `f64` Qty.
 pub fn neutron_mass_energy_equivalent_in_mev() -> Constant<Interval> {
@@ -3138,7 +3147,7 @@ fn codata_2018_neutron_electron_mass_ratio_interval() -> Interval {
 /// defining Ratio, and not P3N. Neutron-tau is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Reduced
 /// neutron Compton wavelength cites ħ and is not stored. Gyromagnetic
-/// ratios cite ħ and are not stored. Electron mass is not stored:
+/// ratios cite ħ and are not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. The decade is `10^{8}`; `10^{7}` is the
 /// 10× trap (`1838.6836617` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3171,7 +3180,7 @@ fn codata_2018_neutron_muon_mass_ratio_interval() -> Interval {
 /// footnote e) and is not stored. Neutron-proton mass difference is a
 /// later table row and is not stored. Reduced neutron Compton wavelength cites ħ and
 /// is not stored. Proton gyromagnetic ratio is `gamma_p`.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. The decade
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. The decade
 /// is `10^{8}`; `10^{7}` is the 10× trap (`8.8924840` would lose a
 /// digit). Theories still use `physis_model` `f64` Qty.
 pub fn neutron_muon_mass_ratio() -> Constant<Interval> {
@@ -3299,7 +3308,7 @@ fn codata_2018_neutron_proton_mass_difference_energy_equivalent_interval() -> In
 /// defining Ratio, and not P3N. Neutron-tau is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Molar mass
 /// is a later table row and is not stored. Reduced neutron Compton
-/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
+/// wavelength cites ħ and is not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. The decade is `10^{21}`; `10^{20}` is the 10× trap
 /// (`2.0721468e-13` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3330,7 +3339,7 @@ fn codata_2018_neutron_proton_mass_difference_energy_equivalent_in_mev_interval(
 /// reprint of `m_τc²` (JPCRD table XXXI footnote e) and is not stored.
 /// Neutron molar mass is `M_n`. Reduced neutron
 /// Compton wavelength cites ħ and is not stored. Gyromagnetic ratios
-/// cite ħ and are not stored. Electron mass is not stored: `10^{42}`
+/// cite ħ and are not stored. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. The decade is `10^{8}`; `10^{7}` is the 10× trap
 /// (`1.2933323` would lose a digit). Theories still use `physis_model`
 /// `f64` Qty.
@@ -3361,7 +3370,7 @@ fn codata_2018_neutron_molar_mass_interval() -> Interval {
 /// Ratio, and not P3N. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD
 /// table XXXI footnote e) and is not stored. The Compton wavelength is
 /// `lambda_C_n`. Reduced neutron Compton wavelength cites ħ and is
-/// not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
+/// not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. The decade is `10^{14}`; `10^{13}` is the 10× trap
 /// (`1.0086649156e-3` would lose a digit of the reported uncertainty).
 /// Theories still use `physis_model` `f64` Qty.
@@ -3392,7 +3401,7 @@ fn codata_2018_neutron_compton_wavelength_interval() -> Interval {
 /// P3N. The magnetic moment is `mu_n`. Bohr, nuclear, g-factor, and
 /// moment ratios are later table rows and are not stored. The reduced neutron Compton wavelength is ħ/m_n c and is not
 /// stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows
+/// footnote e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. The decade is `10^{26}`; `10^{25}` is the 10× trap
 /// (`1.3195909058e-15` would lose a digit). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3424,7 +3433,7 @@ fn codata_2018_neutron_magnetic_moment_interval() -> Interval {
 /// Ratio, and not P3N. The Bohr-magneton ratio is `mu_n_muB`. Nuclear-magneton,
 /// g-factor, and moment-ratio rows are later table rows and are not stored.
 /// Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote
-/// e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// The decade is `10^{34}`; `10^{33}` is the 10× trap (`σ = 2.3` is
 /// not an integer). This is not the CODATA 2022 last-digit `3`.
 /// Theories still use `physis_model` `f64` Qty.
@@ -3457,7 +3466,7 @@ fn codata_2018_neutron_bohr_magneton_ratio_interval() -> Interval {
 /// not P3N. The nuclear-magneton ratio is `mu_n_muN`. G-factor and
 /// moment-ratio rows are later table rows and are not stored. Neutron-tau is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Gyromagnetic
-/// ratios cite ħ and are not stored. Electron mass is not stored:
+/// ratios cite ħ and are not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. The decade is `10^{11}`; `10^{10}` is the
 /// 10× trap (`σ = 2.5` is not an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3521,7 +3530,7 @@ fn codata_2018_neutron_g_factor_interval() -> Interval {
 /// Ratio, and not P3N. The neutron-electron magnetic-moment ratio is `mu_n_mue`.
 /// Neutron-proton and shielded-proton moment-ratio rows are later
 /// table rows and are not stored. Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI
-/// footnote e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. Electron mass is not stored: `10^{42}` overflows `i128`. This
+/// footnote e) and is not stored. Proton gyromagnetic ratio is `gamma_p`. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This
 /// is not the CODATA 2022 last-digit `52`. The decade is `10^{8}`;
 /// `10^{7}` is the 10× trap (`μ` would not be an integer). Theories still
 /// use `physis_model` `f64` Qty.
@@ -3554,7 +3563,7 @@ fn codata_2018_neutron_electron_magnetic_moment_ratio_interval() -> Interval {
 /// P3N. The neutron-proton magnetic-moment ratio is `mu_n_mup`.
 /// Shielded-proton moment-ratio is a later table row and is not stored. Neutron-tau is a PDG reprint of
 /// `m_τc²` (JPCRD table XXXI footnote e) and is not stored. Gyromagnetic
-/// ratios cite ħ and are not stored. Electron mass is not stored:
+/// ratios cite ħ and are not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `84`. The decade is `10^{11}`; `10^{10}` is the 10× trap (`σ = 2.5`
 /// is not an integer). Theories still use `physis_model` `f64` Qty.
@@ -3622,7 +3631,7 @@ fn codata_2018_neutron_to_shielded_proton_magnetic_moment_ratio_interval() -> In
 /// and not P3N. Proton gyromagnetic ratio is `gamma_p`.
 /// Neutron-tau is a PDG reprint of `m_τc²` (JPCRD table XXXI footnote e)
 /// and is not stored. Deuteron mass is `m_d`. Later deuteron rows are not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`. The
+/// stored. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. The
 /// decade is `10^{8}`; `10^{7}` is the 10× trap (`μ` would not be an
 /// integer). Theories still use `physis_model` `f64` Qty.
 pub fn neutron_to_shielded_proton_magnetic_moment_ratio() -> Constant<Interval> {
@@ -3652,7 +3661,7 @@ fn codata_2018_deuteron_mass_interval() -> Interval {
 /// Ratio, and not P3N. The u-row is `m_d_u`. The energy equivalent is
 /// `m_d_c2`. The MeV conversion is `m_d_c2_MeV`. Molar mass and rms
 /// charge radius are later table rows and are not stored.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `7768`. The decade is `10^{37}`; `10^{36}`
 /// is the 10× trap (`μ` would not be an integer). `10^{39}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
@@ -3717,7 +3726,7 @@ fn codata_2018_deuteron_mass_energy_equivalent_interval() -> Interval {
 /// defining Ratio, and not P3N. The MeV conversion is `m_d_c2_MeV`.
 /// The molar mass and rms charge radius are later table rows and are
 /// not stored.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `23491`. The decade is `10^{21}`; `10^{20}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -3779,7 +3788,7 @@ fn codata_2018_deuteron_electron_mass_ratio_interval() -> Interval {
 /// `mmu_me`, not deuteron mass, not MeV energy equivalent, not an SI
 /// defining Ratio, and not P3N. The deuteron-proton mass ratio is `md_mp`.
 /// Molar mass and rms charge radius are later table rows and are not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// stored. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// This is not the CODATA 2022 last-digit `655`. The decade is
 /// `10^{8}`; `10^{7}` is the 10× trap (`μ` would not be an integer).
 /// Theories still use `physis_model` `f64` Qty.
@@ -3809,7 +3818,7 @@ fn codata_2018_deuteron_proton_mass_ratio_interval() -> Interval {
 /// `m_d/m_p`, not the deuteron-electron ratio `md_me`, not deuteron
 /// mass, not proton mass, not an SI defining Ratio, and not P3N. The
 /// molar mass is `M_d`. The rms charge radius is a later table row and
-/// is not stored. Electron mass is not stored: `10^{42}` overflows
+/// is not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `2699`. The decade is
 /// `10^{11}`; `10^{10}` is the 10× trap (`μ` would not be an integer).
 /// Theories still use `physis_model` `f64` Qty.
@@ -3839,7 +3848,7 @@ fn codata_2018_deuteron_molar_mass_interval() -> Interval {
 /// hull `m_d`, not the u-row `m_d_u`, not a certificate that this
 /// equals `N_A × m_d`, not an SI defining Ratio, and not P3N. The rms
 /// charge radius is `rd`. Magnetic-moment rows are later table rows and
-/// are not stored. Electron mass is not stored: `10^{42}` overflows
+/// are not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA
 /// 2022 last-digit `466`. The decade is `10^{14}`; `10^{13}` is the
 /// 10× trap (`μ` would not be an integer). Theories still use
@@ -3904,7 +3913,7 @@ fn codata_2018_deuteron_magnetic_moment_interval() -> Interval {
 /// `rd`, not a certificate that this equals `g_d μ_N / 2`, not an SI
 /// defining Ratio, and not P3N. The Bohr-magneton ratio is `mu_d_muB`.
 /// Nuclear-magneton, g-factor, and moment-ratio rows are later table
-/// rows and are not stored. Electron mass is not stored: `10^{42}`
+/// rows and are not stored. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `7`. The
 /// decade is `10^{36}`; `10^{35}` is the 10× trap (`μ` would not be an
 /// integer). Theories still use `physis_model` `f64` Qty.
@@ -3936,7 +3945,7 @@ fn codata_2018_deuteron_bohr_magneton_ratio_interval() -> Interval {
 /// Bohr-magneton ratio `mu_mu_muB`, not a certificate that this equals
 /// `μ_d/μ_B` from sibling moments, not an SI defining Ratio, and not
 /// P3N. The nuclear-magneton ratio is `mu_d_muN`. The g-factor is `gd`.
-/// Electron mass is not stored:
+/// The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`.
 /// This is not the CODATA 2022 last-digit `8`. The decade is `10^{13}`;
 /// `10^{12}` is the 10× trap (`σ = 1.2` is not an integer). Theories
@@ -3971,7 +3980,7 @@ fn codata_2018_deuteron_nuclear_magneton_ratio_interval() -> Interval {
 /// `gd`, not an SI defining Ratio, and not P3N. The g-factor is `gd`. The deuteron-electron magnetic-moment ratio is
 /// `mu_d_mue`. The deuteron-proton magnetic-moment ratio is `mu_d_mup`.
 /// The deuteron-neutron magnetic-moment ratio is `mu_d_mun`. Triton rows
-/// are later table rows and are not stored. Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// are later table rows and are not stored. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `5`. The decade is `10^{10}`; `10^{9}` is
 /// the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4004,7 +4013,7 @@ fn codata_2018_deuteron_g_factor_interval() -> Interval {
 /// its own Claim identity. The deuteron-electron magnetic-moment ratio
 /// is `mu_d_mue`. The deuteron-proton magnetic-moment ratio is `mu_d_mup`.
 /// The deuteron-neutron magnetic-moment ratio is `mu_d_mun`. Triton rows
-/// are later table rows and are not stored. Electron mass is not stored: `10^{42}` overflows
+/// are later table rows and are not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `5`. The decade is
 /// `10^{10}`; `10^{9}` is the 10× trap (`μ` would not be an integer).
 /// Theories still use `physis_model` `f64` Qty.
@@ -4036,7 +4045,7 @@ fn codata_2018_deuteron_electron_magnetic_moment_ratio_interval() -> Interval {
 /// the inverse of `mu_e_mud`, not an SI defining Ratio, and not P3N.
 /// The deuteron-proton magnetic-moment ratio is `mu_d_mup`. The
 /// deuteron-neutron magnetic-moment ratio is `mu_d_mun`. Triton rows are
-/// later table rows and are not stored. Electron mass is not stored: `10^{42}` overflows
+/// later table rows and are not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `0`. The decade is
 /// `10^{13}`; `10^{12}` is the 10× trap (`μ` would not be an integer).
 /// Theories still use `physis_model` `f64` Qty.
@@ -4069,7 +4078,7 @@ fn codata_2018_deuteron_proton_magnetic_moment_ratio_interval() -> Interval {
 /// `μ_d/μ_p` from sibling moments, not an SI defining Ratio, and not
 /// P3N. The deuteron-neutron magnetic-moment ratio is `mu_d_mun`.
 /// Triton mass is `m_t`. Later Triton rows are not stored.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `0`. The decade is `10^{11}`; `10^{10}` is
 /// the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4102,7 +4111,7 @@ fn codata_2018_deuteron_neutron_magnetic_moment_ratio_interval() -> Interval {
 /// a reconstructed `μ_d/μ_n` from sibling moments, not an SI defining
 /// Ratio, and not P3N. The live name `mu_d_mun` is not a case-variant of
 /// `mu_d_muN`. Triton mass is `m_t`. Later Triton rows are not stored.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `2`. The decade is `10^{8}`; `10^{7}` is
 /// the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4133,7 +4142,7 @@ fn codata_2018_triton_mass_interval() -> Interval {
 /// not an SI defining Ratio, and not P3N. The u-row is `m_t_u`. The energy
 /// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
 /// triton-electron mass ratio is `mt_me`. The triton-proton mass ratio
-/// is `mt_mp`. The molar mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored:
+/// is `mt_mp`. The molar mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `7512`. The decade is `10^{37}`; `10^{36}` is the 10× trap (`μ` would
 /// not be an integer). `10^{39}` overflows `i128`. Theories still use
@@ -4167,7 +4176,7 @@ fn codata_2018_triton_mass_in_u_interval() -> Interval {
 /// equivalent is `m_t_c2`. The MeV conversion is `m_t_c2_MeV`. The
 /// triton-electron mass ratio is `mt_me`. The triton-proton mass ratio
 /// is `mt_mp`. The molar mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `597`. The decade is `10^{11}`; `10^{10}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4202,7 +4211,7 @@ fn codata_2018_triton_mass_energy_equivalent_interval() -> Interval {
 /// ratio is `mt_me`. The triton-proton mass ratio is `mt_mp`. The molar
 /// mass is `M_t`. The magnetic moment is `mu_t`. The Bohr-magneton
 /// ratio is `mu_t_muB`. The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `8119`. The decade is `10^{20}`; `10^{19}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4232,7 +4241,7 @@ fn codata_2018_triton_mass_energy_equivalent_in_mev_interval() -> Interval {
 /// not Hartree, not the exact electronvolt Ratio, not a certificate of a
 /// reconstruction from sibling masses, not an SI defining Ratio, and not
 /// P3N. The triton-electron mass ratio is `mt_me`. The triton-proton
-/// mass ratio is a later table row and is not stored. Electron mass is not stored: `10^{42}` overflows `i128`. This
+/// mass ratio is a later table row and is not stored. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This
 /// is not the CODATA 2022 last-digit `13668`. The decade is `10^{8}`;
 /// `10^{7}` is the 10× trap (`μ` would not be an integer). Theories still
 /// use `physis_model` `f64` Qty.
@@ -4264,7 +4273,7 @@ fn codata_2018_triton_electron_mass_ratio_interval() -> Interval {
 /// MeV energy equivalent, not an SI defining Ratio, and not P3N. The
 /// triton-proton mass ratio is `mt_mp`. The molar mass is `M_t`.
 /// The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`.
-/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// This is not the CODATA 2022 last-digit `53551`. The decade is
 /// `10^{8}`; `10^{7}` is the 10× trap (`μ` would not be an integer).
 /// Theories still use `physis_model` `f64` Qty.
@@ -4295,7 +4304,7 @@ fn codata_2018_triton_proton_mass_ratio_interval() -> Interval {
 /// triton-electron ratio `mt_me`, not triton mass, not proton mass,
 /// not an SI defining Ratio, and not P3N. The molar mass is `M_t`.
 /// The magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`.
-/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored: `10^{42}`
+/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `03403`.
 /// The decade is `10^{11}`; `10^{10}` is the 10× trap (`μ` would not
 /// be an integer). Theories still use `physis_model` `f64` Qty.
@@ -4325,7 +4334,7 @@ fn codata_2018_triton_molar_mass_interval() -> Interval {
 /// hull `m_t`, not the u-row `m_t_u`, not a certificate that this
 /// equals `N_A × m_t`, not an SI defining Ratio, and not P3N. The
 /// magnetic moment is `mu_t`. The Bohr-magneton ratio is `mu_t_muB`.
-/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored: `10^{42}` overflows `i128`. This is not the CODATA
+/// The nuclear-magneton ratio is `mu_t_muN`. The g-factor is `gt`. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not the CODATA
 /// 2022 last-digit `71913`. The decade is `10^{14}`; `10^{13}` is the
 /// 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4358,7 +4367,7 @@ fn codata_2018_triton_magnetic_moment_interval() -> Interval {
 /// this equals `g_t μ_N / 2` (triton spin is 1/2, so the table g-factor
 /// is `2μ_t/μ_N`; the stored g-factor is `gt`), not an SI defining Ratio, and
 /// not P3N. The Bohr-magneton ratio is `mu_t_muB`. The nuclear-magneton
-/// ratio is `mu_t_muN`. The g-factor is `gt`. Electron mass is not stored:
+/// ratio is `mu_t_muN`. The g-factor is `gt`. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `5178`. The decade is `10^{36}`; `10^{35}` is the 10× trap (`μ`
 /// would not be an integer). Theories still use `physis_model` `f64`
@@ -4461,7 +4470,7 @@ fn codata_2018_triton_g_factor_interval() -> Interval {
 /// an SI defining Ratio, and not P3N. JPCRD prints different digits
 /// from `mu_t_muN` because `I = 1/2` (`g = 2μ/μN`); each row has its
 /// own Claim identity. Helion mass is `m_h`. Later Helion rows are not
-/// stored. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// stored. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// This is not the CODATA 2022 last-digit `930`. The decade is
 /// `10^{9}`; `10^{8}` is the 10× trap (`μ` would not be an integer;
 /// `σ = 1.2` is not an integer). Theories still use `physis_model`
@@ -4493,7 +4502,7 @@ fn codata_2018_helion_mass_interval() -> Interval {
 /// masses or mass ratios, not an SI defining Ratio, and not P3N. The
 /// u-row is `m_h_u`. The energy equivalent is `m_h_c2`.
 /// The MeV conversion is `m_h_c2_MeV`. The helion-electron mass ratio is
-/// `mh_me`. Molar-mass and moment rows are later table rows and are not stored. Electron mass is not stored: `10^{42}` overflows
+/// `mh_me`. Molar-mass and moment rows are later table rows and are not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `7862`. The decade
 /// is `10^{37}`; `10^{36}` is the 10× trap (`μ` would not be an
 /// integer). `10^{39}` overflows `i128`. Theories still use
@@ -4527,7 +4536,7 @@ fn codata_2018_helion_mass_in_u_interval() -> Interval {
 /// masses or mass ratios, not an SI defining Ratio, and not P3N. The
 /// energy equivalent is `m_h_c2`. The MeV conversion is
 /// `m_h_c2_MeV`. The helion-electron mass ratio is `mh_me`. Molar-mass
-/// and moment rows are later table rows and are not stored. Electron mass is not stored: `10^{42}`
+/// and moment rows are later table rows and are not stored. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `932`. The
 /// decade is `10^{12}`; `10^{11}` is the 10× trap (`μ` would not be an
 /// integer). Theories still use `physis_model` `f64` Qty.
@@ -4562,7 +4571,7 @@ fn codata_2018_helion_mass_energy_equivalent_interval() -> Interval {
 /// conversion is `m_h_c2_MeV`. The helion-electron mass ratio is
 /// `mh_me`. Molar-mass and moment rows are later table rows and are not
 /// stored.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `4185`. The decade is `10^{20}`; `10^{19}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4595,7 +4604,7 @@ fn codata_2018_helion_mass_energy_equivalent_in_mev_interval() -> Interval {
 /// helion-electron mass ratio is `mh_me`. The helion-proton mass ratio
 /// is `mh_mp`. The molar mass is `M_h`. Moment rows are later table
 /// rows and are not stored.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. This is not
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. This is not
 /// the CODATA 2022 last-digit `61112`. The decade is `10^{8}`; `10^{7}`
 /// is the 10× trap (`μ` would not be an integer). Theories still use
 /// `physis_model` `f64` Qty.
@@ -4627,7 +4636,7 @@ fn codata_2018_helion_electron_mass_ratio_interval() -> Interval {
 /// ratio `mmu_me`, not helion mass, not MeV energy equivalent, not an
 /// SI defining Ratio, and not P3N. The helion-proton mass ratio is
 /// `mh_mp`. The molar mass is `M_h`. Moment rows are later table rows
-/// and are not stored. Electron mass is not stored:
+/// and are not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `27984`. The decade is `10^{8}`; `10^{7}` is the 10× trap (`μ` would
 /// not be an integer). Theories still use `physis_model` `f64` Qty.
@@ -4690,7 +4699,7 @@ fn codata_2018_helion_molar_mass_interval() -> Interval {
 /// not the u-row `m_h_u`, not a certificate that this equals `N_A × m_h`,
 /// not an SI defining Ratio, and not P3N. The magnetic moment is `mu_h`.
 /// Bohr-magneton ratio rows are later table rows and are not stored.
-/// Electron mass is not stored: `10^{42}`
+/// The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `25010`. The
 /// decade is `10^{14}`; `10^{13}` is the 10× trap (`μ` would not be an
 /// integer). Theories still use `physis_model` `f64` Qty.
@@ -4760,7 +4769,7 @@ fn codata_2018_helion_bohr_magneton_ratio_interval() -> Interval {
 /// this equals a reconstructed `μ_h/μ_B` from sibling moments, not an
 /// SI defining Ratio, and not P3N. The nuclear-magneton ratio is
 /// `mu_h_muN`. The g-factor is `gh`.
-/// Electron mass is not stored:
+/// The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `98083`. The decade is `10^{12}`; `10^{11}` is the 10× trap (`μ`
 /// would not be an integer; `σ` would be `1.4`). Theories still use
@@ -4864,7 +4873,7 @@ fn codata_2018_shielded_helion_magnetic_moment_interval() -> Interval {
 /// `gh`, not an SI defining Ratio, and not P3N. The Bohr-magneton ratio
 /// is `mu0h_muB`. The nuclear-magneton ratio is a later table row and
 /// is not stored. Proton gyromagnetic ratio is `gamma_p`.
-/// Electron mass is not stored: `10^{42}` overflows
+/// The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `11035`. The decade
 /// is `10^{35}`; `10^{34}` is the 10× trap (`σ = 1.3` is not an
 /// integer). Theories still use `physis_model` `f64` Qty.
@@ -4939,7 +4948,7 @@ fn codata_2018_shielded_helion_nuclear_magneton_ratio_interval() -> Interval {
 /// each row has its own Claim identity. The shielded helion to proton
 /// ratio is `mu0h_mup`. The shielded helion to shielded proton ratio is
 /// a later table row and is not stored. Gyromagnetic ratios
-/// cite ħ and are not stored. Electron mass is not stored: `10^{42}`
+/// cite ħ and are not stored. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `7624`. The
 /// decade is `10^{9}`; `10^{8}` is the 10× trap (`μ` would not be an
 /// integer; `σ = 2.5` is not an integer). Theories still use
@@ -4975,7 +4984,7 @@ fn codata_2018_shielded_helion_to_proton_magnetic_moment_ratio_interval() -> Int
 /// that this equals a reconstructed `μ′_h/μ_p` from sibling moments, not
 /// an SI defining Ratio, and not P3N. The shielded helion to shielded
 /// proton ratio is `mu0h_mu0p`. Gyromagnetic ratios
-/// cite ħ and are not stored. Electron mass is not stored:
+/// cite ħ and are not stored. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `57721`. The decade is `10^{10}`; `10^{9}` is the 10× trap (`μ` would
 /// not be an integer; `σ = 8.9` is not an integer). Theories still use
@@ -5044,7 +5053,7 @@ fn codata_2018_alpha_particle_mass_interval() -> Interval {
 /// `m_alpha_c2`. Mass ratios and molar mass are later table rows and are
 /// not stored. Relative atomic
 /// mass is not stored under a different name (NIST prints the same
-/// digits as the u-row). Electron mass is not stored: `10^{42}` overflows
+/// digits as the u-row). The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `3450`. The decade is
 /// `10^{37}`; `10^{36}` is the 10× trap (`μ` would not be an integer).
 /// `10^{39}` overflows `i128`. Theories still use `physis_model` `f64`
@@ -5144,7 +5153,7 @@ fn codata_2018_alpha_particle_mass_energy_equivalent_in_mev_interval() -> Interv
 /// certificate of a reconstruction from sibling masses, not an SI
 /// defining Ratio, and not P3N. The alpha-electron mass ratio is
 /// `malpha_me`. The alpha-proton mass ratio is a later table row and is
-/// not stored. Electron mass is not stored: `10^{42}`
+/// not stored. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `4118`. The
 /// decade is `10^{7}`; `10^{6}` is the 10× trap (`μ` would not be an
 /// integer). Theories still use `physis_model` `f64` Qty.
@@ -5177,7 +5186,7 @@ fn codata_2018_alpha_particle_electron_mass_ratio_interval() -> Interval {
 /// ratio `mmu_me`, not alpha particle mass, not MeV energy equivalent,
 /// not an SI defining Ratio, and not P3N. The alpha-proton mass ratio is
 /// `malpha_mp`. Molar mass is a later table row and is not stored.
-/// Electron mass is not stored:
+/// The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `71`. The decade is `10^{8}`; `10^{7}` is the 10× trap (`μ` would not
 /// be an integer). Theories still use `physis_model` `f64` Qty.
@@ -5244,7 +5253,7 @@ fn codata_2018_alpha_particle_molar_mass_interval() -> Interval {
 /// `m_u` is the next PHYSICOCHEMICAL row. Unified atomic mass unit `u`
 /// is the same digits and is not stored under a second name. Energy
 /// equivalent is a later table row and is not stored.
-/// Electron mass is not stored: `10^{42}`
+/// The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. This is not the CODATA 2022 last-digit `1833`. The
 /// decade is `10^{13}`; `10^{12}` is the 10× trap (`μ` would not be an
 /// integer). Theories still use `physis_model` `f64` Qty.
@@ -5378,7 +5387,7 @@ fn codata_2018_molar_mass_constant_interval() -> Interval {
 /// not Avogadro `N_A`, not vacuum permeability `mu0`, not a certificate
 /// that this equals `N_A × m_u`, not an SI defining Ratio, and not P3N.
 /// The JPCRD symbol `Mu` is not a ledger name. The molar mass of
-/// carbon-12 is `M_12C`. Electron mass is not stored:
+/// carbon-12 is `M_12C`. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. This is not the CODATA 2022 last-digit
 /// `105`. The decade is `10^{14}` matching the printed 11-decimal ×
 /// `10^{-3}` form; `10^{13}` is the 10× trap (`μ` would not be an
@@ -5442,7 +5451,7 @@ fn molar_planck_constant_value() -> Ratio {
 /// terminating decimal `N_A × h`. That product fits [`Ratio`]
 /// (`10^{27}`); Planck `h` does not (`10^{42}`). This is not P3N. The
 /// JPCRD symbol `NAh` is the ledger name. The molar gas constant is
-/// `NAk`. Electron mass is not stored: `10^{42}`
+/// `NAk`. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. CODATA 2022 prints the same SI-exact ellipsis;
 /// there is no last-digit trap. Theories still use `physis_model` `f64`
 /// Qty.
@@ -5501,7 +5510,7 @@ fn boltzmann_in_ev_per_kelvin_value() -> Ratio {
 /// factors 3, 19, 389, and 12043 (the same primes as `RK`, because both
 /// divide by `e`), so this is not a terminating [`SciExact`]. The
 /// product fits [`Ratio`]. This is not P3N. The ledger name is `k_eV`.
-/// The Boltzmann constant in Hz/K is `k_Hz`. Electron mass is not stored:
+/// The Boltzmann constant in Hz/K is `k_Hz`. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. CODATA 2022 prints the same SI-exact
 /// ellipsis; there is no last-digit trap. Theories still use
 /// `physis_model` `f64` Qty.
@@ -5620,7 +5629,7 @@ pub fn faraday_constant() -> Constant<Ratio> {
 /// a FormalClaim. JPCRD prints no symbol; `p0` is the ledger name
 /// (ASCII for p°). `bar` is not a second name. This is not trust-tier
 /// P0. The standard atmosphere is `atm`.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. CODATA
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. CODATA
 /// 2022 prints the same exact 100 000 Pa; there is no last-digit trap.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn standard_state_pressure() -> Constant<Ratio> {
@@ -5701,7 +5710,7 @@ fn loschmidt_constant_value() -> Ratio {
 /// a terminating [`SciExact`]. The product fits [`Ratio`] (`10^{36}`).
 /// This is not P3N. The JPCRD symbol `n0` is the ledger name. The
 /// 101.325 kPa molar volume is `Vm_atm`.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. CODATA
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. CODATA
 /// 2022 prints the same SI-exact ellipsis; there is no last-digit
 /// trap. Theories still use `physis_model` `f64` Qty.
 pub fn loschmidt_constant() -> Constant<Ratio> {
@@ -5734,7 +5743,7 @@ fn molar_volume_ideal_gas_atm_value() -> Ratio {
 /// The denominator keeps factors 7 and 193 from 101325, so this is not
 /// a terminating [`SciExact`]. The product fits [`Ratio`] (`10^{16}`).
 /// This is not P3N. The 101.325 kPa Loschmidt constant is `n0_atm`.
-/// Electron mass is not stored: `10^{42}`
+/// The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. CODATA 2022 prints the same SI-exact ellipsis;
 /// there is no last-digit trap. Theories still use `physis_model` `f64`
 /// Qty.
@@ -5766,7 +5775,7 @@ fn loschmidt_constant_atm_value() -> Ratio {
 /// denominator is not a pure power of ten, so this is not a terminating
 /// [`SciExact`]. The product fits [`Ratio`] (`10^{31}`). This is not
 /// P3N. The Sackur-Tetrode constant is `S0_R`.
-/// Electron mass is not stored: `10^{42}` overflows `i128`.
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// CODATA 2022 prints the same SI-exact ellipsis; there is no last-digit
 /// trap. Theories still use `physis_model` `f64` Qty.
 pub fn loschmidt_constant_atm() -> Constant<Ratio> {
@@ -5802,7 +5811,7 @@ fn codata_2018_sackur_tetrode_constant_interval() -> Interval {
 /// not P3N. JPCRD prints `S0/R`; `S0_R` is the ledger name. `S0` and
 /// `S0/R` are not second names. The 101.325 kPa companion is `S0_R_atm`.
 /// Stefan-Boltzmann is a later table row
-/// and is not stored. Electron mass is not stored: `10^{42}` overflows
+/// and is not stored. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. This is not the CODATA 2022 last-digit `96`. The decade is
 /// `10^{11}`; `10^{10}` is the 10× trap (`σ = 4.5` is not an integer).
 /// Theories still use `physis_model` `f64` Qty.
@@ -5870,7 +5879,7 @@ fn first_radiation_constant_spectral_radiance_value() -> SciExact {
 /// decimal `2 h c²`. That product does not fit [`Ratio`]: after gcd 40
 /// the denominator is `2.5 × 10^{40}`, and `10^{41}` overflows `i128`
 /// (same reason Planck `h` is SciExact). This is not P3N. The JPCRD
-/// symbol `c1L` is the ledger name. Electron mass is not stored:
+/// symbol `c1L` is the ledger name. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. CODATA 2022 prints the same SI-exact
 /// ellipsis; there is no last-digit trap. Theories still use
 /// `physis_model` `f64` Qty.
@@ -5972,7 +5981,7 @@ fn von_klitzing_constant_value() -> Ratio {
 /// exact Ratio. The reduced denominator keeps factors 3, 19, 389, and
 /// 12043, so this is not a terminating [`SciExact`]. The product fits
 /// [`Ratio`] (`10^{14}`). This is not P3N. The JPCRD symbol `RK` is
-/// the ledger name. The Bohr magneton is `muB`. Electron mass is not stored: `10^{42}`
+/// the ledger name. The Bohr magneton is `muB`. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. CODATA 2022 prints the same SI-exact ellipsis;
 /// there is no last-digit trap. Theories still use `physis_model`
 /// `f64` Qty.
@@ -6011,7 +6020,7 @@ fn codata_2018_bohr_magneton_interval() -> Interval {
 /// name `muB`. Bohr magneton in eV/T is `muB_eV`.
 /// The decade is `10^{34}`; `10^{33}` is the 10× trap (`σ = 2.8` is not
 /// an integer). This is not the CODATA 2022 last-digit `0657`. This is
-/// not P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn bohr_magneton() -> Constant<Interval> {
     Constant::new(
@@ -6045,7 +6054,7 @@ fn codata_2018_bohr_magneton_in_ev_per_tesla_interval() -> Interval {
 /// The ledger name is `muB_eV`. Bohr magneton in Hz/T is `muB_Hz`.
 /// The decade is `10^{15}`; `10^{14}` is the 10×
 /// trap (`σ = 1.7` is not an integer). This is not the CODATA 2022
-/// last-digit `7982`. This is not P3N. Electron mass is not stored:
+/// last-digit `7982`. This is not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model` `f64`
 /// Qty.
 pub fn bohr_magneton_in_ev_per_tesla() -> Constant<Interval> {
@@ -6080,7 +6089,7 @@ fn codata_2018_bohr_magneton_in_hz_per_tesla_interval() -> Interval {
 /// magneton in inverse meter per tesla is `muB_m`.
 /// The decade is `10^{1}`; `10^{0}` is the 10× trap (`σ = 4.2` is not
 /// an integer). This is not the CODATA 2022 last-digit `49171`. This is
-/// not P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn bohr_magneton_in_hz_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6114,7 +6123,7 @@ fn codata_2018_bohr_magneton_in_inverse_meter_per_tesla_interval() -> Interval {
 /// ledger name is `muB_m`. Bohr magneton in K/T is `muB_K`.
 /// The decade is `10^{9}`; `10^{8}` is the 10× trap
 /// (`σ = 1.4` is not an integer). This is not the CODATA 2022 last-digit
-/// `719`. This is not P3N. Electron mass is not stored: `10^{42}`
+/// `719`. This is not P3N. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn bohr_magneton_in_inverse_meter_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6149,7 +6158,7 @@ fn codata_2018_bohr_magneton_in_kelvin_per_tesla_interval() -> Interval {
 /// The
 /// decade is `10^{11}`; `10^{10}` is the 10× trap (centre `6717138156.3`
 /// is not an integer). This is not the CODATA 2022 last-digit `81472`.
-/// This is not P3N. Electron mass is not stored: `10^{42}` overflows
+/// This is not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn bohr_magneton_in_kelvin_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6183,7 +6192,7 @@ fn codata_2018_nuclear_magneton_interval() -> Interval {
 /// JPCRD symbol `μN` is the ledger name `muN`. Nuclear magneton in eV/T
 /// is `muN_eV`. The decade is `10^{37}`; `10^{36}` is
 /// the 10× trap (`σ = 1.5` is not an integer). This is not the CODATA
-/// 2022 last-digit `7393`. This is not P3N. Electron mass is not stored:
+/// 2022 last-digit `7393`. This is not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model` `f64`
 /// Qty.
 pub fn nuclear_magneton() -> Constant<Interval> {
@@ -6218,7 +6227,7 @@ fn codata_2018_nuclear_magneton_in_ev_per_tesla_interval() -> Interval {
 /// Nuclear magneton in inverse meter per tesla is `muN_m`.
 /// The decade is `10^{19}`; `10^{18}` is the 10×
 /// trap (`σ = 9.6` is not an integer). This is not the CODATA 2022
-/// last-digit `25417`. This is not P3N. Electron mass is not stored:
+/// last-digit `25417`. This is not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model` `f64`
 /// Qty.
 pub fn nuclear_magneton_in_ev_per_tesla() -> Constant<Interval> {
@@ -6253,7 +6262,7 @@ fn codata_2018_nuclear_magneton_in_inverse_meter_per_tesla_interval() -> Interva
 /// ledger name is `muN_m`. Nuclear magneton in K/T is `muN_K`.
 /// The decade is `10^{13}`; `10^{12}` is the 10×
 /// trap (`σ = 7.8` is not an integer). This is not the CODATA 2022
-/// last-digit `41009`. This is not P3N. Electron mass is not stored:
+/// last-digit `41009`. This is not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model` `f64`
 /// Qty.
 pub fn nuclear_magneton_in_inverse_meter_per_tesla() -> Constant<Interval> {
@@ -6288,7 +6297,7 @@ fn codata_2018_nuclear_magneton_in_kelvin_per_tesla_interval() -> Interval {
 /// ledger name is `muN_K`. Nuclear magneton in MHz/T is `muN_MHz`.
 /// The decade is `10^{14}`; `10^{13}` is the 10×
 /// trap (`σ = 1.1` is not an integer). This is not the CODATA 2022
-/// last-digit `7706`. This is not P3N. Electron mass is not stored:
+/// last-digit `7706`. This is not P3N. The kg hull is stored as `m_e`:
 /// `10^{42}` overflows `i128`. Theories still use `physis_model` `f64`
 /// Qty.
 pub fn nuclear_magneton_in_kelvin_per_tesla() -> Constant<Interval> {
@@ -6362,7 +6371,7 @@ fn codata_2018_proton_gyromagnetic_ratio_interval() -> Interval {
 /// is `gamma0p`. Helion gyromagnetic `gamma0h` cites ħ and is not
 /// stored. The decade is `10^{2}`; `10^{1}` is the 10× trap (`σ = 1.1`
 /// is not an integer). This is not the CODATA 2022 last-digit `8708`.
-/// This is not P3N. Electron mass is not stored: `10^{42}` overflows
+/// This is not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn proton_gyromagnetic_ratio() -> Constant<Interval> {
     Constant::new(
@@ -6398,7 +6407,7 @@ fn codata_2018_proton_gyromagnetic_ratio_in_mhz_per_tesla_interval() -> Interval
 /// Helion gyromagnetic `gamma0h` cites ħ and is not stored. The decade
 /// is `10^{9}`; `10^{8}` is the 10× trap (`σ = 1.8` is not an integer).
 /// This is not the CODATA 2022 last-digit `461`. This is not P3N.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. Theories
 /// still use `physis_model` `f64` Qty.
 pub fn proton_gyromagnetic_ratio_in_mhz_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6436,7 +6445,7 @@ fn codata_2018_shielded_proton_gyromagnetic_ratio_interval() -> Interval {
 /// gyromagnetic `gamma0h` cites ħ and is not stored. The decade is
 /// `10^{1}`; `10^{0}` is the 10× trap (`σ = 2.9` is not an integer).
 /// This is not the CODATA 2022 last-digit `194`. This is not P3N.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. Theories
 /// still use `physis_model` `f64` Qty.
 pub fn shielded_proton_gyromagnetic_ratio() -> Constant<Interval> {
     Constant::new(
@@ -6474,7 +6483,7 @@ fn codata_2018_shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla_interval() ->
 /// Helion gyromagnetic `gamma0h` cites ħ and is not stored. The
 /// decade is `10^{8}`; `10^{7}` is the 10× trap (`σ = 4.6` is not an
 /// integer). This is not the CODATA 2022 last-digit `543`. This is not
-/// P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6512,7 +6521,7 @@ fn codata_2018_neutron_gyromagnetic_ratio_interval() -> Interval {
 /// `10^{0}`; `10^{1}` is the 10× trap (`σ = 4.3` is not an integer).
 /// This is not the CODATA 2022 last-digit `74` as the stored centre.
 /// The 2018 hull still contains that 2022 centre. This is not P3N.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. Theories
 /// still use `physis_model` `f64` Qty.
 pub fn neutron_gyromagnetic_ratio() -> Constant<Interval> {
     Constant::new(
@@ -6550,7 +6559,7 @@ fn codata_2018_neutron_gyromagnetic_ratio_in_mhz_per_tesla_interval() -> Interva
 /// `10^{7}`; `10^{6}` is the 10× trap (`σ = 6.9`
 /// is not an integer). This is not the CODATA 2022 last-digit `6935`
 /// as the stored centre. The 2018 hull still contains that 2022
-/// centre. This is not P3N. Electron mass is not stored: `10^{42}`
+/// centre. This is not P3N. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn neutron_gyromagnetic_ratio_in_mhz_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6586,7 +6595,7 @@ fn codata_2018_electron_gyromagnetic_ratio_interval() -> Interval {
 /// gyromagnetic ratio in MHz/T is `gamma_e_MHz`. Helion gyromagnetic
 /// `gamma0h` cites ħ and is not stored. The decade is `10^{0}`; `10^{1}`
 /// is the 10× trap. This is not the CODATA 2022 last-digit `62784`.
-/// This is not P3N. Electron mass is not stored: `10^{42}` overflows
+/// This is not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows
 /// `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn electron_gyromagnetic_ratio() -> Constant<Interval> {
     Constant::new(
@@ -6622,7 +6631,7 @@ fn codata_2018_electron_gyromagnetic_ratio_in_mhz_per_tesla_interval() -> Interv
 /// gyromagnetic ratio is `gamma0h`. The decade is
 /// `10^{7}`; `10^{6}` is the 10× trap (`σ = 8.5` is not an integer).
 /// This is not the CODATA 2022 last-digit `3861`. This is not P3N.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. Theories
 /// still use `physis_model` `f64` Qty.
 pub fn electron_gyromagnetic_ratio_in_mhz_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6660,7 +6669,7 @@ fn codata_2018_shielded_helion_gyromagnetic_ratio_interval() -> Interval {
 /// Shielded helion gyromagnetic ratio in MHz/T is `gamma0h_MHz`. The
 /// decade is `10^{1}`; `10^{0}` is the 10× trap (`σ = 2.4` is not an
 /// integer). This is not the CODATA 2022 last-digit `6078`. This is not
-/// P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn shielded_helion_gyromagnetic_ratio() -> Constant<Interval> {
     Constant::new(
@@ -6698,7 +6707,7 @@ fn codata_2018_shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla_interval() ->
 /// is `gamma0h_MHz`. Glossary `g0p` is still skipped. The decade is
 /// `10^{8}`; `10^{7}` is the 10× trap (`σ = 3.8` is not an integer).
 /// This is not the CODATA 2022 last-digit `033`. This is not P3N.
-/// Electron mass is not stored: `10^{42}` overflows `i128`. Theories
+/// The kg hull is stored as `m_e`: `10^{42}` overflows `i128`. Theories
 /// still use `physis_model` `f64` Qty.
 pub fn shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla() -> Constant<Interval> {
     Constant::new(
@@ -6734,7 +6743,7 @@ fn codata_2018_hartree_energy_in_ev_interval() -> Interval {
 /// The decade is `10^{12}`; `10^{11}` is the 10× trap (`σ = 5.3` is not
 /// an integer). This is not the CODATA 2022 last-digit `5981` as the
 /// stored centre. The 2018 hull still contains that 2022 centre. This
-/// is not P3N. Electron mass is not stored: `10^{42}` overflows `i128`.
+/// is not P3N. The kg hull is stored as `m_e`: `10^{42}` overflows `i128`.
 /// Theories still use `physis_model` `f64` Qty.
 pub fn hartree_energy_in_ev() -> Constant<Interval> {
     Constant::new(
@@ -6769,7 +6778,7 @@ fn codata_2018_rydberg_energy_equivalent_in_ev_interval() -> Interval {
 /// not stored. The decade is `10^{12}`; `10^{11}` is the 10× trap
 /// (`σ = 2.6` is not an integer). This is not the CODATA 2022 last-digit
 /// `2990` as the stored centre. The 2018 hull still contains that 2022
-/// centre. This is not P3N. Electron mass is not stored: `10^{42}`
+/// centre. This is not P3N. The kg hull is stored as `m_e`: `10^{42}`
 /// overflows `i128`. Theories still use `physis_model` `f64` Qty.
 pub fn rydberg_energy_equivalent_in_ev() -> Constant<Interval> {
     Constant::new(
@@ -6886,6 +6895,44 @@ pub fn electron_mass_energy_equivalent_in_mev() -> Constant<Interval> {
         codata_2018_electron_mass_energy_equivalent_in_mev_interval(),
         "MeV",
         codata_2018_electron_mass_energy_equivalent_in_mev_source(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+/// CODATA 2018 one-sigma hull of 9.1093837015(28)×10⁻³¹ kg.
+fn codata_2018_electron_mass_interval() -> SciInterval {
+    let exp = -41;
+    let centre = 91_093_837_015i128;
+    let sigma = 28;
+    SciInterval::new(
+        SciExact::new(centre - sigma, exp),
+        SciExact::new(centre + sigma, exp),
+    )
+}
+
+/// Electron mass m_e, CODATA 2018 one-sigma enclosure.
+///
+/// This is the recommended printed Electron, e- kg hull. A [`Ratio`]
+/// denominator `10^{41}` overflows `i128`, so the ledger stores a
+/// [`SciInterval`] of terminating decimals, not an [`Interval`] of
+/// [`Ratio`]. This is not the u-row `m_e_u`, not joule `m_e_c2`, not
+/// MeV `m_e_c2_MeV`, not molar mass `M_e`, not proton mass `m_p`, not
+/// muon mass `m_mu`, not the atomic mass constant `m_u`, not atomic
+/// unit of mass under a second name, not an SI defining Ratio, not a
+/// terminating [`SciExact`], and not a FormalClaim that reconstructs
+/// `m_e_u * m_u` from live lookups. The ledger stores the recommended
+/// one-sigma hull. The ledger name is `m_e`. Quantum of circulation
+/// still cites `π ℏ / m_e` and is not stored. The decade is `10^{41}`;
+/// `10^{40}` is the 10× trap (the centre becomes `9.109…×10^{-30}`).
+/// This is not the CODATA 2022 last-digit `7139` as the stored centre.
+/// The 2018 hull does not contain that 2022 centre. This is not P3N.
+/// Theories still use `physis_model` `f64` Qty.
+pub fn electron_mass() -> Constant<SciInterval> {
+    Constant::new(
+        "m_e",
+        codata_2018_electron_mass_interval(),
+        "kg",
+        codata_2018_electron_mass_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -7017,7 +7064,7 @@ pub fn solar_luminosity() -> Constant<Ratio> {
 pub struct ConstantListing {
     /// Ledger name (`c`, `G`, `h`, …).
     pub name: String,
-    /// `ratio`, `sci-exact`, or `interval`.
+    /// `ratio`, `sci-exact`, `sci-interval`, or `interval`.
     pub kind: &'static str,
     /// Unit string.
     pub unit: String,
@@ -7234,6 +7281,7 @@ pub const LEDGER: &[&str] = &[
     "m_e_u",
     "m_e_c2",
     "m_e_c2_MeV",
+    "m_e",
     "au",
     "eV",
     "GM_sun",
@@ -7582,6 +7630,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
             electron_mass_energy_equivalent_in_mev(),
             "interval",
         )),
+        "m_e" => Some(listing(electron_mass(), "sci-interval")),
         "au" => Some(listing(astronomical_unit(), "ratio")),
         "eV" => Some(listing(electron_volt(), "ratio")),
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
@@ -8213,6 +8262,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("E_h").is_none());
     }
 
@@ -8327,6 +8377,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("cRinf_eV").is_none());
     }
 
@@ -8440,6 +8491,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Rydberg").is_none());
     }
 
@@ -8644,7 +8696,8 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -8764,7 +8817,7 @@ mod tests {
         assert!(lookup("me/m_mu").is_none());
         assert!(lookup("m_e/m_mu").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -8889,7 +8942,7 @@ mod tests {
         assert!(lookup("me/m_p").is_none());
         assert!(lookup("m_e/m_p").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -9022,7 +9075,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_n").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -9165,7 +9218,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_d").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -9318,7 +9371,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_t").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -9481,7 +9534,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_h").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -9657,7 +9710,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("me/m_a").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -9822,7 +9875,7 @@ mod tests {
         assert!(lookup("-e/me").is_none());
         assert!(lookup("e/me").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -9982,7 +10035,7 @@ mod tests {
         assert!(lookup("Me").is_none());
         assert!(lookup("molar_e").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -10151,7 +10204,7 @@ mod tests {
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("lambdaC").is_none());
         assert!(lookup("rc").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -10322,7 +10375,7 @@ mod tests {
         assert!(lookup("lambdaC").is_none());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("rc").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -10498,7 +10551,7 @@ mod tests {
         assert!(lookup("r_e").is_none());
         assert!(lookup("rc").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -10691,7 +10744,7 @@ mod tests {
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("r_e").is_none());
         assert!(lookup("rc").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -10891,7 +10944,7 @@ mod tests {
         assert!(lookup("mue_muB").is_none());
         assert!(lookup("mu_e/muB").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -11098,7 +11151,7 @@ mod tests {
         assert!(lookup("mue_muN").is_none());
         assert!(lookup("mu_e/muN").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -11308,7 +11361,7 @@ mod tests {
         assert!(lookup("a_e").is_none());
         assert!(lookup("ae_e").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -11520,7 +11573,7 @@ mod tests {
         assert!(lookup("gee").is_none());
         assert!(lookup("g-e").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -11638,7 +11691,7 @@ mod tests {
         assert!(lookup("mu_e/mmu").is_none());
         assert!(lookup("mu_e_mu_mu").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
     }
 
     #[test]
@@ -11771,7 +11824,7 @@ mod tests {
         assert!(lookup("mu_e/mup").is_none());
         assert!(lookup("mu_e_mu_p").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mp").is_some());
     }
@@ -11900,7 +11953,7 @@ mod tests {
         assert!(lookup("mu_e_mu_0p").is_none());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("mu_e_mup").is_some());
         assert!(lookup("mu0").is_some());
@@ -12014,7 +12067,7 @@ mod tests {
         assert!(lookup("mu_e/mun").is_none());
         assert!(lookup("mu_e_mu_n").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mn").is_some());
     }
@@ -12130,7 +12183,7 @@ mod tests {
         assert!(lookup("mu_e/mud").is_none());
         assert!(lookup("mu_e_mu_d").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_md").is_some());
         assert!(lookup("mu_e_mun").is_some());
@@ -12255,7 +12308,7 @@ mod tests {
         assert!(lookup("mu_e_mu_0h").is_none());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mh").is_some());
         assert!(lookup("mu_e_mu0p").is_some());
@@ -12365,7 +12418,7 @@ mod tests {
         assert!(lookup("m-mu").is_none());
         assert!(lookup("muon-mass").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mmu").is_some());
         assert!(lookup("m_p").is_some());
@@ -12463,7 +12516,7 @@ mod tests {
         assert!(lookup("Ar_mu").is_none());
         assert!(lookup("mmu").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("m_mu").is_some());
         assert!(lookup("M_e").is_some());
@@ -12579,12 +12632,13 @@ mod tests {
         assert!(lookup("mmu").is_none());
         assert!(lookup("mmu_u").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_mu").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("hcRinf").is_some());
@@ -12708,8 +12762,9 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_mu_c2").is_some());
         assert!(lookup("eV").is_some());
         assert!(lookup("Eh").is_some());
@@ -12839,12 +12894,13 @@ mod tests {
         assert!(lookup("m_mu/me").is_none());
         assert!(lookup("me/mmu").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("me_mmu").is_some());
         assert!(lookup("mu_e_mmu").is_some());
         assert!(lookup("m_mu_c2_MeV").is_some());
@@ -12964,12 +13020,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mmu_me").is_some());
         assert!(lookup("me_mp").is_some());
         assert!(lookup("m_mu").is_some());
@@ -13092,12 +13149,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mmu_mp").is_some());
         assert!(lookup("me_mn").is_some());
         assert!(lookup("m_mu").is_some());
@@ -13197,12 +13255,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("M_e").is_some());
         assert!(lookup("m_mu").is_some());
@@ -13321,12 +13380,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("lambda_C").is_some());
         assert!(lookup("lambdabar_C").is_some());
         assert!(lookup("M_mu").is_some());
@@ -13442,12 +13502,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_e").is_some());
         assert!(lookup("mu_e_mmu").is_some());
         assert!(lookup("mu0").is_some());
@@ -13577,12 +13638,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_mu").is_some());
         assert!(lookup("mu_e_muB").is_some());
         assert!(lookup("mu_e").is_some());
@@ -13713,12 +13775,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_e_muN").is_some());
         assert!(lookup("mu_mu_muB").is_some());
         assert!(lookup("mu_mu").is_some());
@@ -13852,12 +13915,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("ae").is_some());
         assert!(lookup("ge").is_some());
         assert!(lookup("mu_mu_muN").is_some());
@@ -13995,12 +14059,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("ge").is_some());
         assert!(lookup("amu").is_some());
         assert!(lookup("ae").is_some());
@@ -14153,12 +14218,13 @@ mod tests {
         assert!(lookup("mmu_mt").is_none());
         assert!(lookup("mmu_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_e_mup").is_some());
         assert!(lookup("mmu_mp").is_some());
         assert!(lookup("gmu").is_some());
@@ -14232,7 +14298,7 @@ mod tests {
             10i128.checked_pow(42).is_none(),
             "m_e = 9.1093837015e-31 is 91093837015/10^42; that denominator overflows i128"
         );
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mp").is_none());
         assert!(lookup("proton-mass").is_none());
         assert!(lookup("electron-mass").is_none());
@@ -14335,12 +14401,13 @@ mod tests {
         assert!(lookup("Ar_p").is_none());
         assert!(lookup("mp").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("M_e").is_some());
@@ -14464,12 +14531,13 @@ mod tests {
         assert!(lookup("m-p-c2").is_none());
         assert!(lookup("mp_u").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_p_u").is_some());
         assert!(lookup("m_mu_c2").is_some());
@@ -14597,12 +14665,13 @@ mod tests {
         assert!(lookup("m-p-c2-MeV").is_none());
         assert!(lookup("mpc2").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_p_c2").is_some());
         assert!(lookup("m_mu_c2_MeV").is_some());
         assert!(lookup("eV").is_some());
@@ -14714,12 +14783,13 @@ mod tests {
         assert!(lookup("m-p-me").is_none());
         assert!(lookup("mp").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("me_mp").is_some());
         assert!(lookup("mmu_me").is_some());
         assert!(lookup("m_p").is_some());
@@ -14829,12 +14899,13 @@ mod tests {
         assert!(lookup("mp_mt").is_none());
         assert!(lookup("mp").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mmu_mp").is_some());
         assert!(lookup("mp_me").is_some());
         assert!(lookup("m_p").is_some());
@@ -14943,12 +15014,13 @@ mod tests {
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("mp").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mmu_mn").is_some());
         assert!(lookup("me_mn").is_some());
         assert!(lookup("mp_mmu").is_some());
@@ -15053,12 +15125,13 @@ mod tests {
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("mp").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("e_me").is_some());
         assert!(lookup("mp_mn").is_some());
         assert!(lookup("m_p").is_some());
@@ -15168,12 +15241,13 @@ mod tests {
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("mp").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_e").is_some());
         assert!(lookup("M_mu").is_some());
         assert!(lookup("m_p").is_some());
@@ -15296,12 +15370,13 @@ mod tests {
         assert!(lookup("M_p/mol").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("lambda_C_p").is_some());
         assert!(lookup("lambda_C").is_some());
         assert!(lookup("lambda_C_mu").is_some());
@@ -15412,12 +15487,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("rp").is_some());
         assert!(lookup("lambda_C_p").is_some());
         assert!(lookup("lambda_C").is_some());
@@ -15535,12 +15611,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e").is_some());
         assert!(lookup("mu_mu").is_some());
@@ -15685,12 +15762,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_p_muB").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e_muB").is_some());
@@ -15840,12 +15918,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_p_muN").is_some());
         assert!(lookup("mu_p_muB").is_some());
         assert!(lookup("mu_p").is_some());
@@ -15969,12 +16048,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gp").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("ge").is_some());
@@ -16108,12 +16188,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_p_mun").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("mu_e_mun").is_some());
@@ -16236,12 +16317,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e_mu0p").is_some());
@@ -16396,12 +16478,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0p_muB").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("mu_p_muB").is_some());
@@ -16562,12 +16645,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0p_muN").is_some());
         assert!(lookup("mu0p_muB").is_some());
         assert!(lookup("mu_p_muN").is_some());
@@ -16695,12 +16779,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma0p").is_some());
         assert!(lookup("mu0p_muN").is_some());
         assert!(lookup("mu0p").is_some());
@@ -16841,12 +16926,13 @@ mod tests {
         assert!(lookup("lambdabar_C_p").is_none());
         assert!(lookup("mp_mtau").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_mu").is_some());
@@ -16972,12 +17058,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_n_u").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_p_u").is_some());
@@ -17124,12 +17211,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_n_c2").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_n_u").is_some());
@@ -17255,12 +17343,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_n_c2_MeV").is_some());
         assert!(lookup("m_n_c2").is_some());
         assert!(lookup("m_p_c2_MeV").is_some());
@@ -17380,12 +17469,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mn_me").is_some());
         assert!(lookup("me_mn").is_some());
         assert!(lookup("mp_me").is_some());
@@ -17504,12 +17594,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mn_mmu").is_some());
         assert!(lookup("mn_me").is_some());
         assert!(lookup("mp_mmu").is_some());
@@ -17626,12 +17717,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mn_mp").is_some());
         assert!(lookup("mn_minus_mp").is_some());
         assert!(lookup("mp_mn").is_some());
@@ -17738,12 +17830,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mn_minus_mp").is_some());
         assert!(lookup("mn_minus_mp_u").is_some());
         assert!(lookup("mn_mp").is_some());
@@ -17853,12 +17946,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mn_minus_mp_u").is_some());
         assert!(lookup("mn_minus_mp_c2").is_some());
         assert!(lookup("mn_minus_mp").is_some());
@@ -17976,12 +18070,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mn_minus_mp_c2").is_some());
         assert!(lookup("mn_minus_mp_u").is_some());
         assert!(lookup("m_n_c2").is_some());
@@ -18102,12 +18197,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mn_minus_mp_c2_MeV").is_some());
         assert!(lookup("mn_minus_mp_c2").is_some());
         assert!(lookup("m_n_c2_MeV").is_some());
@@ -18226,12 +18322,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_n").is_some());
         assert!(lookup("M_p").is_some());
         assert!(lookup("M_e").is_some());
@@ -18354,12 +18451,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("lambda_C_n").is_some());
         assert!(lookup("lambda_C_p").is_some());
         assert!(lookup("lambda_C").is_some());
@@ -18466,12 +18564,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_n").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e").is_some());
@@ -18591,12 +18690,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_n_muB").is_some());
         assert!(lookup("mu_n").is_some());
         assert!(lookup("mu_p_muB").is_some());
@@ -18723,12 +18823,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_n_muN").is_some());
         assert!(lookup("mu_n_muB").is_some());
         assert!(lookup("mu_n").is_some());
@@ -18838,12 +18939,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gn").is_some());
         assert!(lookup("mu_n_muN").is_some());
         assert!(lookup("ge").is_some());
@@ -18959,12 +19061,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_n_mue").is_some());
         assert!(lookup("gn").is_some());
         assert!(lookup("mu_e_mun").is_some());
@@ -19086,12 +19189,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_n_mup").is_some());
         assert!(lookup("mu_n_mue").is_some());
         assert!(lookup("mu_p_mun").is_some());
@@ -19221,12 +19325,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_n_mu0p").is_some());
         assert!(lookup("mu_n_mup").is_some());
         assert!(lookup("mu_e_mu0p").is_some());
@@ -19337,12 +19442,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_p").is_some());
@@ -19444,12 +19550,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_d_u").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_n_u").is_some());
@@ -19605,12 +19712,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_d_c2").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_d_u").is_some());
@@ -19748,12 +19856,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("rd").is_some());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_d_c2_MeV").is_some());
         assert!(lookup("m_d_c2").is_some());
         assert!(lookup("m_n_c2_MeV").is_some());
@@ -20944,12 +21053,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_d_mup").is_some());
         assert!(lookup("mu_d_mue").is_some());
         assert!(lookup("mu_n_mup").is_some());
@@ -21069,12 +21179,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_d_mun").is_some());
         assert!(lookup("mu_d_muN").is_some());
         assert!(lookup("mu_d_mup").is_some());
@@ -21196,12 +21307,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_n").is_some());
@@ -21321,12 +21433,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_t_u").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_d_u").is_some());
@@ -21492,12 +21605,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_t_c2").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_t_u").is_some());
@@ -21646,12 +21760,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_t_c2_MeV").is_some());
         assert!(lookup("m_t_c2").is_some());
         assert!(lookup("m_d_c2_MeV").is_some());
@@ -21796,12 +21911,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mt_me").is_some());
         assert!(lookup("me_mt").is_some());
         assert!(lookup("md_me").is_some());
@@ -21932,12 +22048,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mt_mp").is_some());
         assert!(lookup("mt_me").is_some());
         assert!(lookup("md_mp").is_some());
@@ -22058,12 +22175,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_t").is_some());
         assert!(lookup("M_n").is_some());
         assert!(lookup("M_p").is_some());
@@ -22192,12 +22310,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_t").is_some());
         assert!(lookup("mu_d").is_some());
         assert!(lookup("mu_p").is_some());
@@ -22340,12 +22459,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_t_muB").is_some());
         assert!(lookup("mu_t").is_some());
         assert!(lookup("mu_d_muB").is_some());
@@ -22499,12 +22619,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_t_muN").is_some());
         assert!(lookup("mu_t_muB").is_some());
         assert!(lookup("mu_t").is_some());
@@ -22626,12 +22747,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gt").is_some());
         assert!(lookup("mu_t_muN").is_some());
         assert!(lookup("gd").is_some());
@@ -22754,12 +22876,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_d").is_some());
@@ -22891,12 +23014,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_h_u").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_t_u").is_some());
@@ -23070,12 +23194,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_h_c2").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_h_u").is_some());
@@ -23240,12 +23365,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_h_c2_MeV").is_some());
         assert!(lookup("m_h_c2").is_some());
         assert!(lookup("m_t_c2_MeV").is_some());
@@ -23401,12 +23527,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mh_me").is_some());
         assert!(lookup("me_mh").is_some());
         assert!(lookup("mt_me").is_some());
@@ -23552,12 +23679,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mh_mp").is_some());
         assert!(lookup("mh_me").is_some());
         assert!(lookup("mt_mp").is_some());
@@ -23695,12 +23823,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_h").is_some());
         assert!(lookup("M_t").is_some());
         assert!(lookup("M_d").is_some());
@@ -23843,12 +23972,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_h").is_some());
         assert!(lookup("mu_t").is_some());
         assert!(lookup("mu_d").is_some());
@@ -24019,12 +24149,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_h_muB").is_some());
         assert!(lookup("mu_h").is_some());
         assert!(lookup("mu_t_muB").is_some());
@@ -24190,12 +24321,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu_h_muN").is_some());
         assert!(lookup("mu_h_muB").is_some());
         assert!(lookup("mu_h").is_some());
@@ -24328,12 +24460,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gh").is_some());
         assert!(lookup("mu_h_muN").is_some());
         assert!(lookup("gt").is_some());
@@ -24454,12 +24587,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu_h").is_some());
         assert!(lookup("mu0p").is_some());
@@ -24620,12 +24754,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0h_muB").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu_h_muB").is_some());
@@ -24787,12 +24922,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0h_muN").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu0h_muB").is_some());
@@ -24958,12 +25094,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0h_mup").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu0h_muN").is_some());
@@ -25140,15 +25277,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("mu0h_mu0p").is_some());
         assert!(lookup("mu0h_mup").is_some());
         assert!(lookup("mu0h").is_some());
@@ -25294,15 +25433,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_t").is_some());
@@ -25453,12 +25594,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_alpha_u").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_h_u").is_some());
@@ -25657,12 +25799,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_alpha_c2").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_alpha_u").is_some());
@@ -25847,12 +25990,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_alpha_c2_MeV").is_some());
         assert!(lookup("m_alpha_c2").is_some());
         assert!(lookup("m_h_c2_MeV").is_some());
@@ -26034,12 +26178,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("malpha_me").is_some());
         assert!(lookup("me_malpha").is_some());
         assert!(lookup("mh_me").is_some());
@@ -26216,12 +26361,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("malpha_mp").is_some());
         assert!(lookup("malpha_me").is_some());
         assert!(lookup("mh_mp").is_some());
@@ -26379,12 +26525,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_alpha").is_some());
         assert!(lookup("M_h").is_some());
         assert!(lookup("M_t").is_some());
@@ -26555,12 +26702,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_n").is_some());
@@ -26744,12 +26892,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_u_c2").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_p_c2").is_some());
@@ -26944,12 +27093,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_u_c2_MeV").is_some());
         assert!(lookup("m_u_c2").is_some());
         assert!(lookup("m_p_c2_MeV").is_some());
@@ -27121,12 +27271,13 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_u").is_some());
         assert!(lookup("M_alpha").is_some());
         assert!(lookup("M_h").is_some());
@@ -27336,15 +27487,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_12C").is_some());
         assert!(lookup("M_u").is_some());
         assert!(lookup("M_alpha").is_some());
@@ -27526,16 +27679,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("M_12C").is_some());
         assert!(lookup("M_u").is_some());
@@ -27702,16 +27857,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("NAk").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("k_Hz").is_some());
@@ -27849,7 +28006,7 @@ mod tests {
         assert!(lookup("k_eVK").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("k_Hz").is_some());
         assert!(lookup("k_m").is_some());
@@ -27992,7 +28149,7 @@ mod tests {
         assert!(lookup("m_eV").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("k_Hz").is_some());
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
@@ -28159,7 +28316,7 @@ mod tests {
         assert!(lookup("m_eV").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
@@ -28308,7 +28465,7 @@ mod tests {
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
         assert!(lookup("m_J").is_some());
@@ -28454,7 +28611,7 @@ mod tests {
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("kg_J").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("m_eV").is_some());
@@ -28594,7 +28751,7 @@ mod tests {
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("m_eV").is_some());
         assert!(lookup("kg_J").is_some());
@@ -28749,7 +28906,7 @@ mod tests {
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_eV").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("h_eVHz").is_some());
@@ -28903,16 +29060,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
         assert!(lookup("k_eV").is_some());
@@ -29043,17 +29202,19 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
@@ -29182,18 +29343,20 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("NAe").is_some());
@@ -29344,18 +29507,20 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("p0").is_some());
@@ -29506,18 +29671,20 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("n0").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("atm").is_some());
@@ -29664,18 +29831,20 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0").is_some());
         assert!(lookup("Vm").is_some());
@@ -29830,6 +29999,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Eh_eV").is_some());
@@ -29837,18 +30007,20 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0").is_some());
@@ -29988,6 +30160,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
@@ -29998,16 +30171,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("Vm_atm").is_some());
@@ -30132,16 +30307,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
@@ -30172,6 +30349,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("gn").is_some());
@@ -30318,6 +30496,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
@@ -30327,16 +30506,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
@@ -30366,6 +30547,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -30502,16 +30684,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
@@ -30540,6 +30724,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
@@ -30673,6 +30858,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -30686,16 +30872,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("muB").is_some());
@@ -30723,6 +30911,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
@@ -30865,6 +31054,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -30885,6 +31075,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -30898,16 +31089,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("muB_eV").is_some());
@@ -30934,6 +31127,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
@@ -31090,6 +31284,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -31110,6 +31305,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -31123,16 +31319,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB_Hz").is_some());
@@ -31158,6 +31356,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
@@ -31325,6 +31524,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -31345,6 +31545,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -31358,16 +31559,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_m").is_some());
@@ -31392,6 +31595,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
@@ -31561,6 +31765,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -31581,6 +31786,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -31594,16 +31800,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_K").is_some());
@@ -31627,6 +31835,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
@@ -31808,6 +32017,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -31828,6 +32038,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -31841,16 +32052,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muN").is_some());
@@ -31873,6 +32086,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
@@ -32061,6 +32275,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -32074,16 +32289,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
@@ -32105,6 +32322,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
@@ -32307,6 +32525,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -32320,16 +32539,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -32350,6 +32571,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
@@ -32558,6 +32780,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -32571,16 +32794,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
@@ -32600,6 +32825,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
@@ -32823,6 +33049,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -32836,16 +33063,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
@@ -32864,6 +33093,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
@@ -33097,6 +33327,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -33110,16 +33341,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
@@ -33137,6 +33370,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
@@ -33375,6 +33609,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -33388,16 +33623,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
@@ -33414,6 +33651,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
@@ -33655,6 +33893,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -33668,6 +33907,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -33679,6 +33919,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -33692,16 +33933,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
@@ -33717,6 +33960,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_m").is_some());
@@ -33944,6 +34188,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
@@ -33956,6 +34201,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -33967,6 +34213,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -33980,16 +34227,18 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
@@ -34004,6 +34253,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("muN_K").is_some());
@@ -34230,6 +34480,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
@@ -34242,6 +34493,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -34255,15 +34507,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -34277,6 +34531,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_MHz").is_some());
@@ -34529,6 +34784,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
@@ -34543,15 +34799,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
@@ -34564,6 +34822,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
@@ -34819,6 +35078,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
@@ -34833,15 +35093,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -34853,6 +35115,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
@@ -35127,15 +35390,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
@@ -35146,6 +35411,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
@@ -35368,6 +35634,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
@@ -35376,15 +35643,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
@@ -35394,6 +35663,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
@@ -35536,8 +35806,9 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
@@ -35546,6 +35817,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -35667,8 +35939,9 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hbar").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Eh_eV").is_some());
@@ -35676,6 +35949,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma0p").is_some());
@@ -35810,13 +36084,14 @@ mod tests {
         assert!(lookup("G0").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("hbar").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -35925,15 +36200,17 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("E_h").is_none());
         assert!(lookup("hartree").is_none());
         assert!(lookup("hbar").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Eh").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("eV").is_some());
@@ -36057,11 +36334,12 @@ mod tests {
         assert!(lookup("E_h").is_none());
         assert!(lookup("hartree").is_none());
         assert!(lookup("hbar").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("hcRinf").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("eV").is_some());
@@ -36183,12 +36461,13 @@ mod tests {
         assert!(lookup("Phi0").is_none());
         assert!(lookup("G0").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Ar_e").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("M_e").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("m_p_u").is_some());
@@ -36310,14 +36589,16 @@ mod tests {
         assert!(lookup("Phi0").is_none());
         assert!(lookup("G0").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Ar_e").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("E_e").is_none());
         assert!(lookup("mec2").is_none());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_mu_c2").is_some());
         assert!(lookup("Eh").is_some());
@@ -36440,17 +36721,174 @@ mod tests {
         assert!(lookup("Phi0").is_none());
         assert!(lookup("G0").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Ar_e").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("E_e").is_none());
         assert!(lookup("mec2").is_none());
         assert!(lookup("m_e_c2/MeV").is_none());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_mu_c2_MeV").is_some());
         assert!(lookup("eV").is_some());
         assert!(lookup("Eh").is_some());
+        assert!(lookup("G").is_some());
+        assert!(lookup("au").is_some());
+    }
+
+    #[test]
+    fn codata_2018_electron_mass_is_a_one_sigma_sci_interval() {
+        let r = electron_mass();
+        let lo = SciExact::new(91_093_836_987, -41);
+        let hi = SciExact::new(91_093_837_043, -41);
+        let centre = SciExact::new(91_093_837_015, -41);
+        assert_eq!(r.name, "m_e");
+        assert_eq!(r.unit, "kg");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(
+            r.provenance.locator.section.as_deref(),
+            Some("Electron, e-")
+        );
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("m_e = 9.1093837015(28)e-31")
+        );
+        assert_eq!(r.value, SciInterval::new(lo, hi));
+        assert_ne!(r.value.lo, r.value.hi, "m_e is measured, not SI-exact");
+        assert!(r.value.contains(SciInterval::point(centre)));
+        assert!(!r.value.contains(SciInterval::point(SciExact::new(0, 0))));
+        assert!(
+            r.value.lo > SciExact::new(0, 0),
+            "CODATA m_e is a positive mass hull"
+        );
+        assert_eq!(
+            centre,
+            SciExact::new(91_093_837_015, -41),
+            "m_e centre is the CODATA 2018 last-digit 7015"
+        );
+        assert_ne!(
+            centre,
+            SciExact::new(91_093_837_139, -41),
+            "m_e centre is not the CODATA 2022 last-digit 7139"
+        );
+        let c2022 = SciExact::new(91_093_837_139, -41);
+        assert!(
+            !r.value.contains(SciInterval::point(c2022)),
+            "CODATA 2022 electron mass lies outside the 2018 hull"
+        );
+        assert_eq!(
+            centre.to_ratio(),
+            None,
+            "m_e Ratio scale 10^41 overflows i128"
+        );
+        assert!(10i128.checked_pow(41).is_none());
+        assert!(
+            10i128.checked_pow(38).is_some() && 10i128.checked_pow(39).is_none(),
+            "i128 Ratio decades stop at 10^38; m_e needs 10^41"
+        );
+        let ten_x = SciExact::new(91_093_837_015, -40);
+        assert_ne!(
+            ten_x, centre,
+            "exp -40 is the 10x trap, not the stored decade"
+        );
+        assert!(
+            !r.value.contains(SciInterval::point(ten_x)),
+            "10x-trap centre 9.109e-30 lies outside the 2018 kg hull"
+        );
+        assert_eq!(r.value.to_string(), "[91093836987e-41, 91093837043e-41]");
+        assert_eq!(
+            SciInterval::parse_display(&r.value.to_string()),
+            Some(r.value)
+        );
+        assert_eq!(r.hash, electron_mass().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "m_e",
+                codata_2018_electron_mass_interval(),
+                "kg",
+                codata_2018_electron_mass_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, electron_mass_in_u().hash, "m_e is not m_e_u");
+        assert_ne!(
+            r.hash,
+            electron_mass_energy_equivalent().hash,
+            "m_e is not m_e_c2"
+        );
+        assert_ne!(
+            r.hash,
+            electron_mass_energy_equivalent_in_mev().hash,
+            "m_e is not m_e_c2_MeV"
+        );
+        assert_ne!(r.hash, electron_molar_mass().hash, "m_e is not M_e");
+        assert_ne!(r.hash, proton_mass().hash, "m_e is not m_p");
+        assert_ne!(r.hash, muon_mass().hash, "m_e is not m_mu");
+        assert_ne!(r.hash, atomic_mass_constant().hash, "m_e is not m_u");
+        assert_ne!(
+            r.hash,
+            inverse_meter_in_electronvolt().hash,
+            "m_e is not m_eV"
+        );
+        assert_ne!(r.hash, newtonian_g().hash, "m_e is not G");
+        assert_ne!(r.hash, astronomical_unit().hash, "m_e is not au");
+        assert_eq!(
+            electron_mass_in_u().hash.to_hex(),
+            "f0f8df112f644065bd01e2b903312927e5ef5d21d7792484aca0e8e7d29934d5",
+            "m_e_u hash must stay pinned when m_e is added"
+        );
+        assert_eq!(
+            electron_mass_energy_equivalent().hash.to_hex(),
+            "935f7db8457024efb853abe9ee42c24e5efec5c4a831a94a308eb46efa6db0d5",
+            "m_e_c2 hash must stay pinned when m_e is added"
+        );
+        assert_eq!(
+            electron_mass_energy_equivalent_in_mev().hash.to_hex(),
+            "c076e0b56ff109b6f16661d0e7874b9f352cf53c4f862c38203c082a17d87f6b",
+            "m_e_c2_MeV hash must stay pinned when m_e is added"
+        );
+        assert_eq!(
+            proton_mass().hash.to_hex(),
+            "ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8",
+            "m_p hash must stay pinned when m_e is added"
+        );
+        assert_eq!(
+            inverse_meter_in_electronvolt().hash.to_hex(),
+            "12c1ae591caa23af86b67134aea0b013f49ede015195013efc865ec6b1340dff",
+            "m_eV hash must stay pinned when m_e is added"
+        );
+        assert_eq!(
+            newtonian_g().hash.to_hex(),
+            "ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92",
+            "G hash must stay pinned when m_e is added"
+        );
+        assert_eq!(
+            astronomical_unit().hash.to_hex(),
+            "d3441603d75b565016c25cc955783fbb76b4050ee22befcef0c0e3896e873a0b",
+            "au hash must stay pinned when m_e is added"
+        );
+        assert_eq!(
+            r.hash.to_hex(),
+            "961f48a48d6ca0a563b2ae710ebc3a908369fcfd0bd9d7c59ba2b663a6c275bd"
+        );
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("Phi0").is_none());
+        assert!(lookup("G0").is_none());
+        assert!(lookup("g0p").is_none());
+        assert!(lookup("me").is_none());
+        assert!(lookup("Ar_e").is_none());
+        assert!(lookup("hbar").is_none());
+        assert!(lookup("atomic-unit-of-mass").is_none());
+        assert!(lookup("m_e").is_some());
+        assert!(lookup("m_e_u").is_some());
+        assert!(lookup("m_e_c2").is_some());
+        assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("M_e").is_some());
+        assert!(lookup("m_p").is_some());
         assert!(lookup("G").is_some());
         assert!(lookup("au").is_some());
     }
@@ -36657,7 +37095,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 202);
+        assert_eq!(LEDGER.len(), 203);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -37622,6 +38060,11 @@ mod tests {
             lookup("m_e_c2_MeV").unwrap().hash.to_hex(),
             "c076e0b56ff109b6f16661d0e7874b9f352cf53c4f862c38203c082a17d87f6b"
         );
+        assert_eq!(lookup("m_e").unwrap().kind, "sci-interval");
+        assert_eq!(
+            lookup("m_e").unwrap().hash.to_hex(),
+            "961f48a48d6ca0a563b2ae710ebc3a908369fcfd0bd9d7c59ba2b663a6c275bd"
+        );
         assert_eq!(lookup("h").unwrap().kind, "sci-exact");
         assert_eq!(lookup("au").unwrap().kind, "ratio");
         assert_eq!(
@@ -37649,7 +38092,7 @@ mod tests {
             "444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4"
         );
         assert!(lookup("hbar").is_none());
-        assert!(lookup("m_e").is_none());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("me/m_mu").is_none());
         assert!(lookup("mue").is_none());
         assert!(lookup("mu-e").is_none());
@@ -37903,6 +38346,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_alpha_u").is_some());
         assert!(lookup("malpha").is_none());
@@ -38013,6 +38457,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());
@@ -38137,6 +38582,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("a_0").is_none());
         assert!(lookup("Bohr").is_none());
         assert!(lookup("E_h").is_none());
@@ -38146,6 +38592,7 @@ mod tests {
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
+        assert!(lookup("m_e").is_some());
         assert!(lookup("solar-gm").is_none());
         assert!(lookup("gut.weinberg-angle").is_none());
     }

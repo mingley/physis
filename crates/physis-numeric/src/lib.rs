@@ -2,6 +2,8 @@
 //!
 //! [`SciExact`] is a terminating decimal `significand × 10^{exp10}` for
 //! SI-exact values whose [`Ratio`] denominator does not fit in `i128`.
+//! [`SciInterval`] is a closed hull of those decimals: CODATA electron
+//! mass needs `10^{41}`, which does not fit in a [`Ratio`] denominator.
 //! [`Ratio`] order uses a 256-bit product when `i128` cross-multiply
 //! overflows, so a CODATA-scale mass hull is independently checkable.
 
@@ -251,11 +253,93 @@ impl SciExact {
             .parse()
             .expect("a SciExact decimal is a finite f64")
     }
+
+    /// Parse this value's [`Display`] form `significandeexp10` with no
+    /// whitespace. Rejects a non-canonical significand that still has
+    /// trailing zeros. Independent check of a dump string: the overlay
+    /// is not the certificate.
+    pub fn parse_display(s: &str) -> Option<Self> {
+        let parsed = parse_sci_exact_raw(s)?;
+        if parsed.to_string() == s {
+            Some(parsed)
+        } else {
+            None
+        }
+    }
 }
 
 impl std::fmt::Display for SciExact {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}e{}", self.significand, self.exp10)
+    }
+}
+
+impl PartialOrd for SciExact {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for SciExact {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        cmp_sci(*self, *other)
+    }
+}
+
+/// Closed interval whose endpoints are terminating decimals that need
+/// not fit in [`Ratio`].
+///
+/// This is not [`Interval`]: those bounds are [`Ratio`]. Electron mass
+/// in kg is a [`SciInterval`] because `10^{41}` overflows `i128`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct SciInterval {
+    /// Lower bound.
+    pub lo: SciExact,
+    /// Upper bound.
+    pub hi: SciExact,
+}
+
+impl SciInterval {
+    /// Point hull.
+    pub fn point(x: SciExact) -> Self {
+        Self { lo: x, hi: x }
+    }
+
+    /// Inclusive bounds; swaps if reversed.
+    pub fn new(a: SciExact, b: SciExact) -> Self {
+        if cmp_sci(a, b) == std::cmp::Ordering::Greater {
+            Self { lo: b, hi: a }
+        } else {
+            Self { lo: a, hi: b }
+        }
+    }
+
+    /// True when every point of `other` lies in `self` (closed).
+    pub fn contains(self, other: Self) -> bool {
+        cmp_sci(self.lo, other.lo) != std::cmp::Ordering::Greater
+            && cmp_sci(other.hi, self.hi) != std::cmp::Ordering::Greater
+    }
+
+    /// Parse `[lo, hi]` matching [`Display`]. Each endpoint must be a
+    /// canonical [`SciExact`] dump. Independent check of a constant
+    /// dump string: the overlay is not the certificate.
+    pub fn parse_display(s: &str) -> Option<Self> {
+        let rest = s.strip_prefix('[')?.strip_suffix(']')?;
+        let (lo, hi) = rest.split_once(", ")?;
+        let lo = SciExact::parse_display(lo)?;
+        let hi = SciExact::parse_display(hi)?;
+        let parsed = Self::new(lo, hi);
+        if parsed.to_string() == s {
+            Some(parsed)
+        } else {
+            None
+        }
+    }
+}
+
+impl std::fmt::Display for SciInterval {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}, {}]", self.lo, self.hi)
     }
 }
 
@@ -283,6 +367,25 @@ fn parse_ratio_raw(s: &str) -> Option<Ratio> {
         let n: i128 = s.parse().ok()?;
         Some(Ratio::int(n))
     }
+}
+
+fn parse_sci_exact_raw(s: &str) -> Option<SciExact> {
+    if s.is_empty() {
+        return None;
+    }
+    if s.as_bytes()
+        .iter()
+        .any(|b| !(b.is_ascii_digit() || *b == b'-' || *b == b'e'))
+    {
+        return None;
+    }
+    let (sig, exp) = s.split_once('e')?;
+    if sig.is_empty() || exp.is_empty() || sig.ends_with('-') {
+        return None;
+    }
+    let significand: i128 = sig.parse().ok()?;
+    let exp10: i32 = exp.parse().ok()?;
+    Some(SciExact::new(significand, exp10))
 }
 
 const fn gcd(mut a: i128, mut b: i128) -> i128 {
@@ -562,6 +665,74 @@ fn mul_u128(a: u128, b: u128) -> (u128, u128) {
     (hi, lo)
 }
 
+fn cmp_sci(a: SciExact, b: SciExact) -> std::cmp::Ordering {
+    match (a.significand.cmp(&0), b.significand.cmp(&0)) {
+        (std::cmp::Ordering::Less, std::cmp::Ordering::Greater)
+        | (std::cmp::Ordering::Less, std::cmp::Ordering::Equal)
+        | (std::cmp::Ordering::Equal, std::cmp::Ordering::Greater) => std::cmp::Ordering::Less,
+        (std::cmp::Ordering::Greater, std::cmp::Ordering::Less)
+        | (std::cmp::Ordering::Greater, std::cmp::Ordering::Equal)
+        | (std::cmp::Ordering::Equal, std::cmp::Ordering::Less) => std::cmp::Ordering::Greater,
+        (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => std::cmp::Ordering::Equal,
+        (std::cmp::Ordering::Less, std::cmp::Ordering::Less)
+        | (std::cmp::Ordering::Greater, std::cmp::Ordering::Greater) => {
+            let mag = cmp_sci_mag(
+                a.significand.unsigned_abs(),
+                a.exp10,
+                b.significand.unsigned_abs(),
+                b.exp10,
+            );
+            if a.significand < 0 {
+                mag.reverse()
+            } else {
+                mag
+            }
+        }
+    }
+}
+
+fn cmp_sci_mag(a_sig: u128, a_exp: i32, b_sig: u128, b_exp: i32) -> std::cmp::Ordering {
+    if a_exp == b_exp {
+        return a_sig.cmp(&b_sig);
+    }
+    if a_exp > b_exp {
+        cmp_sci_scaled(a_sig, a_exp - b_exp, b_sig)
+    } else {
+        cmp_sci_scaled(b_sig, b_exp - a_exp, a_sig).reverse()
+    }
+}
+
+fn cmp_sci_scaled(big_sig: u128, delta_exp: i32, small_sig: u128) -> std::cmp::Ordering {
+    if big_sig == 0 {
+        return 0u128.cmp(&small_sig);
+    }
+    if delta_exp < 0 {
+        return std::cmp::Ordering::Less;
+    }
+    let big_digits = u128_digits(big_sig).saturating_add(delta_exp as u32);
+    let small_digits = u128_digits(small_sig);
+    match big_digits.cmp(&small_digits) {
+        std::cmp::Ordering::Equal => {
+            let scaled = format!("{big_sig}{}", "0".repeat(delta_exp as usize));
+            scaled.as_str().cmp(&small_sig.to_string())
+        }
+        other => other,
+    }
+}
+
+fn u128_digits(n: u128) -> u32 {
+    if n == 0 {
+        return 1;
+    }
+    let mut x = n;
+    let mut d = 0;
+    while x > 0 {
+        d += 1;
+        x /= 10;
+    }
+    d
+}
+
 fn add_ratio(a: Ratio, b: Ratio) -> Ratio {
     Ratio::new(
         a.num
@@ -780,6 +951,43 @@ mod tests {
             1.602_176_634e-19
         );
         assert_eq!(SciExact::new(1_380_649, -29).to_f64(), 1.380_649e-23);
+    }
+
+    #[test]
+    fn sci_interval_stores_a_hull_whose_ratio_scale_overflows() {
+        let lo = SciExact::new(91_093_836_987, -41);
+        let hi = SciExact::new(91_093_837_043, -41);
+        let centre = SciExact::new(91_093_837_015, -41);
+        let c2022 = SciExact::new(91_093_837_139, -41);
+        let ten_x = SciExact::new(91_093_837_015, -40);
+        let hull = SciInterval::new(lo, hi);
+        assert_eq!(hull.to_string(), "[91093836987e-41, 91093837043e-41]");
+        assert_eq!(SciInterval::parse_display(&hull.to_string()), Some(hull));
+        assert!(hull.contains(SciInterval::point(centre)));
+        assert!(!hull.contains(SciInterval::point(c2022)));
+        assert!(!hull.contains(SciInterval::point(ten_x)));
+        assert_eq!(centre.to_ratio(), None, "10^41 overflows i128");
+        assert!(10i128.checked_pow(41).is_none());
+        assert_eq!(
+            centre.to_f64(),
+            9.109_383_701_5e-31,
+            "IEEE-754 projection of the CODATA 2018 centre; not a Ratio"
+        );
+        assert_eq!(SciExact::parse_display("91093837015e-41"), Some(centre));
+        assert!(SciExact::parse_display("910938370150e-42").is_none());
+        assert_eq!(
+            SciExact::new(910_938_370_150, -42),
+            centre,
+            "trailing tens strip to the same decimal"
+        );
+        assert!(lo < centre);
+        assert!(centre < hi);
+        assert!(c2022 > hi);
+        assert_eq!(
+            SciExact::new(91, -40),
+            SciExact::new(910, -41),
+            "equal after stripping a trailing ten"
+        );
     }
 
     #[test]

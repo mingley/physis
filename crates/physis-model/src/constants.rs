@@ -100,7 +100,13 @@ pub fn e_charge() -> physis_core::qty::Qty<physis_core::Charge> {
     physis_core::qty::coulomb(1.602_176_634e-19)
 }
 
-/// Electron mass.
+/// Electron mass m_e (kg), CODATA 2018.
+///
+/// This is the recommended printed Electron, e- centre in kg, not
+/// m_e_u, not m_e_c2, not M_e, and not m_p. The versioned ledger
+/// stores a SciInterval because Ratio scale 10^41 overflows i128;
+/// this Qty is that centre. Quantum of circulation still cites
+/// pi hbar / m_e and is not stored.
 pub fn electron_mass() -> Qty<Mass> {
     kg(9.109_383_701_5e-31)
 }
@@ -2630,7 +2636,7 @@ mod tests {
 
     #[test]
     fn overlapping_qty_floats_lockstep_the_versioned_ledger() {
-        use physis_numeric::{Interval, Ratio, SciExact};
+        use physis_numeric::{Interval, Ratio, SciExact, SciInterval};
 
         assert_eq!(
             C.value(),
@@ -10520,9 +10526,51 @@ mod tests {
             physis_constants::lookup("g0p").is_none(),
             "g0p is a glossary identity, not a table XXXI recommended hull"
         );
+
+        let me = physis_constants::electron_mass();
+        let me_centre = SciExact::new(91_093_837_015, -41);
+        assert_eq!(
+            electron_mass().value(),
+            9.109_383_701_5e-31,
+            "m_e Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            electron_mass().value(),
+            me_centre.to_f64(),
+            "m_e Qty locksteps to SciExact::to_f64 on the 10^-41 centre"
+        );
         assert!(
-            physis_constants::lookup("m_e").is_none(),
-            "electron mass overflows i128 and is not a ledger entry"
+            me.value.contains(SciInterval::point(me_centre)),
+            "m_e Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(me.value.lo, me.value.hi, "ledger m_e stays a SciInterval");
+        assert_ne!(
+            physis_constants::electron_mass().hash,
+            physis_constants::electron_mass_in_u().hash,
+            "m_e is not m_e_u"
+        );
+        assert_ne!(
+            physis_constants::electron_mass().hash,
+            physis_constants::electron_mass_energy_equivalent().hash,
+            "m_e is not m_e_c2"
+        );
+        assert_ne!(
+            physis_constants::electron_mass().hash,
+            physis_constants::proton_mass().hash,
+            "m_e is not m_p"
+        );
+        assert_eq!(
+            physis_constants::lookup("m_e").unwrap().kind,
+            "sci-interval"
+        );
+        assert!(
+            physis_constants::lookup("me").is_none(),
+            "me is not a ledger name; the live name is m_e"
+        );
+
+        assert!(
+            physis_constants::lookup("m_e").is_some(),
+            "kg electron mass is stored as a SciInterval"
         );
 
         let au = physis_constants::astronomical_unit();
