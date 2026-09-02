@@ -220,10 +220,23 @@ pub fn hertz_in_hartree() -> Qty<Dimensionless> {
 /// Hz_m, not Hz_Eh, and not a FormalClaim that reconstructs h / (c^2 m_u)
 /// from live lookups. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is u; this Qty is dimensionless,
-/// not an atomic-mass-constant dimension. Hzu, Hz-u, Hz_amu, u_Hz, and
-/// amu_Hz are not second names.
+/// not an atomic-mass-constant dimension. Hzu, Hz-u, Hz_amu, and
+/// amu_Hz are not second names. The inverse listing is u_Hz.
 pub fn hertz_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(4.439_821_665_2e-24)
+}
+
+/// Atomic mass unit-hertz relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the atomic mass unit-hertz relationship, not Hz_u, not kg m_u,
+/// not m_u_c2, not Rydberg frequency cRinf, and not a FormalClaim that
+/// reconstructs c^2 m_u / h from live lookups. The versioned ledger
+/// stores the one-sigma hull; this Qty is that centre. Ledger unit is
+/// Hz; this Qty is dimensionless, not a frequency dimension. uHz,
+/// u-Hz, and amu_Hz are not second names.
+pub fn atomic_mass_unit_in_hertz() -> Qty<Dimensionless> {
+    Qty::new(2.252_342_718_71e23)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -9713,9 +9726,45 @@ mod tests {
             physis_constants::lookup("Hzu").is_none(),
             "Hzu is not a ledger name; the live name is Hz_u"
         );
+
+        let u_hz = physis_constants::atomic_mass_unit_in_hertz();
+        let u_hz_centre = Ratio::int(225_234_271_871i128 * 10i128.pow(12));
+        assert_eq!(
+            atomic_mass_unit_in_hertz().value(),
+            u_hz_centre.to_f64(),
+            "u_Hz Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_mass_unit_in_hertz().value(),
+            2.252_342_718_71e23,
+            "u_Hz Qty locksteps to Ratio::to_f64 on the integer 10^23 centre"
+        );
         assert!(
-            physis_constants::lookup("u_Hz").is_none(),
-            "u_Hz is not stored: inverse atomic mass unit-hertz is a later table row"
+            u_hz.value.contains(Interval::point(u_hz_centre)),
+            "u_Hz Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            u_hz.value.lo, u_hz.value.hi,
+            "ledger u_Hz stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_hertz().hash,
+            physis_constants::hertz_in_atomic_mass_unit().hash,
+            "u_Hz is not Hz_u"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_hertz().hash,
+            physis_constants::rydberg_frequency().hash,
+            "u_Hz is not cRinf"
+        );
+        assert_eq!(physis_constants::lookup("u_Hz").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("uHz").is_none(),
+            "uHz is not a ledger name; the live name is u_Hz"
+        );
+        assert!(
+            physis_constants::lookup("amu_Hz").is_none(),
+            "amu_Hz is not a second name for u_Hz"
         );
 
         assert!(

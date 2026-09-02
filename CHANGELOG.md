@@ -80,6 +80,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic mass unit-hertz relationship is a one-sigma Interval.**
+  `physis-constants` versions `u_Hz` as the CODATA 2018 one-sigma hull
+  `2.25234271871(68)×10^{23}` Hz from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the hertz-atomic mass unit pair, not a Ratio reciprocal of `Hz_u`,
+  not kg `m_u`, not Rydberg frequency `cRinf`, and not a FormalClaim
+  reconstructing `c² m_u / h` from live lookups. Inverse hartree-hertz
+  is not stored. Hertz-kilogram is not stored: `h/c²` overflows `i128`.
+  The integer decade is `10^{12}` on the `10^{23}` form; `10^{11}` is
+  the 10× trap. This is not the CODATA 2022 last-digit `2185` as the
+  stored centre; the 2018 hull excludes that 2022 centre. The ledger
+  name is `u_Hz`; `uHz`, `u-Hz`, and `amu_Hz` are not second names.
+  `physis_model` `atomic_mass_unit_in_hertz()` Qty locksteps to the
+  CODATA centre inside the hull. Adding `u_Hz` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified: `u_Hz`
+  hash 5e8602ee280fe9f615ca619efa4c69b84bdfac7e4601772fc5b9a3d3c7be866a;
+  node 42e50e73ed21eb10bb761a7ab85ea119d621797520e8138e69d473243c8667b7;
+  ledger node
+  bc70d0d1fbdd9ca8aff8ef9f1271f2ca2aa8ab4e2eea367d7d7718970a48977a.
+  `Hz_u` hash
+  8b4e79b5cf4df4a885eea94ff417860225cc1be92f4fad10a3cae632262b80dd and
+  `m_u` hash
+  fcefc139b85d5be198ab911fed33049d37641b01dcd0b87e12630db6dfd467d3
+  unchanged.
+
 - **CODATA 2018 hertz-atomic mass unit relationship is a one-sigma Interval.**
   `physis-constants` versions `Hz_u` as the CODATA 2018 one-sigma hull
   `4.4398216652(13)×10^{-24}` u from JPCRD 50, 033105 table XXXV
