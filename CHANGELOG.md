@@ -80,6 +80,34 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 molybdenum x unit is a one-sigma Interval.**
+  `physis-constants` versions `xu_Mo` as the CODATA 2018 one-sigma hull
+  `1.00209952(53)×10^{-13}` m from JPCRD 50, 033105 table XXXIII
+  (x-ray-related quantities). This is the recommended molybdenum x unit
+  defined as `λ(MoKα1)/707.831`, not Bohr radius `a0`, not copper x unit
+  `xu_Cu`, and not a FormalClaim reconstructing that quotient from a
+  live lookup. The {220} lattice spacing is a separately recommended
+  hull and is not stored. The decade is `10^{21}`; `10^{20}` is the 10×
+  trap. 2018 and 2022 print the same last-digit `52`; the 2018 hull
+  contains that centre. The ledger name is `xu_Mo`; `xuMo`, `xu-Mo`,
+  and `molybdenum_xu` are not second names. `physis_model`
+  `molybdenum_x_unit()` Qty locksteps to the CODATA centre inside the
+  hull. Adding `xu_Mo` to LEDGER changes the ledger bundle pin. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified:
+  `xu_Mo` hash
+  fd3f7d6bace240afd207aaf8b1dbbc018516ec6e5b9273435cf0351ef678d471;
+  node 1b4476162aae45b450ecfa50563e6db0328e26fb5c34ab0c4f35ad6381fa7909;
+  ledger node
+  3c6e799c17b98455803e2a83579ac6e4b4ba30ed3d363c9e73f693b0476be77f.
+  `xu_Cu` hash
+  053633d6b5b4910c0eddb81392c53e555a2decaf0ec16b42f326a013cb717d41 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 copper x unit is a one-sigma Interval.**
   `physis-constants` versions `xu_Cu` as the CODATA 2018 one-sigma hull
   `1.00207697(28)×10^{-13}` m from JPCRD 50, 033105 table XXXIII
