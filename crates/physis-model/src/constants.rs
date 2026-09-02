@@ -155,9 +155,26 @@ pub fn electron_volt_in_hertz() -> Qty<Dimensionless> {
 /// is the reciprocal of ledger m_eV. The versioned ledger stores the
 /// exact Ratio; this Qty is the IEEE rounding of that Ratio. Ledger
 /// unit is K; this Qty is dimensionless, not SI kelvin. eVK and 1/k_eV
-/// are not second names.
+/// are not second names. The hertz-kelvin relationship is Hz_K.
 pub fn electron_volt_in_kelvin() -> Qty<Dimensionless> {
     Qty::new(1.160_451_812_155_008_3e4)
+}
+
+/// Hertz-kelvin relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the
+/// hertz-kelvin relationship, not Boltzmann in Hz/K k_Hz, not SI
+/// joule-per-kelvin k, not Planck h, not electron volt-kelvin eV_K,
+/// and not a FormalClaim that reconstructs h/k from live lookups.
+/// The table prints an ellipsis; the ledger stores the exact Ratio.
+/// This is not a terminating SciExact (3, 7, and 6310543 remain in the
+/// numerator; 73 and 18913 remain in the denominator). Hertz-electron
+/// volt is ledger h_eVHz; hertz-joule is SI h; inverse meter-kelvin is
+/// ledger c2. The versioned ledger stores the exact Ratio; this Qty is
+/// the IEEE rounding of that Ratio. Ledger unit is K; this Qty is
+/// dimensionless, not SI kelvin. HzK and 1/k_Hz are not second names.
+pub fn hertz_in_kelvin() -> Qty<Dimensionless> {
+    Qty::new(4.799_243_073_366_221e-11)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -9471,6 +9488,49 @@ mod tests {
         assert!(
             physis_constants::lookup("eVK").is_none(),
             "eVK is not a ledger name; the live name is eV_K"
+        );
+
+        let hz_k = physis_constants::hertz_in_kelvin();
+        let hz_k_value = Ratio::new(662_607_015i128, 1_380_649i128 * 10i128.pow(13));
+        assert_eq!(hz_k.value, hz_k_value, "ledger Hz_K is the exact SI Ratio");
+        assert_eq!(
+            hertz_in_kelvin().value(),
+            hz_k_value.to_f64(),
+            "Hz_K Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            hertz_in_kelvin().value(),
+            4.799_243_073_366_221e-11,
+            "Hz_K Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
+        assert!(
+            hz_k.value > Ratio::int(0),
+            "ledger Hz_K stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_kelvin().hash,
+            physis_constants::boltzmann_in_hz_per_kelvin().hash,
+            "Hz_K is not k_Hz"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_kelvin().hash,
+            physis_constants::boltzmann().hash,
+            "Hz_K is not k"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_kelvin().hash,
+            physis_constants::planck_h().hash,
+            "Hz_K is not h"
+        );
+        assert_ne!(
+            physis_constants::hertz_in_kelvin().hash,
+            physis_constants::electron_volt_in_kelvin().hash,
+            "Hz_K is not eV_K"
+        );
+        assert_eq!(physis_constants::lookup("Hz_K").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("HzK").is_none(),
+            "HzK is not a ledger name; the live name is Hz_K"
         );
 
         assert!(

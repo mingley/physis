@@ -80,6 +80,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 hertz-kelvin relationship is an exact Ratio.**
+  `physis-constants` versions `Hz_K` as the SI-exact Ratio `h/k` =
+  `132521403/2761298000000000000` K from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). The table prints
+  `4.799 243 073… × 10^{-11}`; the ledger stores the full quotient.
+  The reduced numerator keeps factors 3, 7, and 6310543 (the odd primes
+  remaining in SI `h` after cancelling 5) and the reduced denominator
+  keeps 73 and 18913 (the odd primes in SI `k`'s numerator), so this is
+  not a terminating SciExact. This is not Boltzmann in Hz/K `k_Hz`, not
+  SI `k`, not Planck `h`, not electron volt-kelvin `eV_K`, not an SI
+  defining constant, and not a FormalClaim reconstructing `h/k` from
+  live lookups. Hertz-electron volt is not stored: it is ledger
+  `h_eVHz`. Hertz-joule is not stored: it is SI `h`. Inverse
+  meter-kelvin is not stored: it is ledger `c2`. Electron volt-inverse
+  meter is not stored: it is the reciprocal of ledger `m_eV`. Electron
+  volt-kilogram is not stored: `e/c²` overflows `i128`. The ledger name
+  is `Hz_K`; `HzK`, `Hz-K`, and `1/k_Hz` are not second names.
+  `physis_model` `hertz_in_kelvin()` Qty locksteps to `Ratio::to_f64`
+  of that Ratio. Adding `Hz_K` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `Hz_K` hash d45e08d73394c3c40e187d824d9b9a36160ab82a41ab6ede4f6869d55d772e0c;
+  node 67ac7baad7e320e2795aa3aebdcd590ca7c3d2ef678458c9b866fe4491593dc8; ledger node 23523f11a62f8c8c03e42a5c1e84aefbe5daa7872752ba1782eed98ee3c37187. `eV_K` hash
+  a2763a30976f052db834b3260d5399ef0553afaf42a848f22a174c70f0fbdad0 and
+  `k_Hz` hash 4e53cf9938c70b39d13f107dc2c90be1486148fd1ebb585505e2e3b8637582bc
+  unchanged.
+
 - **CODATA 2018 electron volt-kelvin relationship is an exact Ratio.**
   `physis-constants` versions `eV_K` as the SI-exact Ratio `e/k` =
   `16021766340/1380649` K from JPCRD 50, 033105 table XXXV (energy
