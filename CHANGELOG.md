@@ -80,6 +80,37 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of electric dipole moment is a one-sigma SciInterval.**
+  `physis-constants` versions `ea0` as the CODATA 2018 one-sigma hull
+  `8.4783536255(13)×10^{-30}` C m from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of electric dipole
+  moment defined as `e a0`, not elementary charge `e`, not atomic unit of
+  electric field gradient `au_EFG`, and not a FormalClaim reconstructing
+  that product from a live lookup. A Ratio denominator `10^{40}` overflows
+  `i128`, so the ledger stores a SciInterval. Atomic unit of time still
+  cites ħ and is not stored. Atomic unit of electric potential is a second
+  name for `Eh_eV` and is not stored. The {220} lattice spacing is not
+  stored. Decade `10^{39}` on the printed 6255-digit is the 10× trap.
+  2018 last-digit is `6255`; 2022 last-digit `6198` is excluded. The
+  ledger name is `ea0`; `ea_0`, `e_a0`, `au_d`, `au_dip`, `au_ea0`, and
+  `electric_dipole` are not second names. `physis_model`
+  `atomic_unit_of_electric_dipole_moment()` Qty locksteps to the CODATA
+  centre inside the hull. Adding `ea0` to LEDGER changes the ledger
+  bundle pin. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `ea0` hash
+  509271eab9ef8873e10798db919a211b1e5c10670f3da41c7fc9e420a10ae566;
+  node 3d447768f55bab6d0260cae026b0a7827c1b34401b80c155d643ca2edcd7dc57;
+  ledger node
+  d2d440f4637e1d15ae12be6b36f71a44ebb7ffd3befd7bb5d3436f46f897244d.
+  `au_EFG` hash
+  1bccca0e5554050ed3c407bf6ea59fb7285cee9d91f1bb06f8d68252bb379858 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of electric field gradient is a one-sigma Interval.**
   `physis-constants` versions `au_EFG` as the CODATA 2018 one-sigma hull
   `9.7173624292(29)×10^{21}` V m^{-2} from JPCRD 50, 033105 table XXXIV

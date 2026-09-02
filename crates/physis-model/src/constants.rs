@@ -606,10 +606,28 @@ pub fn atomic_unit_of_electric_field(
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is V m^{-2}; this Qty is
 /// electric field gradient (M T^{-3} I^{-1}). auEFG, au-EFG, au_dE, and
-/// electric_field_gradient are not second names.
+/// electric_field_gradient are not second names. The atomic-unit
+/// electric-dipole listing is ea0.
 pub fn atomic_unit_of_electric_field_gradient(
 ) -> Qty<physis_core::SI<typenum::P1, typenum::Z0, typenum::N3, typenum::N1>> {
     Qty::new(9.717_362_429_2e21)
+}
+
+/// Atomic unit of electric dipole moment e a0 (C m), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_EFG,
+/// not au_E, and not a FormalClaim that reconstructs that product from
+/// a live lookup. Ratio scale 10^40 overflows i128; the versioned ledger
+/// stores a SciInterval. Atomic unit of time still cites hbar and is not
+/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// and is not stored. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is C m; this Qty is electric
+/// dipole moment (L T I). ea_0, e_a0, au_d, au_dip, au_ea0, and
+/// electric_dipole are not second names.
+pub fn atomic_unit_of_electric_dipole_moment(
+) -> Qty<physis_core::SI<typenum::Z0, typenum::P1, typenum::P1, typenum::P1>> {
+    Qty::new(8.478_353_625_5e-30)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -11187,6 +11205,52 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; au_EFG is not an a/sqrt(8) certificate"
+        );
+        let ea0 = physis_constants::atomic_unit_of_electric_dipole_moment();
+        let ea0_centre = SciExact::new(84_783_536_255, -40);
+        assert_eq!(
+            atomic_unit_of_electric_dipole_moment().value(),
+            ea0_centre.to_f64(),
+            "ea0 Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_electric_dipole_moment().value(),
+            8.478_353_625_5e-30,
+            "ea0 Qty locksteps to SciExact::to_f64 on the 10^-40 centre"
+        );
+        assert!(
+            ea0.value.contains(SciInterval::point(ea0_centre)),
+            "ea0 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            ea0.value.lo, ea0.value.hi,
+            "ledger ea0 stays a SciInterval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_dipole_moment().hash,
+            physis_constants::atomic_unit_of_electric_field_gradient().hash,
+            "ea0 is not au_EFG"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_dipole_moment().hash,
+            physis_constants::elementary_charge().hash,
+            "ea0 is not e"
+        );
+        assert_eq!(
+            physis_constants::lookup("ea0").unwrap().kind,
+            "sci-interval"
+        );
+        assert!(
+            physis_constants::lookup("ea_0").is_none(),
+            "ea_0 is not a ledger name; the live name is ea0"
+        );
+        assert!(
+            physis_constants::lookup("electric_dipole").is_none(),
+            "electric_dipole is not a second name for ea0"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; ea0 is not an a/sqrt(8) certificate"
         );
 
         assert!(
