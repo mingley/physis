@@ -252,6 +252,19 @@ pub fn hartree_in_hertz() -> Qty<Dimensionless> {
     Qty::new(6.579_683_920_502e15)
 }
 
+/// Hartree-inverse meter relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the hartree-inverse meter relationship, not Rinf, not SI-exact
+/// Hz_m, not Eh_Hz, and not a FormalClaim that reconstructs 2 Rinf or
+/// Eh / (h c) from live lookups. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. Ledger unit is m^{-1};
+/// this Qty is dimensionless, not an inverse-length dimension. Ehm,
+/// Eh-m, hartree_m, and m_Eh are not second names.
+pub fn hartree_in_inverse_meter() -> Qty<Dimensionless> {
+    Qty::new(2.194_746_313_632e7)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9814,6 +9827,46 @@ mod tests {
         assert!(
             physis_constants::lookup("hartree_Hz").is_none(),
             "hartree_Hz is not a second name for Eh_Hz"
+        );
+
+        let eh_m = physis_constants::hartree_in_inverse_meter();
+        let eh_m_centre = Ratio::new(21_947_463_136_320, 10i128.pow(6));
+        assert_eq!(
+            hartree_in_inverse_meter().value(),
+            eh_m_centre.to_f64(),
+            "Eh_m Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            hartree_in_inverse_meter().value(),
+            2.194_746_313_632e7,
+            "Eh_m Qty locksteps to Ratio::to_f64 on the 10^6 centre"
+        );
+        assert!(
+            eh_m.value.contains(Interval::point(eh_m_centre)),
+            "Eh_m Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            eh_m.value.lo, eh_m.value.hi,
+            "ledger Eh_m stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::hartree_in_inverse_meter().hash,
+            physis_constants::rydberg_constant().hash,
+            "Eh_m is not Rinf"
+        );
+        assert_ne!(
+            physis_constants::hartree_in_inverse_meter().hash,
+            physis_constants::hertz_in_inverse_meter().hash,
+            "Eh_m is not Hz_m"
+        );
+        assert_eq!(physis_constants::lookup("Eh_m").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("Ehm").is_none(),
+            "Ehm is not a ledger name; the live name is Eh_m"
+        );
+        assert!(
+            physis_constants::lookup("m_Eh").is_none(),
+            "m_Eh is not stored: inverse meter-hartree is a later table row"
         );
 
         assert!(
