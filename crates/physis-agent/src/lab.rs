@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  a6fb51023657427125615284015db8adf97725032138669a1dce85c88c668a14"),
+            text.contains("constant  ledger  2a2c131d26579ddeaae34502eb111a6c820652a7d6abb3bdc4ec193a4e955e94"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -18203,6 +18203,48 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let nup = lab
+            .exec(Command::Constant {
+                name: Some("nu_p".into()),
+            })
+            .text()
+            .to_string();
+        assert!(nup.contains("constant  nu_p  node "), "{nup}");
+        assert!(
+            nup.contains(
+                "hash     e9b6fb4c3612f5c594b48eaa0227c83a9179843e431c0b373c5ef0c25d151daa"
+            ),
+            "{nup}"
+        );
+        assert!(nup.contains("kind     interval"), "{nup}");
+        assert!(nup.contains("table    XXXIV"), "{nup}");
+        assert!(
+            nup.contains("range    nu_p = 2.73092453075(82)e-22"),
+            "{nup}"
+        );
+        assert!(nup.contains("unit     kg m s^{-1}"), "{nup}");
+        assert!(
+            nup.contains("value    [273092452993/1000000000000000000000000000000000, 273092453157/1000000000000000000000000000000000]"),
+            "{nup}"
+        );
+        assert!(nup.contains("rebuild  ok"), "{nup}");
+        assert!(nup.contains("not P3N"), "{nup}");
+        assert!(!nup.contains("receipt"), "{nup}");
+        assert!(!nup.contains("theorem"), "{nup}");
+        assert!(!nup.contains("ELECTROMAGNETIC"), "{nup}");
+        assert!(!nup.contains("PHYSICOCHEMICAL"), "{nup}");
+        assert!(!nup.contains("UNIVERSAL"), "{nup}");
+        let nup_id = constant_node_id(&nup);
+        assert_eq!(
+            nup_id.to_hex(),
+            "3b73f5c2000281e562fdf12b64d9bf7b36515105b92a3fee0e31906d0b7cb043",
+            "journaling must not change the nu_p constant payload"
+        );
+        assert_eq!(
+            lab.store.get(nup_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -18460,6 +18502,16 @@ mod tests {
             unknown_me.text().contains("unknown constant 'me'"),
             "{}",
             unknown_me.text()
+        );
+
+        let unknown_nup = lab.exec(Command::Constant {
+            name: Some("nup".into()),
+        });
+        assert_eq!(unknown_nup.exit_code(), 1, "{}", unknown_nup.text());
+        assert!(
+            unknown_nup.text().contains("unknown constant 'nup'"),
+            "{}",
+            unknown_nup.text()
         );
 
         let unknown_ratio = lab.exec(Command::Constant {
@@ -20670,7 +20722,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "a6fb51023657427125615284015db8adf97725032138669a1dce85c88c668a14",
+            "2a2c131d26579ddeaae34502eb111a6c820652a7d6abb3bdc4ec193a4e955e94",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -21605,7 +21657,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "a6fb51023657427125615284015db8adf97725032138669a1dce85c88c668a14",
+            "2a2c131d26579ddeaae34502eb111a6c820652a7d6abb3bdc4ec193a4e955e94",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -23141,6 +23193,14 @@ mod tests {
         .expect("pinned m_e node");
         assert_eq!(
             lab2.store.get(me_kg).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let nup = physis_core::artifact::ArtifactId::from_hex(
+            "3b73f5c2000281e562fdf12b64d9bf7b36515105b92a3fee0e31906d0b7cb043",
+        )
+        .expect("pinned nu_p node");
+        assert_eq!(
+            lab2.store.get(nup).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -24694,7 +24754,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  a6fb51023657427125615284015db8adf97725032138669a1dce85c88c668a14"),
+            text.contains("constant  ledger  2a2c131d26579ddeaae34502eb111a6c820652a7d6abb3bdc4ec193a4e955e94"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

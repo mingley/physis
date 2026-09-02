@@ -8,7 +8,8 @@
 
 use physis_core::dim::{
     Action, Dimensionless, Energy, EnergyDensity, Frequency, HeatCapacity, Length,
-    LuminosityDensity, Mass, Power, Pressure, RadiationConstant, StefanBoltzmann, Time, Velocity,
+    LuminosityDensity, Mass, Momentum, Power, Pressure, RadiationConstant, StefanBoltzmann, Time,
+    Velocity,
 };
 use physis_core::qty::{joule, kg, meters, pascal, seconds, Qty};
 
@@ -109,6 +110,17 @@ pub fn e_charge() -> physis_core::qty::Qty<physis_core::Charge> {
 /// pi hbar / m_e and is not stored.
 pub fn electron_mass() -> Qty<Mass> {
     kg(9.109_383_701_5e-31)
+}
+
+/// Natural unit of momentum m_e c (kg m s^{-1}), CODATA 2018.
+///
+/// This is the recommended printed table XXXIV Natural units centre,
+/// not kg electron mass, not joule energy equivalent, and not the
+/// MeV/c companion. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Natural unit of time still cites hbar and
+/// is not stored. nup is not a second name.
+pub fn natural_unit_of_momentum() -> Qty<Momentum> {
+    Qty::new(2.730_924_530_75e-22)
 }
 
 /// Proton mass.
@@ -10566,6 +10578,44 @@ mod tests {
         assert!(
             physis_constants::lookup("me").is_none(),
             "me is not a ledger name; the live name is m_e"
+        );
+
+        let nup = physis_constants::natural_unit_of_momentum();
+        let nup_centre = physis_numeric::Ratio::new(273_092_453_075, 10i128.pow(33));
+        assert_eq!(
+            natural_unit_of_momentum().value(),
+            2.730_924_530_75e-22,
+            "nu_p Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            natural_unit_of_momentum().value(),
+            nup_centre.to_f64(),
+            "nu_p Qty locksteps to Ratio::to_f64 on the 10^-33 centre"
+        );
+        assert!(
+            nup.value
+                .contains(physis_numeric::Interval::point(nup_centre)),
+            "nu_p Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(nup.value.lo, nup.value.hi, "ledger nu_p stays an Interval");
+        assert_ne!(
+            physis_constants::natural_unit_of_momentum().hash,
+            physis_constants::electron_mass().hash,
+            "nu_p is not m_e"
+        );
+        assert_ne!(
+            physis_constants::natural_unit_of_momentum().hash,
+            physis_constants::electron_mass_energy_equivalent().hash,
+            "nu_p is not m_e_c2"
+        );
+        assert_eq!(physis_constants::lookup("nu_p").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("nup").is_none(),
+            "nup is not a ledger name; the live name is nu_p"
+        );
+        assert!(
+            physis_constants::lookup("p_e").is_none(),
+            "p_e is not a ledger name; the live name is nu_p"
         );
 
         assert!(
