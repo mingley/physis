@@ -22,6 +22,29 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 kilogram-joule relationship is an exact Ratio.**
+  `physis-constants` versions `kg_J` as the SI-exact integer Ratio
+  `c*c` = `89875517873681764` J from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). The table prints `8.987 551 787… × 10^{16}`;
+  the ledger stores the full integer. This is a terminating integer
+  Ratio, stored as Ratio like `c`, not SciExact. This is not SI
+  metre-per-second `c`, not second radiation `c2`, not `eV`, not `h`,
+  not `h_eVHz`, not an SI defining constant, and not a FormalClaim
+  reconstructing `c * c` from live lookups. The ledger name is `kg_J`;
+  `kg` is not a second name. IEEE `f64` cannot hold all 57 bits of the
+  integer; `physis_model` `kilogram_in_joule()` Qty locksteps to
+  `Ratio::to_f64` of the integer. Adding `kg_J` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `kg_J` hash a54eee6c8f3046f2c68745c29a8040b9b486fd013f72511e1d7372366a34bc7f; node c926a11668840ba7f9e461d93be0fed6b3cebea1ee13171ca1675e174bcf58ca; ledger node
+  853e6788c749251ca35bbcb4de6a8e97838af050a8c26279a586dd127443243f. `c` hash
+  691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1,
+  `c2` hash 9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc,
+  `h_eVHz` hash bc3fb761f651c84f885a4749f6099f7eef62b31467e2df1ca778aede28ce2964,
+  and `h` hash 50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef
+  unchanged.
+
 - **CODATA 2018 Planck constant in eV/Hz is an exact Ratio.**
   `physis-constants` versions `h_eVHz` as the SI-exact Ratio `h/e` =
   `44173801/10681177560000000000000` eV Hz^{-1} from JPCRD 50, 033105

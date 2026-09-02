@@ -13,6 +13,7 @@ use physis_core::dim::{
 use physis_core::qty::{joule, kg, meters, pascal, seconds, Qty};
 
 /// Speed of light in vacuum (exact, SI).
+/// The kilogram-joule relationship is `kg_J`.
 pub const C: Qty<Velocity> = Qty::new(299_792_458.0);
 
 /// Planck constant over 2π, J·s = kg m² s⁻¹.
@@ -40,6 +41,21 @@ pub fn planck_h() -> Qty<Action> {
 /// second. Reduced Planck in eV s is not stored.
 pub fn planck_in_ev_per_hz() -> Qty<Dimensionless> {
     Qty::new(4.135_667_696_923_858e-15)
+}
+
+/// Kilogram-joule relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the
+/// kilogram-joule relationship, not SI metre-per-second c, not second
+/// radiation c2, not electronvolt eV, not Planck h, not h_eVHz, and not
+/// a FormalClaim that reconstructs c * c from live lookups. The table
+/// prints an ellipsis; the ledger stores the exact integer Ratio. The
+/// versioned ledger stores the exact Ratio; this Qty is the IEEE
+/// rounding of that integer (53-bit mantissa cannot hold all 57 bits).
+/// Ledger unit is J; this Qty is dimensionless, not SI metre per second.
+/// kg is not a second name.
+pub fn kilogram_in_joule() -> Qty<Dimensionless> {
+    Qty::new(8.987_551_787_368_176e16)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -8957,6 +8973,52 @@ mod tests {
         assert!(
             physis_constants::lookup("h_eV").is_none(),
             "h_eV is not a ledger name; the live name is h_eVHz"
+        );
+
+        let kg_j = physis_constants::kilogram_in_joule();
+        let kg_j_value = Ratio::int(299_792_458i128 * 299_792_458i128);
+        assert_eq!(
+            kg_j.value, kg_j_value,
+            "ledger kg_J is the exact SI integer Ratio"
+        );
+        assert_eq!(
+            kilogram_in_joule().value(),
+            kg_j_value.to_f64(),
+            "kg_J Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            kilogram_in_joule().value(),
+            8.987_551_787_368_176e16,
+            "kg_J Qty locksteps to Ratio::to_f64 of the exact integer Ratio"
+        );
+        assert!(
+            kg_j.value > Ratio::int(0),
+            "ledger kg_J stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::kilogram_in_joule().hash,
+            physis_constants::speed_of_light().hash,
+            "kg_J is not c"
+        );
+        assert_ne!(
+            physis_constants::kilogram_in_joule().hash,
+            physis_constants::second_radiation_constant().hash,
+            "kg_J is not c2"
+        );
+        assert_ne!(
+            physis_constants::kilogram_in_joule().hash,
+            physis_constants::planck_in_ev_per_hz().hash,
+            "kg_J is not h_eVHz"
+        );
+        assert_ne!(
+            physis_constants::kilogram_in_joule().hash,
+            physis_constants::electron_volt().hash,
+            "kg_J is not eV"
+        );
+        assert_eq!(physis_constants::lookup("kg_J").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("kg").is_none(),
+            "kg is not a ledger name; the live name is kg_J"
         );
 
         assert!(
