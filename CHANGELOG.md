@@ -80,6 +80,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron volt-atomic mass unit relationship is a one-sigma Interval.**
+  `physis-constants` versions `eV_u` as the CODATA 2018 one-sigma hull
+  `1.07354410233(32)×10^{-9}` u from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the atomic mass unit-electron volt / `m_u_c2_MeV` companion pair,
+  not a Ratio reciprocal of `m_u_c2_MeV`, not electron volt-hartree
+  `eV_Eh`, not kelvin-atomic mass unit `K_u`, not the exact electronvolt
+  Ratio `eV`, and not a FormalClaim reconstructing `e / (c² m_u)` from
+  live lookups. Atomic mass unit-electron volt is not stored under a
+  second name. The decade is `10^{20}`; `10^{19}` is the 10× trap
+  (`σ = 3.2` is not an integer). This is not the CODATA 2022 last-digit
+  `10083` as the stored centre; the 2018 hull excludes that 2022 centre.
+  The ledger name is `eV_u`; `eVu`, `eV-u`, and `electronvolt_u` are not
+  second names. `physis_model`
+  `electron_volt_in_atomic_mass_unit()` Qty locksteps to the CODATA centre
+  inside the hull. Adding `eV_u` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified:
+  `eV_u` hash
+  39dba467459e1b7d4e44cd12512342f420c7f5d8b79b0f975af03b6d361225c6;
+  node af9b87a44fa433ffb7b314c4c4aeb3f2736ad27f928d258da05e338fca431b91;
+  ledger node
+  b2c28933c8b0a5413719bb3baac65d201e899973ed75d4aa12fbcd935ef61043.
+  `K_u` hash
+  92a82ff43fedced786dd0efca6fa5cddc57a33ca3cb083217ac936fcd2b72c5e and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 kelvin-atomic mass unit relationship is a one-sigma Interval.**
   `physis-constants` versions `K_u` as the CODATA 2018 one-sigma hull
   `9.2510873014(28)×10^{-14}` u from JPCRD 50, 033105 table XXXV

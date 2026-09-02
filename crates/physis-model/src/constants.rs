@@ -417,6 +417,20 @@ pub fn kelvin_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(9.251_087_301_4e-14)
 }
 
+/// Electron volt-atomic mass unit relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the electron volt-atomic mass unit relationship, not eV_Eh, not
+/// m_u_c2_MeV, not K_u, not J_u, and not a FormalClaim that reconstructs
+/// e / (c^2 m_u) from live lookups. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. Ledger unit is u; this Qty
+/// is dimensionless, not a mass dimension. eVu, eV-u, and
+/// electronvolt_u are not second names. Atomic mass unit-electron volt
+/// is not stored under a second name.
+pub fn electron_volt_in_atomic_mass_unit() -> Qty<Dimensionless> {
+    Qty::new(1.073_544_102_33e-9)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10447,6 +10461,46 @@ mod tests {
         assert!(
             physis_constants::lookup("kelvin_u").is_none(),
             "kelvin_u is not a second name for K_u"
+        );
+
+        let ev_u = physis_constants::electron_volt_in_atomic_mass_unit();
+        let ev_u_centre = Ratio::new(107_354_410_233, 10i128.pow(20));
+        assert_eq!(
+            electron_volt_in_atomic_mass_unit().value(),
+            ev_u_centre.to_f64(),
+            "eV_u Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            electron_volt_in_atomic_mass_unit().value(),
+            1.073_544_102_33e-9,
+            "eV_u Qty locksteps to Ratio::to_f64 on the 10^-9 centre"
+        );
+        assert!(
+            ev_u.value.contains(Interval::point(ev_u_centre)),
+            "eV_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            ev_u.value.lo, ev_u.value.hi,
+            "ledger eV_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_atomic_mass_unit().hash,
+            physis_constants::kelvin_in_atomic_mass_unit().hash,
+            "eV_u is not K_u"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_atomic_mass_unit().hash,
+            physis_constants::electron_volt_in_hartree().hash,
+            "eV_u is not eV_Eh"
+        );
+        assert_eq!(physis_constants::lookup("eV_u").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("eVu").is_none(),
+            "eVu is not a ledger name; the live name is eV_u"
+        );
+        assert!(
+            physis_constants::lookup("electronvolt_u").is_none(),
+            "electronvolt_u is not a second name for eV_u"
         );
 
         assert!(
