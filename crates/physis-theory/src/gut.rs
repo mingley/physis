@@ -22,6 +22,11 @@
 //!   input-interval endpoints; that is not P3N. Super-K
 //!   is a one-sided limit and is not that Gaussian. Overlap is not
 //!   containment. The 3% heuristic hit stays on `gut.weinberg-angle-mz`.
+//!   Complementary `gut.coupling-unification-interval` predicts `α_3(M_Z)`
+//!   from `α_em⁻¹` and `sin²θ_W` (the GQW inputs swapped): same one-loop
+//!   algebra with `2π` cancelled, enclosed by sourced PDG input σ, versus
+//!   the PDG `α_s` hull. Not P3N. The 3% heuristic hit stays on
+//!   `gut.coupling-unification`.
 //!   `gut.proton-lifetime-sk` is the empirical proton-lifetime cell: the
 //!   dimension-6 `M_GUT^4` scaling compared to Super-Kamiokande
 //!   `p → e⁺π⁰` (Takenaka et al., Phys. Rev. D 102, 112011). Minimal
@@ -46,8 +51,8 @@ use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::{ClaimCommitments, ParameterOrigin};
 use physis_data::{
-    pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt, PDG_2022_ALPHA_S_MZ,
-    PDG_2022_INV_ALPHA_EM_MZ, SK_2020_P_E_PI0,
+    pdg_2022_alpha_s_mz, pdg_2024_sin2theta, super_kamiokande_proton_lifetime, EmpiricalReceipt,
+    PDG_2022_ALPHA_S_MZ, PDG_2022_INV_ALPHA_EM_MZ, SK_2020_P_E_PI0,
 };
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
@@ -73,6 +78,8 @@ pub const GUT_WEINBERG_ANGLE_MZ: &str = "gut.weinberg-angle-mz";
 pub const GUT_WEINBERG_ANGLE_MZ_INTERVAL: &str = "gut.weinberg-angle-mz-interval";
 /// The three SM gauge couplings meet at a single unification scale.
 pub const GUT_COUPLING_UNIFICATION: &str = "gut.coupling-unification";
+/// One-loop `α_3(M_Z)` enclosed by sourced PDG input σ, vs PDG `α_s`.
+pub const GUT_COUPLING_UNIFICATION_INTERVAL: &str = "gut.coupling-unification-interval";
 /// The predicted proton lifetime is consistent with experiment.
 pub const GUT_PROTON_DECAY_VIABLE: &str = "gut.proton-decay-viable";
 /// Dimension-6 `τ/B(p → e⁺π⁰)` compared to Super-Kamiokande as a dataset.
@@ -322,6 +329,33 @@ impl Theory for Su5Gut {
                 ClaimClass::Heuristic,
             ),
             Claim::new(
+                GUT_COUPLING_UNIFICATION_INTERVAL,
+                "The one-loop unification prediction of α_s(M_Z), enclosed by the PDG 2024 \
+                 one-sigma hull of sin²θ_W(M_Z) and the PDG 2022 hull of α_em^{-1}(M_Z), \
+                 lies inside the PDG α_s measurement.",
+                LayerId::Effective,
+                ClaimClass::EmpiricalPrediction,
+            )
+            .with_commitments(ClaimCommitments {
+                units: vec!["1".into()],
+                boundary: vec!["M_Z".into()],
+                datasets: vec![
+                    PDG_2022_ALPHA_S_MZ.into(),
+                    "pdg-2024-sin2theta".into(),
+                    PDG_2022_INV_ALPHA_EM_MZ.into(),
+                ],
+                ..ClaimCommitments::unspecified()
+            })
+            .with_domain(DomainOfValidity::new(
+                vec!["M_Z".into()],
+                vec!["one-loop unification with sourced PDG input intervals".into()],
+                "Input enclosure is the PDG 2024 one-sigma hull of sin²θ_W(M_Z) \
+                 and the PDG 2022 hull of α_em^{-1}(M_Z), not a two-loop remainder. \
+                 Compatible is prediction ⊆ PDG α_s. Overlap without containment \
+                 is insufficient-precision, not agreement. Using the GUT-scale \
+                 3/8 or GQW mixing-angle here is a new claim.",
+            )),
+            Claim::new(
                 GUT_PROTON_DECAY_VIABLE,
                 "The predicted proton lifetime is consistent with experiment.",
                 LayerId::Effective,
@@ -556,6 +590,72 @@ impl Theory for Su5Gut {
                     .with_evidence(evidence)
                 }
             }
+            GUT_COUPLING_UNIFICATION_INTERVAL => {
+                // Complementary to GQW: α_em^{-1} and sin²θ_W predict
+                // α_3(M_Z). Same one-loop algebraic centre as the
+                // heuristic cell, enclosed by sourced PDG 2024 / 2022
+                // one-sigma hulls of those inputs. That is input
+                // uncertainty, not a remainder certificate and not the
+                // 3% folklore hit. GQW mixing-angle is a different claim.
+                // The Gaussian NLL snaps the exact Ratio to the PDG
+                // α_s 10^{-4} scale.
+                let run = if self.supersymmetric {
+                    GaugeRunning::mssm()
+                } else {
+                    GaugeRunning::standard_model()
+                };
+                let centre = run.predicted_alpha3_mz_exact();
+                let envelope = run.predicted_alpha3_mz_interval();
+                let nll_x = centre.round_to(10_000);
+                let dataset = pdg_2022_alpha_s_mz();
+                let rec = EmpiricalReceipt::compare_gaussian(envelope, &dataset, Some(nll_x));
+                let mut evidence = vec![
+                    format!(
+                        "one-loop α_3 algebraic centre {centre} enclosed by PDG 2024 sin²θ_W and PDG 2022 α_em^{{-1}} one-sigma hulls {envelope} vs {} hull",
+                        dataset.id
+                    ),
+                    format!(
+                        "inputs pdg-2024-sin2theta and {}; interval-subset excluded={} compatible={} inconclusive={} (input σ is not a remainder certificate)",
+                        PDG_2022_INV_ALPHA_EM_MZ,
+                        rec.excluded, rec.compatible, rec.inconclusive
+                    ),
+                    "not the GUT-scale 3/8; that is gut.weinberg-angle".to_string(),
+                    "not the GQW mixing-angle cell; that is gut.weinberg-angle-mz-interval".to_string(),
+                ];
+                if let Some(nll) = rec.nll {
+                    evidence.push(format!(
+                        "gaussian NLL of the PDG-scale rounding {nll_x} vs PDG σ = {nll} (not P3N)"
+                    ));
+                }
+                let v = if rec.excluded {
+                    Verdict::fails(
+                        claim,
+                        format!(
+                            "one-loop α_3 input-interval enclosure {envelope} is disjoint from the PDG α_s hull"
+                        ),
+                    )
+                } else if rec.compatible {
+                    Verdict::holds(
+                        claim,
+                        format!(
+                            "one-loop α_3 input-interval enclosure {envelope} is contained in the PDG α_s hull"
+                        ),
+                    )
+                } else {
+                    Verdict::undecidable(
+                        claim,
+                        format!(
+                            "one-loop α_3 input-interval enclosure {envelope} overlaps the PDG α_s hull but is not contained in it"
+                        ),
+                    )
+                };
+                let v = v.with_empirical(rec.status()).with_evidence(evidence);
+                let v = v.with_interval_enclosure(envelope.lo.to_string(), envelope.hi.to_string());
+                match rec.nll {
+                    Some(nll) => v.with_statistical_nll(nll),
+                    None => v,
+                }
+            }
             GUT_PROTON_DECAY_VIABLE => {
                 // Tie the verdict to the computed unification scale: the
                 // dimension-6 rate scales as M_GUT⁻⁴, so a low M_GUT (minimal
@@ -707,6 +807,7 @@ mod tests {
             GUT_WEINBERG_ANGLE,
             GUT_WEINBERG_ANGLE_MZ,
             GUT_WEINBERG_ANGLE_MZ_INTERVAL,
+            GUT_COUPLING_UNIFICATION_INTERVAL,
         ] {
             let c = claim(id);
             assert!(
@@ -736,6 +837,21 @@ mod tests {
             interval.domain().regimes.iter().any(|r| r == "M_Z"),
             "PDG interval regime: {:?}",
             interval.domain()
+        );
+        let alpha3 = claim(GUT_COUPLING_UNIFICATION_INTERVAL);
+        assert!(
+            alpha3.domain().regimes.iter().any(|r| r == "M_Z"),
+            "α_3 interval regime: {:?}",
+            alpha3.domain()
+        );
+        assert!(
+            alpha3
+                .commitments()
+                .datasets
+                .iter()
+                .any(|d| d == PDG_2022_ALPHA_S_MZ),
+            "α_3 cell must commit to the PDG α_s Dataset id: {:?}",
+            alpha3.commitments()
         );
         // Super-K is a Dataset; the empirical cell names the dim-6 / p→e+π0 regime.
         let sk = claim(GUT_PROTON_LIFETIME_SK);
@@ -876,6 +992,96 @@ mod tests {
         assert_ne!(u.derivation(), DerivationAssurance::CertifiedNumeric);
         // Heuristic folklore can still hold while the input-interval receipt is too coarse.
         assert_eq!(verdict(&g, GUT_WEINBERG_ANGLE_MZ).kind, VerdictKind::Holds);
+    }
+
+    #[test]
+    fn coupling_unification_interval_excludes_minimal_su5_and_is_too_coarse_for_mssm() {
+        use physis_core::EmpiricalStatus;
+        let mut g = Su5Gut::default();
+        let v = verdict(&g, GUT_COUPLING_UNIFICATION_INTERVAL);
+        assert_eq!(v.kind, VerdictKind::Fails);
+        assert_eq!(v.class, ClaimClass::EmpiricalPrediction);
+        assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        let lo = v.numeric_lo().expect("α_3 interval overlay");
+        let hi = v.numeric_hi().expect("α_3 interval overlay");
+        assert_ne!(lo, hi, "input-interval hull is not a point Ratio");
+        assert_eq!(
+            physis_numeric::Interval::parse_display(&format!("[{lo}, {hi}]"))
+                .map(|i| i.to_string()),
+            Some(format!("[{lo}, {hi}]")),
+            "overlay must be a canonical Interval dump"
+        );
+        assert_eq!(
+            g.claims()
+                .into_iter()
+                .find(|c| c.id_str() == GUT_COUPLING_UNIFICATION_INTERVAL)
+                .unwrap()
+                .statement_hash()
+                .to_hex(),
+            "11b15a7f8fbfaab08c38b773cfaac930a13e0d77b021194a7c07676a083e8825"
+        );
+        let min_nll = v.statistical_nll().expect("PDG Gaussian NLL");
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("algebraic centre") && e.contains("5450000000/76612068711")),
+            "evidence: {:?}",
+            v.evidence
+        );
+        assert!(
+            v.evidence.iter().any(|e| e.contains(PDG_2022_ALPHA_S_MZ)),
+            "evidence: {:?}",
+            v.evidence
+        );
+        assert!(
+            v.evidence
+                .iter()
+                .any(|e| e.contains("pdg-2024-sin2theta") && e.contains(PDG_2022_INV_ALPHA_EM_MZ)),
+            "evidence must name sourced input listings: {:?}",
+            v.evidence
+        );
+        assert!(
+            v.evidence.iter().any(|e| e.contains("gaussian NLL")),
+            "evidence: {:?}",
+            v.evidence
+        );
+        assert!(
+            !v.evidence
+                .iter()
+                .any(|e| e.contains("3/8") && e.contains("0.231")),
+            "do not mix GUT-scale 3/8 into the α_3 interval evidence: {:?}",
+            v.evidence
+        );
+        g.set("supersymmetric", KnobValue::Bool(true)).unwrap();
+        let u = verdict(&g, GUT_COUPLING_UNIFICATION_INTERVAL);
+        assert_eq!(u.kind, VerdictKind::Undecidable);
+        assert_eq!(u.empirical(), EmpiricalStatus::Inconclusive);
+        assert!(
+            u.evidence
+                .iter()
+                .any(|e| e.contains("algebraic centre") && e.contains("10000000/85599219")),
+            "evidence: {:?}",
+            u.evidence
+        );
+        let susy_nll = u.statistical_nll().expect("PDG Gaussian NLL under MSSM");
+        fn parse_ratio(s: &str) -> physis_numeric::Ratio {
+            if let Some((n, d)) = s.split_once('/') {
+                physis_numeric::Ratio::new(n.parse().unwrap(), d.parse().unwrap())
+            } else {
+                physis_numeric::Ratio::int(s.parse().unwrap())
+            }
+        }
+        assert!(
+            parse_ratio(susy_nll) < parse_ratio(min_nll),
+            "MSSM centre should be closer to PDG α_s than minimal SU(5): {susy_nll} vs {min_nll}"
+        );
+        assert_ne!(u.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(
+            verdict(&g, GUT_COUPLING_UNIFICATION).kind,
+            VerdictKind::Holds
+        );
     }
 
     #[test]

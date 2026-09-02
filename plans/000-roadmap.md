@@ -48,7 +48,7 @@ Level-3 trust
   L3 journal evidence      ✓ Evidence events restore by rebuild from live evaluations; graph_hash is not deserialized; restore does not journal again; not Canonical; not P4
   L3 Super-K dataset       ✓ gut.proton-lifetime-sk compares dim-6 M_GUT^4 scaling to Takenaka et al. PRD 102 112011; not P3N; not dim-5; Tr Q stays encoding-wide
   L3 unique-vacuum domain  ✓ four FormalClaims of predictivity.unique-vacuum name landscape / program axiom / Einstein-Hilbert / Higgs vacuum; still Asserted; not Canonical
-  L3 statistical NLL       ✓ PDG sin²θ_W(M_Z) is a Gaussian; GQW centre is an exact π-free Ratio enclosed by sourced PDG 2022 α_s / α_em^{-1} one-sigma hulls; from_lab projects statistical computed from an exact Ratio NLL at the PDG 10^{-5} scale; SU(5) is disjoint, MSSM overlaps without containment; Super-K stays empirical interval-subset; not P3N
+  L3 statistical NLL       ✓ PDG sin²θ_W(M_Z) and α_s(M_Z) are Gaussians; GQW and one-loop α_3 centres are exact π-free Ratios enclosed by sourced PDG input-σ hulls; from_lab projects statistical computed from an exact Ratio NLL; SU(5) is disjoint, MSSM overlaps without containment; Super-K stays empirical interval-subset; not P3N
   L3 proposer split        ✓ proof-searcher cannot remint; replication-agent reproduces (not P4); explorer cannot score; empirical-analyst scores
   L3 inspect judgment      ✓ physis inspect judgment inverts projected labels; statistical-computed is the PDG GQW cell; empirical-excluded is Super-K; logical-proved requires a receipt
   L3 numerical enclose     ✓ physis enclose independently parses CertifiedNumeric Ratio strings into a NumericCertificate DAG; numerical-verifier unique op; restore rebuilds; not P3F, not Canonical, not P4; P3N count stays 4

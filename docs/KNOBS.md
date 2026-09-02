@@ -136,7 +136,8 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 ### su5-gut
 - `supersymmetric` — MSSM matter. Flips `gut.coupling-unification`,
   `gut.proton-decay-viable`, and `gut.weinberg-angle-mz` fails → holds
-  (heuristics). `gut.weinberg-angle-mz-interval` flips fails →
+  (heuristics). `gut.weinberg-angle-mz-interval` and
+  `gut.coupling-unification-interval` flip fails →
   undecidable (PDG overlap without containment). The GUT-scale `3/8`
   theorem is independent of this knob. A missing 10 is not this knob:
   `add-missing-10` is an IR mutation.

@@ -12,6 +12,23 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **Independent Interval enclose of one-loop coupling unification.**
+  Complementary to GQW: `α_em⁻¹` and `sin²θ_W` predict `α_3(M_Z)` as a
+  π-free Ratio (`2π` cancels). `gut.coupling-unification-interval` is an
+  EmpiricalPrediction with sourced PDG 2024 / 2022 input-σ hulls versus
+  the PDG `α_s` hull, plus exact Gaussian NLL at the PDG `10^{-4}` scale.
+  `physis enclose` independently parses the overlay; not CertifiedNumeric,
+  not P3N (count stays 4). Minimal SU(5) is excluded; one-loop MSSM is
+  inconclusive. The 3% heuristic cell stays on `gut.coupling-unification`.
+  GQW interval FormalClaim identity and certificate pins unchanged.
+  GUT-scale 3/8 certificate pin unchanged. Coupling-unification
+  interval FormalClaim identity
+  `11b15a7f8fbfaab08c38b773cfaac930a13e0d77b021194a7c07676a083e8825`.
+  Interval certificate
+  `1ad86215fce82a37f806343448386d924c59c2abdc3f7c3a1b1cf77924fb997c`.
+  Verified: unit tests; inspect judgment statistical-computed count 2;
+  role gates.
+
 - **Independent Interval enclose of the GQW input-interval overlay.**
   `physis enclose` independently parses live `Interval` endpoints on
   `gut.weinberg-angle-mz-interval` via `Interval::parse_display` of
