@@ -22,6 +22,32 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Boltzmann constant in Hz/K is an exact Ratio.**
+  `physis-constants` versions `k_Hz` as the SI-exact Ratio `k/h` =
+  `2761298000000000000/132521403` Hz K^{-1} from JPCRD 50, 033105 table
+  XXXI (PHYSICOCHEMICAL). The table prints `2.083 661 912… × 10^{10}`;
+  the ledger stores the full product. The reduced denominator keeps
+  factors 3, 7, and 6310543 (KJ keeps 7 and 6310543; the extra 3 remains
+  after cancelling the factor 5 in `h`), so this is not a terminating
+  SciExact. This is not SI joule-per-kelvin `k`, not Planck `h`, not
+  `k_eV`, not `KJ`, not an SI defining constant, and not a FormalClaim
+  reconstructing `k / h` from live lookups. The ledger name is `k_Hz`;
+  `k/h` is not a second name. `k/hc` is not stored. CODATA 2022 prints
+  the same SI-exact ellipsis; there is no last-digit trap. `physis_model`
+  `boltzmann_in_hz_per_kelvin()` Qty locksteps to `Ratio::to_f64` of the
+  reduced fraction. Adding `k_Hz` to LEDGER changes the ledger bundle
+  pin. Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged. Unique-vacuum
+  graph id unchanged. P3N count stays 4.
+  Verified: `k_Hz` hash 4e53cf9938c70b39d13f107dc2c90be1486148fd1ebb585505e2e3b8637582bc; node f77db081575132d0b379eddeba0f9e4642c54221ffbdcfa29d6147bb30d917c4;
+  ledger node 9e72884125faa3c4895c3803a8ed4564fd7fb3f06aaec7cd5b3ec3b28c9dd3d4. `k_eV` hash
+  6af2dc4a70fb23c2c85ff1537e3b6c4c32068d11cbe0a9abca6d651f5cdceed6,
+  `k` hash 0d6156b1dea5afb156a9bbdcde78709fcfbac53df129a27698ea3fd76e812061,
+  `h` hash 50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef,
+  `KJ` hash eb31c5b04ef0823e6e80a2921172c06fa6ef692e5a7700cb25d183b00a0090d2,
+  and `NAe` hash dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4
+  unchanged.
+
 - **CODATA 2018 Boltzmann constant in eV/K is an exact Ratio.**
   `physis-constants` versions `k_eV` as the SI-exact Ratio `k/e` =
   `1380649/16021766340` eV K^{-1} from JPCRD 50, 033105 table XXXI

@@ -1299,10 +1299,25 @@ pub fn molar_gas_constant() -> Qty<
 /// SciExact (3, 19, 389, and 12043 remain in the reduced denominator).
 /// The versioned ledger stores the exact Ratio; this Qty is the IEEE
 /// rounding of that Ratio. Ledger unit is eV K^{-1}; this Qty is
-/// dimensionless, not SI joule per kelvin. Boltzmann in Hz/K is not
-/// stored. The Faraday constant is `NAe`.
+/// dimensionless, not SI joule per kelvin. The Boltzmann constant in
+/// Hz/K is `k_Hz`.
 pub fn boltzmann_in_ev_per_kelvin() -> Qty<Dimensionless> {
     Qty::new(8.617_333_262_145_177e-5)
+}
+
+/// Boltzmann constant in Hz/K, SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL companion listed as k/h in Hz/K,
+/// not SI joule-per-kelvin k, not Planck h, not eV/K k_eV, not
+/// Josephson KJ, and not a FormalClaim that reconstructs k / h from
+/// live lookups. The table prints an ellipsis; the ledger stores the
+/// exact Ratio. This is not a terminating SciExact (3, 7, and 6310543
+/// remain in the reduced denominator). The versioned ledger stores the
+/// exact Ratio; this Qty is the IEEE rounding of that Ratio. Ledger
+/// unit is Hz K^{-1}; this Qty is dimensionless, not SI joule per
+/// kelvin. k/hc is not stored. The Faraday constant is `NAe`.
+pub fn boltzmann_in_hz_per_kelvin() -> Qty<Dimensionless> {
+    Qty::new(20_836_619_123.327_57)
 }
 
 /// Faraday constant N_A e (C mol⁻¹), SI 2019 exact.
@@ -8771,9 +8786,48 @@ mod tests {
             "k_eV is not RK"
         );
         assert_eq!(physis_constants::lookup("k_eV").unwrap().kind, "ratio");
+
+        let k_hz = physis_constants::boltzmann_in_hz_per_kelvin();
+        let k_hz_value = Ratio::new(1_380_649i128 * 10i128.pow(13), 662_607_015i128);
+        assert_eq!(k_hz.value, k_hz_value, "ledger k_Hz is the exact SI Ratio");
+        assert_eq!(
+            boltzmann_in_hz_per_kelvin().value(),
+            k_hz_value.to_f64(),
+            "k_Hz Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            boltzmann_in_hz_per_kelvin().value(),
+            20_836_619_123.327_57,
+            "k_Hz Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("k_Hz").is_none(),
-            "Boltzmann in Hz/K is a later PHYSICOCHEMICAL row"
+            k_hz.value > Ratio::int(0),
+            "ledger k_Hz stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_hz_per_kelvin().hash,
+            physis_constants::boltzmann().hash,
+            "k_Hz is not k"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_hz_per_kelvin().hash,
+            physis_constants::planck_h().hash,
+            "k_Hz is not h"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_hz_per_kelvin().hash,
+            physis_constants::boltzmann_in_ev_per_kelvin().hash,
+            "k_Hz is not k_eV"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_hz_per_kelvin().hash,
+            physis_constants::josephson_constant().hash,
+            "k_Hz is not KJ"
+        );
+        assert_eq!(physis_constants::lookup("k_Hz").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("k/hc").is_none(),
+            "k/hc is a later PHYSICOCHEMICAL row"
         );
 
         assert!(
