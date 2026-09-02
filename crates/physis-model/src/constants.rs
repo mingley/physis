@@ -2134,12 +2134,24 @@ pub fn electron_mass_in_u() -> Qty<Dimensionless> {
 /// Electron mass energy equivalent m_e c² (J), CODATA 2018.
 ///
 /// This is the recommended printed Electron, e- centre in joules, not
-/// kg m_e, not m_e_u, not the MeV conversion, not m_mu_c2, not hcRinf,
+/// kg m_e, not m_e_u, not m_e_c2_MeV, not m_mu_c2, not hcRinf,
 /// not Eh, and not SI-exact eV. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre. Quantum of circulation
 /// still cites pi hbar / m_e and is not stored.
 pub fn electron_mass_energy_equivalent() -> Qty<Energy> {
     joule(8.187_105_776_9e-14)
+}
+
+/// Electron mass energy equivalent in MeV, CODATA 2018.
+///
+/// This is the recommended printed Electron, e- centre in MeV, not
+/// joule m_e_c2, not kg m_e, not m_e_u, not m_mu_c2_MeV, not Eh, and
+/// not SI-exact eV. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is MeV; this Qty is
+/// dimensionless, not SI joule. Quantum of circulation still cites
+/// pi hbar / m_e and is not stored.
+pub fn electron_mass_energy_equivalent_in_mev() -> Qty<Dimensionless> {
+    Qty::new(0.510_998_950_00)
 }
 
 /// Electron molar mass M_e (kg mol⁻¹), CODATA 2018.
@@ -3043,9 +3055,36 @@ mod tests {
             physis_constants::muon_mass_energy_equivalent().hash,
             "m_e_c2 is not m_mu_c2"
         );
+
+        let me_c2_mev = physis_constants::electron_mass_energy_equivalent_in_mev();
+        let me_c2_mev_centre = Ratio::new(51_099_895_000, 10i128.pow(11));
+        assert_eq!(
+            electron_mass_energy_equivalent_in_mev().value(),
+            0.510_998_950_00,
+            "m_e_c2_MeV Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            electron_mass_energy_equivalent_in_mev().value(),
+            me_c2_mev_centre.to_f64(),
+            "m_e_c2_MeV Qty locksteps to Ratio::to_f64 on the 10^11 centre"
+        );
         assert!(
-            physis_constants::lookup("m_e_c2_MeV").is_none(),
-            "MeV conversion is not stored in this increment"
+            me_c2_mev.value.contains(Interval::point(me_c2_mev_centre)),
+            "m_e_c2_MeV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            physis_constants::electron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::electron_mass_energy_equivalent().hash,
+            "m_e_c2_MeV is not m_e_c2"
+        );
+        assert_ne!(
+            physis_constants::electron_mass_energy_equivalent_in_mev().hash,
+            physis_constants::muon_mass_energy_equivalent_in_mev().hash,
+            "m_e_c2_MeV is not m_mu_c2_MeV"
+        );
+        assert!(
+            physis_constants::lookup("E_e").is_none(),
+            "E_e is not a second ledger name for m_e_c2_MeV"
         );
 
         let molar = physis_constants::electron_molar_mass();

@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf"),
+            text.contains("constant  ledger  666036c90f15b57467efbdcc25fd5f80012f4939c3fda679236e59bf7af38125"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -17861,6 +17861,48 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let me_c2_mev = lab
+            .exec(Command::Constant {
+                name: Some("m_e_c2_MeV".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            me_c2_mev.contains("constant  m_e_c2_MeV  node "),
+            "{me_c2_mev}"
+        );
+        assert!(
+            me_c2_mev.contains(
+                "hash     c076e0b56ff109b6f16661d0e7874b9f352cf53c4f862c38203c082a17d87f6b"
+            ),
+            "{me_c2_mev}"
+        );
+        assert!(me_c2_mev.contains("kind     interval"), "{me_c2_mev}");
+        assert!(me_c2_mev.contains("table    XXXI"), "{me_c2_mev}");
+        assert!(
+            me_c2_mev.contains("range    m_e_c2_MeV = 0.51099895000(15)"),
+            "{me_c2_mev}"
+        );
+        assert!(me_c2_mev.contains("unit     MeV"), "{me_c2_mev}");
+        assert!(
+            me_c2_mev.contains("value    [10219978997/20000000000, 10219979003/20000000000]"),
+            "{me_c2_mev}"
+        );
+        assert!(me_c2_mev.contains("rebuild  ok"), "{me_c2_mev}");
+        assert!(me_c2_mev.contains("not P3N"), "{me_c2_mev}");
+        assert!(!me_c2_mev.contains("receipt"), "{me_c2_mev}");
+        assert!(!me_c2_mev.contains("theorem"), "{me_c2_mev}");
+        let me_c2_mev_id = constant_node_id(&me_c2_mev);
+        assert_eq!(
+            me_c2_mev_id.to_hex(),
+            "9ac6f08d59173db167d93f15a3d4265d26f966a92584a7053dd0dd8d62f3d33a",
+            "journaling must not change the m_e_c2_MeV constant payload"
+        );
+        assert_eq!(
+            lab.store.get(me_c2_mev_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -20328,7 +20370,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf",
+            "666036c90f15b57467efbdcc25fd5f80012f4939c3fda679236e59bf7af38125",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -21263,7 +21305,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf",
+            "666036c90f15b57467efbdcc25fd5f80012f4939c3fda679236e59bf7af38125",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -22727,6 +22769,14 @@ mod tests {
         .expect("pinned m_e_c2 node");
         assert_eq!(
             lab2.store.get(me_c2).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let me_c2_mev = physis_core::artifact::ArtifactId::from_hex(
+            "9ac6f08d59173db167d93f15a3d4265d26f966a92584a7053dd0dd8d62f3d33a",
+        )
+        .expect("pinned m_e_c2_MeV node");
+        assert_eq!(
+            lab2.store.get(me_c2_mev).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -24280,7 +24330,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf"),
+            text.contains("constant  ledger  666036c90f15b57467efbdcc25fd5f80012f4939c3fda679236e59bf7af38125"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
