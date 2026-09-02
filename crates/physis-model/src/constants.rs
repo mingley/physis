@@ -389,6 +389,20 @@ pub fn kilogram_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(6.022_140_762_1e26)
 }
 
+/// Joule-atomic mass unit relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the joule-atomic mass unit relationship, not m_u_c2, not kg_u,
+/// not J_Eh, not J_eV, and not a FormalClaim that reconstructs 1 / m_u_c2
+/// from live lookups. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is u; this Qty is
+/// dimensionless, not a mass dimension. Ju, J-u, and joule_u are not
+/// second names. Atomic mass unit-joule is m_u_c2 and is not stored
+/// under a second name.
+pub fn joule_in_atomic_mass_unit() -> Qty<Dimensionless> {
+    Qty::new(6.700_535_256_5e9)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10339,6 +10353,46 @@ mod tests {
         assert!(
             physis_constants::lookup("kilogram_u").is_none(),
             "kilogram_u is not a second name for kg_u"
+        );
+
+        let j_u = physis_constants::joule_in_atomic_mass_unit();
+        let j_u_centre = Ratio::new(67_005_352_565, 10);
+        assert_eq!(
+            joule_in_atomic_mass_unit().value(),
+            j_u_centre.to_f64(),
+            "J_u Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            joule_in_atomic_mass_unit().value(),
+            6.700_535_256_5e9,
+            "J_u Qty locksteps to Ratio::to_f64 on the 10^9 centre"
+        );
+        assert!(
+            j_u.value.contains(Interval::point(j_u_centre)),
+            "J_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            j_u.value.lo, j_u.value.hi,
+            "ledger J_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::joule_in_atomic_mass_unit().hash,
+            physis_constants::atomic_mass_constant_energy_equivalent().hash,
+            "J_u is not m_u_c2"
+        );
+        assert_ne!(
+            physis_constants::joule_in_atomic_mass_unit().hash,
+            physis_constants::kilogram_in_atomic_mass_unit().hash,
+            "J_u is not kg_u"
+        );
+        assert_eq!(physis_constants::lookup("J_u").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("Ju").is_none(),
+            "Ju is not a ledger name; the live name is J_u"
+        );
+        assert!(
+            physis_constants::lookup("joule_u").is_none(),
+            "joule_u is not a second name for J_u"
         );
 
         assert!(
