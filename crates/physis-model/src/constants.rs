@@ -287,9 +287,22 @@ pub fn inverse_meter_in_hartree() -> Qty<Dimensionless> {
 /// live lookups. The versioned ledger stores the one-sigma hull; this
 /// Qty is that centre. Ledger unit is K; this Qty is dimensionless, not
 /// a temperature dimension. EhK, Eh-K, and hartree_K are not second
-/// names. The inverse listing is not stored.
+/// names. The inverse listing is K_Eh.
 pub fn hartree_in_kelvin() -> Qty<Dimensionless> {
     Qty::new(3.157_750_248_040_7e5)
+}
+
+/// Kelvin-hartree relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the kelvin-hartree relationship, not Eh_K, not Hz_Eh, not m_Eh,
+/// not k, not J_K, not joule Eh, and not a FormalClaim that reconstructs
+/// k / Eh from live lookups. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. Ledger unit is E_h; this Qty is
+/// dimensionless, not a hartree-energy dimension. KEh, K-Eh, and
+/// kelvin_Eh are not second names.
+pub fn kelvin_in_hartree() -> Qty<Dimensionless> {
+    Qty::new(3.166_811_563_455_6e-6)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -9967,9 +9980,45 @@ mod tests {
             physis_constants::lookup("EhK").is_none(),
             "EhK is not a ledger name; the live name is Eh_K"
         );
+
+        let k_eh = physis_constants::kelvin_in_hartree();
+        let k_eh_centre = Ratio::new(31_668_115_634_556, 10i128.pow(19));
+        assert_eq!(
+            kelvin_in_hartree().value(),
+            k_eh_centre.to_f64(),
+            "K_Eh Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            kelvin_in_hartree().value(),
+            3.166_811_563_455_6e-6,
+            "K_Eh Qty locksteps to Ratio::to_f64 on the 10^19 centre"
+        );
         assert!(
-            physis_constants::lookup("K_Eh").is_none(),
-            "K_Eh is not stored; the inverse listing is not a second name"
+            k_eh.value.contains(Interval::point(k_eh_centre)),
+            "K_Eh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            k_eh.value.lo, k_eh.value.hi,
+            "ledger K_Eh stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::kelvin_in_hartree().hash,
+            physis_constants::hartree_in_kelvin().hash,
+            "K_Eh is not Eh_K"
+        );
+        assert_ne!(
+            physis_constants::kelvin_in_hartree().hash,
+            physis_constants::hertz_in_hartree().hash,
+            "K_Eh is not Hz_Eh"
+        );
+        assert_eq!(physis_constants::lookup("K_Eh").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("KEh").is_none(),
+            "KEh is not a ledger name; the live name is K_Eh"
+        );
+        assert!(
+            physis_constants::lookup("kelvin_Eh").is_none(),
+            "kelvin_Eh is not a second name for K_Eh"
         );
 
         assert!(

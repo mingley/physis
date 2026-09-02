@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  bceb29e8c82a37839e1edc56e6d5317733144cc743a555ef42907a1bb4f9b96a"),
+            text.contains("constant  ledger  8907119e7618e985e396435105ddaf498baf41ac53ef9ac304dc810fbbc1ab95"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -17526,6 +17526,47 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let k_eh = lab
+            .exec(Command::Constant {
+                name: Some("K_Eh".into()),
+            })
+            .text()
+            .to_string();
+        assert!(k_eh.contains("constant  K_Eh  node "), "{k_eh}");
+        assert!(
+            k_eh.contains(
+                "hash     9f4581b1e00277c9a3df0c954203e107ae847ba3ddaf197df6636f02d8418aa9"
+            ),
+            "{k_eh}"
+        );
+        assert!(k_eh.contains("kind     interval"), "{k_eh}");
+        assert!(k_eh.contains("table    XXXV"), "{k_eh}");
+        assert!(
+            k_eh.contains("range    K_Eh = 3.1668115634556(61)e-6"),
+            "{k_eh}"
+        );
+        assert!(k_eh.contains("unit     E_h"), "{k_eh}");
+        assert!(
+            k_eh.contains(
+                "value    [6333623126899/2000000000000000000, 31668115634617/10000000000000000000]"
+            ),
+            "{k_eh}"
+        );
+        assert!(k_eh.contains("rebuild  ok"), "{k_eh}");
+        assert!(k_eh.contains("not P3N"), "{k_eh}");
+        assert!(!k_eh.contains("receipt"), "{k_eh}");
+        assert!(!k_eh.contains("theorem"), "{k_eh}");
+        let k_eh_id = constant_node_id(&k_eh);
+        assert_eq!(
+            k_eh_id.to_hex(),
+            "0bce613d552818e07fadd6e4d8aa5c2bb7e948243e48871a38848810befaabd0",
+            "journaling must not change the K_Eh constant payload"
+        );
+        assert_eq!(
+            lab.store.get(k_eh_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let n_a_e = lab
             .exec(Command::Constant {
                 name: Some("NAe".into()),
@@ -21829,7 +21870,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "bceb29e8c82a37839e1edc56e6d5317733144cc743a555ef42907a1bb4f9b96a",
+            "8907119e7618e985e396435105ddaf498baf41ac53ef9ac304dc810fbbc1ab95",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -22764,7 +22805,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "bceb29e8c82a37839e1edc56e6d5317733144cc743a555ef42907a1bb4f9b96a",
+            "8907119e7618e985e396435105ddaf498baf41ac53ef9ac304dc810fbbc1ab95",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -24092,6 +24133,14 @@ mod tests {
         .expect("pinned Eh_K node");
         assert_eq!(
             lab2.store.get(eh_k).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let k_eh = physis_core::artifact::ArtifactId::from_hex(
+            "0bce613d552818e07fadd6e4d8aa5c2bb7e948243e48871a38848810befaabd0",
+        )
+        .expect("pinned K_Eh node");
+        assert_eq!(
+            lab2.store.get(k_eh).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let n_a_e = physis_core::artifact::ArtifactId::from_hex(
@@ -26021,7 +26070,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  bceb29e8c82a37839e1edc56e6d5317733144cc743a555ef42907a1bb4f9b96a"),
+            text.contains("constant  ledger  8907119e7618e985e396435105ddaf498baf41ac53ef9ac304dc810fbbc1ab95"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
