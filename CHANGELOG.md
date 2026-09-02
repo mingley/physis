@@ -80,6 +80,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of magnetic dipole moment is a one-sigma Interval.**
+  `physis-constants` versions `au_mu` as the CODATA 2018 one-sigma hull
+  `1.85480201566(56)×10^{-23}` J T^{-1} from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of mag. dipole mom.
+  listed as `2μ_B = ħe/m_e`, not Bohr magneton `muB`, not electron magnetic
+  moment `mu_e`, and not a FormalClaim reconstructing twice Bohr magneton
+  from a live lookup. The printed formula cites ħ and is unused. Atomic
+  unit of time still cites ħ and is not stored. Atomic unit of electric
+  potential is a second name for `Eh_eV` and is not stored. The {220}
+  lattice spacing is not stored. Decade `10^{33}` on the printed 01566-digit
+  is the 10× trap. 2018 last-digit is `01566`; 2022 last-digit `01315` is
+  excluded. The ledger name is `au_mu`; `aumu`, `au-mu`, `au_mdm`,
+  `mag_dipole`, `magnetic_dipole`, `2muB`, `two_muB`, and `ehbar_me` are
+  not second names. `physis_model` `atomic_unit_of_magnetic_dipole_moment()`
+  Qty locksteps to the CODATA centre inside the hull. Adding `au_mu` to
+  LEDGER changes the ledger bundle pin. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `au_mu` hash
+  6a48549025982a0761b17bf80c9ce18bc9dee346e3e9cd906a37a07c1a186e58;
+  node 9fa5ea601712ac03f972d0286b883572ec4cecdf2bf64f6143717b1b17f34696;
+  ledger node
+  bd5413ea3d984e34b509a18e99228aaa9d500aa9db0f559586ea5b474a003ba9.
+  `au_hyp2` hash
+  fa9ba2625e88e8128830141fdca61a3a0ba52376e323ff959002f897315feb2e and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of 2nd hyperpolarizability is a one-sigma SciInterval.**
   `physis-constants` versions `au_hyp2` as the CODATA 2018 one-sigma hull
   `6.2353799905(38)×10^{-65}` C^{4} m^{4} J^{-3} from JPCRD 50, 033105 table XXXIV
