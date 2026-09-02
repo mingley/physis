@@ -80,6 +80,37 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of 1st hyperpolarizability is a one-sigma SciInterval.**
+  `physis-constants` versions `au_hyp` as the CODATA 2018 one-sigma hull
+  `3.2063613061(15)×10^{-53}` C^{3} m^{3} J^{-2} from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of 1st hyperpolarizability
+  defined as `e³ a0³ / E_h²`, not elementary charge `e`, not atomic unit of
+  electric polarizability `au_pol`, and not a FormalClaim reconstructing that
+  quotient from a live lookup. A Ratio denominator `10^{63}` overflows `i128`,
+  so the ledger stores a SciInterval. Atomic unit of time still cites ħ and
+  is not stored. Atomic unit of electric potential is a second name for
+  `Eh_eV` and is not stored. The {220} lattice spacing is not stored. Decade
+  `10^{62}` on the printed 3061-digit is the 10× trap. 2018 last-digit is
+  `3061`; 2022 last-digit `2996` is excluded. The ledger name is `au_hyp`;
+  `auhypol`, `au_beta`, `beta`, `hyperpolarizability`,
+  `au_hyperpolarizability`, `e3a03_Eh2`, and `au_1st_hyp` are not second
+  names. `physis_model` `atomic_unit_of_first_hyperpolarizability()` Qty
+  locksteps to the CODATA centre inside the hull. Adding `au_hyp` to LEDGER
+  changes the ledger bundle pin. Theories still evaluate with `f64` Qty. That
+  is not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `au_hyp` hash
+  434651937f575d0bd441cbbf9277985302d35b5d637c1ed3be03f0f4d881cb04;
+  node f2e2cb6bff1a1717af0dcfa04b668988e2836d81dc6bcda7f1e8c09e7ec75561;
+  ledger node
+  35dd2c74a6d871ac8c56dc5af13f4ed6a5b932125ea29788af0f803eb6c6d83f.
+  `au_pol` hash
+  83f51c8d2e9ae545ab1298786b37bfa9b49ff6a2172b60299e872b9a7de4e9f7 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of electric polarizability is a one-sigma SciInterval.**
   `physis-constants` versions `au_pol` as the CODATA 2018 one-sigma hull
   `1.64877727436(50)×10^{-41}` C^{2} m^{2} J^{-1} from JPCRD 50, 033105 table XXXIV
