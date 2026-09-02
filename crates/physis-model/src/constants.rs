@@ -363,14 +363,14 @@ pub fn atomic_mass_unit_in_hartree() -> Qty<Dimensionless> {
 /// Kilogram-hartree relationship, CODATA 2018 centre.
 ///
 /// This is the recommended printed table XXXV energy conversion listed
-/// as the kilogram-hartree relationship, not hartree-kilogram, not
-/// u_Eh, not J_Eh, not kg_J, not m_u, and not a FormalClaim that
-/// reconstructs c^2 / Eh from live lookups. The versioned ledger stores
-/// the one-sigma hull; this Qty is that centre. Ledger unit is E_h;
-/// this Qty is dimensionless, not a hartree-energy dimension. kgEh,
-/// kg-Eh, and kilogram_Eh are not second names. Hartree-kilogram
-/// overflows i128 and is not stored. The kilogram-atomic mass unit
-/// listing is `kg_u`.
+/// as the kilogram-hartree relationship, not hartree-kilogram Eh_kg
+/// inverted as a Ratio, not u_Eh, not J_Eh, not kg_J, not m_u, and not
+/// a FormalClaim that reconstructs c^2 / Eh from live lookups. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// Ledger unit is E_h; this Qty is dimensionless, not a hartree-energy
+/// dimension. kgEh, kg-Eh, and kilogram_Eh are not second names. The
+/// inverse listing is Eh_kg, a separately recommended SciInterval hull.
+/// The kilogram-atomic mass unit listing is `kg_u`.
 pub fn kilogram_in_hartree() -> Qty<Dimensionless> {
     Qty::new(2.061_485_788_740_9e34)
 }
@@ -458,6 +458,19 @@ pub fn atomic_mass_unit_in_inverse_meter() -> Qty<Dimensionless> {
 /// temperature dimension. uK, u-K, and amu_K are not second names.
 pub fn atomic_mass_unit_in_kelvin() -> Qty<Dimensionless> {
     Qty::new(1.080_954_019_16e13)
+}
+
+/// Hartree-kilogram relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the hartree-kilogram relationship, not kg_Eh inverted as a Ratio,
+/// not Eh inverted as a Ratio, not m_u, not kg_J, and not a FormalClaim
+/// that reconstructs Eh / c^2 from live lookups. Ratio scale 10^48
+/// overflows i128; the versioned ledger stores a SciInterval. This Qty
+/// is that centre. Ledger unit is kg; this Qty is dimensionless, not a
+/// mass dimension. Ehkg, Eh-kg, and hartree_kg are not second names.
+pub fn hartree_in_kilogram() -> Qty<Dimensionless> {
+    Qty::new(4.850_870_209_543_2e-35)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -10610,6 +10623,49 @@ mod tests {
         assert!(
             physis_constants::lookup("amu_K").is_none(),
             "amu_K is not a second name for u_K"
+        );
+
+        let eh_kg = physis_constants::hartree_in_kilogram();
+        let eh_kg_centre = SciExact::new(48_508_702_095_432, -48);
+        assert_eq!(
+            hartree_in_kilogram().value(),
+            eh_kg_centre.to_f64(),
+            "Eh_kg Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            hartree_in_kilogram().value(),
+            4.850_870_209_543_2e-35,
+            "Eh_kg Qty locksteps to SciExact::to_f64 on the 10^-48 centre"
+        );
+        assert!(
+            eh_kg.value.contains(SciInterval::point(eh_kg_centre)),
+            "Eh_kg Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            eh_kg.value.lo, eh_kg.value.hi,
+            "ledger Eh_kg stays a SciInterval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::hartree_in_kilogram().hash,
+            physis_constants::kilogram_in_hartree().hash,
+            "Eh_kg is not kg_Eh"
+        );
+        assert_ne!(
+            physis_constants::hartree_in_kilogram().hash,
+            physis_constants::hartree_energy().hash,
+            "Eh_kg is not Eh"
+        );
+        assert_eq!(
+            physis_constants::lookup("Eh_kg").unwrap().kind,
+            "sci-interval"
+        );
+        assert!(
+            physis_constants::lookup("Ehkg").is_none(),
+            "Ehkg is not a ledger name; the live name is Eh_kg"
+        );
+        assert!(
+            physis_constants::lookup("hartree_kg").is_none(),
+            "hartree_kg is not a second name for Eh_kg"
         );
 
         assert!(

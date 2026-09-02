@@ -80,6 +80,37 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 hartree-kilogram relationship is a one-sigma SciInterval.**
+  `physis-constants` versions `Eh_kg` as the CODATA 2018 one-sigma hull
+  `4.8508702095432(94)×10^{-35}` kg from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the kilogram-hartree companion pair, not a Ratio reciprocal of
+  `kg_Eh`, not joule Hartree `Eh` inverted as a Ratio, not kg atomic
+  mass constant `m_u`, and not a FormalClaim reconstructing `Eh / c²`
+  from live lookups. A Ratio denominator `10^{48}` overflows `i128`, so
+  the ledger stores a SciInterval of terminating decimals. Hertz-kilogram
+  is not stored: `h/c²` overflows `i128`. Joule-kilogram is not stored:
+  it is the reciprocal of ledger `kg_J`. The decade is `10^{48}`;
+  `10^{47}` is the 10× trap. This is not the CODATA 2022 last-digit
+  `5419` as the stored centre; the 2018 hull still contains that 2022
+  centre. The ledger name is `Eh_kg`; `Ehkg`, `Eh-kg`, and `hartree_kg`
+  are not second names. `physis_model` `hartree_in_kilogram()` Qty
+  locksteps to the CODATA centre inside the hull. Adding `Eh_kg` to
+  LEDGER changes the ledger bundle pin. Theories still evaluate with
+  `f64` Qty. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `Eh_kg` hash
+  fc95a867392143c42d4006b7b085cf529610c633533ddbe2066b92390535509f;
+  node 84aed9832f9cce41e32c84f2b27f7c7f7301cb7642e442b9b15f9faf0439211b;
+  ledger node
+  c0eaa64ba7373318c13bc303113d266a6bf7cdde1e8405f7a6f3b82557f33c1f.
+  `u_K` hash
+  eceb5956e7b5b435a32c4d8b9b4a8f97cd96a597334919a667d804f13e1a495b and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic mass unit-kelvin relationship is a one-sigma Interval.**
   `physis-constants` versions `u_K` as the CODATA 2018 one-sigma hull
   `1.08095401916(33)×10^{13}` K from JPCRD 50, 033105 table XXXV
