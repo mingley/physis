@@ -22,6 +22,28 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron mass in u is a one-sigma Interval.**
+  `physis-constants` versions `m_e_u` as the CODATA 2018 hull
+  `5.48579909065(16)×10^{-4}` u from JPCRD 50, 033105 table XXXI
+  (Electron, e-). This is the recommended printed companion, not kg
+  `m_e` (`10^{42}` overflows `i128`), not `M_e`, not relative atomic
+  mass under a second name, not `m_mu_u`, not `m_p_u`, not `m_u`, not
+  an SI defining Ratio, not a terminating SciExact, and not a
+  FormalClaim reconstructing `m_e / m_u` from live lookups. The ledger
+  name is `m_e_u`. Quantum of circulation still cites pi hbar / m_e and
+  is not stored. Decade `10^{15}` (`10^{14}` is the 10x trap). This is
+  not the CODATA 2022 last-digit `0441` as the stored centre; the 2018
+  hull does not contain that 2022 centre. `physis_model`
+  `electron_mass_in_u()` Qty locksteps to the recommended centre inside
+  the hull. Adding `m_e_u` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `m_e_u` hash f0f8df112f644065bd01e2b903312927e5ef5d21d7792484aca0e8e7d29934d5;
+  node 682e118704f0d556c0c83465b59e59e27c0d59730ddaf82c430d3d5162066741; ledger node c8dfaf551acce175bd50f04cdae47e0b2248259e1b214e25d83d7d44ebdcfe96. `M_e` hash
+  0a8b3285a4969854567b59db2ebf9449268df86ffdbb461e3b9c1db0955eb804
+  and `hcRinf_eV` hash 5af1daec68e85898cf41891c1a8336b720457d3bc73c4384bafbb07b9b7050e6
+  unchanged.
+
 - **CODATA 2018 Rydberg energy equivalent in eV is a one-sigma Interval.**
   `physis-constants` versions `hcRinf_eV` as the CODATA 2018 hull
   `13.605693122994(26)` eV from JPCRD 50, 033105 table XXXI

@@ -2119,10 +2119,22 @@ pub fn electron_charge_to_mass(
     Qty::new(-1.758_820_010_76e11)
 }
 
+/// Electron mass in u, CODATA 2018.
+///
+/// This is the recommended printed Electron, e- centre in unified
+/// atomic mass units, not kg m_e, not M_e, not relative atomic mass,
+/// not m_mu_u, not m_p_u, not m_u, and not a FormalClaim of m_e / m_u.
+/// The versioned ledger stores the one-sigma hull; this Qty is that
+/// centre. Ledger unit is u; this Qty is dimensionless, not SI kg.
+/// Quantum of circulation still cites pi hbar / m_e and is not stored.
+pub fn electron_mass_in_u() -> Qty<Dimensionless> {
+    Qty::new(5.485_799_090_65e-4)
+}
+
 /// Electron molar mass M_e (kg mol⁻¹), CODATA 2018.
 ///
 /// This is the recommended centre in kg mol⁻¹, not electron mass in kg
-/// and not the mass-in-u row. The versioned ledger stores the
+/// and not m_e_u. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre.
 pub fn electron_molar_mass() -> Qty<
     physis_core::SI<typenum::P1, typenum::Z0, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
@@ -2962,6 +2974,38 @@ mod tests {
             physis_constants::lookup("-e/me").is_none(),
             "-e/me is not a ledger name; the live name is e_me"
         );
+
+        let me_u = physis_constants::electron_mass_in_u();
+        let me_u_centre = Ratio::new(548_579_909_065, 10i128.pow(15));
+        assert_eq!(
+            electron_mass_in_u().value(),
+            5.485_799_090_65e-4,
+            "m_e_u Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            electron_mass_in_u().value(),
+            me_u_centre.to_f64(),
+            "m_e_u Qty locksteps to Ratio::to_f64 on the 10^15 centre"
+        );
+        assert!(
+            me_u.value.contains(Interval::point(me_u_centre)),
+            "m_e_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            physis_constants::electron_mass_in_u().hash,
+            physis_constants::electron_molar_mass().hash,
+            "m_e_u is not M_e"
+        );
+        assert_ne!(
+            physis_constants::electron_mass_in_u().hash,
+            physis_constants::muon_mass_in_u().hash,
+            "m_e_u is not m_mu_u"
+        );
+        assert!(
+            physis_constants::lookup("Ar_e").is_none(),
+            "relative atomic mass is not a second ledger name for m_e_u"
+        );
+
         let molar = physis_constants::electron_molar_mass();
         let molar_centre = Ratio::new(54_857_990_888, 10i128.pow(17));
         assert_eq!(
