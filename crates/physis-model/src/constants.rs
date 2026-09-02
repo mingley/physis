@@ -369,9 +369,24 @@ pub fn atomic_mass_unit_in_hartree() -> Qty<Dimensionless> {
 /// the one-sigma hull; this Qty is that centre. Ledger unit is E_h;
 /// this Qty is dimensionless, not a hartree-energy dimension. kgEh,
 /// kg-Eh, and kilogram_Eh are not second names. Hartree-kilogram
-/// overflows i128 and is not stored.
+/// overflows i128 and is not stored. The kilogram-atomic mass unit
+/// listing is `kg_u`.
 pub fn kilogram_in_hartree() -> Qty<Dimensionless> {
     Qty::new(2.061_485_788_740_9e34)
+}
+
+/// Kilogram-atomic mass unit relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the kilogram-atomic mass unit relationship, not m_u, not kg_Eh,
+/// not N_A, not M_u, not u_Hz, and not a FormalClaim that reconstructs
+/// 1 / m_u from live lookups. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. Ledger unit is u; this Qty is
+/// dimensionless, not a mass dimension. kg_amu, kg-u, and kilogram_u
+/// are not second names. Atomic mass unit-kilogram is m_u and is not
+/// stored under a second name.
+pub fn kilogram_in_atomic_mass_unit() -> Qty<Dimensionless> {
+    Qty::new(6.022_140_762_1e26)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -10284,6 +10299,46 @@ mod tests {
         assert!(
             physis_constants::lookup("kilogram_Eh").is_none(),
             "kilogram_Eh is not a second name for kg_Eh"
+        );
+
+        let kg_u = physis_constants::kilogram_in_atomic_mass_unit();
+        let kg_u_centre = Ratio::int(60_221_407_621i128 * 10i128.pow(16));
+        assert_eq!(
+            kilogram_in_atomic_mass_unit().value(),
+            kg_u_centre.to_f64(),
+            "kg_u Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            kilogram_in_atomic_mass_unit().value(),
+            6.022_140_762_1e26,
+            "kg_u Qty locksteps to Ratio::to_f64 on the integer 10^26 centre"
+        );
+        assert!(
+            kg_u.value.contains(Interval::point(kg_u_centre)),
+            "kg_u Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            kg_u.value.lo, kg_u.value.hi,
+            "ledger kg_u stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::kilogram_in_atomic_mass_unit().hash,
+            physis_constants::atomic_mass_constant().hash,
+            "kg_u is not m_u"
+        );
+        assert_ne!(
+            physis_constants::kilogram_in_atomic_mass_unit().hash,
+            physis_constants::kilogram_in_hartree().hash,
+            "kg_u is not kg_Eh"
+        );
+        assert_eq!(physis_constants::lookup("kg_u").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("kg_amu").is_none(),
+            "kg_amu is not a ledger name; the live name is kg_u"
+        );
+        assert!(
+            physis_constants::lookup("kilogram_u").is_none(),
+            "kilogram_u is not a second name for kg_u"
         );
 
         assert!(
