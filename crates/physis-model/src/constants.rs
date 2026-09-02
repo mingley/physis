@@ -313,8 +313,8 @@ pub fn kelvin_in_hartree() -> Qty<Dimensionless> {
 /// that reconstructs Eh / (c^2 m_u) from live lookups. The versioned
 /// ledger stores the one-sigma hull; this Qty is that centre. Ledger
 /// unit is u; this Qty is dimensionless, not an atomic-mass-constant
-/// dimension. Ehu, Eh-u, and hartree_u are not second names. Inverse
-/// atomic-mass-unit-hartree is not stored.
+/// dimension. Ehu, Eh-u, and hartree_u are not second names. The
+/// inverse listing is u_Eh.
 pub fn hartree_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(2.921_262_322_05e-8)
 }
@@ -341,9 +341,22 @@ pub fn electron_volt_in_hartree() -> Qty<Dimensionless> {
 /// lookups. The versioned ledger stores the one-sigma hull; this Qty is
 /// that centre. Ledger unit is E_h; this Qty is dimensionless, not a
 /// hartree-energy dimension. JEh, J-Eh, and joule_Eh are not second
-/// names. Inverse atomic-mass-unit-hartree is not stored.
+/// names. The inverse listing is `u_Eh`.
 pub fn joule_in_hartree() -> Qty<Dimensionless> {
     Qty::new(2.293_712_278_396_3e17)
+}
+
+/// Atomic mass unit-hartree relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the atomic mass unit-hartree relationship, not Eh_u, not J_Eh,
+/// not kg m_u, not u_Hz, and not a FormalClaim that reconstructs
+/// c^2 m_u / Eh from live lookups. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. Ledger unit is E_h; this
+/// Qty is dimensionless, not a hartree-energy dimension. uEh, u-Eh,
+/// and amu_Eh are not second names. Kilogram-hartree is not stored.
+pub fn atomic_mass_unit_in_hartree() -> Qty<Dimensionless> {
+    Qty::new(3.423_177_687_4e7)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -10097,10 +10110,6 @@ mod tests {
             physis_constants::lookup("Ehu").is_none(),
             "Ehu is not a ledger name; the live name is Eh_u"
         );
-        assert!(
-            physis_constants::lookup("u_Eh").is_none(),
-            "u_Eh is not a second name for Eh_u"
-        );
 
         let ev_eh = physis_constants::electron_volt_in_hartree();
         let ev_eh_centre = Ratio::new(36_749_322_175_655, 10i128.pow(15));
@@ -10180,6 +10189,46 @@ mod tests {
         assert!(
             physis_constants::lookup("joule_Eh").is_none(),
             "joule_Eh is not a second name for J_Eh"
+        );
+
+        let u_eh = physis_constants::atomic_mass_unit_in_hartree();
+        let u_eh_centre = Ratio::new(34_231_776_874, 10i128.pow(3));
+        assert_eq!(
+            atomic_mass_unit_in_hartree().value(),
+            u_eh_centre.to_f64(),
+            "u_Eh Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_mass_unit_in_hartree().value(),
+            3.423_177_687_4e7,
+            "u_Eh Qty locksteps to Ratio::to_f64 on the 10^3 centre"
+        );
+        assert!(
+            u_eh.value.contains(Interval::point(u_eh_centre)),
+            "u_Eh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            u_eh.value.lo, u_eh.value.hi,
+            "ledger u_Eh stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_hartree().hash,
+            physis_constants::hartree_in_atomic_mass_unit().hash,
+            "u_Eh is not Eh_u"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_hartree().hash,
+            physis_constants::joule_in_hartree().hash,
+            "u_Eh is not J_Eh"
+        );
+        assert_eq!(physis_constants::lookup("u_Eh").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("uEh").is_none(),
+            "uEh is not a ledger name; the live name is u_Eh"
+        );
+        assert!(
+            physis_constants::lookup("amu_Eh").is_none(),
+            "amu_Eh is not a second name for u_Eh"
         );
 
         assert!(
