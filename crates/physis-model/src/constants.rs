@@ -487,6 +487,22 @@ pub fn lattice_parameter_of_silicon() -> Qty<Length> {
     meters(5.431_020_511e-10)
 }
 
+/// Molar volume of silicon Vm(Si) (m³ mol⁻¹), CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIII x-ray-related centre
+/// for an ideal single crystal of naturally occurring Si in vacuum at
+/// 22.5 °C, not ideal-gas molar volume Vm, not Vm_atm, not Loschmidt n0,
+/// not lattice parameter a_Si, and not a FormalClaim that reconstructs
+/// N_A a_Si^3 / 8 from live lookups. The {220} lattice spacing is not
+/// stored. The versioned ledger stores the one-sigma hull; this Qty is
+/// that centre. Ledger unit is m^{3} mol^{-1}; this Qty has the same
+/// dimension as Vm. VmSi, Vm-Si, and molar_si are not second names.
+pub fn molar_volume_of_silicon() -> Qty<
+    physis_core::SI<typenum::Z0, typenum::P3, typenum::Z0, typenum::Z0, typenum::Z0, typenum::N1>,
+> {
+    Qty::new(1.205_883_199e-5)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10725,6 +10741,47 @@ mod tests {
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; a_Si is not an a/sqrt(8) certificate"
         );
+
+        let vm_si = physis_constants::molar_volume_of_silicon();
+        let vm_si_centre = Ratio::new(1_205_883_199, 10i128.pow(14));
+        assert_eq!(
+            molar_volume_of_silicon().value(),
+            vm_si_centre.to_f64(),
+            "Vm_Si Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            molar_volume_of_silicon().value(),
+            1.205_883_199e-5,
+            "Vm_Si Qty locksteps to Ratio::to_f64 on the integer 10^14 centre"
+        );
+        assert!(
+            vm_si.value.contains(Interval::point(vm_si_centre)),
+            "Vm_Si Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            vm_si.value.lo, vm_si.value.hi,
+            "ledger Vm_Si stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::molar_volume_of_silicon().hash,
+            physis_constants::molar_volume_ideal_gas().hash,
+            "Vm_Si is not Vm"
+        );
+        assert_ne!(
+            physis_constants::molar_volume_of_silicon().hash,
+            physis_constants::lattice_parameter_of_silicon().hash,
+            "Vm_Si is not a_Si"
+        );
+        assert_eq!(physis_constants::lookup("Vm_Si").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("VmSi").is_none(),
+            "VmSi is not a ledger name; the live name is Vm_Si"
+        );
+        assert!(
+            physis_constants::lookup("molar_si").is_none(),
+            "molar_si is not a second name for Vm_Si"
+        );
+        assert_eq!(physis_constants::lookup("Vm").unwrap().kind, "ratio");
 
         assert!(
             physis_constants::lookup("F").is_none(),

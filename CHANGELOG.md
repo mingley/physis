@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 molar volume of silicon is a one-sigma Interval.**
+  `physis-constants` versions `Vm_Si` as the CODATA 2018 one-sigma hull
+  `1.205883199(60)×10^{-5}` m³ mol⁻¹ from JPCRD 50, 033105 table XXXIII
+  (x-ray-related quantities). This is the recommended molar volume of
+  an ideal single crystal of naturally occurring Si in vacuum at
+  22.5 °C, not ideal-gas molar volume `Vm`, not lattice parameter
+  `a_Si`, and not a FormalClaim reconstructing `N_A a_Si³ / 8` from
+  live lookups. The {220} lattice spacing is a separately recommended
+  hull and is not stored. The decade is `10^{14}`; `10^{13}` is the 10×
+  trap. 2018 and 2022 print the same last-digit `199`; the 2018 hull
+  contains that centre. The ledger name is `Vm_Si`; `VmSi`, `Vm-Si`,
+  and `molar_si` are not second names. `physis_model`
+  `molar_volume_of_silicon()` Qty locksteps to the CODATA centre inside
+  the hull. Adding `Vm_Si` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified:
+  `Vm_Si` hash
+  36d2371a832cfaa4ea7cd680b7cabaada3b9eaa5d4c9750c0a7e38c94c080222;
+  node 552c36b3123815335b65f077e765cfc452ad67512f68806d114388c732024a1e;
+  ledger node
+  58c6c50474c6e4148300ba42fc847f3860016f99d5e91d8f89c29753467e69e3.
+  `a_Si` hash
+  8d9072d01e48779f7404ab918ba023a055f197cd2c8d9f19796431939f568344 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 lattice parameter of silicon is a one-sigma Interval.**
   `physis-constants` versions `a_Si` as the CODATA 2018 one-sigma hull
   `5.431020511(89)×10^{-10}` m from JPCRD 50, 033105 table XXXIII
