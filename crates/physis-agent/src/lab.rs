@@ -9590,7 +9590,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  c8dfaf551acce175bd50f04cdae47e0b2248259e1b214e25d83d7d44ebdcfe96"),
+            text.contains("constant  ledger  11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -17822,6 +17822,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let me_c2 = lab
+            .exec(Command::Constant {
+                name: Some("m_e_c2".into()),
+            })
+            .text()
+            .to_string();
+        assert!(me_c2.contains("constant  m_e_c2  node "), "{me_c2}");
+        assert!(
+            me_c2.contains(
+                "hash     935f7db8457024efb853abe9ee42c24e5efec5c4a831a94a308eb46efa6db0d5"
+            ),
+            "{me_c2}"
+        );
+        assert!(me_c2.contains("kind     interval"), "{me_c2}");
+        assert!(me_c2.contains("table    XXXI"), "{me_c2}");
+        assert!(
+            me_c2.contains("range    m_e_c2 = 8.1871057769(25)e-14"),
+            "{me_c2}"
+        );
+        assert!(me_c2.contains("unit     J"), "{me_c2}");
+        assert!(
+            me_c2.contains("value    [5116941109/62500000000000000000000, 40935528897/500000000000000000000000]"),
+            "{me_c2}"
+        );
+        assert!(me_c2.contains("rebuild  ok"), "{me_c2}");
+        assert!(me_c2.contains("not P3N"), "{me_c2}");
+        assert!(!me_c2.contains("receipt"), "{me_c2}");
+        assert!(!me_c2.contains("theorem"), "{me_c2}");
+        let me_c2_id = constant_node_id(&me_c2);
+        assert_eq!(
+            me_c2_id.to_hex(),
+            "c78389974fdf97ffc418c12da149e820bc718c7ae103546574696f8d78a13c11",
+            "journaling must not change the m_e_c2 constant payload"
+        );
+        assert_eq!(
+            lab.store.get(me_c2_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let mu0 = lab
             .exec(Command::Constant {
                 name: Some("mu0".into()),
@@ -20289,7 +20328,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "c8dfaf551acce175bd50f04cdae47e0b2248259e1b214e25d83d7d44ebdcfe96",
+            "11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -21224,7 +21263,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "c8dfaf551acce175bd50f04cdae47e0b2248259e1b214e25d83d7d44ebdcfe96",
+            "11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -22680,6 +22719,14 @@ mod tests {
         .expect("pinned m_e_u node");
         assert_eq!(
             lab2.store.get(me_u).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let me_c2 = physis_core::artifact::ArtifactId::from_hex(
+            "c78389974fdf97ffc418c12da149e820bc718c7ae103546574696f8d78a13c11",
+        )
+        .expect("pinned m_e_c2 node");
+        assert_eq!(
+            lab2.store.get(me_c2).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let crinf = physis_core::artifact::ArtifactId::from_hex(
@@ -24233,7 +24280,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  c8dfaf551acce175bd50f04cdae47e0b2248259e1b214e25d83d7d44ebdcfe96"),
+            text.contains("constant  ledger  11817bf9baaf470c2ea58aa2df951c549a31937cbd4695d4dfa6f985c591a1bf"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
