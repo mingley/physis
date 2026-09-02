@@ -134,6 +134,17 @@ pub fn atomic_unit_of_force() -> Qty<Force> {
     newton(8.238_723_498_3e-8)
 }
 
+/// Atomic unit of velocity alpha c (m s^{-1}), CODATA 2018.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI metre-per-second, not astronomical au, and not atomic unit
+/// of force. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre. Atomic unit of time still cites hbar and is not
+/// stored. auv is not a second name.
+pub fn atomic_unit_of_velocity() -> Qty<Velocity> {
+    Qty::new(2.187_691_263_64e6)
+}
+
 /// Proton mass.
 ///
 /// CODATA 2018 recommended centre. The versioned ledger stores the
@@ -10665,6 +10676,44 @@ mod tests {
         assert!(
             physis_constants::lookup("au_f").is_none(),
             "au_f is not a ledger name; the live name is au_F"
+        );
+
+        let auv = physis_constants::atomic_unit_of_velocity();
+        let auv_centre = physis_numeric::Ratio::new(218_769_126_364, 10i128.pow(5));
+        assert_eq!(
+            atomic_unit_of_velocity().value(),
+            2.187_691_263_64e6,
+            "au_v Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_unit_of_velocity().value(),
+            auv_centre.to_f64(),
+            "au_v Qty locksteps to Ratio::to_f64 on the 10^-5 centre"
+        );
+        assert!(
+            auv.value
+                .contains(physis_numeric::Interval::point(auv_centre)),
+            "au_v Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(auv.value.lo, auv.value.hi, "ledger au_v stays an Interval");
+        assert_ne!(
+            physis_constants::atomic_unit_of_velocity().hash,
+            physis_constants::speed_of_light().hash,
+            "au_v is not c"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_velocity().hash,
+            physis_constants::atomic_unit_of_force().hash,
+            "au_v is not au_F"
+        );
+        assert_eq!(physis_constants::lookup("au_v").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("auv").is_none(),
+            "auv is not a ledger name; the live name is au_v"
+        );
+        assert!(
+            physis_constants::lookup("alpha_c").is_none(),
+            "alpha_c is not a ledger name; the live name is au_v"
         );
 
         assert!(
