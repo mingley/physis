@@ -1315,9 +1315,28 @@ pub fn boltzmann_in_ev_per_kelvin() -> Qty<Dimensionless> {
 /// remain in the reduced denominator). The versioned ledger stores the
 /// exact Ratio; this Qty is the IEEE rounding of that Ratio. Ledger
 /// unit is Hz K^{-1}; this Qty is dimensionless, not SI joule per
-/// kelvin. k/hc is not stored. The Faraday constant is `NAe`.
+/// kelvin. The Boltzmann constant in inverse meter per kelvin is
+/// `k_m`.
 pub fn boltzmann_in_hz_per_kelvin() -> Qty<Dimensionless> {
     Qty::new(20_836_619_123.327_57)
+}
+
+/// Boltzmann constant in inverse meter per kelvin, SI 2019 exact.
+///
+/// This is the exact PHYSICOCHEMICAL companion listed as k/hc in
+/// inverse meter per kelvin, not SI joule-per-kelvin k, not Planck h,
+/// not speed of light c, not Hz/K k_Hz, not eV/K k_eV, not second
+/// radiation c2, and not a FormalClaim that reconstructs k / (h c) or
+/// 1/c2 from live lookups. The table prints an ellipsis; the ledger
+/// stores the exact Ratio. This is not a terminating SciExact (3, 7,
+/// 293339, and 6310543 remain in the reduced denominator). The
+/// versioned ledger stores the exact Ratio; this Qty is the IEEE
+/// rounding of that Ratio. Ledger unit is m^{-1} K^{-1}; this Qty is
+/// dimensionless, not SI joule per kelvin. k/hc is a JPCRD alias of
+/// this named row and is not a second name. The Faraday constant is
+/// `NAe`.
+pub fn boltzmann_in_inverse_meter_per_kelvin() -> Qty<Dimensionless> {
+    Qty::new(69.503_480_048_612_74)
 }
 
 /// Faraday constant N_A e (C mol⁻¹), SI 2019 exact.
@@ -8825,9 +8844,56 @@ mod tests {
             "k_Hz is not KJ"
         );
         assert_eq!(physis_constants::lookup("k_Hz").unwrap().kind, "ratio");
+
+        let k_m = physis_constants::boltzmann_in_inverse_meter_per_kelvin();
+        let k_m_value = Ratio::new(
+            1_380_649i128 * 10i128.pow(13),
+            662_607_015i128 * 299_792_458i128,
+        );
+        assert_eq!(k_m.value, k_m_value, "ledger k_m is the exact SI Ratio");
+        assert_eq!(
+            boltzmann_in_inverse_meter_per_kelvin().value(),
+            k_m_value.to_f64(),
+            "k_m Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            boltzmann_in_inverse_meter_per_kelvin().value(),
+            69.503_480_048_612_74,
+            "k_m Qty locksteps to Ratio::to_f64 of the reduced exact Ratio"
+        );
+        assert!(
+            k_m.value > Ratio::int(0),
+            "ledger k_m stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_inverse_meter_per_kelvin().hash,
+            physis_constants::boltzmann().hash,
+            "k_m is not k"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_inverse_meter_per_kelvin().hash,
+            physis_constants::planck_h().hash,
+            "k_m is not h"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_inverse_meter_per_kelvin().hash,
+            physis_constants::speed_of_light().hash,
+            "k_m is not c"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_inverse_meter_per_kelvin().hash,
+            physis_constants::boltzmann_in_hz_per_kelvin().hash,
+            "k_m is not k_Hz"
+        );
+        assert_ne!(
+            physis_constants::boltzmann_in_inverse_meter_per_kelvin().hash,
+            physis_constants::second_radiation_constant().hash,
+            "k_m is not c2"
+        );
+        assert_eq!(physis_constants::lookup("k_m").unwrap().kind, "ratio");
         assert!(
             physis_constants::lookup("k/hc").is_none(),
-            "k/hc is a later PHYSICOCHEMICAL row"
+            "k/hc is a JPCRD alias of k_m, not a second ledger name"
         );
 
         assert!(

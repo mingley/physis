@@ -22,6 +22,34 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 Boltzmann constant in inverse meter per kelvin is an exact Ratio.**
+  `physis-constants` versions `k_m` as the SI-exact Ratio `k/(h c)` =
+  `18913000000000000/272115870842319` m^{-1} K^{-1} from JPCRD 50, 033105
+  table XXXI (PHYSICOCHEMICAL). The table prints `69.503 480 04…`; the
+  ledger stores the full product. The reduced denominator keeps factors
+  3, 7, 293339, and 6310543 (`k_Hz` keeps 3, 7, and 6310543; the extra
+  293339 remains after cancelling factors in `h c`), so this is not a
+  terminating SciExact. This is not SI joule-per-kelvin `k`, not Planck
+  `h`, not speed of light `c`, not `k_Hz`, not `k_eV`, not second
+  radiation `c2`, not an SI defining constant, and not a FormalClaim
+  reconstructing `k / (h c)` or `1/c2` from live lookups. The ledger
+  name is `k_m`; `k/hc` is a JPCRD alias and is not a second name.
+  CODATA 2022 prints the same SI-exact ellipsis; there is no last-digit
+  trap. `physis_model` `boltzmann_in_inverse_meter_per_kelvin()` Qty
+  locksteps to `Ratio::to_f64` of the reduced fraction. Adding `k_m` to
+  LEDGER changes the ledger bundle pin. Theories still evaluate with
+  `f64` Qty. That is not a kernel proof, not Canonical, not P4. Encode
+  pins unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `k_m` hash 533849bdd6300f5e1e48545708d539f94017879558130c41b62dbe7f7742b501; node 0af89015e9d3fa2b164a62f44ac054af48855f03338c51a424abbf9a126e0e93;
+  ledger node 331c3a6e3acf0505ae4c9b71c7e0cb16747f32f48998845c8122274c7193bfc6. `k_Hz` hash
+  4e53cf9938c70b39d13f107dc2c90be1486148fd1ebb585505e2e3b8637582bc,
+  `c2` hash 9b6ced8d9873adf9b03f13f024d13b8c2ebc18e15e9f3d57fadf0eff0ed61cbc,
+  `k` hash 0d6156b1dea5afb156a9bbdcde78709fcfbac53df129a27698ea3fd76e812061,
+  `h` hash 50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef,
+  `c` hash 691eb73ea444f6d10fb223b999a1b37c0b67da92d51e43ca8bd8a6561785a3c1,
+  and `NAe` hash dbc99e6a827156d94029a58f2134e4f2833c556723a089cc2a9e462f3fa76ba4
+  unchanged.
+
 - **CODATA 2018 Boltzmann constant in Hz/K is an exact Ratio.**
   `physis-constants` versions `k_Hz` as the SI-exact Ratio `k/h` =
   `2761298000000000000/132521403` Hz K^{-1} from JPCRD 50, 033105 table
