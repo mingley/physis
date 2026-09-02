@@ -29,6 +29,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 natural unit of time is a one-sigma Interval.**
+  `physis-constants` versions `nu_t` as the CODATA 2018 hull
+  `1.28808866819(39)×10^{-21}` s from JPCRD 50, 033105 table XXXIV
+  (Natural units). This is the printed recommended time hull listed as
+  hbar/(m_e c^2), not Planck time, not atomic-unit time, not `nu_p`,
+  not an SI defining Ratio, not a terminating SciExact, and not a
+  FormalClaim reconstructing that quotient from live lookups. Atomic
+  unit of time still cites hbar and is not stored. The ledger name is
+  `nu_t`; `nut`, `nu_T`, `t_nu`, and `hbar_mec2` are not second names.
+  Decade `10^{32}` (`10^{31}` is the 10x trap). This is not the CODATA
+  2022 last-digit `66644` as the stored centre; the 2018 hull does not
+  contain that 2022 centre. `physis_model` `natural_unit_of_time()` Qty
+  locksteps to `Ratio::to_f64` of the recommended centre inside the
+  hull. Adding `nu_t` to LEDGER changes the ledger bundle pin. Theories
+  still evaluate with `f64` Qty. That is not a kernel proof, not
+  Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `nu_t` hash eb796d28a29182f7211327fb07280d4b126e1ea949e19f0fb66575476dad80a5;
+  node 2b50e30ecc5e7a5f893e51c261d0be10a8ffb8ec0976622f55c40787d527359b; ledger node e7e9283d3ae495029cb8ef17aaac87d726148e463b08f27bfe68be4499de569d. `au_p` hash
+  f12708bfd5d8f16fd214f8c636edb390aa238130bc694a67e131d02cf08953b0
+  unchanged.
+
 - **CODATA 2018 atomic unit of momentum is a one-sigma Interval.**
   `physis-constants` versions `au_p` as the CODATA 2018 hull
   `1.99285191410(30)×10^{-24}` kg m s^{-1} from JPCRD 50, 033105 table XXXIV

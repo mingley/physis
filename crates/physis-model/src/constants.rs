@@ -117,8 +117,8 @@ pub fn electron_mass() -> Qty<Mass> {
 /// This is the recommended printed table XXXIV Natural units centre,
 /// not kg electron mass, not joule energy equivalent, and not the
 /// MeV/c companion. The versioned ledger stores the one-sigma hull;
-/// this Qty is that centre. Natural unit of time still cites hbar and
-/// is not stored. nup is not a second name.
+/// this Qty is that centre. The natural-unit time hull is nu_t.
+/// nup is not a second name.
 pub fn natural_unit_of_momentum() -> Qty<Momentum> {
     Qty::new(2.730_924_530_75e-22)
 }
@@ -166,6 +166,17 @@ pub fn atomic_unit_of_permittivity(
 /// not stored. aup is not a second name.
 pub fn atomic_unit_of_momentum() -> Qty<Momentum> {
     Qty::new(1.992_851_914_10e-24)
+}
+
+/// Natural unit of time hbar/(m_e c^2) (s), CODATA 2018.
+///
+/// This is the recommended printed table XXXIV Natural units centre,
+/// not Planck time, not atomic-unit time, and not a reconstruction of
+/// that quotient. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Atomic unit of time still cites hbar and
+/// is not stored. nut is not a second name.
+pub fn natural_unit_of_time() -> Qty<Time> {
+    seconds(1.288_088_668_19e-21)
 }
 
 /// Proton mass.
@@ -10817,6 +10828,44 @@ mod tests {
         assert!(
             physis_constants::lookup("hbar_a0").is_none(),
             "hbar_a0 is not a ledger name; the live name is au_p"
+        );
+
+        let nut = physis_constants::natural_unit_of_time();
+        let nut_centre = physis_numeric::Ratio::new(128_808_866_819, 10i128.pow(32));
+        assert_eq!(
+            natural_unit_of_time().value(),
+            1.288_088_668_19e-21,
+            "nu_t Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            natural_unit_of_time().value(),
+            nut_centre.to_f64(),
+            "nu_t Qty locksteps to Ratio::to_f64 on the 10^-32 centre"
+        );
+        assert!(
+            nut.value
+                .contains(physis_numeric::Interval::point(nut_centre)),
+            "nu_t Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(nut.value.lo, nut.value.hi, "ledger nu_t stays an Interval");
+        assert_ne!(
+            physis_constants::natural_unit_of_time().hash,
+            physis_constants::natural_unit_of_momentum().hash,
+            "nu_t is not nu_p"
+        );
+        assert_ne!(
+            physis_constants::natural_unit_of_time().hash,
+            physis_constants::atomic_unit_of_momentum().hash,
+            "nu_t is not au_p"
+        );
+        assert_eq!(physis_constants::lookup("nu_t").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("nut").is_none(),
+            "nut is not a ledger name; the live name is nu_t"
+        );
+        assert!(
+            physis_constants::lookup("hbar_mec2").is_none(),
+            "hbar_mec2 is not a ledger name; the live name is nu_t"
         );
 
         assert!(
