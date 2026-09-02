@@ -143,6 +143,23 @@ pub fn electron_volt_in_hertz() -> Qty<Dimensionless> {
     Qty::new(2.417_989_242_084_918_4e14)
 }
 
+/// Electron volt-kelvin relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the electron
+/// volt-kelvin relationship, not Boltzmann in eV/K k_eV, not SI
+/// joule-per-kelvin k, not joule-kelvin J_K, not BIPM electronvolt eV,
+/// and not a FormalClaim that reconstructs e/k from live lookups.
+/// The table prints an ellipsis; the ledger stores the exact Ratio.
+/// This is not a terminating SciExact (73 and 18913 remain in the
+/// reduced denominator). Electron volt-inverse meter is not stored: it
+/// is the reciprocal of ledger m_eV. The versioned ledger stores the
+/// exact Ratio; this Qty is the IEEE rounding of that Ratio. Ledger
+/// unit is K; this Qty is dimensionless, not SI kelvin. eVK and 1/k_eV
+/// are not second names.
+pub fn electron_volt_in_kelvin() -> Qty<Dimensionless> {
+    Qty::new(1.160_451_812_155_008_3e4)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9411,6 +9428,49 @@ mod tests {
         assert!(
             physis_constants::lookup("eV_kg").is_none(),
             "eV_kg is not stored: e/c^2 overflows i128"
+        );
+
+        let ev_k = physis_constants::electron_volt_in_kelvin();
+        let ev_k_value = Ratio::new(1_602_176_634i128 * 10, 1_380_649);
+        assert_eq!(ev_k.value, ev_k_value, "ledger eV_K is the exact SI Ratio");
+        assert_eq!(
+            electron_volt_in_kelvin().value(),
+            ev_k_value.to_f64(),
+            "eV_K Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            electron_volt_in_kelvin().value(),
+            1.160_451_812_155_008_3e4,
+            "eV_K Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
+        assert!(
+            ev_k.value > Ratio::int(0),
+            "ledger eV_K stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_kelvin().hash,
+            physis_constants::boltzmann_in_ev_per_kelvin().hash,
+            "eV_K is not k_eV"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_kelvin().hash,
+            physis_constants::boltzmann().hash,
+            "eV_K is not k"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_kelvin().hash,
+            physis_constants::joule_in_kelvin().hash,
+            "eV_K is not J_K"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_kelvin().hash,
+            physis_constants::electron_volt_in_hertz().hash,
+            "eV_K is not eV_Hz"
+        );
+        assert_eq!(physis_constants::lookup("eV_K").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("eVK").is_none(),
+            "eVK is not a ledger name; the live name is eV_K"
         );
 
         assert!(

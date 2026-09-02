@@ -80,6 +80,29 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 electron volt-kelvin relationship is an exact Ratio.**
+  `physis-constants` versions `eV_K` as the SI-exact Ratio `e/k` =
+  `16021766340/1380649` K from JPCRD 50, 033105 table XXXV (energy
+  conversion factors). The table prints `1.160 451 812… × 10^{4}`; the
+  ledger stores the full quotient. The reduced denominator keeps
+  factors 73 and 18913 (the odd primes in SI `k`'s numerator), so this
+  is not a terminating SciExact. This is not Boltzmann in eV/K `k_eV`,
+  not SI `k`, not joule-kelvin `J_K`, not BIPM electronvolt, not an SI
+  defining constant, and not a FormalClaim reconstructing `e/k` from
+  live lookups. Electron volt-inverse meter is not stored: it is the
+  reciprocal of ledger `m_eV` from the same table. Electron
+  volt-kilogram is not stored: `e/c²` overflows `i128`. The ledger name
+  is `eV_K`; `eVK`, `eV-K`, and `1/k_eV` are not second names.
+  `physis_model` `electron_volt_in_kelvin()` Qty locksteps to
+  `Ratio::to_f64` of that Ratio. Adding `eV_K` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `eV_K` hash a2763a30976f052db834b3260d5399ef0553afaf42a848f22a174c70f0fbdad0; node e5f5954239201da5cb06da674987a5a1aae6ee343db21317a92a75be82b5424f; ledger node
+  c61c26280d504c53d8f7e1f1824ca27fd4d8ed1c6cfe19b87cb19a567a990957. `eV_Hz` hash d323fa85e441848900b49787ac5c058ae78c2bb59d3f46627a5c5ba68ef339d5
+  and `k_eV` hash 6af2dc4a70fb23c2c85ff1537e3b6c4c32068d11cbe0a9abca6d651f5cdceed6
+  unchanged.
+
 - **CODATA 2018 electron volt-hertz relationship is an exact Ratio.**
   `physis-constants` versions `eV_Hz` as the SI-exact Ratio `e/h` =
   `10681177560000000000000/44173801` Hz from JPCRD 50, 033105
