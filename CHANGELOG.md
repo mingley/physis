@@ -80,6 +80,37 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of 2nd hyperpolarizability is a one-sigma SciInterval.**
+  `physis-constants` versions `au_hyp2` as the CODATA 2018 one-sigma hull
+  `6.2353799905(38)×10^{-65}` C^{4} m^{4} J^{-3} from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of 2nd hyperpolarizability
+  defined as `e⁴ a0⁴ / E_h³`, not elementary charge `e`, not atomic unit of 1st
+  hyperpolarizability `au_hyp`, and not a FormalClaim reconstructing that
+  quotient from a live lookup. A Ratio denominator `10^{75}` overflows `i128`,
+  so the ledger stores a SciInterval. Atomic unit of time still cites ħ and
+  is not stored. Atomic unit of electric potential is a second name for
+  `Eh_eV` and is not stored. The {220} lattice spacing is not stored. Decade
+  `10^{74}` on the printed 9905-digit is the 10× trap. 2018 last-digit is
+  `9905`; 2022 last-digit `9735` is excluded. The ledger name is `au_hyp2`;
+  `auhypol2`, `au_gamma`, `gamma`, `second_hyperpolarizability`, `au_2nd_hyp`,
+  `e4a04_Eh3`, and `hyperpolarizability2` are not second names.
+  `physis_model` `atomic_unit_of_second_hyperpolarizability()` Qty locksteps
+  to the CODATA centre inside the hull. Adding `au_hyp2` to LEDGER changes
+  the ledger bundle pin. Theories still evaluate with `f64` Qty. That is not
+  a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `au_hyp2` hash
+  fa9ba2625e88e8128830141fdca61a3a0ba52376e323ff959002f897315feb2e;
+  node 283772212168907d278d9a5a9bce9331843db9830e30e03f08235d13bb415103;
+  ledger node
+  32795e090f1531e5df73dce23244804824cb3ccac0c41707158b4305c7c300a2.
+  `au_hyp` hash
+  434651937f575d0bd441cbbf9277985302d35b5d637c1ed3be03f0f4d881cb04 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of 1st hyperpolarizability is a one-sigma SciInterval.**
   `physis-constants` versions `au_hyp` as the CODATA 2018 one-sigma hull
   `3.2063613061(15)×10^{-53}` C^{3} m^{3} J^{-2} from JPCRD 50, 033105 table XXXIV

@@ -683,10 +683,31 @@ pub fn atomic_unit_of_electric_polarizability(
 /// centre. Ledger unit is C^{3} m^{3} J^{-2}; this Qty is first
 /// hyperpolarizability (M^{-2} L^{-1} T^7 I^3). auhypol, au_beta, beta,
 /// hyperpolarizability, au_hyperpolarizability, e3a03_Eh2, and
-/// au_1st_hyp are not second names.
+/// au_1st_hyp are not second names. The atomic-unit
+/// second-hyperpolarizability listing is au_hyp2.
 pub fn atomic_unit_of_first_hyperpolarizability(
 ) -> Qty<physis_core::SI<typenum::N2, typenum::N1, typenum::P7, typenum::P3>> {
     Qty::new(3.206_361_306_1e-53)
+}
+
+/// Atomic unit of 2nd hyperpolarizability e^4 a0^4 / Eh^3 (C^4 m^4 J^{-3}),
+/// CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_hyp,
+/// not au_pol, not ea02, and not a FormalClaim that reconstructs that
+/// quotient from a live lookup. Ratio scale 10^75 overflows i128; the
+/// versioned ledger stores a SciInterval. Atomic unit of time still
+/// cites hbar and is not stored. Atomic unit of electric potential is a
+/// second name for Eh_eV and is not stored. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. Ledger unit is
+/// C^{4} m^{4} J^{-3}; this Qty is second hyperpolarizability
+/// (M^{-3} L^{-2} T^{10} I^4). auhypol2, au_gamma, gamma,
+/// second_hyperpolarizability, au_2nd_hyp, e4a04_Eh3, and
+/// hyperpolarizability2 are not second names.
+pub fn atomic_unit_of_second_hyperpolarizability(
+) -> Qty<physis_core::SI<typenum::N3, typenum::N2, typenum::P10, typenum::P4>> {
+    Qty::new(6.235_379_990_5e-65)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -11453,6 +11474,52 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; au_hyp is not an a/sqrt(8) certificate"
+        );
+        let au_hyp2 = physis_constants::atomic_unit_of_second_hyperpolarizability();
+        let au_hyp2_centre = SciExact::new(62_353_799_905, -75);
+        assert_eq!(
+            atomic_unit_of_second_hyperpolarizability().value(),
+            au_hyp2_centre.to_f64(),
+            "au_hyp2 Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_second_hyperpolarizability().value(),
+            6.235_379_990_5e-65,
+            "au_hyp2 Qty locksteps to SciExact::to_f64 on the 10^-75 centre"
+        );
+        assert!(
+            au_hyp2.value.contains(SciInterval::point(au_hyp2_centre)),
+            "au_hyp2 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_hyp2.value.lo, au_hyp2.value.hi,
+            "ledger au_hyp2 stays a SciInterval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_second_hyperpolarizability().hash,
+            physis_constants::atomic_unit_of_first_hyperpolarizability().hash,
+            "au_hyp2 is not au_hyp"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_second_hyperpolarizability().hash,
+            physis_constants::elementary_charge().hash,
+            "au_hyp2 is not e"
+        );
+        assert_eq!(
+            physis_constants::lookup("au_hyp2").unwrap().kind,
+            "sci-interval"
+        );
+        assert!(
+            physis_constants::lookup("auhypol2").is_none(),
+            "auhypol2 is not a ledger name; the live name is au_hyp2"
+        );
+        assert!(
+            physis_constants::lookup("second_hyperpolarizability").is_none(),
+            "second_hyperpolarizability is not a second name for au_hyp2"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_hyp2 is not an a/sqrt(8) certificate"
         );
 
         assert!(
