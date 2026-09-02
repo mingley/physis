@@ -642,10 +642,30 @@ pub fn atomic_unit_of_electric_dipole_moment(
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is C m^{2}; this Qty is electric
 /// quadrupole moment (L^2 T I). ea0_2, e_a0_2, au_Q, au_eq, ea0sq, and
-/// electric_quadrupole are not second names.
+/// electric_quadrupole are not second names. The atomic-unit
+/// electric-polarizability listing is au_pol.
 pub fn atomic_unit_of_electric_quadrupole_moment(
 ) -> Qty<physis_core::SI<typenum::Z0, typenum::P2, typenum::P1, typenum::P1>> {
     Qty::new(4.486_551_524_6e-40)
+}
+
+/// Atomic unit of electric polarizability e^2 a0^2 / Eh (C^2 m^2 J^{-1}),
+/// CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not SI elementary charge e, not Bohr a0, not Hartree Eh, not ea02,
+/// not ea0, not permittivity au_eps, not fine-structure alpha, and not
+/// a FormalClaim that reconstructs that quotient from a live lookup.
+/// Ratio scale 10^52 overflows i128; the versioned ledger stores a
+/// SciInterval. Atomic unit of time still cites hbar and is not stored.
+/// Atomic unit of electric potential is a second name for Eh_eV and is
+/// not stored. The versioned ledger stores the one-sigma hull; this Qty
+/// is that centre. Ledger unit is C^{2} m^{2} J^{-1}; this Qty is
+/// polarizability (M^{-1} T^4 I^2). auepol, A_ep, au_alpha, alpha_e,
+/// polarizability, au_polarizability, and e2a02_Eh are not second names.
+pub fn atomic_unit_of_electric_polarizability(
+) -> Qty<physis_core::SI<typenum::N1, typenum::Z0, typenum::P4, typenum::P2>> {
+    Qty::new(1.648_777_274_36e-41)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -11315,6 +11335,57 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; ea02 is not an a/sqrt(8) certificate"
+        );
+        let au_pol = physis_constants::atomic_unit_of_electric_polarizability();
+        let au_pol_centre = SciExact::new(164_877_727_436, -52);
+        assert_eq!(
+            atomic_unit_of_electric_polarizability().value(),
+            au_pol_centre.to_f64(),
+            "au_pol Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_electric_polarizability().value(),
+            1.648_777_274_36e-41,
+            "au_pol Qty locksteps to SciExact::to_f64 on the 10^-52 centre"
+        );
+        assert!(
+            au_pol.value.contains(SciInterval::point(au_pol_centre)),
+            "au_pol Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_pol.value.lo, au_pol.value.hi,
+            "ledger au_pol stays a SciInterval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_polarizability().hash,
+            physis_constants::atomic_unit_of_electric_quadrupole_moment().hash,
+            "au_pol is not ea02"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_polarizability().hash,
+            physis_constants::elementary_charge().hash,
+            "au_pol is not e"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_electric_polarizability().hash,
+            physis_constants::atomic_unit_of_permittivity().hash,
+            "au_pol is not au_eps"
+        );
+        assert_eq!(
+            physis_constants::lookup("au_pol").unwrap().kind,
+            "sci-interval"
+        );
+        assert!(
+            physis_constants::lookup("auepol").is_none(),
+            "auepol is not a ledger name; the live name is au_pol"
+        );
+        assert!(
+            physis_constants::lookup("polarizability").is_none(),
+            "polarizability is not a second name for au_pol"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_pol is not an a/sqrt(8) certificate"
         );
 
         assert!(

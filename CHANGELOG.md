@@ -80,6 +80,37 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of electric polarizability is a one-sigma SciInterval.**
+  `physis-constants` versions `au_pol` as the CODATA 2018 one-sigma hull
+  `1.64877727436(50)×10^{-41}` C^{2} m^{2} J^{-1} from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of electric polarizability
+  defined as `e² a0² / E_h`, not elementary charge `e`, not atomic unit of
+  electric quadrupole moment `ea02`, not permittivity `au_eps`, and not a
+  FormalClaim reconstructing that quotient from a live lookup. A Ratio
+  denominator `10^{52}` overflows `i128`, so the ledger stores a SciInterval.
+  Atomic unit of time still cites ħ and is not stored. Atomic unit of electric
+  potential is a second name for `Eh_eV` and is not stored. The {220} lattice
+  spacing is not stored. Decade `10^{51}` on the printed 7436-digit is the 10×
+  trap. 2018 last-digit is `7436`; 2022 last-digit `7212` is excluded. The
+  ledger name is `au_pol`; `auepol`, `A_ep`, `au_alpha`, `alpha_e`,
+  `polarizability`, `au_polarizability`, and `e2a02_Eh` are not second names.
+  `physis_model` `atomic_unit_of_electric_polarizability()` Qty locksteps to
+  the CODATA centre inside the hull. Adding `au_pol` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified:
+  `au_pol` hash
+  83f51c8d2e9ae545ab1298786b37bfa9b49ff6a2172b60299e872b9a7de4e9f7;
+  node 597e7d6c752f32550960ded18b2c621cef405cddd1d8bb90bec7e2d40697ccb7;
+  ledger node
+  7586a5f129193368d6399771c71f3d25ac051ea4b658595a2d4bc2ffd93ab735.
+  `ea02` hash
+  eb5d43dc3a14917258bbbf6b0b2d98d3cc5c54b1ce734bd3287159b43d201bbc and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of electric quadrupole moment is a one-sigma SciInterval.**
   `physis-constants` versions `ea02` as the CODATA 2018 one-sigma hull
   `4.4865515246(14)×10^{-40}` C m^{2} from JPCRD 50, 033105 table XXXIV
