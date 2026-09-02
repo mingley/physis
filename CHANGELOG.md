@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 joule-hartree relationship is a one-sigma Interval.**
+  `physis-constants` versions `J_Eh` as the CODATA 2018 one-sigma hull
+  `2.2937122783963(45)×10^{17}` E_h from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the hartree-joule pair, not a Ratio reciprocal of `Eh`, not
+  electron volt-hartree `eV_Eh`, not hartree energy in eV `Eh_eV`, not
+  joule-electron volt `J_eV`, and not a FormalClaim reconstructing
+  `1 / Eh` from live lookups. Inverse atomic-mass-unit-hartree is not
+  stored. Hartree-kilogram is not stored: Ratio scale overflows
+  `i128`. The integer decade is `10^{4}` on the `10^{17}` form; `10^{3}`
+  is the 10× trap (`σ = 4.5` is not an integer). This is not the
+  CODATA 2022 last-digit `3969` as the stored centre; the 2018 hull
+  still contains that 2022 centre. The ledger name is `J_Eh`; `JEh`,
+  `J-Eh`, and `joule_Eh` are not second names. `physis_model`
+  `joule_in_hartree()` Qty locksteps to the CODATA centre inside the
+  hull. Adding `J_Eh` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `J_Eh` hash
+  f922a6b2268fef1d8e0a56c71cfcdd7daee0359c8a1a3ad7e728d05b8e424ddd;
+  node 897c2126a3ef852a26f86bd5d39162b2d1ea47bb5875232e6ec15909626458b2;
+  ledger node
+  e90f7ee323c5bf0d74c8ce3d44a2f6016bd9dedda2d1a4c247925edf006fb4b8.
+  `eV_Eh` hash
+  8c15bdef7dbec61c106d7df00c024ac4aad0ff46fb280a6e950f11248024a201 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 electron volt-hartree relationship is a one-sigma Interval.**
   `physis-constants` versions `eV_Eh` as the CODATA 2018 one-sigma hull
   `3.6749322175655(71)×10^{-2}` E_h from JPCRD 50, 033105 table XXXV

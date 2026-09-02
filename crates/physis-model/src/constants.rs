@@ -333,6 +333,19 @@ pub fn electron_volt_in_hartree() -> Qty<Dimensionless> {
     Qty::new(3.674_932_217_565_5e-2)
 }
 
+/// Joule-hartree relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the joule-hartree relationship, not Eh, not eV_Eh, not Eh_eV, not
+/// J_eV, and not a FormalClaim that reconstructs 1 / Eh from live
+/// lookups. The versioned ledger stores the one-sigma hull; this Qty is
+/// that centre. Ledger unit is E_h; this Qty is dimensionless, not a
+/// hartree-energy dimension. JEh, J-Eh, and joule_Eh are not second
+/// names. Inverse atomic-mass-unit-hartree is not stored.
+pub fn joule_in_hartree() -> Qty<Dimensionless> {
+    Qty::new(2.293_712_278_396_3e17)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10127,6 +10140,46 @@ mod tests {
         assert!(
             physis_constants::lookup("electron_volt_Eh").is_none(),
             "electron_volt_Eh is not a second name for eV_Eh"
+        );
+
+        let j_eh = physis_constants::joule_in_hartree();
+        let j_eh_centre = Ratio::int(22_937_122_783_963i128 * 10i128.pow(4));
+        assert_eq!(
+            joule_in_hartree().value(),
+            j_eh_centre.to_f64(),
+            "J_Eh Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            joule_in_hartree().value(),
+            2.293_712_278_396_3e17,
+            "J_Eh Qty locksteps to Ratio::to_f64 on the integer 10^17 centre"
+        );
+        assert!(
+            j_eh.value.contains(Interval::point(j_eh_centre)),
+            "J_Eh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            j_eh.value.lo, j_eh.value.hi,
+            "ledger J_Eh stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::joule_in_hartree().hash,
+            physis_constants::hartree_energy().hash,
+            "J_Eh is not Eh"
+        );
+        assert_ne!(
+            physis_constants::joule_in_hartree().hash,
+            physis_constants::electron_volt_in_hartree().hash,
+            "J_Eh is not eV_Eh"
+        );
+        assert_eq!(physis_constants::lookup("J_Eh").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("JEh").is_none(),
+            "JEh is not a ledger name; the live name is J_Eh"
+        );
+        assert!(
+            physis_constants::lookup("joule_Eh").is_none(),
+            "joule_Eh is not a second name for J_Eh"
         );
 
         assert!(
