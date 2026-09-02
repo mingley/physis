@@ -22,6 +22,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 inverse meter-electron volt relationship is an exact Ratio.**
+  `physis-constants` versions `m_eV` as the SI-exact Ratio `h c / e` =
+  `6621486190496429/5340588780000000000000` eV from JPCRD 50, 033105
+  table XXXV (energy conversion factors). The table prints
+  `1.239 841 984… × 10^{-6}`; the ledger stores the full product. The
+  reduced denominator keeps factors 2, 3, 5, 19, 389, and 12043 (the
+  same odd primes as `h_eVHz`, `RK`, and `k_eV`, because all divide by
+  `e`), so this is not a terminating SciExact. This is not SI
+  joule-second `h`, not metre-per-second `c`, not electronvolt `eV`, not
+  `h_eVHz`, not inverse meter-joule `m_J`, not an SI defining constant,
+  and not a FormalClaim reconstructing `h * c / e` from live lookups.
+  Inverse meter-hertz is `c` and is not stored as a second name. The
+  ledger name is `m_eV`; `m` and `meV` are not second names.
+  `physis_model` `inverse_meter_in_electronvolt()` Qty locksteps to
+  `Ratio::to_f64` of that Ratio. Adding `m_eV` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is
+  not a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4. Verified:
+  `m_eV` hash 12c1ae591caa23af86b67134aea0b013f49ede015195013efc865ec6b1340dff; node 57c79435bf8516f4b2e547b8b221b5dd003f18f701b6d01c44268682fa010d2d; ledger node
+  00792ae6cad24021b4db3dd0505bd4b3d6c802a5ec9eda7457396a60199d805c. `m_J` hash
+  1b1ae8c0a216320aad8dd8ac91944989de7278e7d89575e0824bcf77e764deeb,
+  `h_eVHz` hash bc3fb761f651c84f885a4749f6099f7eef62b31467e2df1ca778aede28ce2964,
+  and `eV` hash d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f
+  unchanged.
+
 - **CODATA 2018 inverse meter-joule relationship is SciExact.**
   `physis-constants` versions `m_J` as the SI-exact SciExact `h c` =
   `19864458571489287e-41` J from JPCRD 50, 033105 table XXXV (energy

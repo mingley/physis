@@ -73,6 +73,23 @@ pub fn inverse_meter_in_joule() -> Qty<Dimensionless> {
     Qty::new(1.986_445_857_148_928_6e-25)
 }
 
+/// Inverse meter-electron volt relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the inverse
+/// meter-electron volt relationship, not SI joule-second h, not
+/// metre-per-second c, not electronvolt eV, not Planck in eV/Hz h_eVHz,
+/// not inverse meter-joule m_J, not kilogram-joule kg_J, and not a
+/// FormalClaim that reconstructs h * c / e from live lookups. The table
+/// prints an ellipsis; the ledger stores the exact Ratio. This is not a
+/// terminating SciExact (2, 3, 5, 19, 389, and 12043 remain in the
+/// reduced denominator). The versioned ledger stores the exact Ratio;
+/// this Qty is the IEEE rounding of that Ratio. Ledger unit is eV; this
+/// Qty is dimensionless, not SI joule-second. m and m_e are not second
+/// names.
+pub fn inverse_meter_in_electronvolt() -> Qty<Dimensionless> {
+    Qty::new(1.239_841_984_332_002_6e-6)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -9074,6 +9091,52 @@ mod tests {
         assert!(
             physis_constants::lookup("m").is_none(),
             "m is not a ledger name; the live name is m_J"
+        );
+
+        let m_ev = physis_constants::inverse_meter_in_electronvolt();
+        let m_ev_value = Ratio::new(
+            662_607_015i128 * 299_792_458i128,
+            1_602_176_634i128 * 10i128.pow(14),
+        );
+        assert_eq!(m_ev.value, m_ev_value, "ledger m_eV is the exact SI Ratio");
+        assert_eq!(
+            inverse_meter_in_electronvolt().value(),
+            m_ev_value.to_f64(),
+            "m_eV Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            inverse_meter_in_electronvolt().value(),
+            1.239_841_984_332_002_6e-6,
+            "m_eV Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
+        assert!(
+            m_ev.value > Ratio::int(0),
+            "ledger m_eV stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_electronvolt().hash,
+            physis_constants::planck_h().hash,
+            "m_eV is not h"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_electronvolt().hash,
+            physis_constants::planck_in_ev_per_hz().hash,
+            "m_eV is not h_eVHz"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_electronvolt().hash,
+            physis_constants::electron_volt().hash,
+            "m_eV is not eV"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_electronvolt().hash,
+            physis_constants::inverse_meter_in_joule().hash,
+            "m_eV is not m_J"
+        );
+        assert_eq!(physis_constants::lookup("m_eV").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("meV").is_none(),
+            "meV is not a ledger name; the live name is m_eV"
         );
 
         assert!(
