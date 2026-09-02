@@ -260,9 +260,23 @@ pub fn hartree_in_hertz() -> Qty<Dimensionless> {
 /// Eh / (h c) from live lookups. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre. Ledger unit is m^{-1};
 /// this Qty is dimensionless, not an inverse-length dimension. Ehm,
-/// Eh-m, hartree_m, and m_Eh are not second names.
+/// Eh-m, and hartree_m are not second names. The inverse listing is
+/// m_Eh.
 pub fn hartree_in_inverse_meter() -> Qty<Dimensionless> {
     Qty::new(2.194_746_313_632e7)
+}
+
+/// Inverse meter-hartree relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the inverse meter-hartree relationship, not Eh_m, not Hz_Eh, not
+/// Rinf, not m_J, and not a FormalClaim that reconstructs 1 / (2 Rinf)
+/// or h c / Eh from live lookups. The versioned ledger stores the
+/// one-sigma hull; this Qty is that centre. Ledger unit is E_h; this
+/// Qty is dimensionless, not a hartree-energy dimension. mEh, m-Eh,
+/// and inv_m_hartree are not second names.
+pub fn inverse_meter_in_hartree() -> Qty<Dimensionless> {
+    Qty::new(4.556_335_252_912e-8)
 }
 
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
@@ -9864,9 +9878,45 @@ mod tests {
             physis_constants::lookup("Ehm").is_none(),
             "Ehm is not a ledger name; the live name is Eh_m"
         );
+
+        let m_eh = physis_constants::inverse_meter_in_hartree();
+        let m_eh_centre = Ratio::new(45_563_352_529_120, 10i128.pow(21));
+        assert_eq!(
+            inverse_meter_in_hartree().value(),
+            m_eh_centre.to_f64(),
+            "m_Eh Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            inverse_meter_in_hartree().value(),
+            4.556_335_252_912e-8,
+            "m_Eh Qty locksteps to Ratio::to_f64 on the 10^21 centre"
+        );
         assert!(
-            physis_constants::lookup("m_Eh").is_none(),
-            "m_Eh is not stored: inverse meter-hartree is a later table row"
+            m_eh.value.contains(Interval::point(m_eh_centre)),
+            "m_Eh Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            m_eh.value.lo, m_eh.value.hi,
+            "ledger m_Eh stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_hartree().hash,
+            physis_constants::hartree_in_inverse_meter().hash,
+            "m_Eh is not Eh_m"
+        );
+        assert_ne!(
+            physis_constants::inverse_meter_in_hartree().hash,
+            physis_constants::hertz_in_hartree().hash,
+            "m_Eh is not Hz_Eh"
+        );
+        assert_eq!(physis_constants::lookup("m_Eh").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("mEh").is_none(),
+            "mEh is not a ledger name; the live name is m_Eh"
+        );
+        assert!(
+            physis_constants::lookup("inv_m_hartree").is_none(),
+            "inv_m_hartree is not a second name for m_Eh"
         );
 
         assert!(

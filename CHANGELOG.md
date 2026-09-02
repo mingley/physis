@@ -80,6 +80,34 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 inverse meter-hartree relationship is a one-sigma Interval.**
+  `physis-constants` versions `m_Eh` as the CODATA 2018 one-sigma hull
+  `4.5563352529120(88)×10^{-8}` E_h from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended inverse listing
+  of the hartree-inverse meter pair, not a Ratio reciprocal of `Eh_m`,
+  not hertz-hartree `Hz_Eh`, not Rydberg `Rinf`, not SI-exact inverse
+  meter-joule `m_J`, not joule `Eh`, and not a FormalClaim reconstructing
+  `1 / (2 Rinf)` or `h c / Eh` from live lookups. Hertz-kilogram is not
+  stored: `h/c²` overflows `i128`. The decade is `10^{21}`; `10^{20}` is
+  the 10× trap (`σ = 8.8` is not an integer). This is not the CODATA
+  2022 last-digit `9132` as the stored centre; the 2018 hull still
+  contains that 2022 centre. The ledger name is `m_Eh`; `mEh`, `m-Eh`,
+  and `inv_m_hartree` are not second names. `physis_model`
+  `inverse_meter_in_hartree()` Qty locksteps to the CODATA centre inside
+  the hull. Adding `m_Eh` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified: `m_Eh` hash
+  ec9127261ac8d38bd117a7b563580e40cd7d6e6a893da1d89862739aee98861c;
+  node 93026de8e32f434e1e60293935443a6cd2f35a77c74adaaf1accd2de43bdf6f3;
+  ledger node
+  fd65295dfb2e03997165e023cdbc0231a79d8db8c53f3454fec2c71f7b15a141.
+  `Eh_m` hash
+  9696fa523650b61199c2590965df2a7d36be3f0e319f17e3457b126192fb9796 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 hartree-inverse meter relationship is a one-sigma Interval.**
   `physis-constants` versions `Eh_m` as the CODATA 2018 one-sigma hull
   `2.1947463136320(43)×10^{7}` m⁻¹ from JPCRD 50, 033105 table XXXV
