@@ -1672,11 +1672,26 @@ pub fn triton_magnetic_moment_to_nuclear_magneton() -> Qty<Dimensionless> {
 /// triton nuclear-magneton ratio. This Qty is not a certificate that
 /// it equals 2 μ_t/μ_N from sibling moments. JPCRD prints different
 /// digits from mu_t_muN because I = 1/2; each row has its own Claim
-/// identity. Helion mass is `m_h`. Later Helion rows are not stored. The
+/// identity. The triton-proton magnetic-moment ratio is `mu_t_mup`.
+/// Helion mass is `m_h`. Later Helion rows are not stored. The
 /// versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. This is not the CODATA 2022 last-digit 930.
 pub fn triton_g_factor() -> Qty<Dimensionless> {
     Qty::new(5.957_924_931)
+}
+
+/// Triton-proton magnetic-moment ratio μ_t/μ_p, CODATA 2018.
+///
+/// This is the recommended centre from the triton section, not the
+/// deuteron-proton, electron-proton, or neutron-proton magnetic-moment
+/// ratio and not the triton-proton mass ratio. This Qty is not a
+/// certificate that it equals a reconstructed μ_t/μ_p from sibling
+/// moments and not bound μ_t(HT)/μ_p(HT). The g-factor is `gt`. Helion
+/// mass is `m_h`. Later Helion rows are not stored. The versioned
+/// ledger stores the one-sigma hull; this Qty is that centre. This is
+/// not the CODATA 2022 last-digit 9189 as the stored centre.
+pub fn triton_proton_magnetic_moment_ratio() -> Qty<Dimensionless> {
+    Qty::new(1.066_639_919_1)
 }
 
 /// Helion mass m_h (kg), CODATA 2018.
@@ -7558,6 +7573,48 @@ mod tests {
         assert!(
             physis_constants::lookup("mh").is_none(),
             "mh is not a ledger name; the live name is m_h"
+        );
+        let mu_t_mup = physis_constants::triton_proton_magnetic_moment_ratio();
+        let mu_t_mup_centre = Ratio::new(10_666_399_191, 10i128.pow(10));
+        assert_eq!(
+            triton_proton_magnetic_moment_ratio().value(),
+            mu_t_mup_centre.to_f64(),
+            "mu_t_mup Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            triton_proton_magnetic_moment_ratio().value(),
+            1.066_639_919_1,
+            "mu_t_mup Qty locksteps to Ratio::to_f64 on the integer 10^10 centre"
+        );
+        assert!(
+            mu_t_mup.value.contains(Interval::point(mu_t_mup_centre)),
+            "mu_t_mup Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mu_t_mup.value.lo, mu_t_mup.value.hi,
+            "ledger mu_t_mup stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::triton_proton_magnetic_moment_ratio().hash,
+            physis_constants::triton_g_factor().hash,
+            "mu_t_mup is not gt"
+        );
+        assert_ne!(
+            physis_constants::triton_proton_magnetic_moment_ratio().hash,
+            physis_constants::deuteron_proton_magnetic_moment_ratio().hash,
+            "mu_t_mup is not mu_d_mup"
+        );
+        assert_eq!(
+            physis_constants::lookup("mu_t_mup").unwrap().kind,
+            "interval"
+        );
+        assert!(
+            physis_constants::lookup("mut_mup").is_none(),
+            "mut_mup is not a ledger name; the live name is mu_t_mup"
+        );
+        assert!(
+            physis_constants::lookup("D41").is_none(),
+            "D41 is not a second name for mu_t_mup"
         );
         let m_h = physis_constants::helion_mass();
         let m_h_centre = Ratio::new(50_064_127_796, 10i128.pow(37));

@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 triton-proton magnetic-moment ratio is a one-sigma Interval.**
+  `physis-constants` versions `mu_t_mup` as the CODATA 2018 one-sigma hull
+  `1.0666399191(21)` from JPCRD 50, 033105 table XXXI (Triton). This is the
+  recommended free `μ_t/μ_p` hull from the NIST 2018 complete listing and
+  the JPCRD adjusted-constant row, not triton g-factor `gt`, not
+  deuteron-proton `mu_d_mup`, and not bound Table XXI D41
+  `μ_t(HT)/μ_p(HT)` (different digits). Not a FormalClaim reconstructing
+  that quotient from a live lookup. Decade `10^{9}` on the printed 9191-digit
+  is the 10× trap. 2018 last-digit is `9191`; 2022 last-digit `9189` is not
+  the stored centre (the 2018 hull still covers it). The ledger name is
+  `mu_t_mup`; `mut_mup`, `mu_t/mup`, `mu-t-mup`, `mu_t_mu_p`, `mu_tp`, and
+  `D41` are not second names. `physis_model`
+  `triton_proton_magnetic_moment_ratio()` Qty locksteps to the CODATA
+  centre inside the hull. Adding `mu_t_mup` to LEDGER changes the ledger
+  bundle pin. Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph
+  id unchanged. P3N count stays 4.
+  Verified:
+  `mu_t_mup` hash
+  0326c3b5a71ba51c0c9dc8178cd4decfd1c1475ce7bbb53ff427c8f40bef7ce2;
+  node a594dfc5dd4f6d68da2d74b993a5bd54f5bfc451de97ffdedeb534cc00970663;
+  ledger node
+  44ad3d3dcf486a0d6886a40aacba51147c0489406626a11b413242233df71e95.
+  `au_chi` hash
+  b5edc5651e0f2f662eafb0897c3354db76129ed9350444a27e9a76998ebc851f and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of magnetizability is a one-sigma SciInterval.**
   `physis-constants` versions `au_chi` as the CODATA 2018 one-sigma hull
   `7.8910366008(48)×10^{-29}` J T^{-2} from JPCRD 50, 033105 table XXXIV
