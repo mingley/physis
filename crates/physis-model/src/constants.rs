@@ -743,6 +743,28 @@ pub fn atomic_unit_of_magnetic_flux_density(
     Qty::new(2.350_517_567_58e5)
 }
 
+/// Atomic unit of magnetizability e^2 a0^2 / m_e (J T^{-2}),
+/// CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not magnetic flux density au_B, not magnetic dipole au_mu, not Bohr
+/// magneton muB, not SI elementary charge e, not Bohr a0, not electron
+/// mass m_e, and not a FormalClaim that reconstructs e^2 a0^2 / m_e
+/// from a live lookup. The printed formula does not cite hbar; the
+/// versioned ledger still stores the printed one-sigma hull, not that
+/// quotient. Ratio scale 10^39 overflows i128; the versioned ledger
+/// stores a SciInterval. Atomic unit of time still cites hbar and is
+/// not stored. Atomic unit of electric potential is a second name for
+/// Eh_eV and is not stored. The versioned ledger stores the one-sigma
+/// hull; this Qty is that centre. Ledger unit is J T^{-2}; this Qty is
+/// magnetizability (M^{-1} L^2 T^2 I^2). auchi, au-chi, au_xi,
+/// magnetizability, chi_au, e2a02_me, and au_magnetizability are not
+/// second names.
+pub fn atomic_unit_of_magnetizability(
+) -> Qty<physis_core::SI<typenum::N1, typenum::P2, typenum::P2, typenum::P2>> {
+    Qty::new(7.891_036_600_8e-29)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -11639,6 +11661,52 @@ mod tests {
         assert!(
             physis_constants::lookup("d220").is_none(),
             "d220 is not stored; au_B is not an a/sqrt(8) certificate"
+        );
+        let au_chi = physis_constants::atomic_unit_of_magnetizability();
+        let au_chi_centre = SciExact::new(78_910_366_008, -39);
+        assert_eq!(
+            atomic_unit_of_magnetizability().value(),
+            au_chi_centre.to_f64(),
+            "au_chi Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_unit_of_magnetizability().value(),
+            7.891_036_600_8e-29,
+            "au_chi Qty locksteps to SciExact::to_f64 on the 10^-39 centre"
+        );
+        assert!(
+            au_chi.value.contains(SciInterval::point(au_chi_centre)),
+            "au_chi Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            au_chi.value.lo, au_chi.value.hi,
+            "ledger au_chi stays a SciInterval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_magnetizability().hash,
+            physis_constants::atomic_unit_of_magnetic_flux_density().hash,
+            "au_chi is not au_B"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_magnetizability().hash,
+            physis_constants::atomic_unit_of_magnetic_dipole_moment().hash,
+            "au_chi is not au_mu"
+        );
+        assert_eq!(
+            physis_constants::lookup("au_chi").unwrap().kind,
+            "sci-interval"
+        );
+        assert!(
+            physis_constants::lookup("auchi").is_none(),
+            "auchi is not a ledger name; the live name is au_chi"
+        );
+        assert!(
+            physis_constants::lookup("e2a02_me").is_none(),
+            "e2a02_me is not a second name for au_chi"
+        );
+        assert!(
+            physis_constants::lookup("d220").is_none(),
+            "d220 is not stored; au_chi is not an a/sqrt(8) certificate"
         );
 
         assert!(

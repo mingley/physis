@@ -80,6 +80,38 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic unit of magnetizability is a one-sigma SciInterval.**
+  `physis-constants` versions `au_chi` as the CODATA 2018 one-sigma hull
+  `7.8910366008(48)×10^{-29}` J T^{-2} from JPCRD 50, 033105 table XXXIV
+  (atomic units). This is the recommended atomic unit of magnetizability
+  listed as `e² a0² / m_e`, not magnetic flux density `au_B`, not magnetic
+  dipole `au_mu`, and not a FormalClaim reconstructing that quotient from
+  a live lookup. The printed formula does not cite ħ; the ledger still
+  stores the printed hull. A Ratio denominator `10^{39}` overflows i128.
+  Atomic unit of time still cites ħ and is not stored. Atomic unit of
+  electric potential is a second name for `Eh_eV` and is not stored. The
+  {220} lattice spacing is not stored. Decade `10^{38}` on the printed
+  6008-digit is the 10× trap. 2018 last-digit is `6008`; 2022 last-digit
+  `5794` is excluded. The ledger name is `au_chi`; `auchi`, `au-chi`,
+  `au_xi`, `magnetizability`, `chi_au`, `e2a02_me`, and
+  `au_magnetizability` are not second names. `physis_model`
+  `atomic_unit_of_magnetizability()` Qty locksteps to the CODATA centre
+  inside the hull. Adding `au_chi` to LEDGER changes the ledger bundle
+  pin. Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified:
+  `au_chi` hash
+  b5edc5651e0f2f662eafb0897c3354db76129ed9350444a27e9a76998ebc851f;
+  node 6868deeef8f6aaa269fa9111656c9b977454c670786dcf39e604ca0c6e3df974;
+  ledger node
+  0ffacc6eef9e3626c9aa66b7f7a246e9063c3f424b4d4e729581f24b5f6d66b0.
+  `au_B` hash
+  74c93d71b77f529ed79af1686c451dbc4a36f36ff80f9e94f39976bf97e9afc3 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic unit of magnetic flux density is a one-sigma Interval.**
   `physis-constants` versions `au_B` as the CODATA 2018 one-sigma hull
   `2.35051756758(71)×10^{5}` T from JPCRD 50, 033105 table XXXIV

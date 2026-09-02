@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  351779056aee4f1853b1c3699284134ea0aa751e203ded2ce45bd93b4825b6f3"),
+            text.contains("constant  ledger  0ffacc6eef9e3626c9aa66b7f7a246e9063c3f424b4d4e729581f24b5f6d66b0"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -18656,6 +18656,45 @@ mod tests {
             Some(NodeKind::VersionedConstant)
         );
 
+        let au_chi = lab
+            .exec(Command::Constant {
+                name: Some("au_chi".into()),
+            })
+            .text()
+            .to_string();
+        assert!(au_chi.contains("constant  au_chi  node "), "{au_chi}");
+        assert!(
+            au_chi.contains(
+                "hash     b5edc5651e0f2f662eafb0897c3354db76129ed9350444a27e9a76998ebc851f"
+            ),
+            "{au_chi}"
+        );
+        assert!(au_chi.contains("kind     sci-interval"), "{au_chi}");
+        assert!(au_chi.contains("table    XXXIV"), "{au_chi}");
+        assert!(
+            au_chi.contains("range    au_chi = 7.8910366008(48)e-29"),
+            "{au_chi}"
+        );
+        assert!(au_chi.contains("unit     J T^{-2}"), "{au_chi}");
+        assert!(
+            au_chi.contains("value    [7891036596e-38, 78910366056e-39]"),
+            "{au_chi}"
+        );
+        assert!(au_chi.contains("rebuild  ok"), "{au_chi}");
+        assert!(au_chi.contains("not P3N"), "{au_chi}");
+        assert!(!au_chi.contains("receipt"), "{au_chi}");
+        assert!(!au_chi.contains("theorem"), "{au_chi}");
+        let au_chi_id = constant_node_id(&au_chi);
+        assert_eq!(
+            au_chi_id.to_hex(),
+            "6868deeef8f6aaa269fa9111656c9b977454c670786dcf39e604ca0c6e3df974",
+            "journaling must not change the au_chi constant payload"
+        );
+        assert_eq!(
+            lab.store.get(au_chi_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
         let n_a_e = lab
             .exec(Command::Constant {
                 name: Some("NAe".into()),
@@ -22959,7 +22998,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "351779056aee4f1853b1c3699284134ea0aa751e203ded2ce45bd93b4825b6f3",
+            "0ffacc6eef9e3626c9aa66b7f7a246e9063c3f424b4d4e729581f24b5f6d66b0",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -23894,7 +23933,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "351779056aee4f1853b1c3699284134ea0aa751e203ded2ce45bd93b4825b6f3",
+            "0ffacc6eef9e3626c9aa66b7f7a246e9063c3f424b4d4e729581f24b5f6d66b0",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -25454,6 +25493,14 @@ mod tests {
         .expect("pinned au_B node");
         assert_eq!(
             lab2.store.get(au_b).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let au_chi = physis_core::artifact::ArtifactId::from_hex(
+            "6868deeef8f6aaa269fa9111656c9b977454c670786dcf39e604ca0c6e3df974",
+        )
+        .expect("pinned au_chi node");
+        assert_eq!(
+            lab2.store.get(au_chi).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let n_a_e = physis_core::artifact::ArtifactId::from_hex(
@@ -27383,7 +27430,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  351779056aee4f1853b1c3699284134ea0aa751e203ded2ce45bd93b4825b6f3"),
+            text.contains("constant  ledger  0ffacc6eef9e3626c9aa66b7f7a246e9063c3f424b4d4e729581f24b5f6d66b0"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
