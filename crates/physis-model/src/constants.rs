@@ -431,6 +431,21 @@ pub fn electron_volt_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(1.073_544_102_33e-9)
 }
 
+/// Atomic mass unit-inverse meter relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the atomic mass unit-inverse meter relationship, not Rinf, not
+/// Eh_m, not Hz_m, not m_u, not u_Hz, and not a FormalClaim that
+/// reconstructs c^2 m_u / (h c) from live lookups. Inverse meter-atomic
+/// mass unit cannot be named m_u and is not stored under a second name.
+/// Atomic mass unit-kelvin is a later table row and is not stored. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// Ledger unit is m^{-1}; this Qty is dimensionless, not an
+/// inverse-length dimension. um, u-m, and amu_m are not second names.
+pub fn atomic_mass_unit_in_inverse_meter() -> Qty<Dimensionless> {
+    Qty::new(7.513_006_610_4e14)
+}
+
 /// Newtonian gravitational constant, m³ kg⁻¹ s⁻².
 pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>> {
     Qty::new(6.674_30e-11)
@@ -10501,6 +10516,46 @@ mod tests {
         assert!(
             physis_constants::lookup("electronvolt_u").is_none(),
             "electronvolt_u is not a second name for eV_u"
+        );
+
+        let u_m = physis_constants::atomic_mass_unit_in_inverse_meter();
+        let u_m_centre = Ratio::int(75_130_066_104i128 * 10i128.pow(4));
+        assert_eq!(
+            atomic_mass_unit_in_inverse_meter().value(),
+            u_m_centre.to_f64(),
+            "u_m Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_mass_unit_in_inverse_meter().value(),
+            7.513_006_610_4e14,
+            "u_m Qty locksteps to Ratio::to_f64 on the integer 10^14 centre"
+        );
+        assert!(
+            u_m.value.contains(Interval::point(u_m_centre)),
+            "u_m Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            u_m.value.lo, u_m.value.hi,
+            "ledger u_m stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_inverse_meter().hash,
+            physis_constants::electron_volt_in_atomic_mass_unit().hash,
+            "u_m is not eV_u"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_inverse_meter().hash,
+            physis_constants::rydberg_constant().hash,
+            "u_m is not Rinf"
+        );
+        assert_eq!(physis_constants::lookup("u_m").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("um").is_none(),
+            "um is not a ledger name; the live name is u_m"
+        );
+        assert!(
+            physis_constants::lookup("amu_m").is_none(),
+            "amu_m is not a second name for u_m"
         );
 
         assert!(

@@ -80,6 +80,38 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 atomic mass unit-inverse meter relationship is a one-sigma Interval.**
+  `physis-constants` versions `u_m` as the CODATA 2018 one-sigma hull
+  `7.5130066104(23)×10^{14}` m^{-1} from JPCRD 50, 033105 table XXXV
+  (energy conversion factors). This is the recommended atomic mass
+  unit-inverse meter listing, not a Ratio reciprocal of unstored inverse
+  meter-atomic mass unit, not Rydberg constant `Rinf`, not hartree-inverse
+  meter `Eh_m`, not SI-exact hertz-inverse meter `Hz_m`, not kg atomic
+  mass constant `m_u`, not atomic mass unit-hertz `u_Hz`, not electron
+  volt-atomic mass unit `eV_u`, and not a FormalClaim reconstructing
+  `c² m_u / (h c)` from live lookups. Inverse meter-atomic mass unit
+  cannot be named `m_u` and is not stored under a second name. Atomic
+  mass unit-kelvin is a later table row and is not stored. The decade is
+  `10^{4}`; `10^{3}` is the 10× trap (`σ = 2.3` is not an integer). This
+  is not the CODATA 2022 last-digit `66209` as the stored centre; the 2018
+  hull excludes that 2022 centre. The ledger name is `u_m`; `um`, `u-m`,
+  and `amu_m` are not second names. `physis_model`
+  `atomic_mass_unit_in_inverse_meter()` Qty locksteps to the CODATA centre
+  inside the hull. Adding `u_m` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4. Verified:
+  `u_m` hash
+  3380878aa06e31c17144288a338b9b4614e21389fa72a9d2c16e1444c6b07035;
+  node acc94a83eafd38f422f07aa2387373cdfc0b98c33890b5bdce317ff4fe7c8651;
+  ledger node
+  2c9fbbec04f72c3c5abdf25b4e55be4fc71b192584f2973a7b11241ae488ed0c.
+  `eV_u` hash
+  39dba467459e1b7d4e44cd12512342f420c7f5d8b79b0f975af03b6d361225c6 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 electron volt-atomic mass unit relationship is a one-sigma Interval.**
   `physis-constants` versions `eV_u` as the CODATA 2018 one-sigma hull
   `1.07354410233(32)×10^{-9}` u from JPCRD 50, 033105 table XXXV
