@@ -1104,7 +1104,8 @@ pub fn shielding_difference_t_p_in_ht() -> Qty<Dimensionless> {
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 7029. Nominal solar irradiance is
 /// S_sun. Nominal solar effective temperature is T_sun. Nominal terrestrial
-/// equatorial radius is R_earth. Faraday constant is NAe.
+/// equatorial radius is R_earth. Nominal terrestrial polar radius is
+/// R_earth_p. Faraday constant is NAe.
 pub fn helion_shielding_shift() -> Qty<Dimensionless> {
     Qty::new(5.996_743e-5)
 }
@@ -2849,6 +2850,14 @@ pub fn solar_effective_temperature() -> Qty<Temperature> {
 /// and not solar radius `R_sun`. Faraday constant is NAe.
 pub fn terrestrial_equatorial_radius() -> Qty<Length> {
     Qty::new(6_378_100.0)
+}
+
+/// Nominal terrestrial polar radius (IAU 2015 conversion ruler), metres.
+///
+/// This is `R_Ep^N`, not a measured geodetic radius, not equatorial
+/// `R_earth`, and not solar radius `R_sun`. Faraday constant is NAe.
+pub fn terrestrial_polar_radius() -> Qty<Length> {
+    Qty::new(6_356_800.0)
 }
 
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
@@ -13768,12 +13777,39 @@ mod tests {
         );
         assert!(
             physis_constants::lookup("R_pE").is_none(),
-            "R_pE is polar terrestrial radius and is not stored"
+            "R_pE is not a ledger name; the live polar name is R_earth_p"
         );
         assert_ne!(
             physis_constants::terrestrial_equatorial_radius().hash,
             physis_constants::solar_radius().hash,
             "R_earth is not R_sun"
+        );
+
+        let rp = physis_constants::terrestrial_polar_radius();
+        assert_eq!(
+            rp.value,
+            Ratio::int(6_356_800),
+            "ledger R_earth_p is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            terrestrial_polar_radius().value(),
+            rp.value.to_f64(),
+            "R_earth_p is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            terrestrial_polar_radius().value(),
+            6_356_800.0,
+            "IAU 2015 R_earth_p^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("R_earth_p").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("R_Ep").is_none(),
+            "R_Ep is not a ledger name; the live name is R_earth_p"
+        );
+        assert_ne!(
+            physis_constants::terrestrial_polar_radius().hash,
+            physis_constants::terrestrial_equatorial_radius().hash,
+            "R_earth_p is not R_earth"
         );
 
         let ev = physis_constants::electron_volt();
