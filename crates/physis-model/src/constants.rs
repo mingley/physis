@@ -1095,6 +1095,18 @@ pub fn shielding_difference_t_p_in_ht() -> Qty<Dimensionless> {
     Qty::new(2.414_0e-8)
 }
 
+/// Helion shielding shift σ_h, CODATA 2018.
+///
+/// This is the recommended centre from the NIST 2018 complete listing,
+/// not proton magnetic shielding correction and not the HD or HT
+/// shielding-difference siblings. This Qty is not a certificate that it
+/// equals a reconstructed 1 − μ′_h/μ_h from sibling moments. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// This is not the CODATA 2022 last-digit 7029. Faraday constant is NAe.
+pub fn helion_shielding_shift() -> Qty<Dimensionless> {
+    Qty::new(5.996_743e-5)
+}
+
 /// Neutron mass, CODATA 2018.
 ///
 /// This is the recommended kg centre from the neutron section, not
@@ -7723,6 +7735,53 @@ mod tests {
         assert!(
             physis_constants::lookup("D43").is_none(),
             "D43 is not a second name for sigma_tp"
+        );
+        let sigma_h = physis_constants::helion_shielding_shift();
+        let sigma_h_centre = Ratio::new(5_996_743, 10i128.pow(11));
+        assert_eq!(
+            helion_shielding_shift().value(),
+            sigma_h_centre.to_f64(),
+            "sigma_h Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            helion_shielding_shift().value(),
+            5.996_743e-5,
+            "sigma_h Qty locksteps to Ratio::to_f64 on the integer 10^11 centre"
+        );
+        assert!(
+            sigma_h.value.contains(Interval::point(sigma_h_centre)),
+            "sigma_h Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            sigma_h.value.lo, sigma_h.value.hi,
+            "ledger sigma_h stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::helion_shielding_shift().hash,
+            physis_constants::shielding_difference_t_p_in_ht().hash,
+            "sigma_h is not sigma_tp"
+        );
+        assert_ne!(
+            physis_constants::helion_shielding_shift().hash,
+            physis_constants::shielding_difference_d_p_in_hd().hash,
+            "sigma_h is not sigma_dp"
+        );
+        assert_ne!(
+            physis_constants::helion_shielding_shift().hash,
+            physis_constants::proton_magnetic_shielding_correction().hash,
+            "sigma_h is not sigma0p"
+        );
+        assert_eq!(
+            physis_constants::lookup("sigma_h").unwrap().kind,
+            "interval"
+        );
+        assert!(
+            physis_constants::lookup("sigmah").is_none(),
+            "sigmah is not a ledger name; the live name is sigma_h"
+        );
+        assert!(
+            physis_constants::lookup("helion_shielding").is_none(),
+            "helion_shielding is not a second name for sigma_h"
         );
         let m_h = physis_constants::helion_mass();
         let m_h_centre = Ratio::new(50_064_127_796, 10i128.pow(37));
