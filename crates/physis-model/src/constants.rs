@@ -1103,7 +1103,8 @@ pub fn shielding_difference_t_p_in_ht() -> Qty<Dimensionless> {
 /// equals a reconstructed 1 − μ′_h/μ_h from sibling moments. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 7029. Nominal solar irradiance is
-/// S_sun. Nominal solar effective temperature is T_sun. Faraday constant is NAe.
+/// S_sun. Nominal solar effective temperature is T_sun. Nominal terrestrial
+/// equatorial radius is R_earth. Faraday constant is NAe.
 pub fn helion_shielding_shift() -> Qty<Dimensionless> {
     Qty::new(5.996_743e-5)
 }
@@ -2840,6 +2841,14 @@ pub fn solar_irradiance() -> Qty<Irradiance> {
 /// irradiance `S_sun`, and not luminosity `L_sun`. Faraday constant is NAe.
 pub fn solar_effective_temperature() -> Qty<Temperature> {
     Qty::new(5772.0)
+}
+
+/// Nominal terrestrial equatorial radius (IAU 2015 conversion ruler), metres.
+///
+/// This is `R_Ee^N`, not a measured geodetic radius, not polar `R_pE`,
+/// and not solar radius `R_sun`. Faraday constant is NAe.
+pub fn terrestrial_equatorial_radius() -> Qty<Length> {
+    Qty::new(6_378_100.0)
 }
 
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
@@ -13734,6 +13743,37 @@ mod tests {
             physis_constants::solar_effective_temperature().hash,
             physis_constants::solar_irradiance().hash,
             "T_sun is not S_sun"
+        );
+
+        let re = physis_constants::terrestrial_equatorial_radius();
+        assert_eq!(
+            re.value,
+            Ratio::int(6_378_100),
+            "ledger R_earth is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            terrestrial_equatorial_radius().value(),
+            re.value.to_f64(),
+            "R_earth is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            terrestrial_equatorial_radius().value(),
+            6_378_100.0,
+            "IAU 2015 R_earth^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("R_earth").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("R_eE").is_none(),
+            "R_eE is not a ledger name; the live name is R_earth"
+        );
+        assert!(
+            physis_constants::lookup("R_pE").is_none(),
+            "R_pE is polar terrestrial radius and is not stored"
+        );
+        assert_ne!(
+            physis_constants::terrestrial_equatorial_radius().hash,
+            physis_constants::solar_radius().hash,
+            "R_earth is not R_sun"
         );
 
         let ev = physis_constants::electron_volt();

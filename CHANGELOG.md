@@ -80,6 +80,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 nominal terrestrial equatorial radius is an exact Ratio.**
+  `physis-constants` versions `R_earth` as `6378100` m from Prša et al.,
+  Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is the
+  equatorial conversion ruler `R_Ee^N`, not a measured geodetic radius,
+  not polar `R_pE`, not `R_sun`, and not P3N. `Rearth`, `R_eE`, `R_E`,
+  and `earth_radius` are not second names. `physis_model`
+  `terrestrial_equatorial_radius()` Qty locksteps via integer `to_f64`.
+  Adding `R_earth` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `R_earth` hash
+  c150e7ec9e5e3f915003f91334cafd06669fa6b36429cd9d4e016e4b7a47fab0;
+  node
+  20b574fdd9c19171a63c6600da72042144815dd7e17e3defed474b25207eb5f1;
+  ledger node
+  6188f32e6ad6bf261ec5a3a895b645700f912d3e4ef2f6691ed114e9b65d90cf.
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c,
+  `S_sun` hash
+  26a5268a7775ede81697bfc65775a12c8ff7b504a70c27b2c00558c9e9a685cd, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **IAU 2015 nominal solar effective temperature is an exact Ratio.**
   `physis-constants` versions `T_sun` as `5772` K from Prša et al.,
   Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a
