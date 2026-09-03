@@ -12,6 +12,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **BIPM table 8 barn is an exact Ratio.**
+  `physis-constants` versions `barn` as
+  `1/10000000000000000000000000000`
+  m^2 from BIPM SI Brochure 9th edition table 8 (`1 b = 10^{-28} m^2`).
+  That is not Thomson, not Angstrom star `Astar`, not an SI defining
+  constant, not P3N. `b`, `B`, `bn`, `barns`, and `sigma_e` are not
+  second names. Adding `barn` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `barn` hash
+  cb435561c26c1e236f186f96a86e5d513685c1f708a7c344e0a34d4e27ae0ae0;
+  node
+  c484bb8a2df198e19f2bab79f7ff162475f20a7ced818b605defa558917d607f;
+  ledger node
+  f24567939b047af2c699fe560e732d487507b0b40464c0b55d4bb2b1a2fb59a8.
+  `tP` hash
+  9edcebd76e8c9c539cf7dac79603f81ed2409fde8b460bc1679807e3b3007c75
+  unchanged.
+
 - **CODATA 2018 Planck time is a one-sigma SciInterval.**
   `physis-constants` versions `tP` as
   `[5391187e-50, 5391307e-50]`
