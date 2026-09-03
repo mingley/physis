@@ -130,7 +130,7 @@ which *runs* two checkers.
 Catalogued polynomial identities, dual-expanded (recursive AST vs postfix
 stack) *and* kernel-checked as Physlib theorems (`formal/physlib`):
 
-- `dec.d-squared-zero`: `(b−a)−(c−a)+(c−b) ≡ 0` (`d_squared_zero`, `omega`)
+- `dec.d-squared-zero`: `(b−a)−(c−a)+(c−b) ≡ 0` (`d_squared_zero`, `omega`); `dec.d-squared-one`: 3-simplex `d₂ ∘ d₁ = 0` (`d_squared_one`, `omega`). Different grade, not the triangle identity.
 - `sr.invariant-interval`: `(t−βx)² − (x−βt)² − (1−β²)(t²−x²) ≡ 0`
   (`invariant_interval`, `grind`)
 - `sr.subluminal-composition`: `(1+uv)² − (u+v)² − (1−u²)(1−v²) ≡ 0`
@@ -169,7 +169,7 @@ those tools; a local checkout without them still mints
 | 4 | `physis-numeric`, `physis-data` | Exact `Ratio` / `Interval`; SU(5) `3/8` disjoint from PDG `sin²θ_W(M_Z)` |
 | 5 | `physis-store` | Content-addressed DAG; descendants only are invalidated |
 | 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops. Knob diffs are scientific-axis (`VerdictKind` plus derivation / empirical / projected judgment); legacy kind-only journals still replay |
-| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, ideal-gas Maxwell–Boltzmann statistics, landauer-engine `kT ln2` bound, dirac-fermion naive 1D operator, general-relativity Einstein–Hilbert action, special-relativity Lorentz boost plus catalog interval, composition, and mass-shell trees, and planck Bose occupation, and de-rham discrete coboundary, and turing-machine unrelativized TM, and olbers-static inverse-square Euclidean shells, and su5-gut complete `5bar + 10`, and debye-solid 3D `ω²` continuum, and standard-model complete one-generation Weyl, and observer-geometry Spin(10) on 10-fibre, and dulong-petit harmonic `U = 3 N k T`, and heterotic-e8e8 complete `E8 x E8`, and heterotic-so32 complete `SO(32)`, and type-i `Chan-Paton SO(32)` are live packages; `physis encode` independently round-trips them and binds a live `lean_ref` to the catalog identity tree (token packages skip; a cosmetic Physlib pointer without the tree fails closed); not a kernel proof, not a Lean replacement |
+| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, ideal-gas Maxwell–Boltzmann statistics, landauer-engine `kT ln2` bound, dirac-fermion naive 1D operator, general-relativity Einstein–Hilbert action, special-relativity Lorentz boost plus catalog interval, composition, and mass-shell trees, and planck Bose occupation, and de-rham discrete coboundary plus catalog triangle and 3-simplex trees, and turing-machine unrelativized TM, and olbers-static inverse-square Euclidean shells, and su5-gut complete `5bar + 10`, and debye-solid 3D `ω²` continuum, and standard-model complete one-generation Weyl, and observer-geometry Spin(10) on 10-fibre, and dulong-petit harmonic `U = 3 N k T`, and heterotic-e8e8 complete `E8 x E8`, and heterotic-so32 complete `SO(32)`, and type-i `Chan-Paton SO(32)` are live packages; `physis encode` independently round-trips them and binds a live `lean_ref` to the catalog identity tree (token packages skip; a cosmetic Physlib pointer without the tree fails closed); not a kernel proof, not a Lean replacement |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → enclose → cite → constant → encode → judge → replicate → design → audit → review |
@@ -651,9 +651,9 @@ identity; a slug-only review line is not P3S.
   `AdversariallyReviewed`; there is no `Canonical` variant to assign)
 - P4 independent reproduction (in-process `reproduce` remints and
   **refuses** to assign P4; a distinct implementation is still required)
-- Mathlib-scale Physlib; four catalog identities are kernel-checked
-  (`d²`, interval, Einstein composition, mass shell). The mass-shell
-  polynomial is the interval identity on 4-momentum, not a fifth
+- Mathlib-scale Physlib; five catalog identities are kernel-checked
+  (triangle `d²`, 3-simplex coboundary, interval, Einstein composition, mass shell). The mass-shell
+  polynomial is the interval identity on 4-momentum, not a sixth
   algebraic idea. That is not Mathlib.
 - Most other claims still use the encoding-wide domain placeholder
   and only `encoding-is-the-model`. Catalog identities name regimes and
@@ -706,7 +706,7 @@ identity; a slug-only review line is not P3S.
 
 | Item | Status |
 |---|---|
-| A. `d² = 0` | Dual-expanded identity **and** Lean kernel + nanoda receipt; `physis review` raises semantic |
+| A. `d² = 0` | Dual-expanded triangle identity **and** 3-simplex coboundary; Lean kernel + nanoda receipt; `physis review` raises semantic |
 | B. Lorentz interval | Same backends |
 | B2. Einstein composition | Same backends; `|w|<1` over ℝ remains the evaluator |
 | B3. Mass shell | Same bilinear form on `(E, p)`; typed rest-mass check remains the evaluator |

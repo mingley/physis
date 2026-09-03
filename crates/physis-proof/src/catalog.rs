@@ -113,6 +113,17 @@ fn d2_domain() -> DomainOfValidity {
     )
 }
 
+fn tet_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["oriented 3-simplex coboundary over Z".into()],
+        vec!["discrete exterior calculus encoding".into()],
+        "The catalog identity is d2 of d1 on the six edge values of one \
+         tetrahedron. It is not the triangle 0-form identity and not de \
+         Rham cohomology of a smooth 3-manifold. Using it outside that \
+         encoding is a new claim. The live 2-complex is not this cell.",
+    )
+}
+
 fn interval_domain() -> DomainOfValidity {
     DomainOfValidity::new(
         vec!["1+1 Minkowski".into(), "c = 1".into(), "|β| < 1".into()],
@@ -154,6 +165,26 @@ pub fn discrete_d2() -> Expr {
     let c = Expr::var("c");
     // (b - a) - (c - a) + (c - b)
     add(sub(sub(b.clone(), a.clone()), sub(c.clone(), a)), sub(c, b))
+}
+
+/// Discrete exterior calculus: `d₂ ∘ d₁ = 0` on one oriented 3-simplex.
+///
+/// Edge values `ab, ac, ad, bc, bd, cd`. Face coboundaries are
+/// `ω_bc − ω_ac + ω_ab` (and the three faces that include `d`). `d₂` of
+/// those four 2-cochain values is identically zero. Not a rename of
+/// [`discrete_d2`]: different grade, different indeterminates.
+pub fn tetrahedron_d2() -> Expr {
+    let ab = Expr::var("ab");
+    let ac = Expr::var("ac");
+    let ad = Expr::var("ad");
+    let bc = Expr::var("bc");
+    let bd = Expr::var("bd");
+    let cd = Expr::var("cd");
+    let face_abc = add(sub(bc.clone(), ac.clone()), ab.clone());
+    let face_abd = add(sub(bd.clone(), ad.clone()), ab);
+    let face_acd = add(sub(cd.clone(), ad), ac);
+    let face_bcd = add(sub(cd, bd), bc);
+    sub(add(sub(face_bcd, face_acd), face_abd), face_abc)
 }
 
 /// Lorentz interval identity (c = 1):
@@ -224,6 +255,18 @@ pub const CATALOG: &[IdentitySpec] = &[
         lean_type: "∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0",
         axioms: &["integer-arithmetic", "discrete-coboundary"],
         identity: discrete_d2,
+    },
+    IdentitySpec {
+        claim_id: "dec.d-squared-one",
+        statement: "The coboundary of a 1-cochain is closed: d ∘ d = 0 on an oriented 3-simplex.",
+        class: ClaimClass::Mathematical,
+        layer: LayerId::Mathematical,
+        commitments: physlib_d2_commitments,
+        domain: tet_domain,
+        lean_theorem: "d_squared_one",
+        lean_type: "∀ (ab ac ad bc bd cd : Int), (((((cd - bd) + bc) - ((cd - ad) + ac)) + ((bd - ad) + ab)) - ((bc - ac) + ab)) = 0",
+        axioms: &["integer-arithmetic", "discrete-coboundary"],
+        identity: tetrahedron_d2,
     },
     IdentitySpec {
         claim_id: "sr.invariant-interval",
@@ -331,10 +374,25 @@ mod tests {
     #[test]
     fn catalog_covers_the_vertical_slice() {
         assert!(lookup("dec.d-squared-zero").is_some());
+        assert!(lookup("dec.d-squared-one").is_some());
         assert!(lookup("sr.invariant-interval").is_some());
         assert!(lookup("sr.subluminal-composition").is_some());
         assert!(lookup("sr.energy-momentum-invariant").is_some());
         assert!(lookup("predictivity.unique-vacuum").is_none());
+    }
+
+    #[test]
+    fn tetrahedron_is_not_the_triangle_challenge() {
+        assert_ne!(tetrahedron_d2().canonical(), discrete_d2().canonical());
+        let spec = lookup("dec.d-squared-one").unwrap();
+        assert_eq!(spec.axioms, lookup("dec.d-squared-zero").unwrap().axioms);
+        assert_ne!(
+            spec.formal_claim().statement_hash(),
+            lookup("dec.d-squared-zero")
+                .unwrap()
+                .formal_claim()
+                .statement_hash()
+        );
     }
 
     #[test]
@@ -428,6 +486,31 @@ mod tests {
         .unwrap()
         .expect("token equations must not block a matching tree");
         assert_eq!(with_token.claim_id, spec.claim_id);
+    }
+
+    #[test]
+    fn catalog_tree_binds_tetrahedron_beside_triangle() {
+        let tet = lookup("dec.d-squared-one").unwrap();
+        let tet_eq = tetrahedron_d2().to_string();
+        let eqs = [
+            "(b - a) - (c - a) + (c - b)",
+            tet_eq.as_str(),
+            "laplacian down",
+        ];
+        let bound = catalog_tree_binding(Some(tet.lean_type), &eqs)
+            .unwrap()
+            .expect("3-simplex tree must bind beside the triangle");
+        assert_eq!(bound.claim_id, tet.claim_id);
+        let triangle = lookup("dec.d-squared-zero").unwrap();
+        let bound_t = catalog_tree_binding(Some(triangle.lean_type), &eqs)
+            .unwrap()
+            .expect("triangle tree must still bind among the coboundary identities");
+        assert_eq!(bound_t.claim_id, triangle.claim_id);
+        let listed: Vec<_> = catalog_trees_in(&eqs)
+            .into_iter()
+            .map(|s| s.claim_id)
+            .collect();
+        assert_eq!(listed, vec!["dec.d-squared-zero", "dec.d-squared-one"]);
     }
 
     #[test]

@@ -35,6 +35,7 @@ computes topology: the first Betti number counts holes, and whether every closed
 | id | meaning | how it is decided |
 |---|---|---|
 | `dec.d-squared-zero` | `d ∘ d = 0` | live IR equation is the catalog polynomial `(b−a)−(c−a)+(c−b)`; the evaluator also checks `d₁(d₀ f) = 0` on the complex. `add-sign-flip` fails this cell. Not a kernel proof by itself |
+| `dec.d-squared-one` | `d₂ ∘ d₁ = 0` on an oriented 3-simplex | live IR equation is the catalog polynomial on six edge values; dual expanders agree it is the zero polynomial. Different grade from the triangle identity; `add-sign-flip` does not fail this cell. Not a live G3 mesh. Not a kernel proof by itself |
 | `dec.first-betti-number` | the number of holes `b₁` | `b₁ = n_edges − rank(d₁) − rank(d₀)`, ranks by Gaussian elimination |
 | `dec.closed-equals-exact` | every closed 1-form is exact (Poincaré) | holds iff `b₁ = 0` |
 | `dec.euler-poincare` | `V−E+F = b₀−b₁+b₂` | rank-cancellation of these Betti formulas, not a second path. Domain stays encoding-wide |
@@ -79,7 +80,7 @@ physis set de-rham shape circle   # circle: b₁ = 1, closed ≠ exact
 physis set de-rham shape torus    # torus: b₁ = 2, χ = 0, harmonic dim 2
 physis set de-rham shape sphere   # S²: b₁ = 0, b₂ = 1, χ = 2; Poincaré still holds
 physis hypothesize de-rham        # add-sign-flip and add-down-laplacian are IR, not set
-physis encode de-rham             # coboundary identity tree; not P3S, not a kernel proof
+physis encode de-rham             # coboundary identity trees (triangle and 3-simplex); not P3S, not a kernel proof
 ```
 
 Changing the `shape` changes the topology. The first Betti number, computed from
@@ -151,7 +152,9 @@ lab tells "a 2-cycle" apart from "a 1-hole."
 ## Non-goals (this milestone)
 
 - Higher-dimensional complexes (only vertices/edges/triangles, grades 0–2; the
-  torus is a genuine closed surface, but simplices stop at triangles).
+  torus is a genuine closed surface, but simplices stop at triangles). The
+  catalog 3-simplex identity is a polynomial on six edge values, not a live
+  filled 3-cell / `G3` mesh.
 - The Hodge *star* and codifferential as first-class operators (the Laplacian
   is built here directly from `d`; a metric-dependent star is a later increment).
 - General mesh input; the complexes are disk, circle, torus, Klein bottle, and tetrahedron `S²`.

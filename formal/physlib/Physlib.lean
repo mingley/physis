@@ -12,6 +12,15 @@ theorem d_squared_zero (a b c : Int) :
     (b - a) - (c - a) + (c - b) = 0 := by
   omega
 
+/-- Discrete coboundary on a tetrahedron: `d₂ ∘ d₁ = 0`.
+Edge values `ab, ac, ad, bc, bd, cd`. Face coboundaries are
+`ω_bc − ω_ac + ω_ab` and cyclic; `d₂` of those four faces is
+identically zero. Not the triangle 0-form identity. -/
+theorem d_squared_one (ab ac ad bc bd cd : Int) :
+    (((((cd - bd) + bc) - ((cd - ad) + ac)) + ((bd - ad) + ab))
+      - ((bc - ac) + ab)) = 0 := by
+  omega
+
 /-- Minkowski interval identity at `c = 1` (polynomial; no `γ`). -/
 theorem invariant_interval (t x β : Int) :
     (t - β * x) ^ 2 - (x - β * t) ^ 2 = (1 - β ^ 2) * (t ^ 2 - x ^ 2) := by

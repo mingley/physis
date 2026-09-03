@@ -227,12 +227,19 @@ pub fn identity_is_zero(expr: &Expr) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::catalog::{discrete_d2, einstein_composition, energy_momentum, lorentz_interval};
+    use crate::catalog::{
+        discrete_d2, einstein_composition, energy_momentum, lorentz_interval, tetrahedron_d2,
+    };
     use crate::expr::{add, mul, sub, Expr};
 
     #[test]
     fn triangle_coboundary_is_zero() {
         identity_is_zero(&discrete_d2()).unwrap();
+    }
+
+    #[test]
+    fn tetrahedron_coboundary_is_zero() {
+        identity_is_zero(&tetrahedron_d2()).unwrap();
     }
 
     #[test]

@@ -10,6 +10,29 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Proof
+
+- **3-simplex coboundary is a catalog identity**
+  (`dec.d-squared-one`, Physlib `d_squared_one`).
+  The polynomial `d₂ ∘ d₁ = 0` on the six edge values of one oriented
+  3-simplex is dual-expanded and kernel-checked. That is a different
+  grade from triangle `d²`, not a rename of the interval polynomial,
+  and not a live G3 mesh. Live de-rham lists both catalog trees;
+  `lean_ref` stays the triangle type. `add-sign-flip` still fails only
+  the triangle cell. Evaluator stays Executed until a receipt.
+  Not Canonical, not P4. P3N count stays 4. Unique-vacuum graph id
+  unchanged. SR / Planck / GR encode pins unchanged. Catalog d²
+  FormalClaim identity
+  `fd8a18eeaaef7bd26d7b798bf690d77ad0536d7befb9c71e254e3e90a3109d9c`
+  and challenge hash
+  `a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784`
+  unchanged. Verified: expander and parse tests, exact mint, Lean+nanoda
+  when wired, loop prove/cite/review, `fmt`, `clippy -D warnings`, full
+  suite, CLI. de-rham encode pin
+  `f200d857dbc66251c2225eca9a59bc5a45cf5b73831eff7c8f657b081574398e`
+  (was
+  `187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6`).
+
 ### Numerics
 
 - **BIPM table 8 are is an exact Ratio.**

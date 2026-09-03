@@ -17,7 +17,9 @@
 //! minus (`add-sign-flip`) is a package mutation, not the `shape` knob.
 //! Assembling Δ₁ from the gradient term only (`add-down-laplacian`) is a
 //! second package mutation: `dim ker d₀d₀ᵀ ≠ b₁` on a filled disk while
-//! `d² = 0` still holds. That is not the `shape` knob.
+//! `d² = 0` still holds. That is not the `shape` knob. The live package
+//! also carries the catalog 3-simplex tree `d₂ ∘ d₁ = 0`; that cell is
+//! not the triangle identity and is not the `shape` knob.
 //!
 //! Grade is a type error to mix:
 //!
@@ -40,14 +42,18 @@ use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::World;
-use physis_proof::catalog::discrete_d2;
-use physis_proof::{lookup, parse_expr};
+use physis_proof::catalog::{discrete_d2, tetrahedron_d2};
+use physis_proof::{identity_is_zero, lookup, parse_expr};
 
 use crate::framework::Theory;
 
 /// Catalog coboundary identity on an oriented 2-simplex, as an IR equation.
 /// This is `d₁(d₀ f)` for vertex values `a,b,c`. Not a kernel proof.
 const COBOUNDARY_EQ: &str = "(b - a) - (c - a) + (c - b)";
+/// Catalog coboundary identity on an oriented 3-simplex, as an IR equation.
+/// This is `d₂(d₁ ω)` for the six edge values. Not a kernel proof.
+const TET_EQ: &str =
+    "(((((cd - bd) + bc) - ((cd - ad) + ac)) + ((bd - ad) + ab)) - ((bc - ac) + ab))";
 /// Down Laplacian: Δ₁ assembled from `d₀ d₀ᵀ` only (curl term dropped).
 const LAPLACIAN_DOWN: &str = "laplacian down";
 
@@ -506,6 +512,7 @@ impl Shape {
 ///
 /// Named claims:
 /// - `dec.d-squared-zero`: `d ∘ d = 0` (an exact theorem of the coboundary),
+/// - `dec.d-squared-one`: `d₂ ∘ d₁ = 0` on an oriented 3-simplex,
 /// - `dec.first-betti-number`: the computed number of holes `b₁`,
 /// - `dec.closed-equals-exact`: every closed 1-form is exact (Poincaré),
 /// - `dec.euler-poincare`: `V−E+F = b₀−b₁+b₂`,
@@ -554,16 +561,18 @@ impl DeRham {
     }
 
     /// IR package for this coboundary encoding. Equations are the catalog
-    /// identity tree, or the first-minus flip, and, when forked,
-    /// `laplacian down`. `shape` stays on the struct.
+    /// triangle identity tree, or the first-minus flip, the catalog
+    /// 3-simplex identity tree, and, when forked, `laplacian down`.
+    /// `shape` stays on the struct.
     pub fn package(&self) -> TheoryPackage {
         let spec = lookup(D_SQUARED_ZERO).expect("d² is a catalog identity");
+        let tet = lookup(D_SQUARED_ONE).expect("3-simplex d² is a catalog identity");
         let equation = if self.sign_flip {
             Self::flipped_coboundary_eq()
         } else {
             COBOUNDARY_EQ.to_string()
         };
-        let mut equations = vec![equation];
+        let mut equations = vec![equation, TET_EQ.to_string()];
         if self.down_laplacian {
             equations.push(LAPLACIAN_DOWN.to_string());
         }
@@ -573,12 +582,20 @@ impl DeRham {
             parameters: vec![],
             assumptions: vec!["discrete-coboundary".into()],
             equations,
-            claims: vec![physis_ir::ClaimDecl {
-                id: D_SQUARED_ZERO.into(),
-                statement: spec.statement.into(),
-                layer: "mathematical".into(),
-                class: "mathematical".into(),
-            }],
+            claims: vec![
+                physis_ir::ClaimDecl {
+                    id: D_SQUARED_ZERO.into(),
+                    statement: spec.statement.into(),
+                    layer: "mathematical".into(),
+                    class: "mathematical".into(),
+                },
+                physis_ir::ClaimDecl {
+                    id: D_SQUARED_ONE.into(),
+                    statement: tet.statement.into(),
+                    layer: "mathematical".into(),
+                    class: "mathematical".into(),
+                },
+            ],
             lean_ref: if self.sign_flip {
                 None
             } else {
@@ -607,7 +624,9 @@ fn parse_derham_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let flipped = parse_expr(&DeRham::flipped_coboundary_eq())
         .map_err(|e| format!("de-rham flipped coboundary: {e}"))?
         .canonical();
+    let tet = tetrahedron_d2().canonical();
     let mut coboundary: Option<bool> = None;
+    let mut tet_tree = false;
     let mut down_laplacian = false;
     for eq in &pkg.equations {
         let t = eq.trim();
@@ -621,13 +640,23 @@ fn parse_derham_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
         let tree = parse_expr(t)
             .map_err(|e| format!("de-rham coboundary equation: {e}"))?
             .canonical();
+        if tree == tet {
+            if tet_tree {
+                return Err(format!(
+                    "{} package has two 3-simplex identity trees",
+                    pkg.id
+                ));
+            }
+            tet_tree = true;
+            continue;
+        }
         let sign_flip = if tree == live {
             false
         } else if tree == flipped {
             true
         } else {
             return Err(format!(
-                "de-rham equation is not the coboundary identity, its first-minus flip, or laplacian down: {t}"
+                "de-rham equation is not the coboundary identity, its first-minus flip, the 3-simplex identity, or laplacian down: {t}"
             ));
         };
         if coboundary.is_some() {
@@ -637,11 +666,16 @@ fn parse_derham_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     }
     let sign_flip =
         coboundary.ok_or_else(|| format!("{} package has no coboundary identity", pkg.id))?;
+    if !tet_tree {
+        return Err(format!("{} package has no 3-simplex identity tree", pkg.id));
+    }
     Ok((sign_flip, down_laplacian))
 }
 
 /// `dec.d-squared-zero`.
 pub const D_SQUARED_ZERO: &str = "dec.d-squared-zero";
+/// `dec.d-squared-one`.
+pub const D_SQUARED_ONE: &str = "dec.d-squared-one";
 /// `dec.first-betti-number`.
 pub const FIRST_BETTI: &str = "dec.first-betti-number";
 /// `dec.closed-equals-exact`.
@@ -736,6 +770,9 @@ impl Theory for DeRham {
             lookup(D_SQUARED_ZERO)
                 .expect("d² is a catalog identity")
                 .lab_claim(),
+            lookup(D_SQUARED_ONE)
+                .expect("3-simplex d² is a catalog identity")
+                .lab_claim(),
             Claim::new(
                 FIRST_BETTI,
                 "The first Betti number counts independent 1-cycles (holes).",
@@ -819,6 +856,18 @@ impl Theory for DeRham {
                     } else {
                         Verdict::fails(claim, format!("d∘d ≠ 0: max = {worst:.2e}"))
                     }
+                }
+            }
+            D_SQUARED_ONE => {
+                match identity_is_zero(&tetrahedron_d2()) {
+                    Ok(()) => Verdict::holds(
+                        claim,
+                        "d₂∘d₁ = 0 on the six edge values of an oriented 3-simplex",
+                    )
+                    .with_evidence([
+                        "recursive and postfix expanders agree the 3-simplex coboundary is the zero polynomial".to_string(),
+                    ]),
+                    Err(e) => Verdict::fails(claim, e),
                 }
             }
             FIRST_BETTI => {
@@ -1153,6 +1202,18 @@ mod tests {
     #[test]
     fn d_squared_zero_claim_holds() {
         assert_eq!(kind(&DeRham::default(), D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&DeRham::default(), D_SQUARED_ONE), VerdictKind::Holds);
+        let live_hash = DeRham::default()
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == D_SQUARED_ONE)
+            .unwrap()
+            .statement_hash();
+        assert_eq!(
+            live_hash,
+            lookup(D_SQUARED_ONE).unwrap().lab_claim().statement_hash(),
+            "IR must not change the catalog FormalClaim identity"
+        );
     }
 
     #[test]
@@ -1207,6 +1268,10 @@ mod tests {
         assert!(
             !claim(D_SQUARED_ZERO).domain().is_encoding_wide(),
             "catalog d² already names a coboundary regime"
+        );
+        assert!(
+            !claim(D_SQUARED_ONE).domain().is_encoding_wide(),
+            "catalog 3-simplex d² must name a coboundary regime"
         );
     }
 
@@ -1298,6 +1363,11 @@ mod tests {
             derivation(&t, D_SQUARED_ZERO),
             DerivationAssurance::Executed,
             "d² = 0 is a single-path identity, not a two-path cross-check"
+        );
+        assert_eq!(
+            derivation(&t, D_SQUARED_ONE),
+            DerivationAssurance::Executed,
+            "3-simplex d² is a single-path identity, not a two-path cross-check"
         );
         let d2 = t
             .claims()
@@ -1392,10 +1462,21 @@ mod tests {
             parse_expr(COBOUNDARY_EQ).unwrap().canonical(),
             discrete_d2().canonical()
         );
+        assert_eq!(
+            parse_expr(TET_EQ).unwrap().canonical(),
+            tetrahedron_d2().canonical()
+        );
 
         let src = render_package(&t.package());
         let pkg = parse_package(&src).unwrap();
         assert_eq!(DeRham::from_package(&pkg).unwrap(), t);
+        assert_eq!(
+            pkg.equations.len(),
+            2,
+            "live package must stay the triangle and 3-simplex identity trees"
+        );
+        assert_eq!(pkg.equations[0], COBOUNDARY_EQ);
+        assert_eq!(pkg.equations[1], TET_EQ);
         let mutated = apply_mutation(&pkg, &PackageMutation::FlipFirstMinus);
         let parsed = DeRham::from_package(&mutated).unwrap();
         assert!(parsed.sign_flip);
@@ -1403,6 +1484,7 @@ mod tests {
         fork.sign_flip = true;
         assert_eq!(fork.id(), "de-rham");
         assert_eq!(kind(&fork, D_SQUARED_ZERO), VerdictKind::Fails);
+        assert_eq!(kind(&fork, D_SQUARED_ONE), VerdictKind::Holds);
         assert_eq!(kind(&fork, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
         assert_eq!(kind(&fork, FIRST_BETTI), VerdictKind::Holds);
         assert_eq!(kind(&fork, HODGE_HARMONIC), VerdictKind::Holds);
@@ -1410,6 +1492,11 @@ mod tests {
             kind(&t, D_SQUARED_ZERO),
             VerdictKind::Holds,
             "live coboundary is still nilpotent"
+        );
+        assert_eq!(
+            kind(&t, D_SQUARED_ONE),
+            VerdictKind::Holds,
+            "live 3-simplex coboundary is still nilpotent"
         );
         assert_eq!(
             derivation(&fork, D_SQUARED_ZERO),
@@ -1448,6 +1535,7 @@ mod tests {
             .unwrap();
         assert_eq!(kind(&circled, CLOSED_EQUALS_EXACT), VerdictKind::Fails);
         assert_eq!(kind(&circled, D_SQUARED_ZERO), VerdictKind::Fails);
+        assert_eq!(kind(&circled, D_SQUARED_ONE), VerdictKind::Holds);
 
         let probes = DeRham::default().structural_mutations();
         assert!(
@@ -1546,10 +1634,11 @@ mod tests {
         let pkg = parse_package(&src).unwrap();
         assert_eq!(
             pkg.equations.len(),
-            1,
-            "live package must stay the coboundary identity"
+            2,
+            "live package must stay the triangle and 3-simplex identity trees"
         );
         assert_eq!(pkg.equations[0], COBOUNDARY_EQ);
+        assert_eq!(pkg.equations[1], TET_EQ);
         assert_eq!(DeRham::from_package(&pkg).unwrap(), t);
         assert!(
             DeRham::default()
@@ -1586,6 +1675,7 @@ mod tests {
         assert_eq!(fork.id(), "de-rham");
         assert_eq!(kind(&fork, HODGE_HARMONIC), VerdictKind::Fails);
         assert_eq!(kind(&fork, D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&fork, D_SQUARED_ONE), VerdictKind::Holds);
         assert_eq!(kind(&fork, CLOSED_EQUALS_EXACT), VerdictKind::Holds);
         assert_eq!(kind(&fork, FIRST_BETTI), VerdictKind::Holds);
         assert_eq!(kind(&fork, EULER_POINCARE), VerdictKind::Holds);
@@ -1642,6 +1732,7 @@ mod tests {
             "circle has no faces: live Hodge is already down-only, so this is not a unit flag"
         );
         assert_eq!(kind(&circled, D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(&circled, D_SQUARED_ONE), VerdictKind::Holds);
         let circle = Complex::circle();
         assert_eq!(circle.harmonic1_dim(), 1);
         assert_eq!(circle.harmonic1_dim_down(), 1);
@@ -1665,6 +1756,7 @@ mod tests {
             .expect("add-down-laplacian");
         assert_eq!(kind(probe.1.as_ref(), HODGE_HARMONIC), VerdictKind::Fails);
         assert_eq!(kind(probe.1.as_ref(), D_SQUARED_ZERO), VerdictKind::Holds);
+        assert_eq!(kind(probe.1.as_ref(), D_SQUARED_ONE), VerdictKind::Holds);
         let fork_probes = fork.structural_mutations();
         assert!(
             fork_probes

@@ -3348,6 +3348,30 @@ mod tests {
             d2b.contains("integer-arithmetic"),
             "catalog d² must name integer-arithmetic before prove: {d2b}"
         );
+        assert!(
+            d2b.contains("fd8a18eeaaef7bd26d7b798bf690d77ad0536d7befb9c71e254e3e90a3109d9c"),
+            "catalog d² FormalClaim identity must stay: {d2b}"
+        );
+
+        let tet = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-one".into(),
+            })
+            .text()
+            .to_string();
+        let tetb = why_theory_block(&tet, "de-rham");
+        assert!(tetb.contains("quantifier: forall"), "{tetb}");
+        assert!(
+            tetb.contains("oriented 3-simplex coboundary over Z"),
+            "{tetb}"
+        );
+        assert!(
+            !tetb.contains("oriented 2-simplex coboundary over Z"),
+            "3-simplex d² is not the triangle identity: {tetb}"
+        );
+        assert!(tetb.contains("discrete-coboundary"), "{tetb}");
+        assert!(tetb.contains("integer-arithmetic"), "{tetb}");
+        assert!(!tetb.contains("theorem"), "{tetb}");
 
         let poincare = lab
             .exec(Command::Why {
@@ -4456,6 +4480,10 @@ mod tests {
             assert!(text.contains("expand-recursive"), "{text}");
             assert!(text.contains("expand-postfix"), "{text}");
         }
+        assert!(
+            text.contains("a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784"),
+            "catalog d² challenge hash must stay: {text}"
+        );
         let why = lab
             .exec(Command::Why {
                 claim: "dec.d-squared-zero".into(),
@@ -4473,6 +4501,59 @@ mod tests {
         assert!(why.contains("physlib:unversioned"), "{why}");
         let epi = lab.exec(Command::Epistemics).text().to_string();
         assert!(epi.contains("machine-proved          1"), "{epi}");
+    }
+
+    #[test]
+    fn prove_d2_one_mints_a_receipt_and_is_not_the_triangle() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Prove {
+                claim: "dec.d-squared-one".into(),
+            })
+            .text()
+            .to_string();
+        if physis_verifier::discover_tools().is_some() {
+            assert!(text.contains("lean-kernel"), "{text}");
+            assert!(text.contains("nanoda"), "{text}");
+        } else {
+            assert!(text.contains("expand-recursive"), "{text}");
+            assert!(text.contains("expand-postfix"), "{text}");
+        }
+        assert!(
+            !text.contains("a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784"),
+            "3-simplex challenge is not the triangle challenge: {text}"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-one".into(),
+            })
+            .text()
+            .to_string();
+        let tetb = why_theory_block(&why, "de-rham");
+        assert!(tetb.contains("kernel proof: receipt"), "{tetb}");
+        assert!(tetb.contains("judgment:   logical proved"), "{tetb}");
+        assert!(tetb.contains("P3F"), "{tetb}");
+        assert!(
+            tetb.contains("oriented 3-simplex coboundary over Z"),
+            "{tetb}"
+        );
+        assert!(
+            !tetb.contains("oriented 2-simplex coboundary over Z"),
+            "3-simplex receipt is not the triangle identity: {tetb}"
+        );
+        assert!(!tetb.contains("theorem"), "{tetb}");
+        let tri = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2b = why_theory_block(&tri, "de-rham");
+        assert!(d2b.contains("kernel proof: none"), "{d2b}");
+        assert!(
+            d2b.contains("fd8a18eeaaef7bd26d7b798bf690d77ad0536d7befb9c71e254e3e90a3109d9c"),
+            "proving the 3-simplex must not change the triangle FormalClaim: {d2b}"
+        );
     }
 
     #[test]
@@ -9664,6 +9745,7 @@ mod tests {
             "loop must project from_lab after encode: {text}"
         );
         assert!(text.contains("prove  dec.d-squared-zero"), "{text}");
+        assert!(text.contains("prove  dec.d-squared-one"), "{text}");
         assert!(text.contains("prove  sr.invariant-interval"), "{text}");
         assert!(text.contains("prove  sr.subluminal-composition"), "{text}");
         assert!(
@@ -9672,9 +9754,14 @@ mod tests {
         );
         assert!(text.contains("counterexample"), "{text}");
         assert!(text.contains("replicate  dec.d-squared-zero  ok"), "{text}");
+        assert!(text.contains("replicate  dec.d-squared-one  ok"), "{text}");
         assert!(text.contains("audit  red-team corpus caught"), "{text}");
         assert!(
             text.contains("review  dec.d-squared-zero  adversarially-reviewed"),
+            "{text}"
+        );
+        assert!(
+            text.contains("review  dec.d-squared-one  adversarially-reviewed"),
             "{text}"
         );
         assert!(text.contains("restore  type-iib total_dim=10"), "{text}");
@@ -9721,6 +9808,10 @@ mod tests {
         assert!(
             text.contains("cite  dec.d-squared-zero"),
             "loop must cite catalog dossiers without that being P3S by itself: {text}"
+        );
+        assert!(
+            text.contains("cite  dec.d-squared-one"),
+            "loop must cite the 3-simplex coboundary dossier: {text}"
         );
         assert!(
             !text.contains("cite  predictivity.unique-vacuum"),
@@ -9876,6 +9967,10 @@ mod tests {
             "loop must project catalog identities after prove: {text}"
         );
         assert!(
+            text.contains("judge  dec.d-squared-one"),
+            "loop must project the 3-simplex catalog identity after prove: {text}"
+        );
+        assert!(
             text.contains("judge  gut.weinberg-angle"),
             "loop must project GUT-scale 3/8 as numeric certified: {text}"
         );
@@ -9976,6 +10071,7 @@ mod tests {
             .text()
             .to_string();
         assert!(gap.contains("dec.d-squared-zero"), "{gap}");
+        assert!(gap.contains("dec.d-squared-one"), "{gap}");
         assert!(
             !gap.lines()
                 .any(|l| l.contains("turing-machine") && l.contains("comp.halts")),
@@ -27589,10 +27685,15 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(derham.contains("equations  1"), "{derham}");
+        assert!(derham.contains("equations  2"), "{derham}");
+        assert!(derham.contains("claims     2"), "{derham}");
         assert!(derham.contains("round-trip canonical"), "{derham}");
         assert!(
             derham.contains("catalog identity tree  dec.d-squared-zero"),
+            "{derham}"
+        );
+        assert!(
+            derham.contains("catalog identity tree  dec.d-squared-one"),
             "{derham}"
         );
         assert!(!derham.contains("catalog identity tree  ok"), "{derham}");
@@ -27601,7 +27702,7 @@ mod tests {
         let derham_id = encoding_package_id(&derham);
         assert_eq!(
             derham_id.to_hex(),
-            "187ee7fd592ffb31a1e5f31fea50d158f7b67bd97f6fbf292c139683445006a6"
+            "f200d857dbc66251c2225eca9a59bc5a45cf5b73831eff7c8f657b081574398e"
         );
         assert_ne!(derham_id, planck_id);
         assert_ne!(derham_id, nand_id);
@@ -28767,6 +28868,10 @@ mod tests {
         let text = lab.exec(Command::Loop).text().to_string();
         assert!(
             text.contains("review  dec.d-squared-zero  trust P3F required"),
+            "{text}"
+        );
+        assert!(
+            text.contains("review  dec.d-squared-one  trust P3F required"),
             "{text}"
         );
         assert!(

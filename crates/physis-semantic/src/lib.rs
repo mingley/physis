@@ -106,6 +106,24 @@ lean_ref ∀ (a b c : Int), (b - a) - (c - a) + (c - b) = 0
 "#,
 };
 
+/// Discrete coboundary on a 3-simplex: same DEC paper, next grade.
+const D2_ONE: Dossier = Dossier {
+    claim_id: "dec.d-squared-one",
+    work: "Discrete Exterior Calculus (Desbrun, Hirani, Leok, Marsden)",
+    edition: "arXiv:math/0508341v2",
+    version: "2005",
+    section: Some("The coboundary operator"),
+    equation: Some("delta_2 delta_1 = 0"),
+    ir: r#"
+id = discrete-d2-one
+name = Discrete 3-simplex coboundary nilpotence
+assumption coboundary-on-oriented-simplex
+equation (((((cd - bd) + bc) - ((cd - ad) + ac)) + ((bd - ad) + ab)) - ((bc - ac) + ab))
+claim mathematical mathematical dec.d-squared-one : d2 composed with d1 is the zero operator
+lean_ref ∀ (ab ac ad bc bd cd : Int), (((((cd - bd) + bc) - ((cd - ad) + ac)) + ((bd - ad) + ab)) - ((bc - ac) + ab)) = 0
+"#,
+};
+
 /// Minkowski interval identity under a boost (c = 1).
 const LORENTZ: Dossier = Dossier {
     claim_id: "sr.invariant-interval",
@@ -161,7 +179,7 @@ lean_ref ∀ (E p β : Int), (E - β*p)^2 - (p - β*E)^2 = (1 - β^2)*(E^2 - p^2
 "#,
 };
 
-const DOSSIERS: &[Dossier] = &[D2, LORENTZ, COMPOSITION, MASS_SHELL];
+const DOSSIERS: &[Dossier] = &[D2, D2_ONE, LORENTZ, COMPOSITION, MASS_SHELL];
 
 fn dossier(claim_id: &str) -> Option<&'static Dossier> {
     DOSSIERS.iter().find(|d| d.claim_id == claim_id)
