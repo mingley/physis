@@ -80,6 +80,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 nominal Jovian polar radius is an exact Ratio.**
+  `physis-constants` versions `R_jup_p` as `66854000` m from Prša et al.,
+  Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is the polar
+  conversion ruler `R_Jp^N`, not a measured Jovian radius, not
+  equatorial `R_jup`, not `R_earth_p`, not `R_sun`, and not P3N. `R_pJ`,
+  `R_Jp`, and `jovian_polar_radius` are not second names. `physis_model`
+  `jovian_polar_radius()` Qty locksteps via integer `to_f64`.
+  Adding `R_jup_p` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `R_jup_p` hash
+  7a01b6a227db031d78c739a86e8c66b9ce17988a190d9969f61d14353ecf83ae;
+  node
+  598c897741b73575f2617eeb1ee918c072ce028b163788e70bfe09fc85148f53;
+  ledger node
+  5b040306eaf3d97d2e9f84ac160281bd936689183e4411d740fe44a0f4500719.
+  `R_jup` hash
+  c071bb5f05ba21b8aec1e0ee87062de6f213eb3e713f2fcd24b11776de7de44f,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **IAU 2015 nominal Jovian equatorial radius is an exact Ratio.**
   `physis-constants` versions `R_jup` as `71492000` m from Prša et al.,
   Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is the

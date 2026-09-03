@@ -2864,9 +2864,18 @@ pub fn terrestrial_polar_radius() -> Qty<Length> {
 ///
 /// This is `R_Je^N`, not a measured Jovian radius, not polar `R_pJ`,
 /// not terrestrial `R_earth`, and not solar radius `R_sun`. Faraday
-/// constant is NAe.
+/// constant is NAe. Polar is `R_jup_p`.
 pub fn jovian_equatorial_radius() -> Qty<Length> {
     Qty::new(71_492_000.0)
+}
+
+/// Nominal Jovian polar radius (IAU 2015 conversion ruler), metres.
+///
+/// This is `R_Jp^N`, not a measured Jovian radius, not equatorial
+/// `R_jup`, not terrestrial polar `R_earth_p`, and not solar radius
+/// `R_sun`. Faraday constant is NAe.
+pub fn jovian_polar_radius() -> Qty<Length> {
+    Qty::new(66_854_000.0)
 }
 
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
@@ -13844,7 +13853,7 @@ mod tests {
         );
         assert!(
             physis_constants::lookup("R_pJ").is_none(),
-            "R_pJ is not a ledger name; polar is not stored under R_jup"
+            "R_pJ is not a ledger name; the live polar name is R_jup_p"
         );
         assert_ne!(
             physis_constants::jovian_equatorial_radius().hash,
@@ -13855,6 +13864,38 @@ mod tests {
             physis_constants::jovian_equatorial_radius().hash,
             physis_constants::solar_radius().hash,
             "R_jup is not R_sun"
+        );
+
+        let rjp = physis_constants::jovian_polar_radius();
+        assert_eq!(
+            rjp.value,
+            Ratio::int(66_854_000),
+            "ledger R_jup_p is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            jovian_polar_radius().value(),
+            rjp.value.to_f64(),
+            "R_jup_p is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            jovian_polar_radius().value(),
+            66_854_000.0,
+            "IAU 2015 R_jup_p^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("R_jup_p").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("R_Jp").is_none(),
+            "R_Jp is not a ledger name; the live name is R_jup_p"
+        );
+        assert_ne!(
+            physis_constants::jovian_polar_radius().hash,
+            physis_constants::jovian_equatorial_radius().hash,
+            "R_jup_p is not R_jup"
+        );
+        assert_ne!(
+            physis_constants::jovian_polar_radius().hash,
+            physis_constants::terrestrial_polar_radius().hash,
+            "R_jup_p is not R_earth_p"
         );
 
         let ev = physis_constants::electron_volt();
