@@ -12,6 +12,32 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CODATA 2018 joule-kilogram relationship is an exact Ratio.**
+  `physis-constants` versions `J_kg` as `1/89875517873681764` kg from
+  JPCRD table XXXV (`1/c²`). That is the inverse listing of ledger
+  `kg_J`, not a second name of `kg_J`, not SI `c`, not hertz-inverse
+  meter `Hz_m`, not P3N. `Jkg`, `J-kg`, and `1/kg_J` are not second
+  names. Joule-hertz is not stored: `10^{41}` overflows `i128`. Electron
+  volt-kilogram is not stored: `e/c²` overflows `i128`. `physis_model`
+  `joule_in_kilogram()` Qty locksteps via `Ratio::to_f64`. Adding
+  `J_kg` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `J_kg` hash
+  94e5b8bfaeb8f28d80766b3b1f44bbe19348d767b153bc135dfc33036c9f0399;
+  node
+  381b5a370cf6535f0602ec508d4ef4af25e942d2b6d5d12e5454fd49ee17bc29;
+  ledger node
+  a5afc042aa9cf07abb101f2dd324201e2ba30d1cb963213f712c68bf4b3567f9.
+  `eV_m` hash
+  68686de8ad07bbd31a0d47931df795fcd3dcf2aefdc350ec5a005cccd0014802,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 electron volt-inverse meter relationship is an exact Ratio.**
   `physis-constants` versions `eV_m` as
   `5340588780000000000000/6621486190496429` m^{-1} from JPCRD table XXXV
