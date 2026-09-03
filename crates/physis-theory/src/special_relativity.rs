@@ -1,15 +1,17 @@
 //! Special relativity as mechanized kinematics — and a knob that turns it off.
 //!
-//! Einstein's 1905 kinematics is not asserted here; it is *computed*. Three
-//! invariants are checked directly:
+//! Einstein's 1905 kinematics is not asserted here; it is *computed*. Four
+//! identities are checked:
 //!
 //! - the spacetime interval `s² = (cΔt)² − Δx²` is unchanged by a boost,
-//! - composing two subluminal velocities stays subluminal, and
+//! - composing two subluminal velocities stays subluminal,
 //! - the energy–momentum invariant `E² − (pc)² = (mc²)²` is frame-independent,
-//!   built from *typed* quantities so `pc` and `mc²` are forced to be energies.
+//!   built from *typed* quantities so `pc` and `mc²` are forced to be energies,
+//! - and the integer cross-product Jacobi identity (so(3) Lie bracket) holds
+//!   as a catalog polynomial, independent of the boost encoding.
 //!
-//! The Lorentz boost and the catalog interval, composition, and
-//! mass-shell identity trees live on the IR package. A truncated
+//! The Lorentz boost and the catalog interval, composition, mass-shell,
+//! and cross-product Jacobi identity trees live on the IR package. A truncated
 //! binomial γ (`add-binomial-gamma`) is a package mutation, not the
 //! `absolute_time` knob: interval and mass-shell fail on that fork.
 //! Velocity composition stays Einstein on that fork. A minus-uv
@@ -28,8 +30,10 @@ use physis_core::{Energy, Momentum, Qty};
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{electron_mass, C};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
-use physis_proof::catalog::{einstein_composition, energy_momentum, lorentz_interval};
-use physis_proof::{lookup, parse_expr};
+use physis_proof::catalog::{
+    cross_product_jacobi, einstein_composition, energy_momentum, lorentz_interval,
+};
+use physis_proof::{identity_is_zero, lookup, parse_expr};
 
 use crate::framework::Theory;
 
@@ -39,6 +43,8 @@ pub const SR_INVARIANT_INTERVAL: &str = "sr.invariant-interval";
 pub const SR_SUBLUMINAL_COMPOSITION: &str = "sr.subluminal-composition";
 /// The energy–momentum invariant `E² − (pc)² = (mc²)²` is frame-independent.
 pub const SR_ENERGY_MOMENTUM: &str = "sr.energy-momentum-invariant";
+/// Integer Jacobi identity for the R^3 cross product (x-component).
+pub const SR_CROSS_PRODUCT_JACOBI: &str = "sr.cross-product-jacobi";
 
 /// The demonstration boost speed, as a fraction of `c`.
 const BETA: f64 = 0.6;
@@ -53,6 +59,8 @@ const INTERVAL_EQ: &str = "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * 
 const COMPOSITION_EQ: &str = "(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)";
 /// Catalog mass-shell identity tree (c = 1). Not a kernel proof.
 const MASS_SHELL_EQ: &str = "(E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)";
+/// Catalog cross-product Jacobi identity tree. Not a kernel proof.
+const JACOBI_EQ: &str = "((((a2 * ((b1 * c2) - (b2 * c1))) - (a3 * ((b3 * c1) - (b1 * c3)))) + ((b2 * ((c1 * a2) - (c2 * a1))) - (b3 * ((c3 * a1) - (c1 * a3))))) + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3)))))";
 /// Truncated binomial γ = 1 + β²/2.
 const BOOST_BINOMIAL: &str = "boost binomial-gamma";
 /// Collinear Einstein addition with the denominator sign flipped.
@@ -65,12 +73,14 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let interval = lorentz_interval().canonical();
     let composition = einstein_composition().canonical();
     let mass_shell = energy_momentum().canonical();
+    let jacobi = cross_product_jacobi().canonical();
     let mut lorentz = false;
     let mut binomial = false;
     let mut minus_uv = false;
     let mut interval_tree = false;
     let mut composition_tree = false;
     let mut mass_shell_tree = false;
+    let mut jacobi_tree = false;
     for eq in &pkg.equations {
         match eq.trim() {
             BOOST_LORENTZ => lorentz = true,
@@ -104,6 +114,14 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
                         ));
                     }
                     mass_shell_tree = true;
+                } else if tree == jacobi {
+                    if jacobi_tree {
+                        return Err(format!(
+                            "{} package has two cross-product Jacobi identity trees",
+                            pkg.id
+                        ));
+                    }
+                    jacobi_tree = true;
                 } else {
                     return Err(format!(
                         "special-relativity equation is not the Lorentz boost, a catalog identity tree, binomial-gamma, or minus-uv: {t}"
@@ -127,6 +145,12 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     if !mass_shell_tree {
         return Err(format!(
             "{} package has no mass-shell identity tree",
+            pkg.id
+        ));
+    }
+    if !jacobi_tree {
+        return Err(format!(
+            "{} package has no cross-product Jacobi identity tree",
             pkg.id
         ));
     }
@@ -165,13 +189,13 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
 
 /// Special relativity: flat Minkowski kinematics with a Galilean-toggle knob.
 ///
-/// The Lorentz boost and the catalog interval, composition, and
-/// mass-shell identity trees live on the IR package. Truncated binomial γ
+/// The Lorentz boost and the catalog interval, composition, mass-shell,
+/// and cross-product Jacobi identity trees live on the IR package. Truncated binomial γ
 /// (`add-binomial-gamma`) is a package mutation, not a knob: interval
 /// and mass-shell fail. Minus-uv collinear composition (`add-minus-uv`)
 /// is a second package mutation, not a knob: subluminal composition
-/// fails while Lorentz boosts still hold. `absolute_time` still selects
-/// Galilean boosts.
+/// fails while Lorentz boosts still hold. The Jacobi identity stays Holds
+/// on those forks. `absolute_time` still selects Galilean boosts.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SpecialRelativity {
     /// If true, use Galilean boosts (absolute time) instead of Lorentzian.
@@ -184,20 +208,23 @@ pub struct SpecialRelativity {
 
 impl SpecialRelativity {
     /// IR package for this boost encoding. Equations are `boost lorentz`,
-    /// the catalog interval, composition, and mass-shell identity trees,
-    /// and, when forked, `boost binomial-gamma` and/or `compose minus-uv`.
-    /// `absolute_time` stays on the struct. `lean_ref` is the catalog
-    /// interval type, not a Physlib pointer without the tree.
+    /// the catalog interval, composition, mass-shell, and cross-product
+    /// Jacobi identity trees, and, when forked, `boost binomial-gamma`
+    /// and/or `compose minus-uv`. `absolute_time` stays on the struct.
+    /// `lean_ref` is the catalog interval type, not a Physlib pointer
+    /// without the tree.
     pub fn package(&self) -> TheoryPackage {
         let interval = lookup(SR_INVARIANT_INTERVAL).expect("interval is a catalog identity");
         let composition =
             lookup(SR_SUBLUMINAL_COMPOSITION).expect("composition is a catalog identity");
         let mass_shell = lookup(SR_ENERGY_MOMENTUM).expect("mass shell is a catalog identity");
+        let jacobi = lookup(SR_CROSS_PRODUCT_JACOBI).expect("Jacobi is a catalog identity");
         let mut equations = vec![
             BOOST_LORENTZ.to_string(),
             INTERVAL_EQ.to_string(),
             COMPOSITION_EQ.to_string(),
             MASS_SHELL_EQ.to_string(),
+            JACOBI_EQ.to_string(),
         ];
         if self.binomial_gamma {
             equations.push(BOOST_BINOMIAL.to_string());
@@ -229,6 +256,12 @@ impl SpecialRelativity {
                     statement: mass_shell.statement.into(),
                     layer: "particle".into(),
                     class: "model-internal".into(),
+                },
+                physis_ir::ClaimDecl {
+                    id: SR_CROSS_PRODUCT_JACOBI.into(),
+                    statement: jacobi.statement.into(),
+                    layer: "mathematical".into(),
+                    class: "mathematical".into(),
                 },
             ],
             lean_ref: Some(interval.lean_type.into()),
@@ -326,11 +359,12 @@ impl Theory for SpecialRelativity {
     }
     fn summary(&self) -> &'static str {
         "Flat Minkowski kinematics: the invariant interval, subluminal velocity \
-         composition, and the mass shell E² = (pc)² + (mc²)², all computed. The \
-         Lorentz boost is an IR encoding. Truncated binomial γ is an IR mutation, \
-         not the absolute_time knob. Minus-uv collinear composition is a second \
-         IR mutation, not that knob. That knob still replaces exact Lorentz with \
-         Galilean boosts."
+         composition, the mass shell E² = (pc)² + (mc²)², and the integer \
+         cross-product Jacobi identity, all computed. The Lorentz boost is an IR \
+         encoding. Truncated binomial γ is an IR mutation, not the absolute_time \
+         knob. Minus-uv collinear composition is a second IR mutation, not that \
+         knob. That knob still replaces exact Lorentz with Galilean boosts. The \
+         Jacobi identity is independent of those encodings."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -366,6 +400,9 @@ impl Theory for SpecialRelativity {
                 .expect("mass shell is a catalog identity")
                 .lab_claim()
                 .with_dependencies(&[SR_INVARIANT_INTERVAL]),
+            lookup(SR_CROSS_PRODUCT_JACOBI)
+                .expect("Jacobi is a catalog identity")
+                .lab_claim(),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -454,6 +491,16 @@ impl Theory for SpecialRelativity {
                     }
                 }
             }
+            SR_CROSS_PRODUCT_JACOBI => match identity_is_zero(&cross_product_jacobi()) {
+                Ok(()) => Verdict::holds(
+                    claim,
+                    "a × (b × c) + cyclic vanishes on the x-component over Z",
+                )
+                .with_evidence([
+                    "recursive and postfix expanders agree the cross-product Jacobi x-component is the zero polynomial".to_string(),
+                ]),
+                Err(e) => Verdict::fails(claim, e),
+            },
             _ => Verdict::inapplicable(claim, "claim not made by the special-relativity object"),
         }
     }
@@ -520,6 +567,7 @@ mod tests {
         assert_eq!(kind(&sr, SR_INVARIANT_INTERVAL), VerdictKind::Holds);
         assert_eq!(kind(&sr, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Holds);
         assert_eq!(kind(&sr, SR_ENERGY_MOMENTUM), VerdictKind::Holds);
+        assert_eq!(kind(&sr, SR_CROSS_PRODUCT_JACOBI), VerdictKind::Holds);
     }
 
     #[test]
@@ -533,6 +581,7 @@ mod tests {
         assert_eq!(pkg.equations[1], INTERVAL_EQ);
         assert_eq!(pkg.equations[2], COMPOSITION_EQ);
         assert_eq!(pkg.equations[3], MASS_SHELL_EQ);
+        assert_eq!(pkg.equations[4], JACOBI_EQ);
         let composition = lookup(SR_SUBLUMINAL_COMPOSITION).unwrap();
         let bound_c =
             physis_proof::catalog_tree_binding(Some(composition.lean_type), &pkg.equations)
@@ -545,7 +594,16 @@ mod tests {
                 .unwrap()
                 .expect("live SR must carry the mass-shell tree");
         assert_eq!(bound_m.claim_id, SR_ENERGY_MOMENTUM);
-        assert_eq!(pkg.claims.len(), 3);
+        let jacobi = lookup(SR_CROSS_PRODUCT_JACOBI).unwrap();
+        let bound_j = physis_proof::catalog_tree_binding(Some(jacobi.lean_type), &pkg.equations)
+            .unwrap()
+            .expect("live SR must carry the Jacobi tree");
+        assert_eq!(bound_j.claim_id, SR_CROSS_PRODUCT_JACOBI);
+        assert_eq!(
+            parse_expr(JACOBI_EQ).unwrap().canonical(),
+            cross_product_jacobi().canonical()
+        );
+        assert_eq!(pkg.claims.len(), 4);
     }
 
     #[test]
@@ -570,6 +628,17 @@ mod tests {
         ];
         let err = SpecialRelativity::from_package(&pkg).unwrap_err();
         assert!(err.contains("no mass-shell identity tree"), "{err}");
+        pkg.equations = vec![
+            BOOST_LORENTZ.to_string(),
+            INTERVAL_EQ.to_string(),
+            COMPOSITION_EQ.to_string(),
+            MASS_SHELL_EQ.to_string(),
+        ];
+        let err = SpecialRelativity::from_package(&pkg).unwrap_err();
+        assert!(
+            err.contains("no cross-product Jacobi identity tree"),
+            "{err}"
+        );
         assert!(!err.contains("receipt"), "{err}");
     }
 
@@ -582,6 +651,11 @@ mod tests {
         assert_eq!(kind(&sr, SR_INVARIANT_INTERVAL), VerdictKind::Fails);
         assert_eq!(kind(&sr, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Fails);
         assert_eq!(kind(&sr, SR_ENERGY_MOMENTUM), VerdictKind::Fails);
+        assert_eq!(
+            kind(&sr, SR_CROSS_PRODUCT_JACOBI),
+            VerdictKind::Holds,
+            "Jacobi is not a boost identity"
+        );
     }
 
     #[test]
@@ -593,6 +667,17 @@ mod tests {
             .find(|c| c.id_str() == SR_ENERGY_MOMENTUM)
             .unwrap();
         assert_eq!(em.depends_on[0].0, SR_INVARIANT_INTERVAL);
+    }
+
+    #[test]
+    fn jacobi_is_not_an_interval_lemma() {
+        let sr = SpecialRelativity::default();
+        let j = sr
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_CROSS_PRODUCT_JACOBI)
+            .unwrap();
+        assert!(j.depends_on.is_empty(), "Jacobi is not a boost lemma");
     }
 
     #[test]
@@ -660,6 +745,11 @@ mod tests {
             kind(&fork, SR_SUBLUMINAL_COMPOSITION),
             VerdictKind::Holds,
             "binomial γ is not the Galilean composition fork"
+        );
+        assert_eq!(
+            kind(&fork, SR_CROSS_PRODUCT_JACOBI),
+            VerdictKind::Holds,
+            "binomial γ is not the Jacobi identity"
         );
         assert_eq!(kind(&t, SR_INVARIANT_INTERVAL), VerdictKind::Holds);
         let interval = fork
@@ -807,13 +897,14 @@ mod tests {
         let pkg = parse_package(&src).unwrap();
         assert_eq!(
             pkg.equations.len(),
-            4,
+            5,
             "live package must stay boost lorentz plus the catalog identity trees"
         );
         assert_eq!(pkg.equations[0], BOOST_LORENTZ);
         assert_eq!(pkg.equations[1], INTERVAL_EQ);
         assert_eq!(pkg.equations[2], COMPOSITION_EQ);
         assert_eq!(pkg.equations[3], MASS_SHELL_EQ);
+        assert_eq!(pkg.equations[4], JACOBI_EQ);
         assert_eq!(
             pkg.lean_ref.as_deref(),
             Some(lookup(SR_INVARIANT_INTERVAL).unwrap().lean_type)
@@ -846,6 +937,11 @@ mod tests {
             kind(&fork, SR_ENERGY_MOMENTUM),
             VerdictKind::Holds,
             "minus-uv is not the binomial γ mass-shell fork"
+        );
+        assert_eq!(
+            kind(&fork, SR_CROSS_PRODUCT_JACOBI),
+            VerdictKind::Holds,
+            "minus-uv is not the Jacobi identity"
         );
         assert_eq!(kind(&t, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Holds);
         let composition = fork

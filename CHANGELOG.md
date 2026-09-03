@@ -12,6 +12,29 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Proof
 
+- **Cross-product Jacobi is a catalog identity**
+  (`sr.cross-product-jacobi`, Physlib `cross_product_jacobi`).
+  The x-component of a × (b × c) + cyclic is dual-expanded and
+  kernel-checked. That is a different algebraic idea from coboundary
+  nilpotence and from the Minkowski bilinear form, not a leftover of
+  tet d², and not a fifth P3N cell. Live special-relativity lists the
+  Jacobi tree beside interval, composition, and mass-shell;
+  `lean_ref` stays the interval type. `absolute_time` still flips the
+  three kinematic claims; Jacobi stays Holds. Evaluator stays
+  Executed until a receipt. Not Canonical, not P4. P3N count stays 4.
+  Unique-vacuum graph id unchanged. Planck / GR / de-rham / SM /
+  observer-geometry encode pins unchanged. Catalog d² FormalClaim
+  identity
+  `fd8a18eeaaef7bd26d7b798bf690d77ad0536d7befb9c71e254e3e90a3109d9c`
+  and challenge hash
+  `a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784`
+  unchanged. SR encode pin
+  `d9e4849a58e52d6a63e1bbb494ce5dc6288418a04d0c4e5513ffbc99659b79f2` (was
+  `faecac5791ad5650337c61dcb10e45d5eb36ca24c0423df51891673ba3da3ef6`).
+  Verified: expander and parse tests, exact mint, Lean+nanoda when
+  wired, loop prove/cite/review, `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **3-simplex coboundary is a catalog identity**
   (`dec.d-squared-one`, Physlib `d_squared_one`).
   The polynomial `d₂ ∘ d₁ = 0` on the six edge values of one oriented

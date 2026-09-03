@@ -39,3 +39,13 @@ typed rest-mass check remains the lab evaluator. -/
 theorem energy_momentum_invariant (E p β : Int) :
     (E - β * p) ^ 2 - (p - β * E) ^ 2 = (1 - β ^ 2) * (E ^ 2 - p ^ 2) := by
   grind
+
+/-- Jacobi identity for the R^3 cross product: the x-component of
+`a × (b × c) + b × (c × a) + c × (a × b)` is identically zero.
+Not the Minkowski interval polynomial and not a boost identity. -/
+theorem cross_product_jacobi (a1 a2 a3 b1 b2 b3 c1 c2 c3 : Int) :
+    ((((a2 * ((b1 * c2) - (b2 * c1))) - (a3 * ((b3 * c1) - (b1 * c3))))
+        + ((b2 * ((c1 * a2) - (c2 * a1))) - (b3 * ((c3 * a1) - (c1 * a3)))))
+      + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3)))))
+      = 0 := by
+  grind

@@ -179,7 +179,26 @@ lean_ref ∀ (E p β : Int), (E - β*p)^2 - (p - β*E)^2 = (1 - β^2)*(E^2 - p^2
 "#,
 };
 
-const DOSSIERS: &[Dossier] = &[D2, D2_ONE, LORENTZ, COMPOSITION, MASS_SHELL];
+/// Gibbs–Wilson vector analysis: Jacobi identity of the cross product.
+/// Not the Minkowski interval polynomial.
+const JACOBI: Dossier = Dossier {
+    claim_id: "sr.cross-product-jacobi",
+    work: "Vector Analysis (Gibbs, Wilson)",
+    edition: "Yale University Press 1901",
+    version: "1901",
+    section: Some("II"),
+    equation: Some("cyclic cross product"),
+    ir: r#"
+id = cross-product-jacobi
+name = Cross-product Jacobi identity
+assumption integer-ring
+equation ((((a2 * ((b1 * c2) - (b2 * c1))) - (a3 * ((b3 * c1) - (b1 * c3)))) + ((b2 * ((c1 * a2) - (c2 * a1))) - (b3 * ((c3 * a1) - (c1 * a3))))) + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3)))))
+claim mathematical mathematical sr.cross-product-jacobi : the x-component of a cross b cross c plus cyclic vanishes
+lean_ref ∀ (a1 a2 a3 b1 b2 b3 c1 c2 c3 : Int), ((((a2 * ((b1 * c2) - (b2 * c1))) - (a3 * ((b3 * c1) - (b1 * c3)))) + ((b2 * ((c1 * a2) - (c2 * a1))) - (b3 * ((c3 * a1) - (c1 * a3))))) + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3))))) = 0
+"#,
+};
+
+const DOSSIERS: &[Dossier] = &[D2, D2_ONE, LORENTZ, COMPOSITION, MASS_SHELL, JACOBI];
 
 fn dossier(claim_id: &str) -> Option<&'static Dossier> {
     DOSSIERS.iter().find(|d| d.claim_id == claim_id)

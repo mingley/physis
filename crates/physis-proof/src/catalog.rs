@@ -155,6 +155,21 @@ fn mass_shell_domain() -> DomainOfValidity {
     )
 }
 
+fn jacobi_commitments() -> ClaimCommitments {
+    ClaimCommitments::physlib_forall()
+}
+
+fn jacobi_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["integer cross-product Jacobi in R^3".into()],
+        vec!["so(3) Lie bracket as the R^3 cross product".into()],
+        "The catalog identity is the x-component of a cross (b cross c) plus \
+         cyclic, as an integer polynomial. It is not the Minkowski interval \
+         and not a boost identity. Using it for so(1,3) structure constants \
+         is a new claim.",
+    )
+}
+
 /// Discrete exterior calculus: `(b − a) − (c − a) + (c − b) ≡ 0`.
 ///
 /// That is `d₁(d₀ f)` on a single oriented triangle, for a 0-form with
@@ -241,6 +256,34 @@ pub fn energy_momentum() -> Expr {
     sub(boosted, orig)
 }
 
+/// Jacobi identity for the R^3 cross product: the x-component of
+/// `a × (b × c) + b × (c × a) + c × (a × b)` is identically zero.
+///
+/// Different algebraic idea from coboundary nilpotence and from the
+/// Minkowski bilinear form. y- and z-components are the same identity
+/// on cyclic relabeling and are not extra catalog rows.
+pub fn cross_product_jacobi() -> Expr {
+    let a1 = Expr::var("a1");
+    let a2 = Expr::var("a2");
+    let a3 = Expr::var("a3");
+    let b1 = Expr::var("b1");
+    let b2 = Expr::var("b2");
+    let b3 = Expr::var("b3");
+    let c1 = Expr::var("c1");
+    let c2 = Expr::var("c2");
+    let c3 = Expr::var("c3");
+    let bxc_y = sub(mul(b3.clone(), c1.clone()), mul(b1.clone(), c3.clone()));
+    let bxc_z = sub(mul(b1.clone(), c2.clone()), mul(b2.clone(), c1.clone()));
+    let a_term = sub(mul(a2.clone(), bxc_z), mul(a3.clone(), bxc_y));
+    let cxa_y = sub(mul(c3.clone(), a1.clone()), mul(c1.clone(), a3.clone()));
+    let cxa_z = sub(mul(c1.clone(), a2.clone()), mul(c2.clone(), a1.clone()));
+    let b_term = sub(mul(b2.clone(), cxa_z), mul(b3.clone(), cxa_y));
+    let axb_y = sub(mul(a3, b1.clone()), mul(a1.clone(), b3));
+    let axb_z = sub(mul(a1, b2), mul(a2, b1));
+    let c_term = sub(mul(c2, axb_z), mul(c3, axb_y));
+    add(add(a_term, b_term), c_term)
+}
+
 /// Known exact identities. A claim not in this list cannot be promoted by
 /// the exact-certificate backend.
 pub const CATALOG: &[IdentitySpec] = &[
@@ -303,6 +346,18 @@ pub const CATALOG: &[IdentitySpec] = &[
         lean_type: "∀ (E p β : Int), (E - β*p)^2 - (p - β*E)^2 = (1 - β^2)*(E^2 - p^2)",
         axioms: &["integer-arithmetic", "minkowski-interval-signature"],
         identity: energy_momentum,
+    },
+    IdentitySpec {
+        claim_id: "sr.cross-product-jacobi",
+        statement: "The x-component of a × (b × c) + cyclic vanishes.",
+        class: ClaimClass::Mathematical,
+        layer: LayerId::Mathematical,
+        commitments: jacobi_commitments,
+        domain: jacobi_domain,
+        lean_theorem: "cross_product_jacobi",
+        lean_type: "∀ (a1 a2 a3 b1 b2 b3 c1 c2 c3 : Int), ((((a2 * ((b1 * c2) - (b2 * c1))) - (a3 * ((b3 * c1) - (b1 * c3)))) + ((b2 * ((c1 * a2) - (c2 * a1))) - (b3 * ((c3 * a1) - (c1 * a3))))) + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3))))) = 0",
+        axioms: &["integer-arithmetic"],
+        identity: cross_product_jacobi,
     },
 ];
 
@@ -378,6 +433,7 @@ mod tests {
         assert!(lookup("sr.invariant-interval").is_some());
         assert!(lookup("sr.subluminal-composition").is_some());
         assert!(lookup("sr.energy-momentum-invariant").is_some());
+        assert!(lookup("sr.cross-product-jacobi").is_some());
         assert!(lookup("predictivity.unique-vacuum").is_none());
     }
 
@@ -570,6 +626,56 @@ mod tests {
             ]
         );
         assert!(catalog_trees_in(&["boost lorentz"]).is_empty());
+    }
+
+    #[test]
+    fn jacobi_is_not_the_interval_challenge() {
+        assert_ne!(
+            cross_product_jacobi().canonical(),
+            lorentz_interval().canonical()
+        );
+        assert_ne!(
+            cross_product_jacobi().canonical(),
+            energy_momentum().canonical()
+        );
+        assert_ne!(
+            cross_product_jacobi().canonical(),
+            tetrahedron_d2().canonical()
+        );
+        let spec = lookup("sr.cross-product-jacobi").unwrap();
+        assert_eq!(spec.axioms, &["integer-arithmetic"]);
+        assert_ne!(
+            spec.formal_claim().statement_hash(),
+            lookup("sr.invariant-interval")
+                .unwrap()
+                .formal_claim()
+                .statement_hash()
+        );
+        let jac_eq = cross_product_jacobi().to_string();
+        let eqs = [
+            "boost lorentz",
+            "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * (t^2 - x^2)",
+            "(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)",
+            "(E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)",
+            jac_eq.as_str(),
+        ];
+        let bound = catalog_tree_binding(Some(spec.lean_type), &eqs)
+            .unwrap()
+            .expect("Jacobi tree must bind beside the SR trees");
+        assert_eq!(bound.claim_id, spec.claim_id);
+        let listed: Vec<_> = catalog_trees_in(&eqs)
+            .into_iter()
+            .map(|s| s.claim_id)
+            .collect();
+        assert_eq!(
+            listed,
+            vec![
+                "sr.invariant-interval",
+                "sr.subluminal-composition",
+                "sr.energy-momentum-invariant",
+                "sr.cross-product-jacobi",
+            ]
+        );
     }
 
     #[test]

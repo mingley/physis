@@ -146,7 +146,9 @@ fn infix_bp(op: Option<u8>) -> Option<(u8, u8, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::catalog::{discrete_d2, einstein_composition, energy_momentum, lorentz_interval};
+    use crate::catalog::{
+        cross_product_jacobi, discrete_d2, einstein_composition, energy_momentum, lorentz_interval,
+    };
 
     #[test]
     fn human_d2_matches_catalog_tree() {
@@ -181,6 +183,7 @@ mod tests {
             lorentz_interval(),
             einstein_composition(),
             energy_momentum(),
+            cross_product_jacobi(),
         ] {
             assert_eq!(parse_expr(&e.to_string()).unwrap(), e);
         }

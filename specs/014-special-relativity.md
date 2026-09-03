@@ -8,9 +8,11 @@ Id: `special-relativity`
 
 Special relativity is a foundational, spectacularly-confirmed theory — an ideal
 target for *mechanical* scrutiny. This theory does not assert Einstein's 1905
-kinematics; it **computes** three of its invariants and shows that a single knob
-(`absolute_time`) demolishes all of them by reverting to Galilean boosts. It is
-the Galilean→Einstein revolution rendered as one mechanical knob turn.
+kinematics; it **computes** three kinematic invariants plus the integer
+cross-product Jacobi identity and shows that a single knob (`absolute_time`)
+demolishes the three kinematic claims by reverting to Galilean boosts. Jacobi
+stays Holds. It is the Galilean→Einstein revolution rendered as one mechanical
+knob turn.
 
 It also exercises the project's core premise — Rust's type system as a physics
 guardrail. The mass-shell check builds `pc` and `mc²` from typed quantities, so
@@ -24,25 +26,27 @@ expression would not compile.
 | `special-relativity` | flat Minkowski kinematics with a Galilean-toggle knob |
 
 The Lorentz boost lives on the IR package (`boost lorentz`) together
-with the catalog interval, composition, and mass-shell identity trees.
+with the catalog interval, composition, mass-shell, and cross-product
+Jacobi identity trees.
 `lean_ref` is the catalog interval type, not a Physlib pointer without
 the tree. A package missing any of those trees fails closed. That is
 not a kernel proof.
 `add-binomial-gamma` appends `boost binomial-gamma` and is an IR
 mutation: truncated γ = 1 + β²/2 fails interval and mass-shell
-invariance. Velocity composition stays Einstein on that fork.
+invariance. Velocity composition stays Einstein on that fork. Jacobi
+stays Holds.
 `add-minus-uv` appends `compose minus-uv` and is a second IR
 mutation: `w = (u+v)/(1−uv)` fails subluminal composition while
-Lorentz boosts still hold the interval and mass shell. That is still
-`special-relativity`, not a silent `absolute_time` turn.
+Lorentz boosts still hold the interval, mass shell, and Jacobi. That
+is still `special-relativity`, not a silent `absolute_time` turn.
 `absolute_time` still switches exact Lorentz to Galilean and
-flips all three claims.
+flips the three kinematic claims. Jacobi stays Holds.
 
 ## Knob
 
 | knob | effect |
 |---|---|
-| `absolute_time` | If `true`, boosts are Galilean (time is absolute) instead of Lorentzian. Flips all three claims `holds → fails`. Boost topology is not this knob: `add-binomial-gamma` is an IR mutation. Collinear composition is not this knob: `add-minus-uv` is an IR mutation. |
+| `absolute_time` | If `true`, boosts are Galilean (time is absolute) instead of Lorentzian. Flips the three kinematic claims `holds → fails`. Jacobi stays Holds. Boost topology is not this knob: `add-binomial-gamma` is an IR mutation. Collinear composition is not this knob: `add-minus-uv` is an IR mutation. |
 
 ## Claims (all computed theorems)
 
@@ -51,6 +55,7 @@ flips all three claims.
 | `sr.invariant-interval` | `s² = (cΔt)² − Δx²` is unchanged by the boost |
 | `sr.subluminal-composition` | composing two subluminal velocities stays below `c` |
 | `sr.energy-momentum-invariant` | the mass shell `E² − (pc)² = (mc²)²` is frame-independent |
+| `sr.cross-product-jacobi` | the x-component of `a × (b × c) + cyclic` vanishes over the integers |
 
 The algebraic content of Einstein addition is a catalog identity
 (`(1+uv)² − (u+v)² ≡ (1−u²)(1−v²)`), kernel-checked as
@@ -65,6 +70,13 @@ as `energy_momentum_invariant`. That is the interval identity with
 interval). The lab evaluator still checks the typed rest-mass equality
 on an electron boosted from rest. The claim declares a live lemma edge
 to `sr.invariant-interval`.
+
+The algebraic content of the cross-product Jacobi identity is the
+x-component of `a × (b × c) + cyclic` as an integer polynomial,
+kernel-checked as `cross_product_jacobi`. That is not the Minkowski
+bilinear form and not a boost identity. The lab evaluator still checks
+that both expanders agree the polynomial is zero. There is no lemma
+edge to `sr.invariant-interval`.
 
 ## How each is computed
 
@@ -82,18 +94,22 @@ Lorentz by default, Galilean under the knob:
   `Qty<Energy>` built from the electron mass and `c`. Boosting the 4-momentum
   and checking `E² − (pc)²` against `(mc²)²` holds under Lorentz and fails under
   a Galilean boost.
+- **Cross-product Jacobi**: the x-component of `a × (b × c) + cyclic` is the
+  zero polynomial over the integers. Both expanders agree. Galilean boosts,
+  binomial γ, and minus-uv composition do not touch this cell.
 
 ## The knob → verdict diff
 
 ```
-physis run special-relativity            # all three: holds
+physis run special-relativity            # four claims: holds
 physis hypothesize special-relativity    # add-binomial-gamma and add-minus-uv are IR, not set
 physis set special-relativity absolute_time true
 ```
 
-flips every claim `holds → fails`. Absolute time is not a small perturbation of
-relativity — it breaks the interval, lets velocities exceed `c`, and destroys
-the mass shell, all at once.
+flips the three kinematic claims `holds → fails`. Jacobi stays Holds. Absolute
+time is not a small perturbation of relativity — it breaks the interval, lets
+velocities exceed `c`, and destroys the mass shell, all at once. The integer
+Jacobi identity is not a boost.
 
 ## Non-goals (this milestone)
 
