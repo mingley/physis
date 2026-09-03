@@ -3048,7 +3048,14 @@ pub fn planck_length() -> Qty<Length> {
     meters(1.616_255e-35)
 }
 
-/// Planck time.
+/// Planck time (s), CODATA 2018.
+///
+/// This is the recommended printed UNIVERSAL centre, not Planck
+/// temperature TP, not atomic-unit time au_t, not natural-unit time
+/// nu_t, and not a reconstructed time formula. The versioned ledger
+/// stores a SciInterval because Ratio scale 10^50 overflows i128;
+/// this Qty is that centre. t_P, tp, Planck_time, planck-time, and
+/// tPlanck are not second names.
 pub fn planck_time() -> Qty<Time> {
     seconds(5.391_247e-44)
 }
@@ -3773,6 +3780,47 @@ mod tests {
             lp.hash,
             physis_constants::bohr_radius().hash,
             "lP Qty lockstep is not a0"
+        );
+
+        let tptime = physis_constants::planck_time();
+        let tp_centre = SciExact::new(5_391_247, -50);
+        assert_eq!(
+            planck_time().value(),
+            tp_centre.to_f64(),
+            "tP Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            tp_centre.to_ratio(),
+            None,
+            "tP Qty lockstep cannot be a Ratio: 10^50 overflows i128"
+        );
+        assert!(
+            tptime.value.contains(SciInterval::point(tp_centre)),
+            "tP Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            tptime.value.lo, tptime.value.hi,
+            "ledger tP stays a SciInterval; the Qty is not that hull"
+        );
+        assert_ne!(
+            tptime.hash,
+            physis_constants::planck_length().hash,
+            "tP Qty lockstep is not Planck length"
+        );
+        assert_ne!(
+            tptime.hash,
+            physis_constants::planck_temperature().hash,
+            "tP Qty lockstep is not TP"
+        );
+        assert_ne!(
+            tptime.hash,
+            physis_constants::atomic_unit_of_time().hash,
+            "tP Qty lockstep is not au_t"
+        );
+        assert_ne!(
+            tptime.hash,
+            physis_constants::natural_unit_of_time().hash,
+            "tP Qty lockstep is not nu_t"
         );
 
         let mu0_c = physis_constants::vacuum_permeability();
