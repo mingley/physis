@@ -9,7 +9,7 @@
 use physis_core::dim::{
     Action, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency, HeatCapacity,
     Irradiance, Length, LuminosityDensity, Mass, Momentum, Power, Pressure, RadiationConstant,
-    StefanBoltzmann, Time, Velocity,
+    StefanBoltzmann, Temperature, Time, Velocity,
 };
 use physis_core::qty::{ampere, joule, kg, meters, newton, pascal, seconds, Qty};
 
@@ -1103,7 +1103,7 @@ pub fn shielding_difference_t_p_in_ht() -> Qty<Dimensionless> {
 /// equals a reconstructed 1 − μ′_h/μ_h from sibling moments. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
 /// This is not the CODATA 2022 last-digit 7029. Nominal solar irradiance is
-/// S_sun. Faraday constant is NAe.
+/// S_sun. Nominal solar effective temperature is T_sun. Faraday constant is NAe.
 pub fn helion_shielding_shift() -> Qty<Dimensionless> {
     Qty::new(5.996_743e-5)
 }
@@ -2832,6 +2832,14 @@ pub fn solar_luminosity() -> Qty<Power> {
 /// `L_sun`, and not Stefan-Boltzmann `sigma`. Faraday constant is NAe.
 pub fn solar_irradiance() -> Qty<Irradiance> {
     Qty::new(1361.0)
+}
+
+/// Nominal solar effective temperature (IAU 2015 conversion ruler), kelvin.
+///
+/// This is `T_☉^N`, not a measured photospheric temperature, not
+/// irradiance `S_sun`, and not luminosity `L_sun`. Faraday constant is NAe.
+pub fn solar_effective_temperature() -> Qty<Temperature> {
+    Qty::new(5772.0)
 }
 
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
@@ -13695,6 +13703,37 @@ mod tests {
             physis_constants::solar_irradiance().hash,
             physis_constants::solar_luminosity().hash,
             "S_sun is not L_sun"
+        );
+
+        let teff = physis_constants::solar_effective_temperature();
+        assert_eq!(
+            teff.value,
+            Ratio::int(5772),
+            "ledger T_sun is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            solar_effective_temperature().value(),
+            teff.value.to_f64(),
+            "T_sun is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            solar_effective_temperature().value(),
+            5772.0,
+            "IAU 2015 T_sun^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("T_sun").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("Teff").is_none(),
+            "Teff is not a ledger name; the live name is T_sun"
+        );
+        assert!(
+            physis_constants::lookup("T_eff").is_none(),
+            "T_eff is not a second name for T_sun"
+        );
+        assert_ne!(
+            physis_constants::solar_effective_temperature().hash,
+            physis_constants::solar_irradiance().hash,
+            "T_sun is not S_sun"
         );
 
         let ev = physis_constants::electron_volt();

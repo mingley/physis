@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  ba3c73f68c1fc7bbd4ab886904b57b7a527872b401bf91f251664b65f65d47d3"),
+            text.contains("constant  ledger  332ef45c93322e26251b069a15c0f8c3623f771c3a8cb05d674dd4a7f1db3888"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -20883,6 +20883,33 @@ mod tests {
             "journaling must not change the S_sun constant payload"
         );
 
+        let t_sun = lab
+            .exec(Command::Constant {
+                name: Some("T_sun".into()),
+            })
+            .text()
+            .to_string();
+        assert!(t_sun.contains("constant  T_sun  node "), "{t_sun}");
+        assert!(
+            t_sun.contains(
+                "hash     80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c"
+            ),
+            "{t_sun}"
+        );
+        assert!(t_sun.contains("kind     ratio"), "{t_sun}");
+        assert!(t_sun.contains("table    1"), "{t_sun}");
+        assert!(t_sun.contains("release  iau-2015"), "{t_sun}");
+        assert!(t_sun.contains("5772"), "{t_sun}");
+        assert!(t_sun.contains("rebuild  ok"), "{t_sun}");
+        assert!(!t_sun.contains("receipt"), "{t_sun}");
+        assert!(!t_sun.contains("theorem"), "{t_sun}");
+        let t_sun_id = constant_node_id(&t_sun);
+        assert_eq!(
+            t_sun_id.to_hex(),
+            "98f786f76f30a1257bd093af7014a20f7f8b42a68d24c7f692fed8a83b3a0c72",
+            "journaling must not change the T_sun constant payload"
+        );
+
         let unknown = lab.exec(Command::Constant {
             name: Some("hbar".into()),
         });
@@ -23181,7 +23208,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "ba3c73f68c1fc7bbd4ab886904b57b7a527872b401bf91f251664b65f65d47d3",
+            "332ef45c93322e26251b069a15c0f8c3623f771c3a8cb05d674dd4a7f1db3888",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -24032,6 +24059,13 @@ mod tests {
         assert!(ledger.contains("S_sun^N = 1361"), "{ledger}");
         assert!(
             ledger.contains(
+                "hash     80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c"
+            ),
+            "{ledger}"
+        );
+        assert!(ledger.contains("T_sun^N = 5772"), "{ledger}");
+        assert!(
+            ledger.contains(
                 "hash     d5514de9cbef3f6990067899529d34f20b4349ca3b20ba18c9a5932c8c6b6c0f"
             ),
             "{ledger}"
@@ -24123,7 +24157,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "ba3c73f68c1fc7bbd4ab886904b57b7a527872b401bf91f251664b65f65d47d3",
+            "332ef45c93322e26251b069a15c0f8c3623f771c3a8cb05d674dd4a7f1db3888",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -27652,7 +27686,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  ba3c73f68c1fc7bbd4ab886904b57b7a527872b401bf91f251664b65f65d47d3"),
+            text.contains("constant  ledger  332ef45c93322e26251b069a15c0f8c3623f771c3a8cb05d674dd4a7f1db3888"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

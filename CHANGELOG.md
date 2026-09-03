@@ -80,6 +80,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 nominal solar effective temperature is an exact Ratio.**
+  `physis-constants` versions `T_sun` as `5772` K from Prša et al.,
+  Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a
+  conversion ruler, not a measured photospheric temperature, not
+  `S_sun`, and not P3N. `Tsun`, `T-sun`, `Teff`, `T_eff`, `T_eff_sun`,
+  and `solar_temperature` are not second names. `physis_model`
+  `solar_effective_temperature()` Qty locksteps via integer `to_f64`.
+  Adding `T_sun` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c;
+  node
+  98f786f76f30a1257bd093af7014a20f7f8b42a68d24c7f692fed8a83b3a0c72;
+  ledger node
+  332ef45c93322e26251b069a15c0f8c3623f771c3a8cb05d674dd4a7f1db3888.
+  `S_sun` hash
+  26a5268a7775ede81697bfc65775a12c8ff7b504a70c27b2c00558c9e9a685cd,
+  `sigma_h` hash
+  b364a92ff1578713cbdfb75c740edfed04acb3d047adafc240433b39aa55aab9, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **IAU 2015 nominal solar irradiance is an exact Ratio.**
   `physis-constants` versions `S_sun` as `1361` W m^{-2} from Prša et
   al., Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a
