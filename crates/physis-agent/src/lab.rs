@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54"),
+            text.contains("constant  ledger  589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -21279,6 +21279,41 @@ mod tests {
             "journaling must not change the nautical_mile constant payload"
         );
 
+        let hectare = lab
+            .exec(Command::Constant {
+                name: Some("hectare".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hectare.contains("constant  hectare  node "), "{hectare}");
+        assert!(
+            hectare.contains(
+                "hash     f2e190efa147a39f30023a0d50629f35c086c1012f71055b5f5cc4104096bb60"
+            ),
+            "{hectare}"
+        );
+        assert!(hectare.contains("kind     ratio"), "{hectare}");
+        assert!(hectare.contains("table    8"), "{hectare}");
+        assert!(
+            hectare.contains("release  si-2019-codata-2018"),
+            "{hectare}"
+        );
+        assert!(hectare.contains("10000"), "{hectare}");
+        assert!(hectare.contains("range    1 ha = 1e4 m^2"), "{hectare}");
+        assert!(hectare.contains("unit     m^2"), "{hectare}");
+        assert!(hectare.contains("rebuild  ok"), "{hectare}");
+        assert!(hectare.contains("not P3N"), "{hectare}");
+        assert!(!hectare.contains("receipt"), "{hectare}");
+        assert!(!hectare.contains("theorem"), "{hectare}");
+        assert!(!hectare.contains("ELECTROMAGNETIC"), "{hectare}");
+        assert!(!hectare.contains("PHYSICOCHEMICAL"), "{hectare}");
+        let hectare_id = constant_node_id(&hectare);
+        assert_eq!(
+            hectare_id.to_hex(),
+            "e50349cfebd025b97b445247c8ca19f956e2aa84f4d23f45462a9c733d23d5bc",
+            "journaling must not change the hectare constant payload"
+        );
+
         let gm = lab
             .exec(Command::Constant {
                 name: Some("GM_sun".into()),
@@ -23915,7 +23950,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54",
+            "589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -24993,7 +25028,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54",
+            "589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -25097,6 +25132,14 @@ mod tests {
         .expect("pinned nautical_mile node");
         assert_eq!(
             lab2.store.get(si_nautical_mile).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let si_hectare = physis_core::artifact::ArtifactId::from_hex(
+            "e50349cfebd025b97b445247c8ca19f956e2aa84f4d23f45462a9c733d23d5bc",
+        )
+        .expect("pinned hectare node");
+        assert_eq!(
+            lab2.store.get(si_hectare).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let alpha = physis_core::artifact::ArtifactId::from_hex(
@@ -28618,7 +28661,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54"),
+            text.contains("constant  ledger  589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

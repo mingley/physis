@@ -12,6 +12,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **BIPM table 8 hectare is an exact Ratio.**
+  `physis-constants` versions `hectare` as
+  `10000`
+  m^2 from BIPM SI Brochure 9th edition table 8 (`1 ha = 10^{4} m^2`).
+  That is not barn, not an SI defining
+  constant, not P3N. `ha`, `a`, `are`, and `hectares` are not
+  second names. Adding `hectare` to LEDGER changes the ledger bundle pin.
+  There is no `physis_model` Area Qty. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `hectare` hash
+  f2e190efa147a39f30023a0d50629f35c086c1012f71055b5f5cc4104096bb60;
+  node
+  e50349cfebd025b97b445247c8ca19f956e2aa84f4d23f45462a9c733d23d5bc;
+  ledger node
+  589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571.
+  `nautical_mile` hash
+  e5b1cc930e89738e0273c18e8227d0c88abfa2d8e4e4e75a38d772308001105e
+  unchanged.
+
 - **BIPM table 8 nautical mile is an exact Ratio.**
   `physis-constants` versions `nautical_mile` as
   `1852`
