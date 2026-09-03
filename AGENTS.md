@@ -133,3 +133,5 @@ Until then, report the matrix and the diffs. That *is* the work. A kernel proof 
 - Tests name the claim they protect (`turning_iib_dimension_flips_critical_claim`).
 - Prefer enums over strings, except at the agent protocol boundary (`KnobValue`).
 - When you add a knob, add it to specs if it is load-bearing.
+
+Active plan: `plans/006-civilization-lab.md`. Do not leftover-flip remaining CODATA / BIPM / PDG siblings. Do not add a ninth SR integer polynomial.

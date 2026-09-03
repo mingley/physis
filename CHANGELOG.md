@@ -10,6 +10,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Plans
+
+- **Civilization-lab plan** (`plans/006-civilization-lab.md`).
+  Subsequent agents execute this, not leftover CODATA flips and not
+  a ninth SR integer polynomial. Trust kernel stays; scientific
+  payload (certificate-first evaluators, Physlib of live physics,
+  empirical receipts, typed IR, real P4, gap-driven loop) is the work.
+  Forbidden leftover moves are listed in that file. Do not treat this
+  plan as C8.1 (architecture doc) or as a completed civilization lab.
+
 ### Proof
 
 - **2x2 determinant product is a catalog identity**

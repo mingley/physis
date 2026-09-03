@@ -230,7 +230,7 @@ let _ = kg(1.0) + meters(1.0);
 
 ```
 specs/     what the system is, contract-level
-plans/     what we build next, in order
+plans/     what we build next, in order (active: plans/006-civilization-lab.md)
 docs/      how it works (architecture, layers, knobs, theories, agents)
 crates/    the Rust
 AGENTS.md  standing orders for long-horizon agents

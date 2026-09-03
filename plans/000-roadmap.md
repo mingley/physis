@@ -1,6 +1,6 @@
 # Roadmap
 
-Physis is a laboratory that grows by making more of its claims *checkable* and more of its domains *real*. Calendar estimates are not used here. Milestones are mechanical.
+Physis is a laboratory that grows by making more of its claims *checkable* and more of its domains *real*. Calendar estimates are not used here. Milestones are mechanical. Active agent plan: `plans/006-civilization-lab.md`.
 
 ```
 M0 foundation     ✓ typed layers, knobs, claims, string-critique lab, CLI
@@ -123,6 +123,7 @@ Each milestone must:
 See:
 
 - `specs/020-proof-carrying.md`
+- `plans/006-civilization-lab.md` (civilization-useful lab; subsequent agents)
 
 - `plans/001-m0-foundation.md`
 - `plans/002-m1-string-lab.md`
