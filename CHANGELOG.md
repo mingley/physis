@@ -12,6 +12,29 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Proof
 
+- **Lagrange identity is a catalog identity**
+  (`sr.lagrange-identity`, Physlib `lagrange_identity`).
+  The degree-4 Euclidean relation |a × b|² + (a · b)² = |a|² |b|² over
+  Z^3 is dual-expanded and kernel-checked. That is a different algebraic
+  idea from Jacobi of nested crosses, from coboundary nilpotence, and
+  from the Minkowski bilinear form, not a leftover of tet d², and not a
+  fifth P3N cell. Live special-relativity lists the Lagrange tree beside
+  interval, composition, mass-shell, and Jacobi; `lean_ref` stays the
+  interval type. `absolute_time` still flips the three kinematic claims;
+  Jacobi and Lagrange stay Holds. Evaluator stays Executed until a
+  receipt. Not Canonical, not P4. P3N count stays 4. Unique-vacuum graph
+  id unchanged. Planck / GR / de-rham / SM / observer-geometry encode
+  pins unchanged. Catalog d² FormalClaim identity
+  `fd8a18eeaaef7bd26d7b798bf690d77ad0536d7befb9c71e254e3e90a3109d9c`
+  and challenge hash
+  `a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784`
+  unchanged. SR encode pin
+  `fc3cfdc961a5f3f7fb605391ae8a1d1fcd7a0a187647d8520d1b0497c4dbc406` (was
+  `d9e4849a58e52d6a63e1bbb494ce5dc6288418a04d0c4e5513ffbc99659b79f2`).
+  Verified: expander and parse tests, exact mint, Lean+nanoda when
+  wired, loop prove/cite/review, `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **Cross-product Jacobi is a catalog identity**
   (`sr.cross-product-jacobi`, Physlib `cross_product_jacobi`).
   The x-component of a × (b × c) + cyclic is dual-expanded and

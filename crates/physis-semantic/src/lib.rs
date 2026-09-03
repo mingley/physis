@@ -198,7 +198,34 @@ lean_ref ∀ (a1 a2 a3 b1 b2 b3 c1 c2 c3 : Int), ((((a2 * ((b1 * c2) - (b2 * c1)
 "#,
 };
 
-const DOSSIERS: &[Dossier] = &[D2, D2_ONE, LORENTZ, COMPOSITION, MASS_SHELL, JACOBI];
+/// Gibbs–Wilson vector analysis: Lagrange identity of cross and dot.
+/// Not the Jacobi identity of nested crosses.
+const LAGRANGE: Dossier = Dossier {
+    claim_id: "sr.lagrange-identity",
+    work: "Vector Analysis (Gibbs, Wilson)",
+    edition: "Yale University Press 1901",
+    version: "1901",
+    section: Some("II"),
+    equation: Some("Lagrange identity"),
+    ir: r#"
+id = lagrange-identity
+name = Lagrange identity
+assumption integer-ring
+equation (((((((a2 * b3) - (a3 * b2)))^2 + (((a3 * b1) - (a1 * b3)))^2) + (((a1 * b2) - (a2 * b1)))^2) + ((((a1 * b1) + (a2 * b2)) + (a3 * b3)))^2) - ((((a1)^2 + (a2)^2) + (a3)^2) * (((b1)^2 + (b2)^2) + (b3)^2)))
+claim mathematical mathematical sr.lagrange-identity : the Lagrange identity holds over Z^3
+lean_ref ∀ (a1 a2 a3 b1 b2 b3 : Int), (((((((a2 * b3) - (a3 * b2)))^2 + (((a3 * b1) - (a1 * b3)))^2) + (((a1 * b2) - (a2 * b1)))^2) + ((((a1 * b1) + (a2 * b2)) + (a3 * b3)))^2) - ((((a1)^2 + (a2)^2) + (a3)^2) * (((b1)^2 + (b2)^2) + (b3)^2))) = 0
+"#,
+};
+
+const DOSSIERS: &[Dossier] = &[
+    D2,
+    D2_ONE,
+    LORENTZ,
+    COMPOSITION,
+    MASS_SHELL,
+    JACOBI,
+    LAGRANGE,
+];
 
 fn dossier(claim_id: &str) -> Option<&'static Dossier> {
     DOSSIERS.iter().find(|d| d.claim_id == claim_id)

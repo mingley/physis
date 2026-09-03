@@ -4605,6 +4605,63 @@ mod tests {
             "proving Jacobi must not change the triangle FormalClaim: {d2b}"
         );
     }
+    #[test]
+    fn prove_lagrange_mints_a_receipt_and_is_not_jacobi() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Prove {
+                claim: "sr.lagrange-identity".into(),
+            })
+            .text()
+            .to_string();
+        if physis_verifier::discover_tools().is_some() {
+            assert!(text.contains("lean-kernel"), "{text}");
+            assert!(text.contains("nanoda"), "{text}");
+        } else {
+            assert!(text.contains("expand-recursive"), "{text}");
+            assert!(text.contains("expand-postfix"), "{text}");
+        }
+        assert!(
+            !text.contains("a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784"),
+            "Lagrange challenge is not the triangle challenge: {text}"
+        );
+        assert!(
+            !text.contains("37944a1f3985a9b3459d12183d261f23253a3db519a86b38f82612d22b138660"),
+            "Lagrange challenge is not the Jacobi challenge: {text}"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "sr.lagrange-identity".into(),
+            })
+            .text()
+            .to_string();
+        let srb = why_theory_block(&why, "special-relativity");
+        assert!(srb.contains("kernel proof: receipt"), "{srb}");
+        assert!(srb.contains("judgment:   logical proved"), "{srb}");
+        assert!(srb.contains("P3F"), "{srb}");
+        assert!(srb.contains("integer Lagrange identity in R^3"), "{srb}");
+        assert!(
+            !srb.contains("integer cross-product Jacobi in R^3"),
+            "Lagrange receipt is not the Jacobi identity: {srb}"
+        );
+        assert!(
+            !srb.contains("1+1 Minkowski"),
+            "Lagrange receipt is not the interval identity: {srb}"
+        );
+        assert!(!srb.contains("theorem"), "{srb}");
+        let d2 = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        let d2b = why_theory_block(&d2, "de-rham");
+        assert!(d2b.contains("kernel proof: none"), "{d2b}");
+        assert!(
+            d2b.contains("fd8a18eeaaef7bd26d7b798bf690d77ad0536d7befb9c71e254e3e90a3109d9c"),
+            "proving Lagrange must not change the triangle FormalClaim: {d2b}"
+        );
+    }
 
     #[test]
     fn prove_conjecture_is_refused() {
@@ -6458,6 +6515,10 @@ mod tests {
             "add-binomial-gamma is not the Jacobi identity: {bin_block}"
         );
         assert!(
+            !bin_block.contains("sr.lagrange-identity"),
+            "add-binomial-gamma is not the Lagrange identity: {bin_block}"
+        );
+        assert!(
             text.contains("add-minus-uv"),
             "add-minus-uv must still be an IR fork: {text}"
         );
@@ -6569,6 +6630,10 @@ mod tests {
         assert!(
             !minus_block.contains("sr.cross-product-jacobi"),
             "add-minus-uv is not the Jacobi identity: {minus_block}"
+        );
+        assert!(
+            !minus_block.contains("sr.lagrange-identity"),
+            "add-minus-uv is not the Lagrange identity: {minus_block}"
         );
         assert!(
             minus_block.matches("holds → fails").count() == 1,
@@ -9811,6 +9876,7 @@ mod tests {
             "{text}"
         );
         assert!(text.contains("prove  sr.cross-product-jacobi"), "{text}");
+        assert!(text.contains("prove  sr.lagrange-identity"), "{text}");
         assert!(text.contains("counterexample"), "{text}");
         assert!(text.contains("replicate  dec.d-squared-zero  ok"), "{text}");
         assert!(text.contains("replicate  dec.d-squared-one  ok"), "{text}");
@@ -9825,6 +9891,10 @@ mod tests {
         );
         assert!(
             text.contains("review  sr.cross-product-jacobi  adversarially-reviewed"),
+            "{text}"
+        );
+        assert!(
+            text.contains("review  sr.lagrange-identity  adversarially-reviewed"),
             "{text}"
         );
         assert!(text.contains("restore  type-iib total_dim=10"), "{text}");
@@ -9879,6 +9949,10 @@ mod tests {
         assert!(
             text.contains("cite  sr.cross-product-jacobi"),
             "loop must cite the cross-product Jacobi dossier: {text}"
+        );
+        assert!(
+            text.contains("cite  sr.lagrange-identity"),
+            "loop must cite the Lagrange identity dossier: {text}"
         );
         assert!(
             !text.contains("cite  predictivity.unique-vacuum"),
@@ -10040,6 +10114,10 @@ mod tests {
         assert!(
             text.contains("judge  sr.cross-product-jacobi"),
             "loop must project the Jacobi catalog identity after prove: {text}"
+        );
+        assert!(
+            text.contains("judge  sr.lagrange-identity"),
+            "loop must project the Lagrange catalog identity after prove: {text}"
         );
         assert!(
             text.contains("judge  gut.weinberg-angle"),
@@ -25200,7 +25278,7 @@ mod tests {
             .text()
             .to_string();
         assert!(
-            sr.contains("d9e4849a58e52d6a63e1bbb494ce5dc6288418a04d0c4e5513ffbc99659b79f2"),
+            sr.contains("fc3cfdc961a5f3f7fb605391ae8a1d1fcd7a0a187647d8520d1b0497c4dbc406"),
             "{sr}"
         );
     }
@@ -27702,8 +27780,8 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(sr.contains("equations  5"), "{sr}");
-        assert!(sr.contains("claims     4"), "{sr}");
+        assert!(sr.contains("equations  6"), "{sr}");
+        assert!(sr.contains("claims     5"), "{sr}");
         assert!(sr.contains("round-trip canonical"), "{sr}");
         assert!(
             sr.contains("catalog identity tree  sr.invariant-interval"),
@@ -27721,13 +27799,17 @@ mod tests {
             sr.contains("catalog identity tree  sr.cross-product-jacobi"),
             "{sr}"
         );
+        assert!(
+            sr.contains("catalog identity tree  sr.lagrange-identity"),
+            "{sr}"
+        );
         assert!(!sr.contains("catalog identity tree  ok"), "{sr}");
         assert!(sr.contains("not P3S"), "{sr}");
         assert!(!sr.contains("receipt"), "{sr}");
         let sr_id = encoding_package_id(&sr);
         assert_eq!(
             sr_id.to_hex(),
-            "d9e4849a58e52d6a63e1bbb494ce5dc6288418a04d0c4e5513ffbc99659b79f2"
+            "fc3cfdc961a5f3f7fb605391ae8a1d1fcd7a0a187647d8520d1b0497c4dbc406"
         );
         assert_ne!(sr_id, gr_id);
         assert_ne!(sr_id, nand_id);
@@ -28963,6 +29045,10 @@ mod tests {
         );
         assert!(
             text.contains("review  sr.cross-product-jacobi  trust P3F required"),
+            "{text}"
+        );
+        assert!(
+            text.contains("review  sr.lagrange-identity  trust P3F required"),
             "{text}"
         );
         assert!(

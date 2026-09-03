@@ -147,7 +147,8 @@ fn infix_bp(op: Option<u8>) -> Option<(u8, u8, u8)> {
 mod tests {
     use super::*;
     use crate::catalog::{
-        cross_product_jacobi, discrete_d2, einstein_composition, energy_momentum, lorentz_interval,
+        cross_product_jacobi, discrete_d2, einstein_composition, energy_momentum,
+        lagrange_identity, lorentz_interval,
     };
 
     #[test]
@@ -184,6 +185,7 @@ mod tests {
             einstein_composition(),
             energy_momentum(),
             cross_product_jacobi(),
+            lagrange_identity(),
         ] {
             assert_eq!(parse_expr(&e.to_string()).unwrap(), e);
         }

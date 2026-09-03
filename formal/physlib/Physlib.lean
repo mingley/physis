@@ -49,3 +49,14 @@ theorem cross_product_jacobi (a1 a2 a3 b1 b2 b3 c1 c2 c3 : Int) :
       + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3)))))
       = 0 := by
   grind
+
+/-- Lagrange identity: `|a × b|² + (a · b)² = |a|² |b|²` over `Z^3`.
+Degree 4 Euclidean relation between cross and dot. Not Jacobi of
+nested crosses and not the Minkowski interval. -/
+theorem lagrange_identity (a1 a2 a3 b1 b2 b3 : Int) :
+    (((((((a2 * b3) - (a3 * b2)))^2 + (((a3 * b1) - (a1 * b3)))^2)
+        + (((a1 * b2) - (a2 * b1)))^2)
+      + ((((a1 * b1) + (a2 * b2)) + (a3 * b3)))^2)
+      - ((((a1)^2 + (a2)^2) + (a3)^2) * (((b1)^2 + (b2)^2) + (b3)^2)))
+      = 0 := by
+  grind

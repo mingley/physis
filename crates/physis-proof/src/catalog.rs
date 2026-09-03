@@ -170,6 +170,21 @@ fn jacobi_domain() -> DomainOfValidity {
     )
 }
 
+fn lagrange_commitments() -> ClaimCommitments {
+    ClaimCommitments::physlib_forall()
+}
+
+fn lagrange_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["integer Lagrange identity in R^3".into()],
+        vec!["Euclidean cross and dot product on Z^3".into()],
+        "The catalog identity is |a cross b|^2 + (a dot b)^2 - |a|^2 |b|^2 \
+         as a degree-4 integer polynomial. It is not the Jacobi identity of \
+         nested crosses and not the Minkowski interval. Using it for a \
+         Lorentzian inner product is a new claim.",
+    )
+}
+
 /// Discrete exterior calculus: `(b − a) − (c − a) + (c − b) ≡ 0`.
 ///
 /// That is `d₁(d₀ f)` on a single oriented triangle, for a 0-form with
@@ -284,6 +299,31 @@ pub fn cross_product_jacobi() -> Expr {
     add(add(a_term, b_term), c_term)
 }
 
+/// Lagrange identity: `|a × b|² + (a · b)² − |a|² |b|² ≡ 0` over Z^3.
+///
+/// Degree 4 Euclidean relation between the cross product and the dot
+/// product. Not the degree-3 Jacobi identity of nested crosses, not
+/// coboundary nilpotence, and not the Minkowski bilinear form.
+pub fn lagrange_identity() -> Expr {
+    let a1 = Expr::var("a1");
+    let a2 = Expr::var("a2");
+    let a3 = Expr::var("a3");
+    let b1 = Expr::var("b1");
+    let b2 = Expr::var("b2");
+    let b3 = Expr::var("b3");
+    let cx = sub(mul(a2.clone(), b3.clone()), mul(a3.clone(), b2.clone()));
+    let cy = sub(mul(a3.clone(), b1.clone()), mul(a1.clone(), b3.clone()));
+    let cz = sub(mul(a1.clone(), b2.clone()), mul(a2.clone(), b1.clone()));
+    let cross2 = add(add(pow(cx, 2), pow(cy, 2)), pow(cz, 2));
+    let dot = add(
+        add(mul(a1.clone(), b1.clone()), mul(a2.clone(), b2.clone())),
+        mul(a3.clone(), b3.clone()),
+    );
+    let na2 = add(add(pow(a1, 2), pow(a2, 2)), pow(a3, 2));
+    let nb2 = add(add(pow(b1, 2), pow(b2, 2)), pow(b3, 2));
+    sub(add(cross2, pow(dot, 2)), mul(na2, nb2))
+}
+
 /// Known exact identities. A claim not in this list cannot be promoted by
 /// the exact-certificate backend.
 pub const CATALOG: &[IdentitySpec] = &[
@@ -358,6 +398,18 @@ pub const CATALOG: &[IdentitySpec] = &[
         lean_type: "∀ (a1 a2 a3 b1 b2 b3 c1 c2 c3 : Int), ((((a2 * ((b1 * c2) - (b2 * c1))) - (a3 * ((b3 * c1) - (b1 * c3)))) + ((b2 * ((c1 * a2) - (c2 * a1))) - (b3 * ((c3 * a1) - (c1 * a3))))) + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3))))) = 0",
         axioms: &["integer-arithmetic"],
         identity: cross_product_jacobi,
+    },
+    IdentitySpec {
+        claim_id: "sr.lagrange-identity",
+        statement: "The Lagrange identity |a × b|² + (a · b)² = |a|² |b|² holds over Z^3.",
+        class: ClaimClass::Mathematical,
+        layer: LayerId::Mathematical,
+        commitments: lagrange_commitments,
+        domain: lagrange_domain,
+        lean_theorem: "lagrange_identity",
+        lean_type: "∀ (a1 a2 a3 b1 b2 b3 : Int), (((((((a2 * b3) - (a3 * b2)))^2 + (((a3 * b1) - (a1 * b3)))^2) + (((a1 * b2) - (a2 * b1)))^2) + ((((a1 * b1) + (a2 * b2)) + (a3 * b3)))^2) - ((((a1)^2 + (a2)^2) + (a3)^2) * (((b1)^2 + (b2)^2) + (b3)^2))) = 0",
+        axioms: &["integer-arithmetic"],
+        identity: lagrange_identity,
     },
 ];
 
@@ -434,6 +486,7 @@ mod tests {
         assert!(lookup("sr.subluminal-composition").is_some());
         assert!(lookup("sr.energy-momentum-invariant").is_some());
         assert!(lookup("sr.cross-product-jacobi").is_some());
+        assert!(lookup("sr.lagrange-identity").is_some());
         assert!(lookup("predictivity.unique-vacuum").is_none());
     }
 
@@ -674,6 +727,67 @@ mod tests {
                 "sr.subluminal-composition",
                 "sr.energy-momentum-invariant",
                 "sr.cross-product-jacobi",
+            ]
+        );
+    }
+
+    #[test]
+    fn lagrange_is_not_the_jacobi_or_interval_challenge() {
+        assert_ne!(
+            lagrange_identity().canonical(),
+            cross_product_jacobi().canonical()
+        );
+        assert_ne!(
+            lagrange_identity().canonical(),
+            lorentz_interval().canonical()
+        );
+        assert_ne!(
+            lagrange_identity().canonical(),
+            energy_momentum().canonical()
+        );
+        assert_ne!(
+            lagrange_identity().canonical(),
+            tetrahedron_d2().canonical()
+        );
+        let spec = lookup("sr.lagrange-identity").unwrap();
+        assert_eq!(spec.axioms, &["integer-arithmetic"]);
+        assert_eq!(
+            lagrange_identity().to_string(),
+            "(((((((a2 * b3) - (a3 * b2)))^2 + (((a3 * b1) - (a1 * b3)))^2) + (((a1 * b2) - (a2 * b1)))^2) + ((((a1 * b1) + (a2 * b2)) + (a3 * b3)))^2) - ((((a1)^2 + (a2)^2) + (a3)^2) * (((b1)^2 + (b2)^2) + (b3)^2)))"
+        );
+        assert_ne!(
+            spec.formal_claim().statement_hash(),
+            lookup("sr.cross-product-jacobi")
+                .unwrap()
+                .formal_claim()
+                .statement_hash()
+        );
+        let jac_eq = cross_product_jacobi().to_string();
+        let lag_eq = lagrange_identity().to_string();
+        let eqs = [
+            "boost lorentz",
+            "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * (t^2 - x^2)",
+            "(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)",
+            "(E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)",
+            jac_eq.as_str(),
+            lag_eq.as_str(),
+        ];
+        let bound = catalog_tree_binding(Some(spec.lean_type), &eqs)
+            .unwrap()
+            .expect("Lagrange tree must bind beside the SR trees");
+        assert_eq!(bound.claim_id, spec.claim_id);
+        let listed: Vec<_> = catalog_trees_in(&eqs)
+            .into_iter()
+            .map(|s| s.claim_id)
+            .collect();
+        assert_eq!(
+            listed,
+            vec![
+                "sr.invariant-interval",
+                "sr.subluminal-composition",
+                "sr.energy-momentum-invariant",
+                "sr.cross-product-jacobi",
+                "sr.lagrange-identity",
             ]
         );
     }

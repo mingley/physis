@@ -1,17 +1,19 @@
 //! Special relativity as mechanized kinematics — and a knob that turns it off.
 //!
-//! Einstein's 1905 kinematics is not asserted here; it is *computed*. Four
+//! Einstein's 1905 kinematics is not asserted here; it is *computed*. Five
 //! identities are checked:
 //!
 //! - the spacetime interval `s² = (cΔt)² − Δx²` is unchanged by a boost,
 //! - composing two subluminal velocities stays subluminal,
 //! - the energy–momentum invariant `E² − (pc)² = (mc²)²` is frame-independent,
 //!   built from *typed* quantities so `pc` and `mc²` are forced to be energies,
-//! - and the integer cross-product Jacobi identity (so(3) Lie bracket) holds
-//!   as a catalog polynomial, independent of the boost encoding.
+//! - the integer cross-product Jacobi identity (so(3) Lie bracket) holds
+//!   as a catalog polynomial, independent of the boost encoding,
+//! - and the integer Lagrange identity |a × b|² + (a · b)² = |a|² |b|² holds
+//!   as a distinct degree-4 catalog polynomial, also independent of boosts.
 //!
 //! The Lorentz boost and the catalog interval, composition, mass-shell,
-//! and cross-product Jacobi identity trees live on the IR package. A truncated
+//! cross-product Jacobi, and Lagrange identity trees live on the IR package. A truncated
 //! binomial γ (`add-binomial-gamma`) is a package mutation, not the
 //! `absolute_time` knob: interval and mass-shell fail on that fork.
 //! Velocity composition stays Einstein on that fork. A minus-uv
@@ -31,7 +33,8 @@ use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, 
 use physis_model::constants::{electron_mass, C};
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
 use physis_proof::catalog::{
-    cross_product_jacobi, einstein_composition, energy_momentum, lorentz_interval,
+    cross_product_jacobi, einstein_composition, energy_momentum, lagrange_identity,
+    lorentz_interval,
 };
 use physis_proof::{identity_is_zero, lookup, parse_expr};
 
@@ -45,6 +48,8 @@ pub const SR_SUBLUMINAL_COMPOSITION: &str = "sr.subluminal-composition";
 pub const SR_ENERGY_MOMENTUM: &str = "sr.energy-momentum-invariant";
 /// Integer Jacobi identity for the R^3 cross product (x-component).
 pub const SR_CROSS_PRODUCT_JACOBI: &str = "sr.cross-product-jacobi";
+/// Integer Lagrange identity for Euclidean cross and dot products on Z^3.
+pub const SR_LAGRANGE_IDENTITY: &str = "sr.lagrange-identity";
 
 /// The demonstration boost speed, as a fraction of `c`.
 const BETA: f64 = 0.6;
@@ -61,6 +66,8 @@ const COMPOSITION_EQ: &str = "(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)"
 const MASS_SHELL_EQ: &str = "(E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)";
 /// Catalog cross-product Jacobi identity tree. Not a kernel proof.
 const JACOBI_EQ: &str = "((((a2 * ((b1 * c2) - (b2 * c1))) - (a3 * ((b3 * c1) - (b1 * c3)))) + ((b2 * ((c1 * a2) - (c2 * a1))) - (b3 * ((c3 * a1) - (c1 * a3))))) + ((c2 * ((a1 * b2) - (a2 * b1))) - (c3 * ((a3 * b1) - (a1 * b3)))))";
+/// Catalog Lagrange identity tree. Not a kernel proof.
+const LAGRANGE_EQ: &str = "(((((((a2 * b3) - (a3 * b2)))^2 + (((a3 * b1) - (a1 * b3)))^2) + (((a1 * b2) - (a2 * b1)))^2) + ((((a1 * b1) + (a2 * b2)) + (a3 * b3)))^2) - ((((a1)^2 + (a2)^2) + (a3)^2) * (((b1)^2 + (b2)^2) + (b3)^2)))";
 /// Truncated binomial γ = 1 + β²/2.
 const BOOST_BINOMIAL: &str = "boost binomial-gamma";
 /// Collinear Einstein addition with the denominator sign flipped.
@@ -74,6 +81,7 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let composition = einstein_composition().canonical();
     let mass_shell = energy_momentum().canonical();
     let jacobi = cross_product_jacobi().canonical();
+    let lagrange = lagrange_identity().canonical();
     let mut lorentz = false;
     let mut binomial = false;
     let mut minus_uv = false;
@@ -81,6 +89,7 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut composition_tree = false;
     let mut mass_shell_tree = false;
     let mut jacobi_tree = false;
+    let mut lagrange_tree = false;
     for eq in &pkg.equations {
         match eq.trim() {
             BOOST_LORENTZ => lorentz = true,
@@ -122,6 +131,14 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
                         ));
                     }
                     jacobi_tree = true;
+                } else if tree == lagrange {
+                    if lagrange_tree {
+                        return Err(format!(
+                            "{} package has two Lagrange identity trees",
+                            pkg.id
+                        ));
+                    }
+                    lagrange_tree = true;
                 } else {
                     return Err(format!(
                         "special-relativity equation is not the Lorentz boost, a catalog identity tree, binomial-gamma, or minus-uv: {t}"
@@ -153,6 +170,9 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
             "{} package has no cross-product Jacobi identity tree",
             pkg.id
         ));
+    }
+    if !lagrange_tree {
+        return Err(format!("{} package has no Lagrange identity tree", pkg.id));
     }
     Ok((binomial, minus_uv))
 }
@@ -190,11 +210,11 @@ const SPECS: &[KnobSpec] = &[KnobSpec {
 /// Special relativity: flat Minkowski kinematics with a Galilean-toggle knob.
 ///
 /// The Lorentz boost and the catalog interval, composition, mass-shell,
-/// and cross-product Jacobi identity trees live on the IR package. Truncated binomial γ
+/// cross-product Jacobi, and Lagrange identity trees live on the IR package. Truncated binomial γ
 /// (`add-binomial-gamma`) is a package mutation, not a knob: interval
 /// and mass-shell fail. Minus-uv collinear composition (`add-minus-uv`)
 /// is a second package mutation, not a knob: subluminal composition
-/// fails while Lorentz boosts still hold. The Jacobi identity stays Holds
+/// fails while Lorentz boosts still hold. The Jacobi and Lagrange identities stay Holds
 /// on those forks. `absolute_time` still selects Galilean boosts.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SpecialRelativity {
@@ -208,8 +228,8 @@ pub struct SpecialRelativity {
 
 impl SpecialRelativity {
     /// IR package for this boost encoding. Equations are `boost lorentz`,
-    /// the catalog interval, composition, mass-shell, and cross-product
-    /// Jacobi identity trees, and, when forked, `boost binomial-gamma`
+    /// the catalog interval, composition, mass-shell, cross-product
+    /// Jacobi, and Lagrange identity trees, and, when forked, `boost binomial-gamma`
     /// and/or `compose minus-uv`. `absolute_time` stays on the struct.
     /// `lean_ref` is the catalog interval type, not a Physlib pointer
     /// without the tree.
@@ -219,12 +239,14 @@ impl SpecialRelativity {
             lookup(SR_SUBLUMINAL_COMPOSITION).expect("composition is a catalog identity");
         let mass_shell = lookup(SR_ENERGY_MOMENTUM).expect("mass shell is a catalog identity");
         let jacobi = lookup(SR_CROSS_PRODUCT_JACOBI).expect("Jacobi is a catalog identity");
+        let lagrange = lookup(SR_LAGRANGE_IDENTITY).expect("Lagrange is a catalog identity");
         let mut equations = vec![
             BOOST_LORENTZ.to_string(),
             INTERVAL_EQ.to_string(),
             COMPOSITION_EQ.to_string(),
             MASS_SHELL_EQ.to_string(),
             JACOBI_EQ.to_string(),
+            LAGRANGE_EQ.to_string(),
         ];
         if self.binomial_gamma {
             equations.push(BOOST_BINOMIAL.to_string());
@@ -260,6 +282,12 @@ impl SpecialRelativity {
                 physis_ir::ClaimDecl {
                     id: SR_CROSS_PRODUCT_JACOBI.into(),
                     statement: jacobi.statement.into(),
+                    layer: "mathematical".into(),
+                    class: "mathematical".into(),
+                },
+                physis_ir::ClaimDecl {
+                    id: SR_LAGRANGE_IDENTITY.into(),
+                    statement: lagrange.statement.into(),
                     layer: "mathematical".into(),
                     class: "mathematical".into(),
                 },
@@ -359,12 +387,12 @@ impl Theory for SpecialRelativity {
     }
     fn summary(&self) -> &'static str {
         "Flat Minkowski kinematics: the invariant interval, subluminal velocity \
-         composition, the mass shell E² = (pc)² + (mc²)², and the integer \
-         cross-product Jacobi identity, all computed. The Lorentz boost is an IR \
+         composition, the mass shell E² = (pc)² + (mc²)², the integer \
+         cross-product Jacobi identity, and the integer Lagrange identity, all computed. The Lorentz boost is an IR \
          encoding. Truncated binomial γ is an IR mutation, not the absolute_time \
          knob. Minus-uv collinear composition is a second IR mutation, not that \
          knob. That knob still replaces exact Lorentz with Galilean boosts. The \
-         Jacobi identity is independent of those encodings."
+         Jacobi and Lagrange identities are independent of those encodings."
     }
     fn world(&self) -> Option<World> {
         Some(World {
@@ -402,6 +430,9 @@ impl Theory for SpecialRelativity {
                 .with_dependencies(&[SR_INVARIANT_INTERVAL]),
             lookup(SR_CROSS_PRODUCT_JACOBI)
                 .expect("Jacobi is a catalog identity")
+                .lab_claim(),
+            lookup(SR_LAGRANGE_IDENTITY)
+                .expect("Lagrange is a catalog identity")
                 .lab_claim(),
         ]
     }
@@ -501,6 +532,12 @@ impl Theory for SpecialRelativity {
                 ]),
                 Err(e) => Verdict::fails(claim, e),
             },
+            SR_LAGRANGE_IDENTITY => match identity_is_zero(&lagrange_identity()) {
+                Ok(()) => Verdict::holds(claim, "the Lagrange identity holds over Z^3").with_evidence([
+                    "recursive and postfix expanders agree the Lagrange identity is the zero polynomial".to_string(),
+                ]),
+                Err(e) => Verdict::fails(claim, e),
+            },
             _ => Verdict::inapplicable(claim, "claim not made by the special-relativity object"),
         }
     }
@@ -568,6 +605,7 @@ mod tests {
         assert_eq!(kind(&sr, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Holds);
         assert_eq!(kind(&sr, SR_ENERGY_MOMENTUM), VerdictKind::Holds);
         assert_eq!(kind(&sr, SR_CROSS_PRODUCT_JACOBI), VerdictKind::Holds);
+        assert_eq!(kind(&sr, SR_LAGRANGE_IDENTITY), VerdictKind::Holds);
     }
 
     #[test]
@@ -582,6 +620,7 @@ mod tests {
         assert_eq!(pkg.equations[2], COMPOSITION_EQ);
         assert_eq!(pkg.equations[3], MASS_SHELL_EQ);
         assert_eq!(pkg.equations[4], JACOBI_EQ);
+        assert_eq!(pkg.equations[5], LAGRANGE_EQ);
         let composition = lookup(SR_SUBLUMINAL_COMPOSITION).unwrap();
         let bound_c =
             physis_proof::catalog_tree_binding(Some(composition.lean_type), &pkg.equations)
@@ -603,7 +642,16 @@ mod tests {
             parse_expr(JACOBI_EQ).unwrap().canonical(),
             cross_product_jacobi().canonical()
         );
-        assert_eq!(pkg.claims.len(), 4);
+        let lagrange = lookup(SR_LAGRANGE_IDENTITY).unwrap();
+        let bound_l = physis_proof::catalog_tree_binding(Some(lagrange.lean_type), &pkg.equations)
+            .unwrap()
+            .expect("live SR must carry the Lagrange tree");
+        assert_eq!(bound_l.claim_id, SR_LAGRANGE_IDENTITY);
+        assert_eq!(
+            parse_expr(LAGRANGE_EQ).unwrap().canonical(),
+            lagrange_identity().canonical()
+        );
+        assert_eq!(pkg.claims.len(), 5);
     }
 
     #[test]
@@ -639,6 +687,15 @@ mod tests {
             err.contains("no cross-product Jacobi identity tree"),
             "{err}"
         );
+        pkg.equations = vec![
+            BOOST_LORENTZ.to_string(),
+            INTERVAL_EQ.to_string(),
+            COMPOSITION_EQ.to_string(),
+            MASS_SHELL_EQ.to_string(),
+            JACOBI_EQ.to_string(),
+        ];
+        let err = SpecialRelativity::from_package(&pkg).unwrap_err();
+        assert!(err.contains("no Lagrange identity tree"), "{err}");
         assert!(!err.contains("receipt"), "{err}");
     }
 
@@ -655,6 +712,11 @@ mod tests {
             kind(&sr, SR_CROSS_PRODUCT_JACOBI),
             VerdictKind::Holds,
             "Jacobi is not a boost identity"
+        );
+        assert_eq!(
+            kind(&sr, SR_LAGRANGE_IDENTITY),
+            VerdictKind::Holds,
+            "Lagrange is not a boost identity"
         );
     }
 
@@ -678,6 +740,17 @@ mod tests {
             .find(|c| c.id_str() == SR_CROSS_PRODUCT_JACOBI)
             .unwrap();
         assert!(j.depends_on.is_empty(), "Jacobi is not a boost lemma");
+    }
+
+    #[test]
+    fn lagrange_is_not_an_interval_lemma() {
+        let sr = SpecialRelativity::default();
+        let l = sr
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_LAGRANGE_IDENTITY)
+            .unwrap();
+        assert!(l.depends_on.is_empty(), "Lagrange is not a boost lemma");
     }
 
     #[test]
@@ -750,6 +823,11 @@ mod tests {
             kind(&fork, SR_CROSS_PRODUCT_JACOBI),
             VerdictKind::Holds,
             "binomial γ is not the Jacobi identity"
+        );
+        assert_eq!(
+            kind(&fork, SR_LAGRANGE_IDENTITY),
+            VerdictKind::Holds,
+            "binomial γ is not the Lagrange identity"
         );
         assert_eq!(kind(&t, SR_INVARIANT_INTERVAL), VerdictKind::Holds);
         let interval = fork
@@ -897,7 +975,7 @@ mod tests {
         let pkg = parse_package(&src).unwrap();
         assert_eq!(
             pkg.equations.len(),
-            5,
+            6,
             "live package must stay boost lorentz plus the catalog identity trees"
         );
         assert_eq!(pkg.equations[0], BOOST_LORENTZ);
@@ -905,6 +983,7 @@ mod tests {
         assert_eq!(pkg.equations[2], COMPOSITION_EQ);
         assert_eq!(pkg.equations[3], MASS_SHELL_EQ);
         assert_eq!(pkg.equations[4], JACOBI_EQ);
+        assert_eq!(pkg.equations[5], LAGRANGE_EQ);
         assert_eq!(
             pkg.lean_ref.as_deref(),
             Some(lookup(SR_INVARIANT_INTERVAL).unwrap().lean_type)
@@ -942,6 +1021,11 @@ mod tests {
             kind(&fork, SR_CROSS_PRODUCT_JACOBI),
             VerdictKind::Holds,
             "minus-uv is not the Jacobi identity"
+        );
+        assert_eq!(
+            kind(&fork, SR_LAGRANGE_IDENTITY),
+            VerdictKind::Holds,
+            "minus-uv is not the Lagrange identity"
         );
         assert_eq!(kind(&t, SR_SUBLUMINAL_COMPOSITION), VerdictKind::Holds);
         let composition = fork

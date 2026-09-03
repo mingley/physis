@@ -228,8 +228,8 @@ pub fn identity_is_zero(expr: &Expr) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::catalog::{
-        cross_product_jacobi, discrete_d2, einstein_composition, energy_momentum, lorentz_interval,
-        tetrahedron_d2,
+        cross_product_jacobi, discrete_d2, einstein_composition, energy_momentum,
+        lagrange_identity, lorentz_interval, tetrahedron_d2,
     };
     use crate::expr::{add, mul, sub, Expr};
 
@@ -261,6 +261,11 @@ mod tests {
     #[test]
     fn cross_product_jacobi_is_zero() {
         identity_is_zero(&cross_product_jacobi()).unwrap();
+    }
+
+    #[test]
+    fn lagrange_identity_is_zero() {
+        identity_is_zero(&lagrange_identity()).unwrap();
     }
 
     #[test]
