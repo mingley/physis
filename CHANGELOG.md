@@ -12,6 +12,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Proof
 
+- **2x2 determinant product is a catalog identity**
+  (`sr.matrix-det-product`, Physlib `matrix_det_product`).
+  The degree-4 integer identity det(AB) − det(A) det(B) = 0 on eight
+  entries of M_2(Z) is dual-expanded and kernel-checked. That is a
+  different algebraic idea from Jacobi of nested crosses, from Lagrange
+  of Euclidean cross and dot, from coboundary nilpotence, and from the
+  Minkowski bilinear form, not a leftover of tet d², and not a fifth
+  P3N cell. Live special-relativity lists the det-product tree beside
+  interval, composition, mass-shell, Jacobi, and Lagrange; `lean_ref`
+  stays the interval type. `absolute_time` still flips the three
+  kinematic claims; Jacobi, Lagrange, and det-product stay Holds.
+  Evaluator stays Executed until a receipt. Not Canonical, not P4. P3N
+  count stays 4. Unique-vacuum graph id unchanged. Planck / GR /
+  de-rham / SM / observer-geometry encode pins unchanged. Catalog d²
+  FormalClaim identity
+  `fd8a18eeaaef7bd26d7b798bf690d77ad0536d7befb9c71e254e3e90a3109d9c`
+  and challenge hash
+  `a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784`
+  unchanged. SR encode pin
+  `0a91b4ad602ad187c4a2b4e06ebeaed66bd2d42be31a701042df44d5efc88f66` (was
+  `fc3cfdc961a5f3f7fb605391ae8a1d1fcd7a0a187647d8520d1b0497c4dbc406`).
+  Verified: expander and parse tests, exact mint, Lean+nanoda when
+  wired, loop prove/cite/review, `fmt`, `clippy -D warnings`, full
+  suite, CLI.
+
 - **Lagrange identity is a catalog identity**
   (`sr.lagrange-identity`, Physlib `lagrange_identity`).
   The degree-4 Euclidean relation |a × b|² + (a · b)² = |a|² |b|² over

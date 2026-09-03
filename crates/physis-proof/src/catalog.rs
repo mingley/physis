@@ -185,6 +185,22 @@ fn lagrange_domain() -> DomainOfValidity {
     )
 }
 
+fn det_product_commitments() -> ClaimCommitments {
+    ClaimCommitments::physlib_forall()
+}
+
+fn det_product_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["integer 2x2 determinant product".into()],
+        vec!["unimodular matrix multiplication on M_2(Z)".into()],
+        "The catalog identity is det(AB) - det(A) det(B) as a degree-4 \
+         integer polynomial on eight matrix entries. It is not the Jacobi \
+         identity of nested crosses, not the Lagrange identity of cross \
+         and dot, and not the Minkowski interval. Using a 1+1 boost matrix \
+         with gamma is a new claim.",
+    )
+}
+
 /// Discrete exterior calculus: `(b − a) − (c − a) + (c − b) ≡ 0`.
 ///
 /// That is `d₁(d₀ f)` on a single oriented triangle, for a 0-form with
@@ -324,6 +340,29 @@ pub fn lagrange_identity() -> Expr {
     sub(add(cross2, pow(dot, 2)), mul(na2, nb2))
 }
 
+/// 2×2 determinant multiplicativity: `det(AB) − det(A) det(B) ≡ 0` over `M_2(Z)`.
+///
+/// Degree 4 relation on eight integer matrix entries. Not Jacobi of nested
+/// crosses, not Lagrange of Euclidean cross and dot, and not Minkowski.
+pub fn matrix_det_product() -> Expr {
+    let a11 = Expr::var("a11");
+    let a12 = Expr::var("a12");
+    let a21 = Expr::var("a21");
+    let a22 = Expr::var("a22");
+    let b11 = Expr::var("b11");
+    let b12 = Expr::var("b12");
+    let b21 = Expr::var("b21");
+    let b22 = Expr::var("b22");
+    let det_a = sub(mul(a11.clone(), a22.clone()), mul(a12.clone(), a21.clone()));
+    let det_b = sub(mul(b11.clone(), b22.clone()), mul(b12.clone(), b21.clone()));
+    let ab11 = add(mul(a11.clone(), b11.clone()), mul(a12.clone(), b21.clone()));
+    let ab12 = add(mul(a11.clone(), b12.clone()), mul(a12.clone(), b22.clone()));
+    let ab21 = add(mul(a21.clone(), b11), mul(a22.clone(), b21));
+    let ab22 = add(mul(a21, b12), mul(a22, b22));
+    let det_ab = sub(mul(ab11, ab22), mul(ab12, ab21));
+    sub(det_ab, mul(det_a, det_b))
+}
+
 /// Known exact identities. A claim not in this list cannot be promoted by
 /// the exact-certificate backend.
 pub const CATALOG: &[IdentitySpec] = &[
@@ -411,6 +450,18 @@ pub const CATALOG: &[IdentitySpec] = &[
         axioms: &["integer-arithmetic"],
         identity: lagrange_identity,
     },
+    IdentitySpec {
+        claim_id: "sr.matrix-det-product",
+        statement: "det(AB) equals det(A) det(B) for 2×2 integer matrices.",
+        class: ClaimClass::Mathematical,
+        layer: LayerId::Mathematical,
+        commitments: det_product_commitments,
+        domain: det_product_domain,
+        lean_theorem: "matrix_det_product",
+        lean_type: "∀ (a11 a12 a21 a22 b11 b12 b21 b22 : Int), (((((a11 * b11) + (a12 * b21)) * ((a21 * b12) + (a22 * b22))) - (((a11 * b12) + (a12 * b22)) * ((a21 * b11) + (a22 * b21)))) - (((a11 * a22) - (a12 * a21)) * ((b11 * b22) - (b12 * b21)))) = 0",
+        axioms: &["integer-arithmetic"],
+        identity: matrix_det_product,
+    },
 ];
 
 /// Lookup by claim slug. Not a catalog proof: a changed FormalClaim
@@ -487,6 +538,7 @@ mod tests {
         assert!(lookup("sr.energy-momentum-invariant").is_some());
         assert!(lookup("sr.cross-product-jacobi").is_some());
         assert!(lookup("sr.lagrange-identity").is_some());
+        assert!(lookup("sr.matrix-det-product").is_some());
         assert!(lookup("predictivity.unique-vacuum").is_none());
     }
 
@@ -788,6 +840,74 @@ mod tests {
                 "sr.energy-momentum-invariant",
                 "sr.cross-product-jacobi",
                 "sr.lagrange-identity",
+            ]
+        );
+    }
+
+    #[test]
+    fn det_product_is_not_the_lagrange_or_jacobi_or_interval_challenge() {
+        assert_ne!(
+            matrix_det_product().canonical(),
+            lagrange_identity().canonical()
+        );
+        assert_ne!(
+            matrix_det_product().canonical(),
+            cross_product_jacobi().canonical()
+        );
+        assert_ne!(
+            matrix_det_product().canonical(),
+            lorentz_interval().canonical()
+        );
+        assert_ne!(
+            matrix_det_product().canonical(),
+            energy_momentum().canonical()
+        );
+        assert_ne!(
+            matrix_det_product().canonical(),
+            tetrahedron_d2().canonical()
+        );
+        let spec = lookup("sr.matrix-det-product").unwrap();
+        assert_eq!(spec.axioms, &["integer-arithmetic"]);
+        assert_eq!(
+            matrix_det_product().to_string(),
+            "(((((a11 * b11) + (a12 * b21)) * ((a21 * b12) + (a22 * b22))) - (((a11 * b12) + (a12 * b22)) * ((a21 * b11) + (a22 * b21)))) - (((a11 * a22) - (a12 * a21)) * ((b11 * b22) - (b12 * b21))))"
+        );
+        assert_ne!(
+            spec.formal_claim().statement_hash(),
+            lookup("sr.lagrange-identity")
+                .unwrap()
+                .formal_claim()
+                .statement_hash()
+        );
+        let jac_eq = cross_product_jacobi().to_string();
+        let lag_eq = lagrange_identity().to_string();
+        let det_eq = matrix_det_product().to_string();
+        let eqs = [
+            "boost lorentz",
+            "(t - beta * x)^2 - (x - beta * t)^2 - (1 - beta^2) * (t^2 - x^2)",
+            "(1 + u * v)^2 - (u + v)^2 - (1 - u^2) * (1 - v^2)",
+            "(E - beta * p)^2 - (p - beta * E)^2 - (1 - beta^2) * (E^2 - p^2)",
+            jac_eq.as_str(),
+            lag_eq.as_str(),
+            det_eq.as_str(),
+        ];
+        let bound = catalog_tree_binding(Some(spec.lean_type), &eqs)
+            .unwrap()
+            .expect("det-product tree must bind beside the SR trees");
+        assert_eq!(bound.claim_id, spec.claim_id);
+        let listed: Vec<_> = catalog_trees_in(&eqs)
+            .into_iter()
+            .map(|s| s.claim_id)
+            .collect();
+        assert_eq!(
+            listed,
+            vec![
+                "sr.invariant-interval",
+                "sr.subluminal-composition",
+                "sr.energy-momentum-invariant",
+                "sr.cross-product-jacobi",
+                "sr.lagrange-identity",
+                "sr.matrix-det-product",
             ]
         );
     }

@@ -141,7 +141,7 @@ stack) *and* kernel-checked as Physlib theorems (`formal/physlib`):
   on 4-momentum: the same algebraic obligation as the interval with
   `(t,x) → (E,p)`, not a new postulate. Axioms stay
   `integer-arithmetic` and `minkowski-interval-signature`. The typed
-  rest-mass check `E² − (pc)² = (mc²)²` remains the evaluator. `sr.cross-product-jacobi` is the x-component of a×(b×c)+cyclic (`cross_product_jacobi`, `grind`); not the interval polynomial. `sr.lagrange-identity` is |a×b|²+(a·b)²−|a|²|b|² (`lagrange_identity`, `grind`); not Jacobi of nested crosses.
+  rest-mass check `E² − (pc)² = (mc²)²` remains the evaluator. `sr.cross-product-jacobi` is the x-component of a×(b×c)+cyclic (`cross_product_jacobi`, `grind`); not the interval polynomial. `sr.lagrange-identity` is |a×b|²+(a·b)²−|a|²|b|² (`lagrange_identity`, `grind`); not Jacobi of nested crosses. `sr.matrix-det-product` is det(AB)−det(A)det(B) over M_2(Z) (`matrix_det_product`, `grind`); not Jacobi, not Lagrange, not Minkowski.
 
 A one-byte mutation of the challenge bytes is `ChallengeTampered`.
 A sign flip of the identity fails both expanders. `axiom` / `sorry` /
@@ -169,7 +169,7 @@ those tools; a local checkout without them still mints
 | 4 | `physis-numeric`, `physis-data` | Exact `Ratio` / `Interval`; SU(5) `3/8` disjoint from PDG `sin²θ_W(M_Z)` |
 | 5 | `physis-store` | Content-addressed DAG; descendants only are invalidated |
 | 6 | `prove falsify sweep branch compare sensitivity` | Structured agent ops. Knob diffs are scientific-axis (`VerdictKind` plus derivation / empirical / projected judgment); legacy kind-only journals still replay |
-| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, ideal-gas Maxwell–Boltzmann statistics, landauer-engine `kT ln2` bound, dirac-fermion naive 1D operator, general-relativity Einstein–Hilbert action, special-relativity Lorentz boost plus catalog interval, composition, mass-shell, cross-product Jacobi, and Lagrange identity trees, and planck Bose occupation, and de-rham discrete coboundary plus catalog triangle and 3-simplex trees, and turing-machine unrelativized TM, and olbers-static inverse-square Euclidean shells, and su5-gut complete `5bar + 10`, and debye-solid 3D `ω²` continuum, and standard-model complete one-generation Weyl, and observer-geometry Spin(10) on 10-fibre, and dulong-petit harmonic `U = 3 N k T`, and heterotic-e8e8 complete `E8 x E8`, and heterotic-so32 complete `SO(32)`, and type-i `Chan-Paton SO(32)` are live packages; `physis encode` independently round-trips them and binds a live `lean_ref` to the catalog identity tree (token packages skip; a cosmetic Physlib pointer without the tree fails closed); not a kernel proof, not a Lean replacement |
+| 7 | `physis-ir` | Line-oriented theory package plus constrained mutations (`render_package`, `apply_mutation`, `certify_round_trip`); combinational NAND netlist, Klein–Gordon stencil, Wilson U(1)/SU(2)/SU(3) 1×1 plaquettes, ohm-circuit lumped branches, bell-test singlet ket, newtonian-gravity inverse-square Binet rhs, linear-medium isotropic-linear constitutive law, maxwell-vacuum source-free homogeneous Faraday, ideal-gas Maxwell–Boltzmann statistics, landauer-engine `kT ln2` bound, dirac-fermion naive 1D operator, general-relativity Einstein–Hilbert action, special-relativity Lorentz boost plus catalog interval, composition, mass-shell, cross-product Jacobi, Lagrange identity, and 2x2 determinant-product trees, and planck Bose occupation, and de-rham discrete coboundary plus catalog triangle and 3-simplex trees, and turing-machine unrelativized TM, and olbers-static inverse-square Euclidean shells, and su5-gut complete `5bar + 10`, and debye-solid 3D `ω²` continuum, and standard-model complete one-generation Weyl, and observer-geometry Spin(10) on 10-fibre, and dulong-petit harmonic `U = 3 N k T`, and heterotic-e8e8 complete `E8 x E8`, and heterotic-so32 complete `SO(32)`, and type-i `Chan-Paton SO(32)` are live packages; `physis encode` independently round-trips them and binds a live `lean_ref` to the catalog identity tree (token packages skip; a cosmetic Physlib pointer without the tree fails closed); not a kernel proof, not a Lean replacement |
 | 8 | `physis-audit`, `physis audit` | Red-team corpus must fail to promote |
 | 9 | `physis design` | Rank theory pairs by discriminating claim count |
 | 10 | `physis loop` | Observe → hypothesize (chosen/fitted knobs and IR package forks) → prove → falsify → enclose → cite → constant → encode → judge → replicate → design → audit → review |
@@ -651,10 +651,10 @@ identity; a slug-only review line is not P3S.
   `AdversariallyReviewed`; there is no `Canonical` variant to assign)
 - P4 independent reproduction (in-process `reproduce` remints and
   **refuses** to assign P4; a distinct implementation is still required)
-- Mathlib-scale Physlib; seven catalog identities are kernel-checked
-  (triangle `d²`, 3-simplex coboundary, interval, Einstein composition, mass shell, cross-product Jacobi, Lagrange identity). The mass-shell
+- Mathlib-scale Physlib; eight catalog identities are kernel-checked
+  (triangle `d²`, 3-simplex coboundary, interval, Einstein composition, mass shell, cross-product Jacobi, Lagrange identity, 2x2 det product). The mass-shell
   polynomial is the interval identity on 4-momentum, not a distinct
-  algebraic idea; Jacobi of the cross product and the Lagrange identity are. That is not Mathlib.
+  algebraic idea; Jacobi, Lagrange, and det-product are. That is not Mathlib.
 - Most other claims still use the encoding-wide domain placeholder
   and only `encoding-is-the-model`. Catalog identities name regimes and
   catalog axioms. `field.second-order-accurate` names `|k a| < 1`.

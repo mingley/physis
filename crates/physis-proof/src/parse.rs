@@ -148,7 +148,7 @@ mod tests {
     use super::*;
     use crate::catalog::{
         cross_product_jacobi, discrete_d2, einstein_composition, energy_momentum,
-        lagrange_identity, lorentz_interval,
+        lagrange_identity, lorentz_interval, matrix_det_product,
     };
 
     #[test]
@@ -186,6 +186,7 @@ mod tests {
             energy_momentum(),
             cross_product_jacobi(),
             lagrange_identity(),
+            matrix_det_product(),
         ] {
             assert_eq!(parse_expr(&e.to_string()).unwrap(), e);
         }

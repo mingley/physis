@@ -217,6 +217,25 @@ lean_ref ∀ (a1 a2 a3 b1 b2 b3 : Int), (((((((a2 * b3) - (a3 * b2)))^2 + (((a3 
 "#,
 };
 
+/// Cauchy 1815: product of determinants for alternating functions.
+/// Not Jacobi of nested crosses and not Lagrange of cross and dot.
+const DET_PRODUCT: Dossier = Dossier {
+    claim_id: "sr.matrix-det-product",
+    work: "Memoire sur les fonctions qui ne peuvent obtenir que deux valeurs",
+    edition: "J. Ec. Polytech. 17 1815",
+    version: "1815",
+    section: Some("alternating functions"),
+    equation: Some("product of determinants"),
+    ir: r#"
+id = matrix-det-product
+name = 2x2 determinant product identity
+assumption integer-ring
+equation (((((a11 * b11) + (a12 * b21)) * ((a21 * b12) + (a22 * b22))) - (((a11 * b12) + (a12 * b22)) * ((a21 * b11) + (a22 * b21)))) - (((a11 * a22) - (a12 * a21)) * ((b11 * b22) - (b12 * b21))))
+claim mathematical mathematical sr.matrix-det-product : det(AB) equals det(A) det(B) over 2x2 integer matrices
+lean_ref ∀ (a11 a12 a21 a22 b11 b12 b21 b22 : Int), (((((a11 * b11) + (a12 * b21)) * ((a21 * b12) + (a22 * b22))) - (((a11 * b12) + (a12 * b22)) * ((a21 * b11) + (a22 * b21)))) - (((a11 * a22) - (a12 * a21)) * ((b11 * b22) - (b12 * b21)))) = 0
+"#,
+};
+
 const DOSSIERS: &[Dossier] = &[
     D2,
     D2_ONE,
@@ -225,6 +244,7 @@ const DOSSIERS: &[Dossier] = &[
     MASS_SHELL,
     JACOBI,
     LAGRANGE,
+    DET_PRODUCT,
 ];
 
 fn dossier(claim_id: &str) -> Option<&'static Dossier> {

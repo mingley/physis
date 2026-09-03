@@ -60,3 +60,13 @@ theorem lagrange_identity (a1 a2 a3 b1 b2 b3 : Int) :
       - ((((a1)^2 + (a2)^2) + (a3)^2) * (((b1)^2 + (b2)^2) + (b3)^2)))
       = 0 := by
   grind
+
+/-- 2×2 determinant multiplicativity: `det(AB) = det(A) det(B)` over `M_2(Z)`.
+Degree 4 integer polynomial in eight entries. Not Jacobi of nested
+crosses, not Lagrange of cross and dot, and not the Minkowski interval. -/
+theorem matrix_det_product (a11 a12 a21 a22 b11 b12 b21 b22 : Int) :
+    (((((a11 * b11) + (a12 * b21)) * ((a21 * b12) + (a22 * b22)))
+        - (((a11 * b12) + (a12 * b22)) * ((a21 * b11) + (a22 * b21))))
+      - (((a11 * a22) - (a12 * a21)) * ((b11 * b22) - (b12 * b21))))
+      = 0 := by
+  grind
