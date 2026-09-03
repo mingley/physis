@@ -12,6 +12,32 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CODATA 2018 electron volt-inverse meter relationship is an exact Ratio.**
+  `physis-constants` versions `eV_m` as
+  `5340588780000000000000/6621486190496429` m^{-1} from JPCRD table XXXV
+  (`e/(h c)`). That is the inverse listing of ledger `m_eV`, not a second
+  name of `m_eV`, not hertz-inverse meter `Hz_m`, not SI `c`, not P3N.
+  `eVm`, `eV-m`, and `1/m_eV` are not second names. Electron volt-kilogram
+  is not stored: `e/c²` overflows `i128`. `physis_model`
+  `electron_volt_in_inverse_meter()` Qty locksteps via `Ratio::to_f64`.
+  Adding `eV_m` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical, not
+  P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N count
+  stays 4.
+  Verified: `eV_m` hash
+  68686de8ad07bbd31a0d47931df795fcd3dcf2aefdc350ec5a005cccd0014802;
+  node
+  b353b36ab43599124178257bb53c7926d0f11603b3f525ba2718b235b396968f;
+  ledger node
+  08c9ebc08ef386eec2b74f3908ba4b5cef2f3316d2363536a437e011f9c95553.
+  `g0` hash
+  4a5dd55187f3a15b1594eb840f5e255108df2d7ca508add43d20027230d85e91,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CGPM 1901 standard acceleration of gravity is an exact Ratio.**
   `physis-constants` versions `g0` as `196133/20000` m s^{-2} from the
   3rd CGPM 1901 declaration reprinted in the BIPM SI Brochure 9th

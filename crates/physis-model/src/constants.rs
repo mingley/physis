@@ -134,11 +134,10 @@ pub fn joule_in_kelvin() -> Qty<Dimensionless> {
 /// The table prints an ellipsis; the ledger stores the exact Ratio.
 /// This is not a terminating SciExact (7 and 6310543 remain in the
 /// reduced denominator). Joule-hertz J_Hz is not stored: 10^41
-/// overflows i128. Electron volt-inverse meter is not stored: it is
-/// the reciprocal of ledger m_eV. The versioned ledger stores the exact
-/// Ratio; this Qty is the IEEE rounding of that Ratio. Ledger unit is
-/// Hz; this Qty is dimensionless, not SI hertz. eVHz and 1/h_eVHz are
-/// not second names.
+/// overflows i128. Electron volt-inverse meter is ledger eV_m. The
+/// versioned ledger stores the exact Ratio; this Qty is the IEEE
+/// rounding of that Ratio. Ledger unit is Hz; this Qty is dimensionless,
+/// not SI hertz. eVHz and 1/h_eVHz are not second names.
 pub fn electron_volt_in_hertz() -> Qty<Dimensionless> {
     Qty::new(2.417_989_242_084_918_4e14)
 }
@@ -151,11 +150,11 @@ pub fn electron_volt_in_hertz() -> Qty<Dimensionless> {
 /// and not a FormalClaim that reconstructs e/k from live lookups.
 /// The table prints an ellipsis; the ledger stores the exact Ratio.
 /// This is not a terminating SciExact (73 and 18913 remain in the
-/// reduced denominator). Electron volt-inverse meter is not stored: it
-/// is the reciprocal of ledger m_eV. The versioned ledger stores the
-/// exact Ratio; this Qty is the IEEE rounding of that Ratio. Ledger
-/// unit is K; this Qty is dimensionless, not SI kelvin. eVK and 1/k_eV
-/// are not second names. The hertz-kelvin relationship is Hz_K.
+/// reduced denominator). Electron volt-inverse meter is ledger eV_m.
+/// The versioned ledger stores the exact Ratio; this Qty is the IEEE
+/// rounding of that Ratio. Ledger unit is K; this Qty is dimensionless,
+/// not SI kelvin. eVK and 1/k_eV are not second names. The hertz-kelvin
+/// relationship is Hz_K.
 pub fn electron_volt_in_kelvin() -> Qty<Dimensionless> {
     Qty::new(1.160_451_812_155_008_3e4)
 }
@@ -188,14 +187,33 @@ pub fn hertz_in_kelvin() -> Qty<Dimensionless> {
 /// stores the exact Ratio. This is not a terminating SciExact (7, 73,
 /// and 293339 remain in the denominator). Inverse meter-hertz is SI c
 /// and is not stored as a second name. Electron volt-inverse meter is
-/// the reciprocal of ledger m_eV and is not stored. The versioned
-/// ledger stores the exact Ratio; this Qty is the IEEE rounding of that
-/// Ratio. Ledger unit is m^{-1}; this Qty is dimensionless, not SI
-/// inverse metre. Hzm, m_Hz, and 1/c are not second names.
+/// ledger eV_m. The versioned ledger stores the exact Ratio; this Qty
+/// is the IEEE rounding of that Ratio. Ledger unit is m^{-1}; this Qty
+/// is dimensionless, not SI inverse metre. Hzm, m_Hz, and 1/c are not
+/// second names. The electron volt-inverse meter relationship is eV_m.
 /// The hertz-hartree relationship is Hz_Eh.
 /// The hertz-atomic mass unit relationship is Hz_u.
 pub fn hertz_in_inverse_meter() -> Qty<Dimensionless> {
     Qty::new(3.335_640_951_981_520_4e-9)
+}
+
+/// Electron volt-inverse meter relationship, SI 2019 exact.
+///
+/// This is the exact table XXXV energy conversion listed as the electron
+/// volt-inverse meter relationship, not inverse meter-electron volt
+/// m_eV, not SI metre-per-second c, not SI Planck h, not BIPM
+/// electronvolt eV, not hertz-inverse meter Hz_m, and not a FormalClaim
+/// that reconstructs e/(h c) from live lookups. The table prints an
+/// ellipsis; the ledger stores the exact Ratio. This is not a
+/// terminating SciExact (2, 3, 5, 19, 389, and 12043 remain in the
+/// numerator; 7, 73, 293339, and 6310543 remain in the denominator).
+/// Electron volt-kilogram is not stored: e/c^2 overflows i128. The
+/// versioned ledger stores the exact Ratio; this Qty is the IEEE
+/// rounding of that Ratio. Ledger unit is m^{-1}; this Qty is
+/// dimensionless, not SI inverse metre. eVm, eV-m, and 1/m_eV are not
+/// second names. Faraday constant is NAe.
+pub fn electron_volt_in_inverse_meter() -> Qty<Dimensionless> {
+    Qty::new(806_554.393_734_921_2)
 }
 
 /// Hertz-hartree relationship, CODATA 2018 centre.
@@ -10337,8 +10355,8 @@ mod tests {
             "eVHz is not a ledger name; the live name is eV_Hz"
         );
         assert!(
-            physis_constants::lookup("eV_m").is_none(),
-            "eV_m is not stored: reciprocal of m_eV from the same table"
+            physis_constants::lookup("eV_m").is_some(),
+            "eV_m is the inverse listing of m_eV from the same table"
         );
         assert!(
             physis_constants::lookup("eV_kg").is_none(),
@@ -10472,9 +10490,50 @@ mod tests {
             physis_constants::lookup("m_Hz").is_none(),
             "m_Hz is not stored: inverse meter-hertz is SI c"
         );
+
+        let ev_m = physis_constants::electron_volt_in_inverse_meter();
+        let ev_m_value = Ratio::new(
+            1_602_176_634i128 * 10i128.pow(14),
+            662_607_015i128 * 299_792_458i128,
+        );
+        assert_eq!(ev_m.value, ev_m_value, "ledger eV_m is the exact SI Ratio");
+        assert_eq!(
+            electron_volt_in_inverse_meter().value(),
+            ev_m_value.to_f64(),
+            "eV_m Qty is the IEEE rounding of the exact Ratio"
+        );
+        assert_eq!(
+            electron_volt_in_inverse_meter().value(),
+            806_554.393_734_921_2,
+            "eV_m Qty locksteps to Ratio::to_f64 of the exact Ratio"
+        );
         assert!(
-            physis_constants::lookup("eV_m").is_none(),
-            "eV_m is not stored: reciprocal of m_eV from the same table"
+            ev_m.value > Ratio::int(0),
+            "ledger eV_m stays a positive exact Ratio"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_inverse_meter().hash,
+            physis_constants::inverse_meter_in_electronvolt().hash,
+            "eV_m is not m_eV"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_inverse_meter().hash,
+            physis_constants::hertz_in_inverse_meter().hash,
+            "eV_m is not Hz_m"
+        );
+        assert_ne!(
+            physis_constants::electron_volt_in_inverse_meter().hash,
+            physis_constants::electron_volt_in_hertz().hash,
+            "eV_m is not eV_Hz"
+        );
+        assert_eq!(physis_constants::lookup("eV_m").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("eVm").is_none(),
+            "eVm is not a ledger name; the live name is eV_m"
+        );
+        assert!(
+            physis_constants::lookup("eV_kg").is_none(),
+            "eV_kg is not stored: e/c^2 overflows i128"
         );
 
         let hz_eh = physis_constants::hertz_in_hartree();
