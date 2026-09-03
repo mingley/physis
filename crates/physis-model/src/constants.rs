@@ -2860,6 +2860,15 @@ pub fn terrestrial_polar_radius() -> Qty<Length> {
     Qty::new(6_356_800.0)
 }
 
+/// Nominal Jovian equatorial radius (IAU 2015 conversion ruler), metres.
+///
+/// This is `R_Je^N`, not a measured Jovian radius, not polar `R_pJ`,
+/// not terrestrial `R_earth`, and not solar radius `R_sun`. Faraday
+/// constant is NAe.
+pub fn jovian_equatorial_radius() -> Qty<Length> {
+    Qty::new(71_492_000.0)
+}
+
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
 pub fn astronomical_unit() -> Qty<Length> {
     meters(149_597_870_700.0)
@@ -13810,6 +13819,42 @@ mod tests {
             physis_constants::terrestrial_polar_radius().hash,
             physis_constants::terrestrial_equatorial_radius().hash,
             "R_earth_p is not R_earth"
+        );
+
+        let rj = physis_constants::jovian_equatorial_radius();
+        assert_eq!(
+            rj.value,
+            Ratio::int(71_492_000),
+            "ledger R_jup is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            jovian_equatorial_radius().value(),
+            rj.value.to_f64(),
+            "R_jup is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            jovian_equatorial_radius().value(),
+            71_492_000.0,
+            "IAU 2015 R_jup^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("R_jup").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("R_eJ").is_none(),
+            "R_eJ is not a ledger name; the live name is R_jup"
+        );
+        assert!(
+            physis_constants::lookup("R_pJ").is_none(),
+            "R_pJ is not a ledger name; polar is not stored under R_jup"
+        );
+        assert_ne!(
+            physis_constants::jovian_equatorial_radius().hash,
+            physis_constants::terrestrial_polar_radius().hash,
+            "R_jup is not R_earth_p"
+        );
+        assert_ne!(
+            physis_constants::jovian_equatorial_radius().hash,
+            physis_constants::solar_radius().hash,
+            "R_jup is not R_sun"
         );
 
         let ev = physis_constants::electron_volt();
