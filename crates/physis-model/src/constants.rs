@@ -459,10 +459,23 @@ pub fn kelvin_in_atomic_mass_unit() -> Qty<Dimensionless> {
 /// e / (c^2 m_u) from live lookups. The versioned ledger stores the
 /// one-sigma hull; this Qty is that centre. Ledger unit is u; this Qty
 /// is dimensionless, not a mass dimension. eVu, eV-u, and
-/// electronvolt_u are not second names. Atomic mass unit-electron volt
-/// is not stored under a second name.
+/// electronvolt_u are not second names. The inverse listing is u_eV.
 pub fn electron_volt_in_atomic_mass_unit() -> Qty<Dimensionless> {
     Qty::new(1.073_544_102_33e-9)
+}
+
+/// Atomic mass unit-electron volt relationship, CODATA 2018 centre.
+///
+/// This is the recommended printed table XXXV energy conversion listed
+/// as the atomic mass unit-electron volt relationship, not eV_u inverted
+/// as a second name, not m_u_c2_MeV, not u_Hz, and not a FormalClaim that
+/// reconstructs c^2 m_u / e from live lookups. The versioned ledger stores
+/// the one-sigma hull; this Qty is that centre. Ledger unit is eV; this Qty
+/// is dimensionless, not an energy dimension. ueV, u-eV, and amu_eV are
+/// not second names. Atomic mass unit-joule is not stored as a second
+/// name of m_u_c2.
+pub fn atomic_mass_unit_in_electronvolt() -> Qty<Dimensionless> {
+    Qty::new(9.314_941_024_2e8)
 }
 
 /// Atomic mass unit-inverse meter relationship, CODATA 2018 centre.
@@ -11262,6 +11275,50 @@ mod tests {
         assert!(
             physis_constants::lookup("electronvolt_u").is_none(),
             "electronvolt_u is not a second name for eV_u"
+        );
+
+        let u_ev = physis_constants::atomic_mass_unit_in_electronvolt();
+        let u_ev_centre = Ratio::new(93_149_410_242, 10i128.pow(2));
+        assert_eq!(
+            atomic_mass_unit_in_electronvolt().value(),
+            u_ev_centre.to_f64(),
+            "u_eV Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            atomic_mass_unit_in_electronvolt().value(),
+            9.314_941_024_2e8,
+            "u_eV Qty locksteps to Ratio::to_f64 on the 10^8 centre"
+        );
+        assert!(
+            u_ev.value.contains(Interval::point(u_ev_centre)),
+            "u_eV Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            u_ev.value.lo, u_ev.value.hi,
+            "ledger u_eV stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_electronvolt().hash,
+            physis_constants::electron_volt_in_atomic_mass_unit().hash,
+            "u_eV is not eV_u"
+        );
+        assert_ne!(
+            physis_constants::atomic_mass_unit_in_electronvolt().hash,
+            physis_constants::atomic_mass_constant_energy_equivalent_in_mev().hash,
+            "u_eV is not m_u_c2_MeV"
+        );
+        assert_eq!(physis_constants::lookup("u_eV").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("ueV").is_none(),
+            "ueV is not a ledger name; the live name is u_eV"
+        );
+        assert!(
+            physis_constants::lookup("amu_eV").is_none(),
+            "amu_eV is not a second name for u_eV"
+        );
+        assert!(
+            physis_constants::lookup("u_J").is_none(),
+            "u_J is not stored as a second name of m_u_c2"
         );
 
         let u_m = physis_constants::atomic_mass_unit_in_inverse_meter();

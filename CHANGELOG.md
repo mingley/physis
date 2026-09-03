@@ -12,6 +12,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CODATA 2018 atomic mass unit-electron volt relationship is a one-sigma Interval.**
+  `physis-constants` versions `u_eV` as `[46574705107/50, 9314941027/10]`
+  eV from JPCRD table XXXV (`9.3149410242(28)×10^8`). That is the inverse
+  listing of ledger `eV_u`, not a second name of `eV_u`, not the MeV
+  companion `m_u_c2_MeV`, not P3N. `ueV`, `u-eV`, and `amu_eV` are not
+  second names. Atomic mass unit-joule is not stored as a second name of
+  `m_u_c2`. `physis_model` `atomic_mass_unit_in_electronvolt()` Qty
+  locksteps via `Ratio::to_f64`. Adding `u_eV` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is not
+  a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `u_eV` hash
+  1a02063a435fcbf3e7344f9353717471d242f5baca0d7000b9765d0c3a76f78d;
+  node
+  69c078f95f2d04b145c656b7a0a2077682269a6e801fe4c335cbea68916504e9;
+  ledger node
+  c172ed7f454b36f43c2620ebb65c4a97a7154caf936db5422aff3389ef4f6837.
+  `eV_u` hash
+  39dba467459e1b7d4e44cd12512342f420c7f5d8b79b0f975af03b6d361225c6,
+  `J_kg` hash
+  94e5b8bfaeb8f28d80766b3b1f44bbe19348d767b153bc135dfc33036c9f0399,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 joule-kilogram relationship is an exact Ratio.**
   `physis-constants` versions `J_kg` as `1/89875517873681764` kg from
   JPCRD table XXXV (`1/c²`). That is the inverse listing of ledger
