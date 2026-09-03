@@ -195,10 +195,11 @@ as the primary diff of a turn has failed this plan.
 - Cosmetic `lean_ref` on GR/SM/Planck whose live equations are only
   tokens (`action einstein-hilbert`, …) without the catalog tree.
 - Wrapping `AGENTS.md` standing-orders item 2 onto two lines.
-- Shifting Hartree off compact-table line 183 of
-  `specs/020-proof-carrying.md`. Prefer not to edit that file unless
-  the slice changes the proof-carrying contract. If you must, keep
-  730 lines and Hartree on line 183.
+- Editing `specs/020-proof-carrying.md` at all in this plan's C-slices.
+  A Related bullet grows the file past 730 lines. Inserting P4 or ħ
+  text shifts Hartree off compact-table line 183. Leave 020 at 730
+  lines. C6.1 writes `specs/021-independent-reproduction.md` and
+  points from `plans/000-roadmap.md`.
 - Restoring forbidden enums. Empty role aliases. DomainOfValidity
   naming patches as the primary work.
 - High-throughput agent machinery (queues, multi-agent chat, prompt
@@ -339,12 +340,11 @@ id; missing tree still fails closed without the word `receipt`.
 
 **Why.** Remint is the same binary checking itself.
 
-**C6.1** Spec the P4 interface in `specs/020` only if you can keep
-Hartree on line 183 and the file length invariant; otherwise add
-`specs/021-independent-reproduction.md` and point to it from 020's
-Related list **by editing only the Related section if that would
-shift Hartree** — if it would, point from `plans/000-roadmap.md`
-instead and leave 020 alone.
+**C6.1** Write `specs/021-independent-reproduction.md`. Point to it
+from `plans/000-roadmap.md` See-also and from this file. Do **not**
+edit `specs/020-proof-carrying.md`: adding a Related bullet grows the
+file past 730 lines; inserting P4 text shifts Hartree off line 183.
+020 already says in-process remint is not P4. That sentence stays.
 
 **C6.2** A second crate or language (for example a small Lean-only
 or independent Rust crate that does not share `physis-verifier`
@@ -402,7 +402,8 @@ first unchecked slice:
 5. C2.1 — kinematic receipt wiring tests if not already complete.
 6. C7.1 — gap-driven loop step.
 7. C1.4 — store `ħ` as a listing.
-8. C6.1 — P4 spec in a new spec file (do not shift 020 Hartree).
+8. C6.1 — P4 spec in `specs/021-independent-reproduction.md` (do not
+   edit `specs/020-proof-carrying.md`).
 
 Then continue C3.2, C5.1, C4.1, C6.2. Do not start a ninth catalog
 polynomial until C1–C3 and C7.1 are true.
@@ -453,7 +454,8 @@ polynomial until C1–C3 and C7.1 are true.
 ## Related
 
 - `plans/000-roadmap.md` — mechanical milestones already landed
-- `specs/020-proof-carrying.md` — trust kernel contract
+- `specs/020-proof-carrying.md` — trust kernel contract (do not edit
+  in C-slices; C6.1 is `specs/021-independent-reproduction.md`)
 - `specs/000-overview.md` — v0 success (already true; this plan is after v0)
 - `AGENTS.md` — standing orders
 - `docs/ARCHITECTURE.md` — update in C8.1

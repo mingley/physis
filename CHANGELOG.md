@@ -19,6 +19,7 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   empirical receipts, typed IR, real P4, gap-driven loop) is the work.
   Forbidden leftover moves are listed in that file. Do not treat this
   plan as C8.1 (architecture doc) or as a completed civilization lab.
+  C6.1 writes `specs/021`; it does not edit `specs/020`.
 
 ### Proof
 
