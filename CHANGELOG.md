@@ -12,6 +12,34 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CGPM 1901 standard acceleration of gravity is an exact Ratio.**
+  `physis-constants` versions `g0` as `196133/20000` m s^{-2} from the
+  3rd CGPM 1901 declaration reprinted in the BIPM SI Brochure 9th
+  edition, page 154 (980.665 cm/s²). That is the conventional conversion
+  ruler, not a measured local g, not Newtonian `G`, not neutron
+  g-factor `gn`, not glossary `g0p`, and not P3N. NIST/CODATA list the
+  same exact value under symbol `gn`; that live name is already the
+  neutron g-factor, so the ledger name is `g0`. `g_n`, `g_std`, and
+  `standard_g` are not second names. JPCRD table XXXI does not print
+  this row. `physis_model` `standard_gravity()` Qty locksteps via
+  `Ratio::to_f64`. Adding `g0` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `g0` hash
+  4a5dd55187f3a15b1594eb840f5e255108df2d7ca508add43d20027230d85e91;
+  node
+  a3c327ec87cac2cdd95a150fb1d9e293a58df2e6c22c583ddd895f08aa6cca94;
+  ledger node
+  6c6d7757b1dad0ada2d5e310831270f1789e80a86e4eae520d3882520c6a6f3f.
+  `L_0` hash
+  b913459b9de403e5040bba4f1ab82c2619c782230d6cf21816ab70beb994e71b,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **Independent Interval enclose of one-loop inverse-alpha unification.**
   Third vertex of the one-loop triangle: `α_s` and `sin²θ_W` predict
   `α_em⁻¹(M_Z)` as a π-free Ratio (`2π` cancels).

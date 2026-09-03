@@ -7,9 +7,9 @@
 //! in tests; evaluators still use these `f64` Qty values, not that ledger.
 
 use physis_core::dim::{
-    Action, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency, HeatCapacity,
-    Irradiance, Length, LuminosityDensity, Mass, Momentum, Power, Pressure, RadiationConstant,
-    StefanBoltzmann, Temperature, Time, Velocity,
+    Acceleration, Action, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency,
+    HeatCapacity, Irradiance, Length, LuminosityDensity, Mass, Momentum, Power, Pressure,
+    RadiationConstant, StefanBoltzmann, Temperature, Time, Velocity,
 };
 use physis_core::qty::{ampere, joule, kg, meters, newton, pascal, seconds, Qty};
 
@@ -2901,6 +2901,14 @@ pub fn jovian_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>
 /// apparent bolometric zero `f_0` (10 parsecs, π). Faraday constant is NAe.
 pub fn bolometric_zero_luminosity() -> Qty<Power> {
     Qty::new(3.012_8e28)
+}
+
+/// Standard acceleration of gravity (CGPM 1901 conversion ruler), m s⁻².
+///
+/// This is `g0`, not a measured local g, not Newtonian `G`, and not
+/// neutron g-factor `gn`. Faraday constant is NAe.
+pub fn standard_gravity() -> Qty<Acceleration> {
+    Qty::new(9.806_65)
 }
 
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
@@ -14026,6 +14034,42 @@ mod tests {
             physis_constants::bolometric_zero_luminosity().hash,
             physis_constants::solar_irradiance().hash,
             "L_0 is not S_sun"
+        );
+
+        let g0 = physis_constants::standard_gravity();
+        assert_eq!(
+            g0.value,
+            Ratio::new(196_133, 20_000),
+            "ledger g0 is the CGPM 1901 Ratio"
+        );
+        assert_eq!(
+            standard_gravity().value(),
+            g0.value.to_f64(),
+            "g0 Qty matches Ratio to_f64"
+        );
+        assert_eq!(
+            standard_gravity().value(),
+            9.806_65,
+            "CGPM 1901 g0 is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("g0").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("g_n").is_none(),
+            "g_n is not a ledger name; neutron g-factor is gn"
+        );
+        assert!(
+            physis_constants::lookup("g0p").is_none(),
+            "g0p stays a glossary skip"
+        );
+        assert_ne!(
+            physis_constants::standard_gravity().hash,
+            physis_constants::neutron_g_factor().hash,
+            "g0 is not gn"
+        );
+        assert_ne!(
+            physis_constants::standard_gravity().hash,
+            physis_constants::newtonian_g().hash,
+            "g0 is not G"
         );
 
         let ev = physis_constants::electron_volt();
