@@ -12,6 +12,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CODATA 2018 Planck temperature is a one-sigma Interval.**
+  `physis-constants` versions `TP` as
+  `[141676800000000000000000000000000, 141680000000000000000000000000000]`
+  K from JPCRD table XXXI (`1.416784(16)×10^{32}`). That is not
+  solar `T_sun`, not a FormalClaim reconstructing the printed
+  temperature formula, not P3N. `T_P`, `T_planck`, `Planck_temperature`,
+  `planck-temperature`, and `TPlanck` are not second names. `T` is not
+  a second name. CODATA 2022 prints the same recommended centre.
+  `physis_model` `planck_temperature()` Qty locksteps via `Ratio::int`
+  `to_f64`. Adding `TP` to LEDGER changes the ledger bundle pin.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `TP` hash
+  309b1d699dc9e2c237cd84858637ef1471282115578628fd4fae7b5f14524694;
+  node
+  a39b4b503747cd7b6b7a658357f731011d41fd35567d9248391e5e7c9bf1b062;
+  ledger node
+  3d6a36bdc0d8a63b02ed56c760266b948d4624215ac915f17c5b404da3a6a640.
+  `mPc2` hash
+  4841c8ba95e9a27d1b20367156f51518ab13feb14998b04bb3c9b2534a5bf14a,
+  `mP` hash
+  d3c5ce43c5a8407372f8feb309d4ed340e076c08e459d88f623b558d8800aaa3,
+  `G` hash
+  ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92,
+  and `m_p` hash
+  ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8
+  unchanged.
+
 - **CODATA 2018 Planck mass energy equivalent is a one-sigma Interval.**
   `physis-constants` versions `mPc2` as
   `[12208760000000000000, 12209040000000000000]`

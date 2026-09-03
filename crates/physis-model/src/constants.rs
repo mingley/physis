@@ -832,6 +832,17 @@ pub fn planck_mass_energy_equivalent_in_gev() -> Qty<Dimensionless> {
     Qty::new(1.220_890e19)
 }
 
+/// Planck temperature (K), CODATA 2018.
+///
+/// This is the recommended printed UNIVERSAL centre in kelvin, not
+/// solar T_sun, not Planck mass mP, not mPc2, and not a reconstructed
+/// temperature formula. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. T_P, T_planck, Planck_temperature,
+/// planck-temperature, and TPlanck are not second names.
+pub fn planck_temperature() -> Qty<Temperature> {
+    Qty::new(1.416_784e32)
+}
+
 /// Elementary charge, coulomb (exact, SI).
 pub fn e_charge() -> physis_core::qty::Qty<physis_core::Charge> {
     physis_core::qty::coulomb(1.602_176_634e-19)
@@ -3689,6 +3700,37 @@ mod tests {
             mpc2.hash,
             physis_constants::electron_mass_energy_equivalent_in_mev().hash,
             "mPc2 Qty lockstep is not m_e_c2_MeV"
+        );
+
+        let tp = physis_constants::planck_temperature();
+        let tp_centre = Ratio::int(1_416_784i128 * 10i128.pow(26));
+        assert_eq!(
+            planck_temperature().value(),
+            tp_centre.to_f64(),
+            "TP Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            tp.value.contains(Interval::point(tp_centre)),
+            "TP Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            tp.value.lo, tp.value.hi,
+            "ledger TP stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            tp.hash,
+            physis_constants::planck_mass().hash,
+            "TP Qty lockstep is not Planck mass"
+        );
+        assert_ne!(
+            tp.hash,
+            physis_constants::planck_mass_energy_equivalent_in_gev().hash,
+            "TP Qty lockstep is not mPc2"
+        );
+        assert_ne!(
+            tp.hash,
+            physis_constants::solar_effective_temperature().hash,
+            "TP Qty lockstep is not T_sun"
         );
 
         let mu0_c = physis_constants::vacuum_permeability();
