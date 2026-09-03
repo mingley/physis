@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519"),
+            text.contains("constant  ledger  450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -21200,6 +21200,38 @@ mod tests {
             "journaling must not change the angstrom constant payload"
         );
 
+        let gal = lab
+            .exec(Command::Constant {
+                name: Some("gal".into()),
+            })
+            .text()
+            .to_string();
+        assert!(gal.contains("constant  gal  node "), "{gal}");
+        assert!(
+            gal.contains(
+                "hash     50c691bb067694576293815cad122b2765e55695ff4500b9ce0061f3485004c5"
+            ),
+            "{gal}"
+        );
+        assert!(gal.contains("kind     ratio"), "{gal}");
+        assert!(gal.contains("table    8"), "{gal}");
+        assert!(gal.contains("release  si-2019-codata-2018"), "{gal}");
+        assert!(gal.contains("1/100"), "{gal}");
+        assert!(gal.contains("range    1 Gal = 1e-2 m s^{-2}"), "{gal}");
+        assert!(gal.contains("unit     m s^{-2}"), "{gal}");
+        assert!(gal.contains("rebuild  ok"), "{gal}");
+        assert!(gal.contains("not P3N"), "{gal}");
+        assert!(!gal.contains("receipt"), "{gal}");
+        assert!(!gal.contains("theorem"), "{gal}");
+        assert!(!gal.contains("ELECTROMAGNETIC"), "{gal}");
+        assert!(!gal.contains("PHYSICOCHEMICAL"), "{gal}");
+        let gal_id = constant_node_id(&gal);
+        assert_eq!(
+            gal_id.to_hex(),
+            "be85ad76932e5e5b82642e9ea5154ea8a44e3c428fece24cbfc7d19d4ff0d8f7",
+            "journaling must not change the gal constant payload"
+        );
+
         let gm = lab
             .exec(Command::Constant {
                 name: Some("GM_sun".into()),
@@ -23836,7 +23868,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519",
+            "450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -24914,7 +24946,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519",
+            "450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -25002,6 +25034,14 @@ mod tests {
         .expect("pinned angstrom node");
         assert_eq!(
             lab2.store.get(si_angstrom).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let si_gal = physis_core::artifact::ArtifactId::from_hex(
+            "be85ad76932e5e5b82642e9ea5154ea8a44e3c428fece24cbfc7d19d4ff0d8f7",
+        )
+        .expect("pinned gal node");
+        assert_eq!(
+            lab2.store.get(si_gal).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let alpha = physis_core::artifact::ArtifactId::from_hex(
@@ -28523,7 +28563,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519"),
+            text.contains("constant  ledger  450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

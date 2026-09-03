@@ -2993,6 +2993,15 @@ pub fn standard_gravity() -> Qty<Acceleration> {
     Qty::new(9.806_65)
 }
 
+/// Gal (BIPM table 8), m s^{-2}. Exact `10^{-2}`.
+///
+/// This is the conventional table 8 acceleration, not CGPM 1901
+/// standard gravity `g0`, not Newtonian `G`, and not neutron `gn`.
+/// Faraday constant is NAe.
+pub fn gal() -> Qty<Acceleration> {
+    Qty::new(0.01)
+}
+
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
 pub fn astronomical_unit() -> Qty<Length> {
     meters(149_597_870_700.0)
@@ -14139,6 +14148,29 @@ mod tests {
             angstrom().value(),
             angstrom_star().value(),
             "exact angstrom is not measured Astar"
+        );
+
+        let gal_c = physis_constants::gal();
+        assert_eq!(gal_c.value, Ratio::new(1, 100), "ledger gal is exact");
+        assert_eq!(
+            gal().value(),
+            gal_c.value.to_f64(),
+            "gal Qty matches Ratio to_f64"
+        );
+        assert_eq!(
+            gal().value(),
+            0.01,
+            "BIPM table 8 gal is 0.01 metres per second squared"
+        );
+        assert_ne!(
+            gal().value(),
+            standard_gravity().value(),
+            "exact gal is not CGPM g0"
+        );
+        assert_ne!(
+            physis_constants::gal().hash,
+            physis_constants::standard_gravity().hash,
+            "gal is not g0"
         );
 
         let gm = physis_constants::solar_gm();

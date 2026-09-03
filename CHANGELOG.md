@@ -12,6 +12,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **BIPM table 8 gal is an exact Ratio.**
+  `physis-constants` versions `gal` as
+  `1/100`
+  m s^{-2} from BIPM SI Brochure 9th edition table 8 (`1 Gal = 10^{-2} m s^{-2}`).
+  That is not CGPM 1901 standard gravity, not an SI defining
+  constant, not P3N. `Gal`, `g`, `Gals`, and `galileo` are not
+  second names. Adding `gal` to LEDGER changes the ledger bundle pin.
+  `physis_model` `gal()` Qty locksteps via `Ratio::to_f64`.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `gal` hash
+  50c691bb067694576293815cad122b2765e55695ff4500b9ce0061f3485004c5;
+  node
+  be85ad76932e5e5b82642e9ea5154ea8a44e3c428fece24cbfc7d19d4ff0d8f7;
+  ledger node
+  450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281.
+  `angstrom` hash
+  f547282f52a69e9b1ccc6fe4370d1c7cd82cea6eb6ba7dd3d01226601acf74eb
+  unchanged.
+
 - **BIPM table 8 angstrom is an exact Ratio.**
   `physis-constants` versions `angstrom` as
   `1/10000000000`
