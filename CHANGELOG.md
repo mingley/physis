@@ -12,6 +12,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **BIPM table 8 nautical mile is an exact Ratio.**
+  `physis-constants` versions `nautical_mile` as
+  `1852`
+  m from BIPM SI Brochure 9th edition table 8 (`1 nautical mile = 1852 m`).
+  That is not astronomical unit, not an SI defining
+  constant, not P3N. `nmi`, `M`, `NM`, `nautical-mile`, and `knot` are not
+  second names. Adding `nautical_mile` to LEDGER changes the ledger bundle pin.
+  `physis_model` `nautical_mile()` Qty locksteps via `Ratio::to_f64`.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `nautical_mile` hash
+  e5b1cc930e89738e0273c18e8227d0c88abfa2d8e4e4e75a38d772308001105e;
+  node
+  be502ccd360d4d02b0af630bce1ac9b29dedd3386e0060cfe299e5f48411441f;
+  ledger node
+  fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54.
+  `gal` hash
+  50c691bb067694576293815cad122b2765e55695ff4500b9ce0061f3485004c5
+  unchanged.
+
 - **BIPM table 8 gal is an exact Ratio.**
   `physis-constants` versions `gal` as
   `1/100`

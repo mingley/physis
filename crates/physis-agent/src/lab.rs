@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281"),
+            text.contains("constant  ledger  fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -21232,6 +21232,53 @@ mod tests {
             "journaling must not change the gal constant payload"
         );
 
+        let nautical_mile = lab
+            .exec(Command::Constant {
+                name: Some("nautical_mile".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            nautical_mile.contains("constant  nautical_mile  node "),
+            "{nautical_mile}"
+        );
+        assert!(
+            nautical_mile.contains(
+                "hash     e5b1cc930e89738e0273c18e8227d0c88abfa2d8e4e4e75a38d772308001105e"
+            ),
+            "{nautical_mile}"
+        );
+        assert!(nautical_mile.contains("kind     ratio"), "{nautical_mile}");
+        assert!(nautical_mile.contains("table    8"), "{nautical_mile}");
+        assert!(
+            nautical_mile.contains("release  si-2019-codata-2018"),
+            "{nautical_mile}"
+        );
+        assert!(nautical_mile.contains("1852"), "{nautical_mile}");
+        assert!(
+            nautical_mile.contains("range    1 nautical mile = 1852 m"),
+            "{nautical_mile}"
+        );
+        assert!(nautical_mile.contains("unit     m"), "{nautical_mile}");
+        assert!(nautical_mile.contains("rebuild  ok"), "{nautical_mile}");
+        assert!(nautical_mile.contains("not P3N"), "{nautical_mile}");
+        assert!(!nautical_mile.contains("receipt"), "{nautical_mile}");
+        assert!(!nautical_mile.contains("theorem"), "{nautical_mile}");
+        assert!(
+            !nautical_mile.contains("ELECTROMAGNETIC"),
+            "{nautical_mile}"
+        );
+        assert!(
+            !nautical_mile.contains("PHYSICOCHEMICAL"),
+            "{nautical_mile}"
+        );
+        let nautical_mile_id = constant_node_id(&nautical_mile);
+        assert_eq!(
+            nautical_mile_id.to_hex(),
+            "be502ccd360d4d02b0af630bce1ac9b29dedd3386e0060cfe299e5f48411441f",
+            "journaling must not change the nautical_mile constant payload"
+        );
+
         let gm = lab
             .exec(Command::Constant {
                 name: Some("GM_sun".into()),
@@ -23868,7 +23915,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281",
+            "fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -24946,7 +24993,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281",
+            "fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -25042,6 +25089,14 @@ mod tests {
         .expect("pinned gal node");
         assert_eq!(
             lab2.store.get(si_gal).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let si_nautical_mile = physis_core::artifact::ArtifactId::from_hex(
+            "be502ccd360d4d02b0af630bce1ac9b29dedd3386e0060cfe299e5f48411441f",
+        )
+        .expect("pinned nautical_mile node");
+        assert_eq!(
+            lab2.store.get(si_nautical_mile).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let alpha = physis_core::artifact::ArtifactId::from_hex(
@@ -28563,7 +28618,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  450bb91b4510b34fdfc95148719e98c0898aff2115fb448a12c1f33f7ff66281"),
+            text.contains("constant  ledger  fb6ed0b00b4a1d097abe2db519ef035fc2f61a0fac6034fd8b2e8107ecabdf54"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab

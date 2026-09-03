@@ -3015,6 +3015,15 @@ pub fn angstrom() -> Qty<Length> {
     meters(1e-10)
 }
 
+/// Nautical mile (BIPM table 8), metres. Exact 1852 m.
+///
+/// This is the conventional table 8 navigation length, not astronomical
+/// unit `au`, not angstrom, and not an SI defining constant. Faraday
+/// constant is NAe.
+pub fn nautical_mile() -> Qty<Length> {
+    meters(1852.0)
+}
+
 /// Parsec, metres. IAU 2015: `(648 000 / π)` astronomical units, with the AU exact.
 ///
 /// π means this is not a Ratio. The versioned ledger stores `au`, not `pc`.
@@ -14171,6 +14180,33 @@ mod tests {
             physis_constants::gal().hash,
             physis_constants::standard_gravity().hash,
             "gal is not g0"
+        );
+
+        let nmi_c = physis_constants::nautical_mile();
+        assert_eq!(
+            nmi_c.value,
+            Ratio::int(1852),
+            "ledger nautical_mile is exact"
+        );
+        assert_eq!(
+            nautical_mile().value(),
+            nmi_c.value.to_f64(),
+            "nautical_mile Qty matches Ratio to_f64"
+        );
+        assert_eq!(
+            nautical_mile().value(),
+            1852.0,
+            "BIPM table 8 nautical_mile is 1852 metres"
+        );
+        assert_ne!(
+            nautical_mile().value(),
+            astronomical_unit().value(),
+            "nautical_mile is not au"
+        );
+        assert_ne!(
+            physis_constants::nautical_mile().hash,
+            physis_constants::astronomical_unit().hash,
+            "nautical_mile is not au"
         );
 
         let gm = physis_constants::solar_gm();
