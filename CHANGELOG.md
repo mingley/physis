@@ -12,6 +12,26 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **BIPM table 8 are is an exact Ratio.**
+  `physis-constants` versions `are` as
+  `100`
+  m^2 from BIPM SI Brochure 9th edition table 8 (`1 a = 10^{2} m^2`).
+  That is not hectare, not barn, not an SI defining
+  constant, not P3N. `a`, `ha`, `ares`, and `hectares` are not
+  second names. Adding `are` to LEDGER changes the ledger bundle pin.
+  There is no `physis_model` Area Qty. Theories still evaluate with `f64`
+  Qty. That is not a kernel proof, not Canonical, not P4. Encode pins
+  unchanged. Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `are` hash
+  f6e7b8fe2667077ebff78e264af7ba0f4f3cda107ae254a203ff441ad678779f;
+  node
+  fad7c4bd8f50f3ad103db19f9995d25643110f0236a3e84c39af6176adc71483;
+  ledger node
+  5425e5e17af4c1e88a7353eb911ad8a5006646a6c4ad7f6722c115531bff4b5d.
+  `knot` hash
+  d5370c49c2038d38b0171d0b7fdee676ec29ee0fe5d1f9be9ce69097356aaca6
+  unchanged.
+
 - **BIPM table 8 knot is an exact Ratio.**
   `physis-constants` versions `knot` as
   `463/900`
