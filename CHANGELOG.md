@@ -12,6 +12,38 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CODATA 2018 atomic unit of time is a one-sigma Interval.**
+  `physis-constants` versions `au_t` as
+  `[2418884326581/100000000000000000000000000000, 1511802704119/62500000000000000000000000000]`
+  s from JPCRD table XXXIV (`2.4188843265857(47)×10^{-17}`). That is not
+  natural-unit time `nu_t`, not a FormalClaim reconstructing `ħ/E_h`,
+  not P3N. `aut`, `au-t`, `t_au`, and `hbar_Eh` are not second names.
+  `au_V` stays reserved as not a second name of velocity `au_v`. This is
+  not the CODATA 2022 last-digit `5864` as the stored centre; the 2018
+  hull still contains that 2022 centre. `physis_model`
+  `atomic_unit_of_time()` Qty locksteps via `Ratio::to_f64`. Adding
+  `au_t` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `au_t` hash
+  b4910da26f8654a6e2e0e718410708834e63164ea70a069dddcc41b6ef1f5f4f;
+  node
+  826abe61465a9bd1dd86822fee57b08bc272e5668ff5af87f829669fd26654f1;
+  ledger node
+  5cba28142ea8f71a5553c1d7fde1c40f5ab33704daf88c471fc8a23e0a08d66c.
+  `u_eV` hash
+  1a02063a435fcbf3e7344f9353717471d242f5baca0d7000b9765d0c3a76f78d,
+  `nu_t` hash
+  eb796d28a29182f7211327fb07280d4b126e1ea949e19f0fb66575476dad80a5,
+  `au_p` hash
+  f12708bfd5d8f16fd214f8c636edb390aa238130bc694a67e131d02cf08953b0,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 atomic mass unit-electron volt relationship is a one-sigma Interval.**
   `physis-constants` versions `u_eV` as `[46574705107/50, 9314941027/10]`
   eV from JPCRD table XXXV (`9.3149410242(28)×10^8`). That is the inverse

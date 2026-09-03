@@ -600,8 +600,7 @@ pub fn molybdenum_x_unit() -> Qty<Length> {
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not SI elementary charge e, not Hartree Eh, not au_p, not au_F,
 /// not molybdenum x unit xu_Mo, and not a FormalClaim that reconstructs
-/// that quotient from a live lookup. Atomic unit of time still cites
-/// hbar and is not stored. The versioned ledger stores the one-sigma
+/// that quotient from a live lookup. The atomic unit of time listing is au_t. The versioned ledger stores the one-sigma
 /// hull; this Qty is that centre. Ledger unit is A; this Qty is a
 /// current. auI, au-I, au_i, and atomic_current are not second names.
 /// The atomic-unit charge-density listing is au_rho.
@@ -614,7 +613,7 @@ pub fn atomic_unit_of_current() -> Qty<Current> {
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not SI elementary charge e, not Bohr a0, not au_I, not au_p, and not
 /// a FormalClaim that reconstructs that quotient from a live lookup.
-/// Atomic unit of time still cites hbar and is not stored. Atomic unit
+/// The atomic unit of time listing is au_t. Atomic unit
 /// of electric potential is a second name for Eh_eV and is not stored.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. Ledger unit is C m^{-3}; this Qty is charge over volume
@@ -630,8 +629,7 @@ pub fn atomic_unit_of_charge_density(
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_rho,
 /// not au_I, and not a FormalClaim that reconstructs that quotient from
-/// a live lookup. Atomic unit of time still cites hbar and is not
-/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// a live lookup. The atomic unit of time listing is au_t. Atomic unit of electric potential is a second name for Eh_eV
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is V m^{-1}; this Qty is
 /// electric field (M L T^{-3} I^{-1}). auE, au-E, E_au, and
@@ -648,8 +646,7 @@ pub fn atomic_unit_of_electric_field(
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_E,
 /// not au_rho, and not a FormalClaim that reconstructs that quotient
-/// from a live lookup. Atomic unit of time still cites hbar and is not
-/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// from a live lookup. The atomic unit of time listing is au_t. Atomic unit of electric potential is a second name for Eh_eV
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is V m^{-2}; this Qty is
 /// electric field gradient (M T^{-3} I^{-1}). auEFG, au-EFG, au_dE, and
@@ -666,8 +663,7 @@ pub fn atomic_unit_of_electric_field_gradient(
 /// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_EFG,
 /// not au_E, and not a FormalClaim that reconstructs that product from
 /// a live lookup. Ratio scale 10^40 overflows i128; the versioned ledger
-/// stores a SciInterval. Atomic unit of time still cites hbar and is not
-/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// stores a SciInterval. The atomic unit of time listing is au_t. Atomic unit of electric potential is a second name for Eh_eV
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is C m; this Qty is electric
 /// dipole moment (L T I). ea_0, e_a0, au_d, au_dip, au_ea0, and
@@ -684,8 +680,7 @@ pub fn atomic_unit_of_electric_dipole_moment(
 /// not SI elementary charge e, not Bohr a0, not Hartree Eh, not ea0,
 /// not au_EFG, and not a FormalClaim that reconstructs that product from
 /// a live lookup. Ratio scale 10^50 overflows i128; the versioned ledger
-/// stores a SciInterval. Atomic unit of time still cites hbar and is not
-/// stored. Atomic unit of electric potential is a second name for Eh_eV
+/// stores a SciInterval. The atomic unit of time listing is au_t. Atomic unit of electric potential is a second name for Eh_eV
 /// and is not stored. The versioned ledger stores the one-sigma hull;
 /// this Qty is that centre. Ledger unit is C m^{2}; this Qty is electric
 /// quadrupole moment (L^2 T I). ea0_2, e_a0_2, au_Q, au_eq, ea0sq, and
@@ -704,7 +699,7 @@ pub fn atomic_unit_of_electric_quadrupole_moment(
 /// not ea0, not permittivity au_eps, not fine-structure alpha, and not
 /// a FormalClaim that reconstructs that quotient from a live lookup.
 /// Ratio scale 10^52 overflows i128; the versioned ledger stores a
-/// SciInterval. Atomic unit of time still cites hbar and is not stored.
+/// SciInterval. The atomic unit of time listing is au_t.
 /// Atomic unit of electric potential is a second name for Eh_eV and is
 /// not stored. The versioned ledger stores the one-sigma hull; this Qty
 /// is that centre. Ledger unit is C^{2} m^{2} J^{-1}; this Qty is
@@ -723,8 +718,7 @@ pub fn atomic_unit_of_electric_polarizability(
 /// not SI elementary charge e, not Bohr a0, not Hartree Eh, not au_pol,
 /// not ea02, not ea0, not permittivity au_eps, and not a FormalClaim
 /// that reconstructs that quotient from a live lookup. Ratio scale 10^63
-/// overflows i128; the versioned ledger stores a SciInterval. Atomic
-/// unit of time still cites hbar and is not stored. Atomic unit of
+/// overflows i128; the versioned ledger stores a SciInterval. The atomic unit of time listing is au_t. Atomic unit of
 /// electric potential is a second name for Eh_eV and is not stored.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
 /// centre. Ledger unit is C^{3} m^{3} J^{-2}; this Qty is first
@@ -800,8 +794,7 @@ pub fn atomic_unit_of_magnetic_flux_density(
 /// from a live lookup. The printed formula does not cite hbar; the
 /// versioned ledger still stores the printed one-sigma hull, not that
 /// quotient. Ratio scale 10^39 overflows i128; the versioned ledger
-/// stores a SciInterval. Atomic unit of time still cites hbar and is
-/// not stored. Atomic unit of electric potential is a second name for
+/// stores a SciInterval. The atomic unit of time listing is au_t. Atomic unit of electric potential is a second name for
 /// Eh_eV and is not stored. The versioned ledger stores the one-sigma
 /// hull; this Qty is that centre. Ledger unit is J T^{-2}; this Qty is
 /// magnetizability (M^{-1} L^2 T^2 I^2). auchi, au-chi, au_xi,
@@ -849,7 +842,7 @@ pub fn natural_unit_of_momentum() -> Qty<Momentum> {
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not the energy hull, not the length hull, and not astronomical au.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
-/// centre. Atomic unit of time still cites hbar and is not stored.
+/// centre. The atomic unit of time listing is au_t.
 /// auf is not a second name.
 pub fn atomic_unit_of_force() -> Qty<Force> {
     newton(8.238_723_498_3e-8)
@@ -860,8 +853,7 @@ pub fn atomic_unit_of_force() -> Qty<Force> {
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not SI metre-per-second, not astronomical au, and not atomic unit
 /// of force. The versioned ledger stores the one-sigma hull; this Qty
-/// is that centre. Atomic unit of time still cites hbar and is not
-/// stored. auv is not a second name.
+/// is that centre. The atomic unit of time listing is au_t. auv is not a second name.
 pub fn atomic_unit_of_velocity() -> Qty<Velocity> {
     Qty::new(2.187_691_263_64e6)
 }
@@ -871,7 +863,7 @@ pub fn atomic_unit_of_velocity() -> Qty<Velocity> {
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not vacuum permittivity, not Y0, and not a 4 pi reconstruction.
 /// The versioned ledger stores the one-sigma hull; this Qty is that
-/// centre. Atomic unit of time still cites hbar and is not stored.
+/// centre. The atomic unit of time listing is au_t.
 /// aueps is not a second name.
 pub fn atomic_unit_of_permittivity(
 ) -> Qty<physis_core::SI<typenum::N1, typenum::N3, typenum::P4, typenum::P2>> {
@@ -883,10 +875,21 @@ pub fn atomic_unit_of_permittivity(
 /// This is the recommended printed table XXXIV Atomic units centre,
 /// not natural-unit momentum, and not a reconstruction of that
 /// quotient. The versioned ledger stores the one-sigma hull; this
-/// Qty is that centre. Atomic unit of time still cites hbar and is
-/// not stored. aup is not a second name.
+/// Qty is that centre. The atomic unit of time listing is au_t. aup is not a second name.
 pub fn atomic_unit_of_momentum() -> Qty<Momentum> {
     Qty::new(1.992_851_914_10e-24)
+}
+
+/// Atomic unit of time hbar/Eh (s), CODATA 2018.
+///
+/// This is the recommended printed table XXXIV Atomic units centre,
+/// not natural-unit time, not Planck time, and not a reconstruction of
+/// that quotient. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. aut, au-t, t_au, and hbar_Eh are not
+/// second names. au_V stays reserved as not a second name of velocity
+/// au_v.
+pub fn atomic_unit_of_time() -> Qty<Time> {
+    seconds(2.418_884_326_585_7e-17)
 }
 
 /// Natural unit of time hbar/(m_e c^2) (s), CODATA 2018.
@@ -894,8 +897,7 @@ pub fn atomic_unit_of_momentum() -> Qty<Momentum> {
 /// This is the recommended printed table XXXIV Natural units centre,
 /// not Planck time, not atomic-unit time, and not a reconstruction of
 /// that quotient. The versioned ledger stores the one-sigma hull;
-/// this Qty is that centre. Atomic unit of time still cites hbar and
-/// is not stored. nut is not a second name.
+/// this Qty is that centre. The atomic unit of time listing is au_t. nut is not a second name.
 pub fn natural_unit_of_time() -> Qty<Time> {
     seconds(1.288_088_668_19e-21)
 }
@@ -13808,6 +13810,48 @@ mod tests {
         assert!(
             physis_constants::lookup("hbar_a0").is_none(),
             "hbar_a0 is not a ledger name; the live name is au_p"
+        );
+
+        let aut = physis_constants::atomic_unit_of_time();
+        let aut_centre = physis_numeric::Ratio::new(24_188_843_265_857, 10i128.pow(30));
+        assert_eq!(
+            atomic_unit_of_time().value(),
+            2.418_884_326_585_7e-17,
+            "au_t Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert_eq!(
+            atomic_unit_of_time().value(),
+            aut_centre.to_f64(),
+            "au_t Qty locksteps to Ratio::to_f64 on the 10^-30 centre"
+        );
+        assert!(
+            aut.value
+                .contains(physis_numeric::Interval::point(aut_centre)),
+            "au_t Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(aut.value.lo, aut.value.hi, "ledger au_t stays an Interval");
+        assert_ne!(
+            physis_constants::atomic_unit_of_time().hash,
+            physis_constants::natural_unit_of_time().hash,
+            "au_t is not nu_t"
+        );
+        assert_ne!(
+            physis_constants::atomic_unit_of_time().hash,
+            physis_constants::atomic_unit_of_momentum().hash,
+            "au_t is not au_p"
+        );
+        assert_eq!(physis_constants::lookup("au_t").unwrap().kind, "interval");
+        assert!(
+            physis_constants::lookup("aut").is_none(),
+            "aut is not a ledger name; the live name is au_t"
+        );
+        assert!(
+            physis_constants::lookup("hbar_Eh").is_none(),
+            "hbar_Eh is not a ledger name; the live name is au_t"
+        );
+        assert!(
+            physis_constants::lookup("au_V").is_none(),
+            "au_V stays reserved as not a second name of au_v"
         );
 
         let nut = physis_constants::natural_unit_of_time();
