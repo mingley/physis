@@ -2998,6 +2998,14 @@ pub fn astronomical_unit() -> Qty<Length> {
     meters(149_597_870_700.0)
 }
 
+/// Angstrom (BIPM table 8), metres. Exact `10^{-10}` m.
+///
+/// This is the conventional table 8 length, not Angstrom star `Astar`,
+/// not Bohr `a0`, and not an SI defining constant. Faraday constant is NAe.
+pub fn angstrom() -> Qty<Length> {
+    meters(1e-10)
+}
+
 /// Parsec, metres. IAU 2015: `(648 000 / π)` astronomical units, with the AU exact.
 ///
 /// π means this is not a Ratio. The versioned ledger stores `au`, not `pc`.
@@ -14109,6 +14117,28 @@ mod tests {
             astronomical_unit().value(),
             149_597_870_700.0,
             "IAU 2012 au is the exact metre count"
+        );
+
+        let angstrom_c = physis_constants::angstrom();
+        assert_eq!(
+            angstrom_c.value,
+            Ratio::new(1, 10i128.pow(10)),
+            "ledger angstrom is exact"
+        );
+        assert_eq!(
+            angstrom().value(),
+            angstrom_c.value.to_f64(),
+            "angstrom Qty matches Ratio to_f64"
+        );
+        assert_eq!(
+            angstrom().value(),
+            1e-10,
+            "BIPM table 8 angstrom is 1e-10 m"
+        );
+        assert_ne!(
+            angstrom().value(),
+            angstrom_star().value(),
+            "exact angstrom is not measured Astar"
         );
 
         let gm = physis_constants::solar_gm();

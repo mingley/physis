@@ -12,6 +12,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **BIPM table 8 angstrom is an exact Ratio.**
+  `physis-constants` versions `angstrom` as
+  `1/10000000000`
+  m from BIPM SI Brochure 9th edition table 8 (`1 angstrom = 10^{-10} m`).
+  That is not Angstrom star `Astar`, not an SI defining
+  constant, not P3N. `A`, `ang`, `angstroms`, and `AA` are not
+  second names. Adding `angstrom` to LEDGER changes the ledger bundle pin.
+  `physis_model` `angstrom()` Qty locksteps via `Ratio::to_f64`.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `angstrom` hash
+  f547282f52a69e9b1ccc6fe4370d1c7cd82cea6eb6ba7dd3d01226601acf74eb;
+  node
+  2b21d6656614357d1b58308cc44136436c6418713efd33dcc72d813305eca446;
+  ledger node
+  16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519.
+  `barn` hash
+  cb435561c26c1e236f186f96a86e5d513685c1f708a7c344e0a34d4e27ae0ae0
+  unchanged.
+
 - **BIPM table 8 barn is an exact Ratio.**
   `physis-constants` versions `barn` as
   `1/10000000000000000000000000000`

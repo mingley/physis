@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  f24567939b047af2c699fe560e732d487507b0b40464c0b55d4bb2b1a2fb59a8"),
+            text.contains("constant  ledger  16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -21164,6 +21164,42 @@ mod tests {
             "journaling must not change the barn constant payload"
         );
 
+        let angstrom = lab
+            .exec(Command::Constant {
+                name: Some("angstrom".into()),
+            })
+            .text()
+            .to_string();
+        assert!(angstrom.contains("constant  angstrom  node "), "{angstrom}");
+        assert!(
+            angstrom.contains(
+                "hash     f547282f52a69e9b1ccc6fe4370d1c7cd82cea6eb6ba7dd3d01226601acf74eb"
+            ),
+            "{angstrom}"
+        );
+        assert!(angstrom.contains("kind     ratio"), "{angstrom}");
+        assert!(angstrom.contains("table    8"), "{angstrom}");
+        assert!(
+            angstrom.contains("release  si-2019-codata-2018"),
+            "{angstrom}"
+        );
+        assert!(angstrom.contains("1/10000000000"), "{angstrom}");
+        assert!(
+            angstrom.contains("range    1 angstrom = 1e-10 m"),
+            "{angstrom}"
+        );
+        assert!(angstrom.contains("unit     m"), "{angstrom}");
+        assert!(angstrom.contains("rebuild  ok"), "{angstrom}");
+        assert!(angstrom.contains("not P3N"), "{angstrom}");
+        assert!(!angstrom.contains("receipt"), "{angstrom}");
+        assert!(!angstrom.contains("theorem"), "{angstrom}");
+        let angstrom_id = constant_node_id(&angstrom);
+        assert_eq!(
+            angstrom_id.to_hex(),
+            "2b21d6656614357d1b58308cc44136436c6418713efd33dcc72d813305eca446",
+            "journaling must not change the angstrom constant payload"
+        );
+
         let gm = lab
             .exec(Command::Constant {
                 name: Some("GM_sun".into()),
@@ -23800,7 +23836,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "f24567939b047af2c699fe560e732d487507b0b40464c0b55d4bb2b1a2fb59a8",
+            "16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -24878,7 +24914,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "f24567939b047af2c699fe560e732d487507b0b40464c0b55d4bb2b1a2fb59a8",
+            "16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -24958,6 +24994,14 @@ mod tests {
         .expect("pinned barn node");
         assert_eq!(
             lab2.store.get(si_barn).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let si_angstrom = physis_core::artifact::ArtifactId::from_hex(
+            "2b21d6656614357d1b58308cc44136436c6418713efd33dcc72d813305eca446",
+        )
+        .expect("pinned angstrom node");
+        assert_eq!(
+            lab2.store.get(si_angstrom).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let alpha = physis_core::artifact::ArtifactId::from_hex(
@@ -28479,7 +28523,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  f24567939b047af2c699fe560e732d487507b0b40464c0b55d4bb2b1a2fb59a8"),
+            text.contains("constant  ledger  16963463186bbae4ffd26e81b7b44012a88d9ae2904dff70fa51d6cff85ea519"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
