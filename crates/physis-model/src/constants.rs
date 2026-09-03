@@ -3024,6 +3024,15 @@ pub fn nautical_mile() -> Qty<Length> {
     meters(1852.0)
 }
 
+/// Knot (BIPM table 8), m s^{-1}. Exact 1852/3600.
+///
+/// This is the conventional table 8 navigation speed, not atomic-unit
+/// velocity, not SI metre-per-second, and not an SI defining constant.
+/// Faraday constant is NAe.
+pub fn knot() -> Qty<Velocity> {
+    Qty::new(1852.0 / 3600.0)
+}
+
 /// Parsec, metres. IAU 2015: `(648 000 / π)` astronomical units, with the AU exact.
 ///
 /// π means this is not a Ratio. The versioned ledger stores `au`, not `pc`.
@@ -14207,6 +14216,29 @@ mod tests {
             physis_constants::nautical_mile().hash,
             physis_constants::astronomical_unit().hash,
             "nautical_mile is not au"
+        );
+
+        let knot_c = physis_constants::knot();
+        assert_eq!(knot_c.value, Ratio::new(1852, 3600), "ledger knot is exact");
+        assert_eq!(
+            knot().value(),
+            knot_c.value.to_f64(),
+            "knot Qty matches Ratio to_f64"
+        );
+        assert_eq!(
+            knot().value(),
+            1852.0 / 3600.0,
+            "BIPM table 8 knot is 1852/3600 metres per second"
+        );
+        assert_ne!(
+            knot().value(),
+            atomic_unit_of_velocity().value(),
+            "exact knot is not au_v"
+        );
+        assert_ne!(
+            physis_constants::knot().hash,
+            physis_constants::nautical_mile().hash,
+            "knot is not nautical_mile"
         );
 
         let gm = physis_constants::solar_gm();

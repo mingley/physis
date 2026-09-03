@@ -12,6 +12,27 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **BIPM table 8 knot is an exact Ratio.**
+  `physis-constants` versions `knot` as
+  `463/900`
+  m s^{-1} from BIPM SI Brochure 9th edition table 8 (`1 knot = 1852/3600 m s^{-1}`).
+  That is not atomic-unit velocity, not an SI defining
+  constant, not P3N. `kn`, `kt`, `knots`, and `kns` are not
+  second names. Adding `knot` to LEDGER changes the ledger bundle pin.
+  `physis_model` `knot()` Qty locksteps via `Ratio::to_f64`.
+  Theories still evaluate with `f64` Qty. That is not a kernel proof,
+  not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph id
+  unchanged. P3N count stays 4.
+  Verified: `knot` hash
+  d5370c49c2038d38b0171d0b7fdee676ec29ee0fe5d1f9be9ce69097356aaca6;
+  node
+  e824804c179e38ffc601653c46cd5c8b5d62b41d58d808e067fa23250554bd89;
+  ledger node
+  d328b6890b745363aaa720605def02082c559d63d8bd1310f9a303257f5b5d09.
+  `hectare` hash
+  f2e190efa147a39f30023a0d50629f35c086c1012f71055b5f5cc4104096bb60
+  unchanged.
+
 - **BIPM table 8 hectare is an exact Ratio.**
   `physis-constants` versions `hectare` as
   `10000`

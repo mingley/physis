@@ -9731,7 +9731,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571"),
+            text.contains("constant  ledger  d328b6890b745363aaa720605def02082c559d63d8bd1310f9a303257f5b5d09"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -21314,6 +21314,41 @@ mod tests {
             "journaling must not change the hectare constant payload"
         );
 
+        let knot = lab
+            .exec(Command::Constant {
+                name: Some("knot".into()),
+            })
+            .text()
+            .to_string();
+        assert!(knot.contains("constant  knot  node "), "{knot}");
+        assert!(
+            knot.contains(
+                "hash     d5370c49c2038d38b0171d0b7fdee676ec29ee0fe5d1f9be9ce69097356aaca6"
+            ),
+            "{knot}"
+        );
+        assert!(knot.contains("kind     ratio"), "{knot}");
+        assert!(knot.contains("table    8"), "{knot}");
+        assert!(knot.contains("release  si-2019-codata-2018"), "{knot}");
+        assert!(knot.contains("463/900"), "{knot}");
+        assert!(
+            knot.contains("range    1 knot = 1852/3600 m s^{-1}"),
+            "{knot}"
+        );
+        assert!(knot.contains("unit     m s^{-1}"), "{knot}");
+        assert!(knot.contains("rebuild  ok"), "{knot}");
+        assert!(knot.contains("not P3N"), "{knot}");
+        assert!(!knot.contains("receipt"), "{knot}");
+        assert!(!knot.contains("theorem"), "{knot}");
+        assert!(!knot.contains("ELECTROMAGNETIC"), "{knot}");
+        assert!(!knot.contains("PHYSICOCHEMICAL"), "{knot}");
+        let knot_id = constant_node_id(&knot);
+        assert_eq!(
+            knot_id.to_hex(),
+            "e824804c179e38ffc601653c46cd5c8b5d62b41d58d808e067fa23250554bd89",
+            "journaling must not change the knot constant payload"
+        );
+
         let gm = lab
             .exec(Command::Constant {
                 name: Some("GM_sun".into()),
@@ -23950,7 +23985,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571",
+            "d328b6890b745363aaa720605def02082c559d63d8bd1310f9a303257f5b5d09",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -25028,7 +25063,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571",
+            "d328b6890b745363aaa720605def02082c559d63d8bd1310f9a303257f5b5d09",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -25140,6 +25175,14 @@ mod tests {
         .expect("pinned hectare node");
         assert_eq!(
             lab2.store.get(si_hectare).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+        let si_knot = physis_core::artifact::ArtifactId::from_hex(
+            "e824804c179e38ffc601653c46cd5c8b5d62b41d58d808e067fa23250554bd89",
+        )
+        .expect("pinned knot node");
+        assert_eq!(
+            lab2.store.get(si_knot).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
         let alpha = physis_core::artifact::ArtifactId::from_hex(
@@ -28661,7 +28704,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  589c5e73bcd5bfd921db8b77a0985a75a3c1c3256727a3d2f6b2879168e05571"),
+            text.contains("constant  ledger  d328b6890b745363aaa720605def02082c559d63d8bd1310f9a303257f5b5d09"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
