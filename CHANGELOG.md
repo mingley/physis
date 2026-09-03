@@ -12,6 +12,33 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CODATA 2018 Planck mass is a one-sigma Interval.**
+  `physis-constants` versions `mP` as
+  `[217641/10000000000000, 1088229/50000000000000]`
+  kg from JPCRD table XXXI (`2.176434(24)×10^{-8}`). That is not
+  proton mass `m_p`, not a FormalClaim reconstructing the printed
+  square-root, not P3N. `m_P`, `mp`, `Planck_mass`, `planck-mass`, and
+  `mPlanck` are not second names. `mp` stays reserved as not a second
+  name of proton `m_p`. CODATA 2022 prints the same recommended centre.
+  `physis_model` `planck_mass()` Qty locksteps via `Ratio::to_f64`.
+  Adding `mP` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `mP` hash
+  d3c5ce43c5a8407372f8feb309d4ed340e076c08e459d88f623b558d8800aaa3;
+  node
+  6e1a0a3de4b9bed53c30bedbe1bdcb661e294f7d6228b13110d59a049390df03;
+  ledger node
+  81f81a507d1e6c28907641c2cd1d4065e32ec229791a2029b26f4b15f8a36e4c.
+  `au_t` hash
+  b4910da26f8654a6e2e0e718410708834e63164ea70a069dddcc41b6ef1f5f4f,
+  `G` hash
+  ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92,
+  and `m_p` hash
+  ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8
+  unchanged.
+
 - **CODATA 2018 atomic unit of time is a one-sigma Interval.**
   `physis-constants` versions `au_t` as
   `[2418884326581/100000000000000000000000000000, 1511802704119/62500000000000000000000000000]`

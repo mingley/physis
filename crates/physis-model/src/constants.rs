@@ -810,6 +810,16 @@ pub fn g_newton() -> Qty<physis_core::SI<typenum::N1, typenum::P3, typenum::N2>>
     Qty::new(6.674_30e-11)
 }
 
+/// Planck mass (kg), CODATA 2018.
+///
+/// This is the recommended printed UNIVERSAL centre, not proton mass
+/// m_p, not Newtonian G, and not a reconstructed square-root. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// m_P, mp, Planck_mass, planck-mass, and mPlanck are not second names.
+pub fn planck_mass() -> Qty<Mass> {
+    kg(2.176_434e-8)
+}
+
 /// Elementary charge, coulomb (exact, SI).
 pub fn e_charge() -> physis_core::qty::Qty<physis_core::Charge> {
     physis_core::qty::coulomb(1.602_176_634e-19)
@@ -3620,6 +3630,27 @@ mod tests {
         assert_ne!(
             g.value.lo, g.value.hi,
             "ledger G stays an Interval; the Qty is not that Interval"
+        );
+
+        let mp = physis_constants::planck_mass();
+        let mp_centre = Ratio::new(2_176_434, 10i128.pow(14));
+        assert_eq!(
+            planck_mass().value(),
+            mp_centre.to_f64(),
+            "mP Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mp.value.contains(Interval::point(mp_centre)),
+            "mP Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mp.value.lo, mp.value.hi,
+            "ledger mP stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            mp.hash,
+            physis_constants::proton_mass().hash,
+            "mP Qty lockstep is not proton mass"
         );
 
         let mu0_c = physis_constants::vacuum_permeability();
