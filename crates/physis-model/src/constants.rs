@@ -2878,6 +2878,14 @@ pub fn jovian_polar_radius() -> Qty<Length> {
     Qty::new(66_854_000.0)
 }
 
+/// Nominal terrestrial mass parameter (IAU 2015 conversion ruler), m³ s⁻².
+///
+/// This is `(GM)_E^N`, not a measured terrestrial mass, not solar
+/// `GM_sun`, and not CODATA `G`. Faraday constant is NAe.
+pub fn terrestrial_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>> {
+    Qty::new(3.986_004e14)
+}
+
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
 pub fn astronomical_unit() -> Qty<Length> {
     meters(149_597_870_700.0)
@@ -13896,6 +13904,38 @@ mod tests {
             physis_constants::jovian_polar_radius().hash,
             physis_constants::terrestrial_polar_radius().hash,
             "R_jup_p is not R_earth_p"
+        );
+
+        let gme = physis_constants::terrestrial_gm();
+        assert_eq!(
+            gme.value,
+            Ratio::int(3_986_004i128 * 10i128.pow(8)),
+            "ledger GM_earth is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            terrestrial_gm().value(),
+            gme.value.to_f64(),
+            "GM_earth is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            terrestrial_gm().value(),
+            3.986_004e14,
+            "IAU 2015 (GM)_earth^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("GM_earth").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("GM_E").is_none(),
+            "GM_E is not a ledger name; the live name is GM_earth"
+        );
+        assert_ne!(
+            physis_constants::terrestrial_gm().hash,
+            physis_constants::solar_gm().hash,
+            "GM_earth is not GM_sun"
+        );
+        assert_ne!(
+            physis_constants::terrestrial_gm().hash,
+            physis_constants::newtonian_g().hash,
+            "GM_earth is not G"
         );
 
         let ev = physis_constants::electron_volt();

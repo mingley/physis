@@ -80,6 +80,30 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 nominal terrestrial mass parameter is an exact Ratio.**
+  `physis-constants` versions `GM_earth` as `398600400000000` m³ s⁻² from
+  Prša et al., Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That
+  is the conversion ruler `(GM)_E^N`, not a measured terrestrial mass,
+  not `GM_sun`, not CODATA `G`, and not P3N. `GM_E`, `GMearth`, and
+  `mu_earth` are not second names. `physis_model` `terrestrial_gm()` Qty
+  locksteps via integer `to_f64`. Adding `GM_earth` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is not
+  a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `GM_earth` hash
+  434261b3d8c3d1dee7e4772e4f166c1762a0bfbaa56356056d6dc1cb145bef06;
+  node
+  76561254bec6cbfaadbb00ca0d858c7fece88dfe7fda29a73bc17b7009392500;
+  ledger node
+  e04d407b01cd165c4a5d9a89b97e557fdedc56a1875c040c8b32997db6017833.
+  `R_jup_p` hash
+  7a01b6a227db031d78c739a86e8c66b9ce17988a190d9969f61d14353ecf83ae,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **IAU 2015 nominal Jovian polar radius is an exact Ratio.**
   `physis-constants` versions `R_jup_p` as `66854000` m from Prša et al.,
   Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is the polar
