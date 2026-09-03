@@ -2895,6 +2895,14 @@ pub fn jovian_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>
     Qty::new(1.266_865_3e17)
 }
 
+/// Absolute bolometric magnitude zero luminosity (IAU 2015 B2), watts.
+///
+/// This is `L_0`, not a measured luminosity, not solar `L_sun`, and not
+/// apparent bolometric zero `f_0` (10 parsecs, π). Faraday constant is NAe.
+pub fn bolometric_zero_luminosity() -> Qty<Power> {
+    Qty::new(3.012_8e28)
+}
+
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
 pub fn astronomical_unit() -> Qty<Length> {
     meters(149_597_870_700.0)
@@ -13982,6 +13990,42 @@ mod tests {
             physis_constants::jovian_gm().hash,
             physis_constants::newtonian_g().hash,
             "GM_jup is not G"
+        );
+
+        let l0 = physis_constants::bolometric_zero_luminosity();
+        assert_eq!(
+            l0.value,
+            Ratio::int(30_128i128 * 10i128.pow(24)),
+            "ledger L_0 is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            bolometric_zero_luminosity().value(),
+            l0.value.to_f64(),
+            "L_0 is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            bolometric_zero_luminosity().value(),
+            3.012_8e28,
+            "IAU 2015 L_0 is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("L_0").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("L0").is_none(),
+            "L0 is not a ledger name; the live name is L_0"
+        );
+        assert!(
+            physis_constants::lookup("f_0").is_none(),
+            "f_0 is not stored; 10 parsecs means pi"
+        );
+        assert_ne!(
+            physis_constants::bolometric_zero_luminosity().hash,
+            physis_constants::solar_luminosity().hash,
+            "L_0 is not L_sun"
+        );
+        assert_ne!(
+            physis_constants::bolometric_zero_luminosity().hash,
+            physis_constants::solar_irradiance().hash,
+            "L_0 is not S_sun"
         );
 
         let ev = physis_constants::electron_volt();

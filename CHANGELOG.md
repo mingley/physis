@@ -80,6 +80,31 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 bolometric magnitude zero luminosity is an exact Ratio.**
+  `physis-constants` versions `L_0` as `30128000000000000000000000000` W from
+  IAU 2015 Resolution B2 equation 1 (arXiv:1510.06262). That is the
+  conversion ruler for `M_Bol = 0`, not a measured luminosity, not
+  `L_sun`, not `S_sun`, not apparent `f_0` (10 parsecs, π), and not P3N.
+  `L0`, `Lbol`, and `Mbol` are not second names. `physis_model`
+  `bolometric_zero_luminosity()` Qty locksteps via integer `to_f64`.
+  Adding `L_0` to LEDGER changes the ledger bundle pin. Theories still
+  evaluate with `f64` Qty. That is not a kernel proof, not Canonical,
+  not P4. Encode pins unchanged. Unique-vacuum graph id unchanged. P3N
+  count stays 4.
+  Verified: `L_0` hash
+  b913459b9de403e5040bba4f1ab82c2619c782230d6cf21816ab70beb994e71b;
+  node
+  1b41364e1e14a766419e77b39f8b156b2a846d0e0cb3a498edcc3050c2e2a6b8;
+  ledger node
+  a7ed5256f5c6962961df3ff4f6b3f35f644655bc52fa18ff2bb4c10a3be1907b.
+  `GM_jup` hash
+  e02c32483ee4b17fdc379fbcab7ff357487937b3ebea7af48678b0bfea851d8c,
+  `T_sun` hash
+  80708833f8297957273286c4f202016c2a5f5bfd9899e9da1e4a9207e912d11c, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **IAU 2015 nominal Jovian mass parameter is an exact Ratio.**
   `physis-constants` versions `GM_jup` as `126686530000000000` m³ s⁻² from
   Prša et al., Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That
