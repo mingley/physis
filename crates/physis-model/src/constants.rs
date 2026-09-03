@@ -820,6 +820,18 @@ pub fn planck_mass() -> Qty<Mass> {
     kg(2.176_434e-8)
 }
 
+/// Planck mass energy equivalent in GeV, CODATA 2018.
+///
+/// This is the recommended printed UNIVERSAL centre in GeV, not Planck
+/// mass mP in kg, not electron MeV m_e_c2_MeV, and not a reconstructed
+/// energy-equivalent. The versioned ledger stores the one-sigma hull;
+/// this Qty is that centre. Ledger unit is GeV; this Qty is
+/// dimensionless, not SI joule. mP_c2, mPc^2, mP_GeV,
+/// Planck_mass_energy, and mPGeV are not second names.
+pub fn planck_mass_energy_equivalent_in_gev() -> Qty<Dimensionless> {
+    Qty::new(1.220_890e19)
+}
+
 /// Elementary charge, coulomb (exact, SI).
 pub fn e_charge() -> physis_core::qty::Qty<physis_core::Charge> {
     physis_core::qty::coulomb(1.602_176_634e-19)
@@ -3651,6 +3663,32 @@ mod tests {
             mp.hash,
             physis_constants::proton_mass().hash,
             "mP Qty lockstep is not proton mass"
+        );
+
+        let mpc2 = physis_constants::planck_mass_energy_equivalent_in_gev();
+        let mpc2_centre = Ratio::int(1_220_890i128 * 10i128.pow(13));
+        assert_eq!(
+            planck_mass_energy_equivalent_in_gev().value(),
+            mpc2_centre.to_f64(),
+            "mPc2 Qty is the CODATA 2018 centre, not an SI-exact Ratio"
+        );
+        assert!(
+            mpc2.value.contains(Interval::point(mpc2_centre)),
+            "mPc2 Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            mpc2.value.lo, mpc2.value.hi,
+            "ledger mPc2 stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            mpc2.hash,
+            physis_constants::planck_mass().hash,
+            "mPc2 Qty lockstep is not Planck mass"
+        );
+        assert_ne!(
+            mpc2.hash,
+            physis_constants::electron_mass_energy_equivalent_in_mev().hash,
+            "mPc2 Qty lockstep is not m_e_c2_MeV"
         );
 
         let mu0_c = physis_constants::vacuum_permeability();

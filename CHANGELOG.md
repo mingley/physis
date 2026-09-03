@@ -12,6 +12,36 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Numerics
 
+- **CODATA 2018 Planck mass energy equivalent is a one-sigma Interval.**
+  `physis-constants` versions `mPc2` as
+  `[12208760000000000000, 12209040000000000000]`
+  GeV from JPCRD table XXXI (`1.220890(14)×10^{19}`). That is not
+  Planck mass `mP`, not a FormalClaim reconstructing the printed
+  energy-equivalent formula, not P3N. `mP_c2`, `mPc^2`, `mP_GeV`,
+  `Planck_mass_energy`, and `mPGeV` are not second names. `mp` stays
+  reserved as not a second name of proton `m_p`. CODATA 2022 prints
+  the same recommended centre. `physis_model`
+  `planck_mass_energy_equivalent_in_gev()` Qty locksteps via
+  `Ratio::int` `to_f64`. Adding `mPc2` to LEDGER changes the ledger
+  bundle pin. Theories still evaluate with `f64` Qty. That is not a
+  kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `mPc2` hash
+  4841c8ba95e9a27d1b20367156f51518ab13feb14998b04bb3c9b2534a5bf14a;
+  node
+  05f9ed703c16709520161d1825c7d0a88fdcd1f0ab5f386c568748ef6b3a15fa;
+  ledger node
+  924c61e6a93e717734d922ce5b5bbcad4de5f139aefe7782817d19a2b4cac567.
+  `mP` hash
+  d3c5ce43c5a8407372f8feb309d4ed340e076c08e459d88f623b558d8800aaa3,
+  `au_t` hash
+  b4910da26f8654a6e2e0e718410708834e63164ea70a069dddcc41b6ef1f5f4f,
+  `G` hash
+  ebbfc13ea8fba734da50b679d9eaf236638b244cdcc350c0b14cdd6696850e92,
+  and `m_p` hash
+  ffd371a69f7ec3d9bac8dcf57e0126709fd3f63c35561e717d9886d2fb1f88c8
+  unchanged.
+
 - **CODATA 2018 Planck mass is a one-sigma Interval.**
   `physis-constants` versions `mP` as
   `[217641/10000000000000, 1088229/50000000000000]`
