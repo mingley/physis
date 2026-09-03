@@ -80,6 +80,35 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **CODATA 2018 shielding difference of t and p in HT is a one-sigma Interval.**
+  `physis-constants` versions `sigma_tp` as the CODATA 2018 one-sigma hull
+  `2.4140(20)×10^{-8}` from JPCRD 50, 033105 table XXXI (ATOMIC AND NUCLEAR).
+  This is the recommended `σ_tp` hull from the NIST 2018 complete listing and
+  the JPCRD adjusted-constant / XIV.C row, not HD sibling `sigma_dp`, and
+  not proton magnetic shielding `sigma0p`. Table XXI D43 prints the same
+  digits as the recommended hull and is not a second name. Not a FormalClaim
+  reconstructing that difference from a live lookup. Table XXXI OCR has no
+  `σ_tp` row. Decade `10^{11}` on the printed 24140-digit is the 10× trap.
+  2018 last-digit is `24140`; 2022 last-digit `39450` is excluded. The ledger
+  name is `sigma_tp`; `sigmatp`, `sigma-tp`, `sigma_t_p`, `s_tp`,
+  `HT_shielding`, and `D43` are not second names. `physis_model`
+  `shielding_difference_t_p_in_ht()` Qty locksteps to the CODATA centre
+  inside the hull. Adding `sigma_tp` to LEDGER changes the ledger bundle
+  pin. Theories still evaluate with `f64` Qty. That is not a kernel
+  proof, not Canonical, not P4. Encode pins unchanged. Unique-vacuum graph
+  id unchanged. P3N count stays 4.
+  Verified:
+  `sigma_tp` hash
+  0d2f0fe3278bcf8a51cc468c792106f732e5d84703cd342cbd559978c038f90f;
+  node bc532b1ad32b8920e859c14f2fc288e13382210d76593cd048efacf778fc3cf9;
+  ledger node
+  b558cdb0e728b2d414829dba3efd8eab7e2fe0897e89ac0e772ee300e3747be2.
+  `sigma_dp` hash
+  23b7863479f6cdb51f13efc947f52a2620dcb69c3363e46ab1fe848d293a3ff6 and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 shielding difference of d and p in HD is a one-sigma Interval.**
   `physis-constants` versions `sigma_dp` as the CODATA 2018 one-sigma hull
   `2.0200(20)×10^{-8}` from JPCRD 50, 033105 table XXXI (ATOMIC AND NUCLEAR).

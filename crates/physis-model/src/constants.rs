@@ -1083,6 +1083,18 @@ pub fn shielding_difference_d_p_in_hd() -> Qty<Dimensionless> {
     Qty::new(2.020_0e-8)
 }
 
+/// Shielding difference of t and p in HT σ_tp, CODATA 2018.
+///
+/// This is the recommended centre from the NIST 2018 complete listing,
+/// not the HD sibling and not proton magnetic shielding correction.
+/// This Qty is not a certificate that it equals a reconstructed σ_tp
+/// from sibling shieldings and not Table XXI D43 as a second name. The
+/// versioned ledger stores the one-sigma hull; this Qty is that centre.
+/// This is not the CODATA 2022 last-digit 39450. Faraday constant is NAe.
+pub fn shielding_difference_t_p_in_ht() -> Qty<Dimensionless> {
+    Qty::new(2.414_0e-8)
+}
+
 /// Neutron mass, CODATA 2018.
 ///
 /// This is the recommended kg centre from the neutron section, not
@@ -7669,6 +7681,48 @@ mod tests {
         assert!(
             physis_constants::lookup("D42").is_none(),
             "D42 is not a second name for sigma_dp"
+        );
+        let sigma_tp = physis_constants::shielding_difference_t_p_in_ht();
+        let sigma_tp_centre = Ratio::new(24_140, 10i128.pow(12));
+        assert_eq!(
+            shielding_difference_t_p_in_ht().value(),
+            sigma_tp_centre.to_f64(),
+            "sigma_tp Qty is the CODATA centre inside the hull"
+        );
+        assert_eq!(
+            shielding_difference_t_p_in_ht().value(),
+            2.414_0e-8,
+            "sigma_tp Qty locksteps to Ratio::to_f64 on the integer 10^12 centre"
+        );
+        assert!(
+            sigma_tp.value.contains(Interval::point(sigma_tp_centre)),
+            "sigma_tp Qty centre must lie in the versioned one-sigma hull"
+        );
+        assert_ne!(
+            sigma_tp.value.lo, sigma_tp.value.hi,
+            "ledger sigma_tp stays an Interval; the Qty is not that Interval"
+        );
+        assert_ne!(
+            physis_constants::shielding_difference_t_p_in_ht().hash,
+            physis_constants::shielding_difference_d_p_in_hd().hash,
+            "sigma_tp is not sigma_dp"
+        );
+        assert_ne!(
+            physis_constants::shielding_difference_t_p_in_ht().hash,
+            physis_constants::proton_magnetic_shielding_correction().hash,
+            "sigma_tp is not sigma0p"
+        );
+        assert_eq!(
+            physis_constants::lookup("sigma_tp").unwrap().kind,
+            "interval"
+        );
+        assert!(
+            physis_constants::lookup("sigmatp").is_none(),
+            "sigmatp is not a ledger name; the live name is sigma_tp"
+        );
+        assert!(
+            physis_constants::lookup("D43").is_none(),
+            "D43 is not a second name for sigma_tp"
         );
         let m_h = physis_constants::helion_mass();
         let m_h_centre = Ratio::new(50_064_127_796, 10i128.pow(37));
