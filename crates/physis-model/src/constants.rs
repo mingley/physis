@@ -2886,6 +2886,15 @@ pub fn terrestrial_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum
     Qty::new(3.986_004e14)
 }
 
+/// Nominal Jovian mass parameter (IAU 2015 conversion ruler), m³ s⁻².
+///
+/// This is `(GM)_J^N`, not a measured Jovian mass, not terrestrial
+/// `GM_earth`, not solar `GM_sun`, and not CODATA `G`. Faraday constant
+/// is NAe.
+pub fn jovian_gm() -> Qty<physis_core::SI<typenum::Z0, typenum::P3, typenum::N2>> {
+    Qty::new(1.266_865_3e17)
+}
+
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
 pub fn astronomical_unit() -> Qty<Length> {
     meters(149_597_870_700.0)
@@ -13936,6 +13945,43 @@ mod tests {
             physis_constants::terrestrial_gm().hash,
             physis_constants::newtonian_g().hash,
             "GM_earth is not G"
+        );
+
+        let gmj = physis_constants::jovian_gm();
+        assert_eq!(
+            gmj.value,
+            Ratio::int(12_668_653i128 * 10i128.pow(10)),
+            "ledger GM_jup is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            jovian_gm().value(),
+            gmj.value.to_f64(),
+            "GM_jup is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            jovian_gm().value(),
+            1.266_865_3e17,
+            "IAU 2015 (GM)_jup^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("GM_jup").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("GM_J").is_none(),
+            "GM_J is not a ledger name; the live name is GM_jup"
+        );
+        assert_ne!(
+            physis_constants::jovian_gm().hash,
+            physis_constants::terrestrial_gm().hash,
+            "GM_jup is not GM_earth"
+        );
+        assert_ne!(
+            physis_constants::jovian_gm().hash,
+            physis_constants::solar_gm().hash,
+            "GM_jup is not GM_sun"
+        );
+        assert_ne!(
+            physis_constants::jovian_gm().hash,
+            physis_constants::newtonian_g().hash,
+            "GM_jup is not G"
         );
 
         let ev = physis_constants::electron_volt();
