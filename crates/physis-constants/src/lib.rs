@@ -209,7 +209,8 @@
 //! CODATA 2018 helion shielding shift `sigma_h` is a
 //! one-sigma [`Interval`] `5.996743(10)×10^{-5}` from the NIST 2018 complete listing: a
 //! measured hull, not an SI defining Ratio, not HT sibling `sigma_tp`, not HD sibling
-//! `sigma_dp`, not proton magnetic shielding `sigma0p`, not a reconstructed `σ_h` certificate. Faraday
+//! `sigma_dp`, not proton magnetic shielding `sigma0p`, not a reconstructed `σ_h` certificate. Nominal
+//! solar irradiance is `S_sun`. Faraday
 //! constant is `NAe`.
 //! Kilogram-
 //! electron volt `kg_eV` is not stored: `c²/e` overflows `i128`. Joule-hertz
@@ -2326,7 +2327,8 @@ fn codata_2018_atomic_unit_of_magnetizability_interval() -> SciInterval {
 /// 2022 centre. The triton-proton magnetic-moment ratio is `mu_t_mup`.
 /// The shielding difference of d and p in HD is `sigma_dp`. The
 /// shielding difference of t and p in HT is `sigma_tp`. The
-/// helion shielding shift is `sigma_h`. Faraday
+/// helion shielding shift is `sigma_h`. Nominal solar irradiance is `S_sun`.
+/// Faraday
 /// constant is `NAe`. This is not P3N. Theories
 /// still use `physis_model` `f64` Qty.
 pub fn atomic_unit_of_magnetizability() -> Constant<SciInterval> {
@@ -5396,7 +5398,7 @@ fn codata_2018_helion_shielding_shift_interval() -> Interval {
 /// `i128`. This is not the CODATA 2022 last-digit `7029` as the stored
 /// centre. The 2018 hull excludes that 2022 centre. The decade is
 /// `10^{11}` on the printed 5996743-digit; `10^{10}` with that mantissa is
-/// the 10× trap. Faraday constant is `NAe`. Theories still use
+/// the 10× trap. Nominal solar irradiance is `S_sun`. Faraday constant is `NAe`. Theories still use
 /// `physis_model` `f64` Qty.
 pub fn helion_shielding_shift() -> Constant<Interval> {
     Constant::new(
@@ -9719,6 +9721,23 @@ pub fn solar_luminosity() -> Constant<Ratio> {
     )
 }
 
+/// Nominal solar irradiance S_☉^N, exact, IAU 2015 Resolution B3.
+///
+/// `1361 W m^{-2}` is a conversion ruler, not a measured total solar
+/// irradiance, not luminosity `L_sun`, not solar radius `R_sun`, and
+/// not solar GM `GM_sun`. `Ssun`, `S-sun`, `TSI`, `solar_constant`,
+/// `solar_irradiance`, and `S0` are not second names. Faraday constant
+/// is `NAe`. Theories still evaluate with the `physis_model` Qty.
+pub fn solar_irradiance() -> Constant<Ratio> {
+    Constant::new(
+        "S_sun",
+        Ratio::int(1361),
+        "W m^{-2}",
+        iau2015_b3_table_1("S_sun^N = 1361"),
+        ConstantRelease::Iau2015,
+    )
+}
+
 /// Independently reconstructable listing of a versioned constant.
 ///
 /// The stored [`Constant::hash`] is not authority: rebuild via [`lookup`].
@@ -10002,6 +10021,7 @@ pub const LEDGER: &[&str] = &[
     "GM_sun",
     "R_sun",
     "L_sun",
+    "S_sun",
 ];
 
 fn listing<T: std::fmt::Display>(c: Constant<T>, kind: &'static str) -> ConstantListing {
@@ -10422,6 +10442,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "GM_sun" => Some(listing(solar_gm(), "ratio")),
         "R_sun" => Some(listing(solar_radius(), "ratio")),
         "L_sun" => Some(listing(solar_luminosity(), "ratio")),
+        "S_sun" => Some(listing(solar_irradiance(), "ratio")),
         _ => None,
     }
 }
@@ -11102,6 +11123,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("E_h").is_none());
     }
 
@@ -11270,6 +11292,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("cRinf_eV").is_none());
     }
 
@@ -11437,6 +11460,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Rydberg").is_none());
     }
 
@@ -11695,6 +11719,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());
@@ -11749,6 +11774,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -11922,6 +11948,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -12100,6 +12127,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -12286,6 +12314,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -12482,6 +12511,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -12688,6 +12718,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -12904,6 +12935,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -13133,6 +13165,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -13351,6 +13384,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -13564,6 +13598,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -13786,6 +13821,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -14010,6 +14046,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -14239,6 +14276,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -14485,6 +14523,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -14738,6 +14777,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -14998,6 +15038,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -15261,6 +15302,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -15526,6 +15568,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -15697,6 +15740,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
     }
 
     #[test]
@@ -15883,6 +15927,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mp").is_some());
     }
@@ -16065,6 +16110,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("mu_e_mup").is_some());
         assert!(lookup("mu0").is_some());
@@ -16232,6 +16278,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mn").is_some());
     }
@@ -16401,6 +16448,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_md").is_some());
         assert!(lookup("mu_e_mun").is_some());
@@ -16579,6 +16627,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mh").is_some());
         assert!(lookup("mu_e_mu0p").is_some());
@@ -16742,6 +16791,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("me_mmu").is_some());
         assert!(lookup("m_p").is_some());
@@ -16893,6 +16943,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g_e").is_none());
         assert!(lookup("m_mu").is_some());
         assert!(lookup("M_e").is_some());
@@ -17062,6 +17113,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -17121,6 +17173,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_mu").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("hcRinf").is_some());
@@ -17298,6 +17351,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -17353,6 +17407,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_mu_c2").is_some());
         assert!(lookup("eV").is_some());
         assert!(lookup("Eh").is_some());
@@ -17536,6 +17591,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -17595,6 +17651,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("me_mmu").is_some());
         assert!(lookup("mu_e_mmu").is_some());
         assert!(lookup("m_mu_c2_MeV").is_some());
@@ -17768,6 +17825,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -17827,6 +17885,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mmu_me").is_some());
         assert!(lookup("me_mp").is_some());
         assert!(lookup("m_mu").is_some());
@@ -18003,6 +18062,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -18062,6 +18122,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mmu_mp").is_some());
         assert!(lookup("me_mn").is_some());
         assert!(lookup("m_mu").is_some());
@@ -18215,6 +18276,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -18274,6 +18336,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("M_e").is_some());
         assert!(lookup("m_mu").is_some());
@@ -18446,6 +18509,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -18505,6 +18569,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("lambda_C").is_some());
         assert!(lookup("lambdabar_C").is_some());
         assert!(lookup("M_mu").is_some());
@@ -18674,6 +18739,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -18733,6 +18799,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_e").is_some());
         assert!(lookup("mu_e_mmu").is_some());
         assert!(lookup("mu0").is_some());
@@ -18916,6 +18983,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -18975,6 +19043,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_mu").is_some());
         assert!(lookup("mu_e_muB").is_some());
         assert!(lookup("mu_e").is_some());
@@ -19159,6 +19228,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -19218,6 +19288,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_e_muN").is_some());
         assert!(lookup("mu_mu_muB").is_some());
         assert!(lookup("mu_mu").is_some());
@@ -19405,6 +19476,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -19464,6 +19536,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("ae").is_some());
         assert!(lookup("ge").is_some());
         assert!(lookup("mu_mu_muN").is_some());
@@ -19655,6 +19728,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -19714,6 +19788,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("ge").is_some());
         assert!(lookup("amu").is_some());
         assert!(lookup("ae").is_some());
@@ -19920,6 +19995,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -19979,6 +20055,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_e_mup").is_some());
         assert!(lookup("mmu_mp").is_some());
         assert!(lookup("gmu").is_some());
@@ -20106,6 +20183,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mp").is_none());
         assert!(lookup("proton-mass").is_none());
         assert!(lookup("electron-mass").is_none());
@@ -20262,6 +20340,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -20321,6 +20400,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("M_e").is_some());
@@ -20498,6 +20578,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -20557,6 +20638,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_p_u").is_some());
         assert!(lookup("m_mu_c2").is_some());
@@ -20738,6 +20820,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -20797,6 +20880,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_p_c2").is_some());
         assert!(lookup("m_mu_c2_MeV").is_some());
         assert!(lookup("eV").is_some());
@@ -20962,6 +21046,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -21021,6 +21106,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("me_mp").is_some());
         assert!(lookup("mmu_me").is_some());
         assert!(lookup("m_p").is_some());
@@ -21184,6 +21270,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -21243,6 +21330,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mmu_mp").is_some());
         assert!(lookup("mp_me").is_some());
         assert!(lookup("m_p").is_some());
@@ -21405,6 +21493,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -21464,6 +21553,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mmu_mn").is_some());
         assert!(lookup("me_mn").is_some());
         assert!(lookup("mp_mmu").is_some());
@@ -21622,6 +21712,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -21681,6 +21772,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("e_me").is_some());
         assert!(lookup("mp_mn").is_some());
         assert!(lookup("m_p").is_some());
@@ -21844,6 +21936,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -21903,6 +21996,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_e").is_some());
         assert!(lookup("M_mu").is_some());
         assert!(lookup("m_p").is_some());
@@ -22079,6 +22173,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -22138,6 +22233,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("lambda_C_p").is_some());
         assert!(lookup("lambda_C").is_some());
         assert!(lookup("lambda_C_mu").is_some());
@@ -22302,6 +22398,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -22361,6 +22458,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("rp").is_some());
         assert!(lookup("lambda_C_p").is_some());
         assert!(lookup("lambda_C").is_some());
@@ -22532,6 +22630,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -22591,6 +22690,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e").is_some());
         assert!(lookup("mu_mu").is_some());
@@ -22789,6 +22889,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -22848,6 +22949,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_p_muB").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e_muB").is_some());
@@ -23051,6 +23153,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -23110,6 +23213,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_p_muN").is_some());
         assert!(lookup("mu_p_muB").is_some());
         assert!(lookup("mu_p").is_some());
@@ -23287,6 +23391,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -23346,6 +23451,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gp").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("ge").is_some());
@@ -23533,6 +23639,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -23592,6 +23699,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_p_mun").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("mu_e_mun").is_some());
@@ -23768,6 +23876,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -23827,6 +23936,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e_mu0p").is_some());
@@ -24035,6 +24145,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -24094,6 +24205,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0p_muB").is_some());
         assert!(lookup("mu0p").is_some());
         assert!(lookup("mu_p_muB").is_some());
@@ -24308,6 +24420,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -24367,6 +24480,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0p_muN").is_some());
         assert!(lookup("mu0p_muB").is_some());
         assert!(lookup("mu_p_muN").is_some());
@@ -24548,6 +24662,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -24607,6 +24722,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma0p").is_some());
         assert!(lookup("mu0p_muN").is_some());
         assert!(lookup("mu0p").is_some());
@@ -24801,6 +24917,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -24860,6 +24977,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_mu").is_some());
@@ -25039,6 +25157,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -25098,6 +25217,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_n_u").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_p_u").is_some());
@@ -25298,6 +25418,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -25357,6 +25478,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_n_c2").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_n_u").is_some());
@@ -25536,6 +25658,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -25595,6 +25718,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_n_c2_MeV").is_some());
         assert!(lookup("m_n_c2").is_some());
         assert!(lookup("m_p_c2_MeV").is_some());
@@ -25768,6 +25892,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -25827,6 +25952,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mn_me").is_some());
         assert!(lookup("me_mn").is_some());
         assert!(lookup("mp_me").is_some());
@@ -25999,6 +26125,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -26058,6 +26185,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mn_mmu").is_some());
         assert!(lookup("mn_me").is_some());
         assert!(lookup("mp_mmu").is_some());
@@ -26228,6 +26356,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -26287,6 +26416,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mn_mp").is_some());
         assert!(lookup("mn_minus_mp").is_some());
         assert!(lookup("mp_mn").is_some());
@@ -26447,6 +26577,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -26506,6 +26637,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mn_minus_mp").is_some());
         assert!(lookup("mn_minus_mp_u").is_some());
         assert!(lookup("mn_mp").is_some());
@@ -26669,6 +26801,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -26728,6 +26861,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mn_minus_mp_u").is_some());
         assert!(lookup("mn_minus_mp_c2").is_some());
         assert!(lookup("mn_minus_mp").is_some());
@@ -26899,6 +27033,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -26958,6 +27093,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mn_minus_mp_c2").is_some());
         assert!(lookup("mn_minus_mp_u").is_some());
         assert!(lookup("m_n_c2").is_some());
@@ -27132,6 +27268,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -27191,6 +27328,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mn_minus_mp_c2_MeV").is_some());
         assert!(lookup("mn_minus_mp_c2").is_some());
         assert!(lookup("m_n_c2_MeV").is_some());
@@ -27363,6 +27501,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -27422,6 +27561,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_n").is_some());
         assert!(lookup("M_p").is_some());
         assert!(lookup("M_e").is_some());
@@ -27598,6 +27738,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -27657,6 +27798,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("lambda_C_n").is_some());
         assert!(lookup("lambda_C_p").is_some());
         assert!(lookup("lambda_C").is_some());
@@ -27817,6 +27959,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -27876,6 +28019,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_n").is_some());
         assert!(lookup("mu_p").is_some());
         assert!(lookup("mu_e").is_some());
@@ -28049,6 +28193,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -28108,6 +28253,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_n_muB").is_some());
         assert!(lookup("mu_n").is_some());
         assert!(lookup("mu_p_muB").is_some());
@@ -28288,6 +28434,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -28347,6 +28494,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_n_muN").is_some());
         assert!(lookup("mu_n_muB").is_some());
         assert!(lookup("mu_n").is_some());
@@ -28510,6 +28658,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -28569,6 +28718,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gn").is_some());
         assert!(lookup("mu_n_muN").is_some());
         assert!(lookup("ge").is_some());
@@ -28738,6 +28888,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -28797,6 +28948,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_n_mue").is_some());
         assert!(lookup("gn").is_some());
         assert!(lookup("mu_e_mun").is_some());
@@ -28972,6 +29124,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -29031,6 +29184,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_n_mup").is_some());
         assert!(lookup("mu_n_mue").is_some());
         assert!(lookup("mu_p_mun").is_some());
@@ -29214,6 +29368,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -29273,6 +29428,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_n_mu0p").is_some());
         assert!(lookup("mu_n_mup").is_some());
         assert!(lookup("mu_e_mu0p").is_some());
@@ -29437,6 +29593,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -29496,6 +29653,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_n").is_some());
         assert!(lookup("m_p").is_some());
@@ -29651,6 +29809,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -29710,6 +29869,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_d_u").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_n_u").is_some());
@@ -29919,6 +30079,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -29978,6 +30139,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_d_c2").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_d_u").is_some());
@@ -30169,6 +30331,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -30228,6 +30391,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_d_c2_MeV").is_some());
         assert!(lookup("m_d_c2").is_some());
         assert!(lookup("m_n_c2_MeV").is_some());
@@ -31472,6 +31636,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -31531,6 +31696,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_d_mup").is_some());
         assert!(lookup("mu_d_mue").is_some());
         assert!(lookup("mu_n_mup").is_some());
@@ -31704,6 +31870,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -31763,6 +31930,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_d_mun").is_some());
         assert!(lookup("mu_d_muN").is_some());
         assert!(lookup("mu_d_mup").is_some());
@@ -31938,6 +32106,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -31997,6 +32166,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_d").is_some());
         assert!(lookup("m_n").is_some());
@@ -32170,6 +32340,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -32229,6 +32400,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_t_u").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_d_u").is_some());
@@ -32448,6 +32620,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -32507,6 +32680,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_t_c2").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_t_u").is_some());
@@ -32709,6 +32883,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -32768,6 +32943,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_t_c2_MeV").is_some());
         assert!(lookup("m_t_c2").is_some());
         assert!(lookup("m_d_c2_MeV").is_some());
@@ -32966,6 +33142,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -33025,6 +33202,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mt_me").is_some());
         assert!(lookup("me_mt").is_some());
         assert!(lookup("md_me").is_some());
@@ -33209,6 +33387,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -33268,6 +33447,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mt_mp").is_some());
         assert!(lookup("mt_me").is_some());
         assert!(lookup("md_mp").is_some());
@@ -33442,6 +33622,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -33501,6 +33682,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_t").is_some());
         assert!(lookup("M_n").is_some());
         assert!(lookup("M_p").is_some());
@@ -33683,6 +33865,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -33742,6 +33925,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_t").is_some());
         assert!(lookup("mu_d").is_some());
         assert!(lookup("mu_p").is_some());
@@ -33938,6 +34122,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -33997,6 +34182,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_t_muB").is_some());
         assert!(lookup("mu_t").is_some());
         assert!(lookup("mu_d_muB").is_some());
@@ -34204,6 +34390,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -34263,6 +34450,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_t_muN").is_some());
         assert!(lookup("mu_t_muB").is_some());
         assert!(lookup("mu_t").is_some());
@@ -34384,6 +34572,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -34442,6 +34631,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -34501,6 +34691,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gt").is_some());
         assert!(lookup("mu_t_muN").is_some());
         assert!(lookup("gd").is_some());
@@ -34715,6 +34906,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gt").is_some());
         assert!(lookup("mu_t_muN").is_some());
         assert!(lookup("mu_t").is_some());
@@ -34842,6 +35034,7 @@ mod tests {
         assert!(lookup("D42").is_none());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("sigma0p").is_some());
@@ -34902,6 +35095,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gt").is_some());
         assert!(lookup("G").is_some());
     }
@@ -35082,6 +35276,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gt").is_some());
         assert!(lookup("G").is_some());
     }
@@ -35268,6 +35463,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gt").is_some());
         assert!(lookup("G").is_some());
     }
@@ -35438,6 +35634,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -35497,6 +35694,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_t").is_some());
         assert!(lookup("m_d").is_some());
@@ -35682,6 +35880,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -35741,6 +35940,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_h_u").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_t_u").is_some());
@@ -35968,6 +36168,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -36027,6 +36228,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_h_c2").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_h_u").is_some());
@@ -36245,6 +36447,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -36304,6 +36507,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_h_c2_MeV").is_some());
         assert!(lookup("m_h_c2").is_some());
         assert!(lookup("m_t_c2_MeV").is_some());
@@ -36513,6 +36717,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -36572,6 +36777,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mh_me").is_some());
         assert!(lookup("me_mh").is_some());
         assert!(lookup("mt_me").is_some());
@@ -36771,6 +36977,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -36830,6 +37037,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mh_mp").is_some());
         assert!(lookup("mh_me").is_some());
         assert!(lookup("mt_mp").is_some());
@@ -37021,6 +37229,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -37080,6 +37289,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_h").is_some());
         assert!(lookup("M_t").is_some());
         assert!(lookup("M_d").is_some());
@@ -37276,6 +37486,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -37335,6 +37546,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_h").is_some());
         assert!(lookup("mu_t").is_some());
         assert!(lookup("mu_d").is_some());
@@ -37559,6 +37771,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -37618,6 +37831,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_h_muB").is_some());
         assert!(lookup("mu_h").is_some());
         assert!(lookup("mu_t_muB").is_some());
@@ -37837,6 +38051,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -37896,6 +38111,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu_h_muN").is_some());
         assert!(lookup("mu_h_muB").is_some());
         assert!(lookup("mu_h").is_some());
@@ -38082,6 +38298,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -38141,6 +38358,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gh").is_some());
         assert!(lookup("mu_h_muN").is_some());
         assert!(lookup("gt").is_some());
@@ -38315,6 +38533,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -38374,6 +38593,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu_h").is_some());
         assert!(lookup("mu0p").is_some());
@@ -38588,6 +38808,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -38647,6 +38868,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0h_muB").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu_h_muB").is_some());
@@ -38862,6 +39084,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -38921,6 +39144,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0h_muN").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu0h_muB").is_some());
@@ -39140,6 +39364,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -39199,6 +39424,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0h_mup").is_some());
         assert!(lookup("mu0h").is_some());
         assert!(lookup("mu0h_muN").is_some());
@@ -39429,6 +39655,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -39486,6 +39713,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -39545,6 +39773,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mu0h_mu0p").is_some());
         assert!(lookup("mu0h_mup").is_some());
         assert!(lookup("mu0h").is_some());
@@ -39744,6 +39973,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -39801,6 +40031,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -39860,6 +40091,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_h").is_some());
         assert!(lookup("m_t").is_some());
@@ -40064,6 +40296,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -40123,6 +40356,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_alpha_u").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_h_u").is_some());
@@ -40375,6 +40609,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -40434,6 +40669,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_alpha_c2").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_alpha_u").is_some());
@@ -40672,6 +40908,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -40731,6 +40968,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_alpha_c2_MeV").is_some());
         assert!(lookup("m_alpha_c2").is_some());
         assert!(lookup("m_h_c2_MeV").is_some());
@@ -40966,6 +41204,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -41025,6 +41264,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("malpha_me").is_some());
         assert!(lookup("me_malpha").is_some());
         assert!(lookup("mh_me").is_some());
@@ -41255,6 +41495,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -41314,6 +41555,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("malpha_mp").is_some());
         assert!(lookup("malpha_me").is_some());
         assert!(lookup("mh_mp").is_some());
@@ -41525,6 +41767,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -41584,6 +41827,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_alpha").is_some());
         assert!(lookup("M_h").is_some());
         assert!(lookup("M_t").is_some());
@@ -41808,6 +42052,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -41867,6 +42112,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_p").is_some());
         assert!(lookup("m_n").is_some());
@@ -42104,6 +42350,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -42163,6 +42410,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_u_c2").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_p_c2").is_some());
@@ -42411,6 +42659,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -42470,6 +42719,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_u_c2_MeV").is_some());
         assert!(lookup("m_u_c2").is_some());
         assert!(lookup("m_p_c2_MeV").is_some());
@@ -42695,6 +42945,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -42754,6 +43005,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_u").is_some());
         assert!(lookup("M_alpha").is_some());
         assert!(lookup("M_h").is_some());
@@ -43017,6 +43269,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -43074,6 +43327,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -43133,6 +43387,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_12C").is_some());
         assert!(lookup("M_u").is_some());
         assert!(lookup("M_alpha").is_some());
@@ -43368,6 +43623,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -43426,6 +43682,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -43485,6 +43742,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("NAh").is_some());
         assert!(lookup("M_12C").is_some());
         assert!(lookup("M_u").is_some());
@@ -43705,6 +43963,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -43763,6 +44022,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -43822,6 +44082,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("NAk").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("k_Hz").is_some());
@@ -44013,6 +44274,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("k_Hz").is_some());
         assert!(lookup("k_m").is_some());
@@ -44209,6 +44471,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("k_Hz").is_some());
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
@@ -44429,6 +44692,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("k_m").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
@@ -44631,6 +44895,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("kg_J").is_some());
         assert!(lookup("m_J").is_some());
@@ -44830,6 +45095,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("kg_J").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("m_eV").is_some());
@@ -45023,6 +45289,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("m_eV").is_some());
         assert!(lookup("kg_J").is_some());
@@ -45231,6 +45498,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_eV").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("h_eVHz").is_some());
@@ -45431,6 +45699,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_eV").is_some());
         assert!(lookup("eV").is_some());
         assert!(lookup("h_eVHz").is_some());
@@ -45630,6 +45899,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("k").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("k_Hz").is_some());
@@ -45838,6 +46108,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("h_eVHz").is_some());
         assert!(lookup("h").is_some());
         assert!(lookup("e").is_some());
@@ -46023,6 +46294,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("k").is_some());
         assert!(lookup("k_eV").is_some());
         assert!(lookup("eV").is_some());
@@ -46222,6 +46494,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("k_Hz").is_some());
         assert!(lookup("k").is_some());
         assert!(lookup("h").is_some());
@@ -46425,6 +46698,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("c").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("k_m").is_some());
@@ -46628,6 +46902,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("h").is_some());
@@ -46843,6 +47118,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -47047,6 +47323,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("cRinf").is_some());
         assert!(lookup("h").is_some());
@@ -47251,6 +47528,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh").is_some());
         assert!(lookup("h").is_some());
         assert!(lookup("cRinf").is_some());
@@ -47455,6 +47733,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Rinf").is_some());
         assert!(lookup("Eh").is_some());
         assert!(lookup("h").is_some());
@@ -47666,6 +47945,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("Rinf").is_some());
         assert!(lookup("Eh").is_some());
@@ -47874,6 +48154,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("Rinf").is_some());
         assert!(lookup("Eh").is_some());
@@ -48081,6 +48362,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("Rinf").is_some());
         assert!(lookup("Eh").is_some());
@@ -48282,6 +48564,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("Rinf").is_some());
@@ -48477,6 +48760,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_J").is_some());
@@ -48638,6 +48922,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -48698,6 +48983,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_J").is_some());
@@ -48850,6 +49136,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -48910,6 +49197,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_J").is_some());
@@ -49065,6 +49353,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -49125,6 +49414,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_J").is_some());
@@ -49273,6 +49563,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -49333,6 +49624,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_J").is_some());
@@ -49490,6 +49782,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -49550,6 +49843,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
@@ -49700,6 +49994,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -49760,6 +50055,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
@@ -49917,6 +50213,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -49977,6 +50274,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
@@ -50131,6 +50429,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -50191,6 +50490,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
@@ -50344,6 +50644,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("hbar_eV").is_none());
@@ -50404,6 +50705,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
@@ -50607,6 +50909,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
@@ -50801,6 +51104,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
         assert!(lookup("m_u_c2").is_some());
@@ -51000,6 +51304,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -51158,6 +51463,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("xu_Mo").is_some());
         assert!(lookup("au_I").is_some());
         assert!(lookup("au_rho").is_some());
@@ -51175,6 +51481,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
@@ -51236,6 +51543,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -51398,6 +51706,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("hbar").is_none());
@@ -51459,6 +51768,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -51666,6 +51976,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -51867,6 +52178,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -52068,6 +52380,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -52274,6 +52587,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -52488,6 +52802,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -52722,6 +53037,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -52958,6 +53274,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -53210,6 +53527,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -53462,6 +53780,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -53709,6 +54028,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("m_u").is_some());
@@ -53914,6 +54234,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("mu_e").is_some());
         assert!(lookup("Vm").is_some());
@@ -54116,6 +54437,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("mu_e").is_some());
         assert!(lookup("Vm").is_some());
@@ -54330,6 +54652,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("mu_e").is_some());
         assert!(lookup("Vm").is_some());
@@ -54549,6 +54872,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -54607,6 +54931,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -54666,6 +54991,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
         assert!(lookup("k_eV").is_some());
@@ -54850,6 +55176,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
@@ -54909,6 +55236,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -54968,6 +55296,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("NAe").is_some());
         assert!(lookup("NAk").is_some());
@@ -55150,6 +55479,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
         assert!(lookup("hbar").is_none());
@@ -55210,6 +55540,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -55269,6 +55600,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("p0").is_some());
         assert!(lookup("NAe").is_some());
@@ -55473,6 +55805,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -55533,6 +55866,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -55592,6 +55926,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("p0").is_some());
@@ -55796,6 +56131,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -55856,6 +56192,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -55915,6 +56252,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("n0").is_some());
         assert!(lookup("Vm").is_some());
         assert!(lookup("atm").is_some());
@@ -56115,6 +56453,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -56175,6 +56514,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -56234,6 +56574,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0").is_some());
         assert!(lookup("Vm").is_some());
@@ -56442,6 +56783,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Eh_eV").is_some());
@@ -56503,6 +56845,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("hbar").is_none());
@@ -56563,6 +56906,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -56622,6 +56966,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("Vm_atm").is_some());
         assert!(lookup("n0").is_some());
@@ -56815,6 +57160,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("sigma").is_none());
@@ -56879,6 +57225,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -56937,6 +57284,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -56996,6 +57344,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("Vm_atm").is_some());
@@ -57174,6 +57523,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -57232,6 +57582,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -57291,6 +57642,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
@@ -57375,6 +57727,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
         assert!(lookup("gn").is_some());
@@ -57575,6 +57928,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("S0/R").is_none());
         assert!(lookup("S0").is_none());
         assert!(lookup("gamma0h").is_some());
@@ -57638,6 +57992,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -57696,6 +58051,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -57755,6 +58111,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
@@ -57838,6 +58195,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("n0_atm").is_some());
@@ -58028,6 +58386,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -58086,6 +58445,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -58145,6 +58505,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
@@ -58227,6 +58588,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
         assert!(lookup("S0_R").is_some());
@@ -58414,6 +58776,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -58481,6 +58844,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -58539,6 +58903,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -58598,6 +58963,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("muB").is_some());
@@ -58679,6 +59045,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
         assert!(lookup("S0_R_atm").is_some());
@@ -58875,6 +59242,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -58949,6 +59317,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -59016,6 +59385,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -59074,6 +59444,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -59133,6 +59504,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("muB_eV").is_some());
@@ -59213,6 +59585,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
         assert!(lookup("c1L").is_some());
@@ -59423,6 +59796,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -59497,6 +59871,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -59564,6 +59939,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -59622,6 +59998,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -59681,6 +60058,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB_Hz").is_some());
@@ -59760,6 +60138,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
         assert!(lookup("c2").is_some());
@@ -59981,6 +60360,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -60055,6 +60435,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -60122,6 +60503,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -60180,6 +60562,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -60239,6 +60622,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_m").is_some());
@@ -60317,6 +60701,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
         assert!(lookup("KJ").is_some());
@@ -60540,6 +60925,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -60614,6 +61000,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -60681,6 +61068,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -60739,6 +61127,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -60798,6 +61187,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_K").is_some());
@@ -60875,6 +61265,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
         assert!(lookup("RK").is_some());
@@ -61110,6 +61501,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -61184,6 +61576,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -61251,6 +61644,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -61309,6 +61703,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -61368,6 +61763,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muN").is_some());
@@ -61444,6 +61840,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
         assert!(lookup("muB").is_some());
@@ -61686,6 +62083,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -61753,6 +62151,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -61811,6 +62210,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -61870,6 +62270,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
@@ -61945,6 +62346,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
         assert!(lookup("muB_eV").is_some());
@@ -62201,6 +62603,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -62268,6 +62671,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -62326,6 +62730,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -62385,6 +62790,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
@@ -62459,6 +62865,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
         assert!(lookup("muB_Hz").is_some());
@@ -62721,6 +63128,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -62788,6 +63196,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -62846,6 +63255,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -62905,6 +63315,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
@@ -62978,6 +63389,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
         assert!(lookup("muB_m").is_some());
@@ -63255,6 +63667,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -63322,6 +63735,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -63380,6 +63794,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -63439,6 +63854,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
@@ -63511,6 +63927,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
         assert!(lookup("muB_K").is_some());
@@ -63798,6 +64215,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -63865,6 +64283,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -63923,6 +64342,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -63982,6 +64402,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
@@ -64053,6 +64474,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
         assert!(lookup("muN").is_some());
@@ -64345,6 +64767,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -64412,6 +64835,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -64470,6 +64894,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -64529,6 +64954,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
@@ -64599,6 +65025,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_m").is_some());
         assert!(lookup("muN_eV").is_some());
@@ -64894,6 +65321,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -64961,6 +65389,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -65026,6 +65455,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -65093,6 +65523,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -65151,6 +65582,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -65210,6 +65642,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
@@ -65279,6 +65712,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("muN_K").is_some());
         assert!(lookup("muN_m").is_some());
@@ -65560,6 +65994,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
@@ -65626,6 +66061,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -65691,6 +66127,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -65758,6 +66195,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
@@ -65816,6 +66254,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -65875,6 +66314,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
@@ -65943,6 +66383,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_MHz").is_some());
         assert!(lookup("muN_K").is_some());
@@ -66223,6 +66664,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
@@ -66289,6 +66731,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
         assert!(lookup("b").is_none());
@@ -66356,6 +66799,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -66413,6 +66857,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -66472,6 +66917,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -66539,6 +66985,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
         assert!(lookup("muN_MHz").is_some());
@@ -66845,6 +67292,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
@@ -66913,6 +67361,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -66970,6 +67419,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -67029,6 +67479,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
@@ -67095,6 +67546,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
         assert!(lookup("gamma_p").is_some());
@@ -67404,6 +67856,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("g0p").is_none());
         assert!(lookup("sigma").is_none());
         assert!(lookup("c1").is_none());
@@ -67472,6 +67925,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -67529,6 +67983,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -67588,6 +68043,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -67653,6 +68109,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
         assert!(lookup("gamma_p_MHz").is_some());
@@ -67981,6 +68438,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -68038,6 +68496,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -68097,6 +68556,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
@@ -68161,6 +68621,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
         assert!(lookup("gamma0p").is_some());
@@ -68437,6 +68898,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
@@ -68499,6 +68961,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -68556,6 +69019,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -68615,6 +69079,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
@@ -68678,6 +69143,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
         assert!(lookup("gamma0p_MHz").is_some());
@@ -68874,6 +69340,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -68929,6 +69396,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
@@ -68991,6 +69459,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma_n_MHz").is_some());
         assert!(lookup("gamma_n").is_some());
@@ -69166,6 +69635,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -69221,6 +69691,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Eh_eV").is_some());
@@ -69282,6 +69753,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
         assert!(lookup("gamma0p").is_some());
@@ -69470,6 +69942,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
@@ -69530,6 +70003,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("gamma0h").is_some());
         assert!(lookup("gamma_e_MHz").is_some());
         assert!(lookup("gamma_e").is_some());
@@ -69692,6 +70166,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("E_h").is_none());
         assert!(lookup("hartree").is_none());
         assert!(lookup("hbar").is_none());
@@ -69749,6 +70224,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
@@ -69808,6 +70284,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Eh").is_some());
         assert!(lookup("gamma0h_MHz").is_some());
         assert!(lookup("eV").is_some());
@@ -69985,6 +70462,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hcRinf_eV").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
@@ -70043,6 +70521,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hcRinf").is_some());
         assert!(lookup("Eh_eV").is_some());
         assert!(lookup("eV").is_some());
@@ -70218,6 +70697,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Ar_e").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e_u").is_some());
@@ -70277,6 +70757,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("M_e").is_some());
         assert!(lookup("m_mu_u").is_some());
         assert!(lookup("m_p_u").is_some());
@@ -70452,6 +70933,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Ar_e").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("E_e").is_none());
@@ -70511,6 +70993,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
         assert!(lookup("m_e").is_some());
@@ -70567,6 +71050,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_mu_c2").is_some());
         assert!(lookup("Eh").is_some());
@@ -70743,6 +71227,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Ar_e").is_none());
         assert!(lookup("hbar").is_none());
         assert!(lookup("E_e").is_none());
@@ -70803,6 +71288,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_mu_c2_MeV").is_some());
         assert!(lookup("eV").is_some());
@@ -71011,6 +71497,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
@@ -71174,6 +71661,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("hbar").is_none());
         assert!(lookup("atomic-unit-of-mass").is_none());
         assert!(lookup("nu_p").is_some());
@@ -71229,6 +71717,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_e").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
@@ -71395,6 +71884,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("m_e").is_some());
@@ -71548,6 +72038,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("au_F").is_some());
         assert!(lookup("au").is_some());
         assert!(lookup("c").is_some());
@@ -71714,6 +72205,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("epsilon0").is_some());
         assert!(lookup("au_v").is_some());
         assert!(lookup("au").is_some());
@@ -71876,6 +72368,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_eps").is_some());
         assert!(lookup("au").is_some());
@@ -72036,6 +72529,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_p").is_some());
         assert!(lookup("au").is_some());
@@ -72242,8 +72736,73 @@ mod tests {
     }
 
     #[test]
+    fn iau2015_solar_irradiance_is_an_exact_ratio() {
+        let s = solar_irradiance();
+        let value = Ratio::int(1361);
+        assert_eq!(s.name, "S_sun");
+        assert_eq!(s.unit, "W m^{-2}");
+        assert_eq!(s.value, value);
+        assert_eq!(s.release, ConstantRelease::Iau2015);
+        assert_eq!(s.provenance.locator.table.as_deref(), Some("1"));
+        assert_eq!(
+            s.provenance.locator.dataset_range.as_deref(),
+            Some("S_sun^N = 1361")
+        );
+        assert_eq!(s.hash, solar_irradiance().hash);
+        assert_eq!(
+            s.hash,
+            Constant::new(
+                "S_sun",
+                value,
+                "W m^{-2}",
+                iau2015_b3_table_1("S_sun^N = 1361"),
+                ConstantRelease::Iau2015,
+            )
+            .hash
+        );
+        assert_ne!(s.hash, solar_luminosity().hash, "S_sun is not L_sun");
+        assert_ne!(s.hash, solar_radius().hash, "S_sun is not R_sun");
+        assert_ne!(s.hash, solar_gm().hash, "S_sun is not GM_sun");
+        assert_ne!(
+            s.provenance.source_hash,
+            solar_luminosity().provenance.source_hash,
+            "S_sun range is not the L_sun range"
+        );
+        assert_eq!(
+            solar_luminosity().hash.to_hex(),
+            "444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4",
+            "L_sun hash must stay pinned when S_sun is added"
+        );
+        assert_eq!(
+            helion_shielding_shift().hash.to_hex(),
+            "b364a92ff1578713cbdfb75c740edfed04acb3d047adafc240433b39aa55aab9",
+            "sigma_h hash must stay pinned when S_sun is added"
+        );
+        assert_eq!(
+            s.hash.to_hex(),
+            "26a5268a7775ede81697bfc65775a12c8ff7b504a70c27b2c00558c9e9a685cd"
+        );
+        assert!(s.provenance.recheck().is_ok());
+        assert!(lookup("Ssun").is_none());
+        assert!(lookup("S-sun").is_none());
+        assert!(lookup("TSI").is_none());
+        assert!(lookup("solar_constant").is_none());
+        assert!(lookup("solar_irradiance").is_none());
+        assert!(lookup("S0").is_none());
+        assert!(lookup("S_sun").is_some());
+        assert!(lookup("L_sun").is_some());
+        assert!(lookup("R_sun").is_some());
+        assert!(lookup("GM_sun").is_some());
+        assert!(lookup("sigma_h").is_some());
+        assert!(lookup("NAe").is_some());
+        assert!(lookup("S0_R").is_some());
+        assert!(lookup("sigma").is_none());
+        assert!(lookup("hbar").is_none());
+    }
+
+    #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 256);
+        assert_eq!(LEDGER.len(), 257);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -73504,6 +74063,11 @@ mod tests {
             lookup("L_sun").unwrap().hash.to_hex(),
             "444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4"
         );
+        assert_eq!(lookup("S_sun").unwrap().kind, "ratio");
+        assert_eq!(
+            lookup("S_sun").unwrap().hash.to_hex(),
+            "26a5268a7775ede81697bfc65775a12c8ff7b504a70c27b2c00558c9e9a685cd"
+        );
         assert!(lookup("hbar").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -73559,6 +74123,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("me/m_mu").is_none());
         assert!(lookup("mue").is_none());
         assert!(lookup("mu-e").is_none());
@@ -73739,6 +74304,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("mut_mup").is_none());
         assert!(lookup("mu_t/mup").is_none());
         assert!(lookup("mu-t-mup").is_none());
@@ -73876,6 +74442,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("m_alpha").is_some());
         assert!(lookup("m_alpha_u").is_some());
         assert!(lookup("malpha").is_none());
@@ -74040,6 +74607,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
         assert!(lookup("bar").is_none());
@@ -74218,6 +74786,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("a_0").is_none());
         assert!(lookup("Bohr").is_none());
         assert!(lookup("E_h").is_none());
@@ -74281,6 +74850,7 @@ mod tests {
         assert!(lookup("sigma_dp").is_some());
         assert!(lookup("sigma_tp").is_some());
         assert!(lookup("sigma_h").is_some());
+        assert!(lookup("S_sun").is_some());
         assert!(lookup("JK").is_none());
         assert!(lookup("J-K").is_none());
         assert!(lookup("joule_K").is_none());

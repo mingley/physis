@@ -7,9 +7,9 @@
 //! in tests; evaluators still use these `f64` Qty values, not that ledger.
 
 use physis_core::dim::{
-    Action, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency, HeatCapacity, Length,
-    LuminosityDensity, Mass, Momentum, Power, Pressure, RadiationConstant, StefanBoltzmann, Time,
-    Velocity,
+    Action, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency, HeatCapacity,
+    Irradiance, Length, LuminosityDensity, Mass, Momentum, Power, Pressure, RadiationConstant,
+    StefanBoltzmann, Time, Velocity,
 };
 use physis_core::qty::{ampere, joule, kg, meters, newton, pascal, seconds, Qty};
 
@@ -1102,7 +1102,8 @@ pub fn shielding_difference_t_p_in_ht() -> Qty<Dimensionless> {
 /// shielding-difference siblings. This Qty is not a certificate that it
 /// equals a reconstructed 1 − μ′_h/μ_h from sibling moments. The
 /// versioned ledger stores the one-sigma hull; this Qty is that centre.
-/// This is not the CODATA 2022 last-digit 7029. Faraday constant is NAe.
+/// This is not the CODATA 2022 last-digit 7029. Nominal solar irradiance is
+/// S_sun. Faraday constant is NAe.
 pub fn helion_shielding_shift() -> Qty<Dimensionless> {
     Qty::new(5.996_743e-5)
 }
@@ -2823,6 +2824,14 @@ pub fn solar_radius() -> Qty<Length> {
 /// This is `L_☉^N`, not a measured solar luminosity.
 pub fn solar_luminosity() -> Qty<Power> {
     Qty::new(3.828e26)
+}
+
+/// Nominal solar irradiance (IAU 2015 conversion ruler), W m^{-2}.
+///
+/// This is `S_☉^N`, not a measured total solar irradiance, not luminosity
+/// `L_sun`, and not Stefan-Boltzmann `sigma`. Faraday constant is NAe.
+pub fn solar_irradiance() -> Qty<Irradiance> {
+    Qty::new(1361.0)
 }
 
 /// Astronomical unit (IAU 2012 / BIPM table 8), metres. Exact.
@@ -13655,6 +13664,37 @@ mod tests {
             solar_luminosity().value(),
             3.828e26,
             "IAU 2015 L_sun^N is the exact conversion ruler"
+        );
+
+        let s = physis_constants::solar_irradiance();
+        assert_eq!(
+            s.value,
+            Ratio::int(1361),
+            "ledger S_sun is the IAU 2015 integer Ratio"
+        );
+        assert_eq!(
+            solar_irradiance().value(),
+            s.value.to_f64(),
+            "S_sun is an integer Ratio; Qty matches to_f64"
+        );
+        assert_eq!(
+            solar_irradiance().value(),
+            1361.0,
+            "IAU 2015 S_sun^N is the exact conversion ruler"
+        );
+        assert_eq!(physis_constants::lookup("S_sun").unwrap().kind, "ratio");
+        assert!(
+            physis_constants::lookup("TSI").is_none(),
+            "TSI is not a ledger name; the live name is S_sun"
+        );
+        assert!(
+            physis_constants::lookup("S0").is_none(),
+            "S0 is not a second name for S_sun"
+        );
+        assert_ne!(
+            physis_constants::solar_irradiance().hash,
+            physis_constants::solar_luminosity().hash,
+            "S_sun is not L_sun"
         );
 
         let ev = physis_constants::electron_volt();

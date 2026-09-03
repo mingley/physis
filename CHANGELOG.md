@@ -80,6 +80,30 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Constants
 
+- **IAU 2015 nominal solar irradiance is an exact Ratio.**
+  `physis-constants` versions `S_sun` as `1361` W m^{-2} from Prša et
+  al., Astron. J. 152, 41 table 1 (IAU 2015 Resolution B3). That is a
+  conversion ruler, not a measured total solar irradiance, not `L_sun`,
+  and not P3N. `Ssun`, `S-sun`, `TSI`, `solar_constant`, `solar_irradiance`,
+  and `S0` are not second names. `physis_model` `solar_irradiance()` Qty
+  locksteps via integer `to_f64`. Adding `S_sun` to LEDGER changes the
+  ledger bundle pin. Theories still evaluate with `f64` Qty. That is not
+  a kernel proof, not Canonical, not P4. Encode pins unchanged.
+  Unique-vacuum graph id unchanged. P3N count stays 4.
+  Verified: `S_sun` hash
+  26a5268a7775ede81697bfc65775a12c8ff7b504a70c27b2c00558c9e9a685cd;
+  node
+  9c6333c119483f19d558659562d5e191e7466f8b1390f8bb475b3e724ad14201;
+  ledger node
+  ba3c73f68c1fc7bbd4ab886904b57b7a527872b401bf91f251664b65f65d47d3.
+  `sigma_h` hash
+  b364a92ff1578713cbdfb75c740edfed04acb3d047adafc240433b39aa55aab9,
+  `L_sun` hash
+  444f85fba501ddec8fb08ba403c1b869cc78a2284df5466a56a617043807bbc4, and
+  `Rinf` hash
+  fe5eb033872921d3fde70b701a5b1f6369cd9cde9063a995c0ee0ebc46222090
+  unchanged.
+
 - **CODATA 2018 helion shielding shift is a one-sigma Interval.**
   `physis-constants` versions `sigma_h` as the CODATA 2018 one-sigma hull
   `5.996743(10)×10^{-5}` from the NIST 2018 complete listing (JPCRD 50, 033105
