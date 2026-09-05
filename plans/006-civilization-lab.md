@@ -453,7 +453,7 @@ consistency; they do not require the executable gates in steps 2-7.
 
 - [x] C1.1 SR mass shell from versioned constants
 - [x] C1.2 SR interval enclosure
-- [ ] C1.3 gravity enclosure
+- [x] C1.3 gravity enclosure
 - [ ] C1.4 `ħ` stored as listing
 - [ ] C2.1 kinematic receipt wiring
 - [ ] C2.2 non-leftover Faraday/DEC-Maxwell or documented skip

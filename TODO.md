@@ -16,7 +16,7 @@ Read [AGENTS.md](AGENTS.md), [the research workflow](docs/RESEARCH-LAB.md),
 this file is the dependency-ordered pickup queue and status index.
 The older roadmap is a history of slices, not evidence that the lab is done.
 
-**Next implementation task: C1.3.** C7.1 is the
+**Next implementation task: C2.1.** C7.1 is the
 first bounded agentic vertical slice, not permission to build a swarm.
 All unchecked tasks are unassigned. Select the first task whose dependencies
 are complete, state its ID and owned files in the work handoff, and keep one
@@ -48,7 +48,7 @@ to `crates/`; each task also updates its affected docs and honesty tests.
 |---|---|---|---|
 | [x] **C1.1** Versioned inputs in SR mass shell | None | `physis-theory/src/special_relativity.rs`, `physis-constants` | Read existing `c` and `m_e` entries; expose their identities and uncertainties in evidence. Galilean control still fails; no trust promotion or new table row. |
 | [x] **C1.2** Defensible SR numerical bounds | C1.1 | `physis-numeric`, SR evaluator | State the numerical domain and error sources. A threshold-straddling result is unresolved; interval overlap alone is not proof of equality. Exact catalog identity remains distinct from its floating-point evaluation. |
-| [ ] **C1.3** Gravity error budget | C1.2 | `physis-theory/src/gravity.rs`, `physis-numeric` | Separate input, rounding, and integration/truncation error for deflection and perihelion. Coarse steps cannot become certified by wrapping a point estimate in an interval. |
+| [x] **C1.3** Gravity error budget | C1.2 | `physis-theory/src/gravity.rs`, `physis-numeric` | Separate input, rounding, and integration/truncation error for deflection and perihelion. Coarse steps cannot become certified by wrapping a point estimate in an interval. |
 | [ ] **C2.1** Live kinematic receipt binding | C1.2 | `physis-agent/src/lab.rs`, SR tests | In one journal, prove/why bind interval, composition, and mass-shell receipts to their exact statements. A changed assumption/encoding cannot borrow the old receipt. Do not claim a polynomial proves the whole numerical evaluator. |
 | [ ] **C3.1** Measured light deflection | C1.3 | `physis-data`, `physis-provenance`, gravity | Register a precisely located, licensed measurement with units and uncertainty semantics. Compare both GR and Soldner under the same predeclared rule; report the data-derived outcome, not a hardcoded winner. |
 | [ ] **C7.1** One gap-driven research step | C2.1, C3.1 | `physis-agent/src/lab.rs`, `role.rs`, `protocol.rs` | Select one eligible gap with a stable tie-break; run an allowed existing operation or emit an explicit blocked result. A non-catalog missing-dataset case does useful work without trying to prove it. No unbounded loop. See spec 022. |

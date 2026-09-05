@@ -12,6 +12,22 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Theory
 
+- **Gravity deflection and perihelion name an RK4 error budget.** Default
+  Newton/GR solar cells still Hold/Fail against the *computed* Schwarzschild
+  vs Soldner integrals (half-angle, 1.75″ Eddington, 43″ Mercury remainder).
+  Evidence now separates input (IAU `GM_sun` / `R_sun` exact Ratio conversion
+  rulers, not measured solar mass/radius; Mercury `a,e` point Qty, no hull,
+  not a dataset), rounding (`f64` RK4 / `NumericTier::Approximate`), and
+  integration/truncation (light `n=80000`, `h=π/(2n)`; Mercury `n=120000`,
+  `h=2π/n`). The RK4 remainder is not a certificate. A coarse step whose
+  truncation hull overlaps the relative 3% / 1.5″ decision band without
+  containment is `Undecidable` + `Inconclusive` (`numeric unresolved`), not
+  a theorem and not `CertifiedNumeric`. Wrapping `Interval::point` of a
+  coarse sample does not mint P3N. Schwarzschild IR still flips the
+  half-angle; Yukawa still fails it via `K_1` (not RK4-certified).
+  Derivation stays executed. P3N count stays 4. No hashed deflection
+  dataset (C3.1). Unique-vacuum encodings unchanged. Encode pins unchanged.
+
 - **Special-relativity interval and mass-shell samples use a residual-vs-band
   classifier.** Naked `|Δ| ≤ 1e-9 |scale|` is gone on the Lorentz/Galilean
   branches. The 1+1 Minkowski sample (`β = 0.6`, event `(c·10 ns, 2 m)` /

@@ -70,7 +70,18 @@ Shared RK4 on `u'' + u = rhs(u)` (`u = 1/r`):
 Light: integrate from periapsis until `u = 0`; deflection is
 `2 (φ_∞ − π/2)`. Mercury: next perihelion minus `2π`, times orbits per
 Julian century, in arcseconds. Both are checked against `2 GM/(c² R)`,
-`4 GM/(c² R)`, and `6π GM/(c² a (1−e²))`.
+`4 GM/(c² R)`, and `6π GM/(c² a (1−e²))`. Default RK4 uses
+`n = 80_000` (`h = π/(2n)`) for light and `n = 120_000` (`h = 2π/n`)
+for Mercury. Evidence names three error sources: IAU `GM_sun` / `R_sun`
+exact Ratio conversion rulers (not measured solar mass/radius); Mercury
+`a,e` point Qty with no hull (not a dataset); `f64` RK4 /
+`NumericTier::Approximate`; and that step count. The RK4 remainder is
+**not** a certificate. A coarse `n` whose truncation hull overlaps the
+relative 3% Eddington band or the 1.5″ Mercury band without containment
+is `Undecidable` (`numeric unresolved`), not a theorem and not
+`CertifiedNumeric`. Wrapping a point estimate in an interval does not
+certify the integral. 1.75″ and 42.98″ remain textbook model-internal
+targets, not a hashed dataset.
 
 `GM_☉` is the IAU standard gravitational parameter, so `GM/c²` is a typed
 `Qty<Length>` (half the Schwarzschild radius) without folding in the
@@ -92,8 +103,11 @@ physis set general-relativity dim 5   # solar tests become inapplicable
 - The 43″ is the *remainder* after Newtonian perturbations of the other
   planets (~531″), which this lab does not integrate. The theorem is that
   the Schwarzschild geodesic supplies that remainder, while a 1/r² ellipse
-  supplies none.
-- Weak-field RK4, not a full numerical relativity evolution.
+  supplies none. 43″/century is the planetary remainder this encoding
+  compares to, not a hashed dataset (that is C3.1 / C3.2).
+- Weak-field RK4, not a full numerical relativity evolution. The RK4
+  remainder is not a certificate: a coarse-step point estimate wrapped in
+  an interval is not `CertifiedNumeric`.
 - Einstein 1911 (equivalence only) agrees with Newton on light; 1915 spatial
   curvature doubles it. This lab's "Newton" column is that half-angle.
 - The Schwarzschild Binet fork is a Newton IR mutation, not an install of

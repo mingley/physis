@@ -14,7 +14,14 @@
 //! Both numbers are *integrated*, not tabulated: a shared RK4 stepper on the
 //! Binet equation `u'' + u = rhs(u)`. Newtonian light uses `rhs = (GM/c²)/b²`;
 //! GR light uses `rhs = 3 (GM/c²) u²`. Planets use `GM/h²` with or without
-//! the GR term.
+//! the GR term. Default steps are `n = 80_000` (light, `h = π/(2n)`) and
+//! `n = 120_000` (Mercury, `h = 2π/n`). Evidence names input (IAU `GM_sun` /
+//! `R_sun` exact Ratio conversion rulers; Mercury `a,e` point Qty), rounding
+//! (`f64` RK4 / [`physis_numeric::NumericTier::Approximate`]), and
+//! integration/truncation. The RK4 remainder is not a certificate: wrapping
+//! a coarse point estimate in an interval is not `CertifiedNumeric`. A
+//! truncation hull that overlaps the 3% / 1.5″ decision band without
+//! containment is `Undecidable` (`numeric unresolved`), not a theorem.
 //!
 //! The inverse-square rhs lives on the IR package. A Schwarzschild
 //! `3 (GM/c²) u²` term is a package mutation (`add-schwarzschild`), not a
@@ -34,12 +41,13 @@ use physis_core::claim::{Claim, ClaimClass, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobSpec, KnobValue, Knobbed};
-use physis_core::{Length, Qty};
+use physis_core::{EmpiricalStatus, Length, Qty};
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{
     mercury_eccentricity, mercury_orbits_per_century, mercury_semi_major, solar_gm, solar_radius, C,
 };
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
+use physis_numeric::{residual_relation, Interval, NumericTier, Ratio, ResidualRelation};
 
 use crate::critique::{report_from_rows, ExperimentReport};
 use crate::framework::Theory;
@@ -58,6 +66,14 @@ pub fn gravity_rows() -> [&'static str; 3] {
 }
 
 const ARCSEC_PER_RAD: f64 = 180.0 / PI * 3600.0;
+/// Default RK4 steps for grazing light (`h = π/(2n)`).
+pub(crate) const DEFAULT_LIGHT_STEPS: usize = 80_000;
+/// Default RK4 steps for Mercury (`h = 2π/n`).
+pub(crate) const DEFAULT_MERCURY_STEPS: usize = 120_000;
+/// Snap for relative residuals (Eddington 3% band). Not a certificate.
+const REL_SNAP: i128 = 1_000_000;
+/// Snap for arcsecond residuals (Mercury 1.5″ band). Not a certificate.
+const ARCSEC_SNAP: i128 = 1_000;
 /// Eddington's GR target, arcseconds (grazing Sun).
 pub(crate) const EDDINGTON_ARCSEC: f64 = 1.75;
 /// Observed GR perihelion remainder for Mercury, arcseconds per century.
@@ -155,9 +171,10 @@ fn yukawa_newton_half(claim: &Claim) -> Verdict {
         claim,
         "Yukawa e^{-μr}/r suppresses the inverse-square Soldner angle",
     )
-    .with_evidence([format!(
-        "μR K_1(μR) = {factor:.6} (μR = {x}); 1 − μR K_1 = {residual:.6}"
-    )])
+    .with_evidence([
+        format!("μR K_1(μR) = {factor:.6} (μR = {x}); 1 − μR K_1 = {residual:.6}"),
+        "Yukawa Soldner is the K_1 series, not RK4-certified".to_string(),
+    ])
 }
 
 /// One RK4 step of `u'' + u = rhs(u)` with `y = (u, u')`.
@@ -184,11 +201,14 @@ pub fn solar_m() -> Qty<Length> {
 
 /// Integrate a light ray from periapsis (`u = 1/b`, `u' = 0`) until `u = 0`.
 /// The deflection is `2 (φ_asymptote − π/2)`.
-fn light_deflection_rad(m: f64, b: f64, gr: bool) -> f64 {
+///
+/// `n` is the number of RK4 steps in `π/2` of true anomaly
+/// (`h = π/(2n)`). Default production value is [`DEFAULT_LIGHT_STEPS`].
+fn light_deflection_rad(m: f64, b: f64, gr: bool, n: usize) -> f64 {
     let mut phi = 0.0_f64;
     let mut u = 1.0 / b;
     let mut v = 0.0_f64;
-    let n = 80_000_usize;
+    let n = n.max(1);
     let h = FRAC_PI_2 / (n as f64);
     let rhs = |uu: f64| {
         if gr {
@@ -215,14 +235,17 @@ fn light_deflection_rad(m: f64, b: f64, gr: bool) -> f64 {
 }
 
 /// Extra perihelion advance per orbit, radians (0 for a closed Newtonian ellipse).
-fn perihelion_advance_rad(m: f64, a: f64, e: f64, gr: bool) -> f64 {
+///
+/// `n` is the number of RK4 steps in `2π` of true anomaly (`h = 2π/n`).
+/// Default production value is [`DEFAULT_MERCURY_STEPS`].
+fn perihelion_advance_rad(m: f64, a: f64, e: f64, gr: bool, n: usize) -> f64 {
     let p = a * (1.0 - e * e);
     let gm_h2 = 1.0 / p; // GM/h² = 1/(a(1−e²)), in 1/metres
     let mut phi = 0.0_f64;
     // Perihelion of the Kepler ellipse: r_min = a(1−e), so u = 1/(a(1−e)).
     let mut u = 1.0 / (a * (1.0 - e));
     let mut v = 0.0_f64;
-    let n = 120_000_usize;
+    let n = n.max(1);
     let h = (2.0 * PI) / (n as f64);
     let rhs = |uu: f64| {
         let kepler = gm_h2;
@@ -254,22 +277,35 @@ fn perihelion_advance_rad(m: f64, a: f64, e: f64, gr: bool) -> f64 {
     0.0
 }
 
-/// Grazing solar deflection in radians.
+/// Grazing solar deflection in radians at the default light step count.
 pub fn solar_deflection_rad(gr: bool) -> f64 {
-    light_deflection_rad(solar_m().value(), solar_radius().value(), gr)
+    solar_deflection_rad_n(gr, DEFAULT_LIGHT_STEPS)
 }
 
-/// Grazing solar deflection in arcseconds.
+fn solar_deflection_rad_n(gr: bool, n: usize) -> f64 {
+    light_deflection_rad(solar_m().value(), solar_radius().value(), gr, n)
+}
+
+/// Grazing solar deflection in arcseconds at the default light step count.
 pub fn solar_deflection_arcsec(gr: bool) -> f64 {
-    solar_deflection_rad(gr) * ARCSEC_PER_RAD
+    solar_deflection_arcsec_n(gr, DEFAULT_LIGHT_STEPS)
 }
 
-/// Mercury extra perihelion, arcseconds per century.
+/// Grazing solar deflection in arcseconds at an explicit light step count.
+pub(crate) fn solar_deflection_arcsec_n(gr: bool, n: usize) -> f64 {
+    solar_deflection_rad_n(gr, n) * ARCSEC_PER_RAD
+}
+
+/// Mercury extra perihelion, arcseconds per century, at the default step count.
 pub fn mercury_arcsec_per_century(gr: bool) -> f64 {
+    mercury_arcsec_per_century_n(gr, DEFAULT_MERCURY_STEPS)
+}
+
+fn mercury_arcsec_per_century_n(gr: bool, n: usize) -> f64 {
     let m = solar_m().value();
     let a = mercury_semi_major().value();
     let e = mercury_eccentricity().value();
-    perihelion_advance_rad(m, a, e, gr) * mercury_orbits_per_century() * ARCSEC_PER_RAD
+    perihelion_advance_rad(m, a, e, gr, n) * mercury_orbits_per_century() * ARCSEC_PER_RAD
 }
 
 /// Analytic GR perihelion: `6π GM / (c² a (1−e²))` per orbit, in arcsec/century.
@@ -285,8 +321,119 @@ fn solar_ready(dim: u8) -> bool {
     dim == 4
 }
 
+fn analytic_two_gm_arcsec() -> f64 {
+    2.0 * solar_m().value() / solar_radius().value() * ARCSEC_PER_RAD
+}
+
+fn analytic_four_gm_arcsec() -> f64 {
+    4.0 * solar_m().value() / solar_radius().value() * ARCSEC_PER_RAD
+}
+
+/// Diagnostic RK4 truncation half-width: one `h^4` radian in the Binet
+/// independent variable, converted to the observable. This is the RK4
+/// global-order scaling, **not** a remainder certificate.
+fn light_truncation_arcsec(n: usize) -> f64 {
+    let h = FRAC_PI_2 / (n.max(1) as f64);
+    h.powi(4) * ARCSEC_PER_RAD
+}
+
+fn mercury_truncation_arcsec(n: usize) -> f64 {
+    let h = (2.0 * PI) / (n.max(1) as f64);
+    h.powi(4) * mercury_orbits_per_century() * ARCSEC_PER_RAD
+}
+
+fn snapped_hull(center: f64, halfwidth: f64, den: i128) -> Interval {
+    let c = Ratio::nearest(center, den);
+    let mut w = Ratio::nearest(halfwidth.abs(), den);
+    if w.is_zero() {
+        w = Ratio::new(1, den);
+    }
+    Interval::new(c - w, c + w)
+}
+
+fn relative_residual_hull(value: f64, target: f64, abs_halfwidth: f64) -> Interval {
+    let scale = target.abs().max(1e-12);
+    snapped_hull((value - target) / scale, abs_halfwidth / scale, REL_SNAP)
+}
+
+fn arcsec_residual_hull(value: f64, target: f64, halfwidth: f64) -> Interval {
+    snapped_hull(value - target, halfwidth, ARCSEC_SNAP)
+}
+
+fn eddington_rel_band() -> Interval {
+    Interval::new(Ratio::new(-3, 100), Ratio::new(3, 100))
+}
+
+fn mercury_abs_band() -> Interval {
+    Interval::new(Ratio::new(-3, 2), Ratio::new(3, 2))
+}
+
+fn solar_error_budget_evidence(n_light: usize, n_mercury: usize) -> Vec<String> {
+    let gm = physis_constants::lookup("GM_sun").expect("GM_sun is on LEDGER");
+    let rsun = physis_constants::lookup("R_sun").expect("R_sun is on LEDGER");
+    vec![
+        format!(
+            "input: IAU GM_sun exact Ratio conversion ruler (not measured solar mass); {} {} hash {}",
+            gm.kind,
+            gm.value,
+            gm.hash.to_hex()
+        ),
+        format!(
+            "input: IAU R_sun exact Ratio conversion ruler (not measured solar radius); {} {} hash {}",
+            rsun.kind,
+            rsun.value,
+            rsun.hash.to_hex()
+        ),
+        "input: Mercury a,e are point Qty, no hull, not a dataset".into(),
+        format!(
+            "rounding: f64 RK4 / NumericTier::Approximate ({}); not a certificate",
+            NumericTier::Approximate.as_str()
+        ),
+        format!(
+            "integration/truncation: light n={n_light}, h=π/(2n); Mercury n={n_mercury}, h=2π/n; RK4 remainder is not a certificate"
+        ),
+    ]
+}
+
+fn decide_truncation_residual(
+    claim: &Claim,
+    relation: ResidualRelation,
+    residual: Interval,
+    hold_summary: impl Into<String>,
+    fail_summary: impl Into<String>,
+    evidence: impl IntoIterator<Item = String>,
+) -> Verdict {
+    let v = match relation {
+        ResidualRelation::Contained => Verdict::holds(claim, hold_summary),
+        ResidualRelation::Disjoint => Verdict::fails(claim, fail_summary),
+        ResidualRelation::OverlapsWithoutContainment => Verdict::undecidable(
+            claim,
+            "truncation residual overlaps the decision band without containment; overlap is not equality",
+        )
+        .with_empirical(EmpiricalStatus::Inconclusive),
+    };
+    v.with_evidence(evidence)
+        .with_interval_enclosure(residual.lo.to_string(), residual.hi.to_string())
+}
+
 /// Evaluate the three solar-system claims for Newton (`gr = false`) or GR.
 pub fn eval_solar(gr: bool, dim: u8, claim: &Claim) -> Verdict {
+    eval_solar_with_steps(gr, dim, claim, DEFAULT_LIGHT_STEPS, DEFAULT_MERCURY_STEPS)
+}
+
+/// Solar-system evaluator with explicit RK4 step counts.
+///
+/// Production [`eval_solar`] uses [`DEFAULT_LIGHT_STEPS`] / [`DEFAULT_MERCURY_STEPS`].
+/// A coarse `n` is a truncation control, not a knob: overlap of the diagnostic
+/// remainder hull with the 3% / 1.5″ band without containment is `Undecidable`,
+/// never [`physis_core::DerivationAssurance::CertifiedNumeric`].
+pub(crate) fn eval_solar_with_steps(
+    gr: bool,
+    dim: u8,
+    claim: &Claim,
+    n_light: usize,
+    n_mercury: usize,
+) -> Verdict {
     if !solar_ready(dim) {
         return Verdict::inapplicable(
             claim,
@@ -295,67 +442,80 @@ pub fn eval_solar(gr: bool, dim: u8, claim: &Claim) -> Verdict {
     }
     match claim.id_str() {
         NEWTON_HALF => {
-            let delta = solar_deflection_arcsec(gr);
-            let newton = solar_deflection_arcsec(false);
-            // Compare against the computed Newtonian integral, not a table.
+            let delta = solar_deflection_arcsec_n(gr, n_light);
+            let newton = solar_deflection_arcsec_n(false, n_light);
+            let mut evidence = solar_error_budget_evidence(n_light, n_mercury);
+            // Compare against the computed Newtonian integral at the same n,
+            // not a table. Truncation is shared, so this is not a remainder
+            // certificate of either integral.
             if (delta - newton).abs() / newton.max(1e-12) < 0.02 && newton > 0.5 {
-                Verdict::holds(claim,
-                    "grazing deflection is the Newtonian 2 GM/(c² R)",
-                )
-                .with_evidence([format!(
+                evidence.push(format!(
                     "δ = {delta:.4}\" (Newtonian integral {newton:.4}\"; analytic 2GM/c²R = {:.4}\")",
-                    2.0 * solar_m().value() / solar_radius().value() * ARCSEC_PER_RAD
-                )])
+                    analytic_two_gm_arcsec()
+                ));
+                Verdict::holds(claim, "grazing deflection is the Newtonian 2 GM/(c² R)")
+                    .with_evidence(evidence)
             } else {
+                evidence.push(format!(
+                    "δ = {delta:.4}\" vs Newtonian {newton:.4}\" (GR analytic 4GM/c²R = {:.4}\")",
+                    analytic_four_gm_arcsec()
+                ));
                 Verdict::fails(
                     claim,
                     "deflection is not the Newtonian half-angle (spatial curvature doubles it)",
                 )
-                .with_evidence([format!(
-                    "δ = {delta:.4}\" vs Newtonian {newton:.4}\" (GR analytic 4GM/c²R = {:.4}\")",
-                    4.0 * solar_m().value() / solar_radius().value() * ARCSEC_PER_RAD
-                )])
+                .with_evidence(evidence)
             }
         }
         EDDINGTON => {
-            let delta = solar_deflection_arcsec(gr);
-            if (delta - EDDINGTON_ARCSEC).abs() / EDDINGTON_ARCSEC < 0.03 {
-                Verdict::holds(
-                    claim,
-                    "grazing solar deflection is 1.75″ (Eddington / Schwarzschild)",
-                )
-                .with_evidence([format!(
-                    "δ = {delta:.4}\" (analytic 4GM/c²R = {:.4}\")",
-                    4.0 * solar_m().value() / solar_radius().value() * ARCSEC_PER_RAD
-                )])
-            } else {
-                Verdict::fails(
-                    claim,
-                    "grazing deflection is not 1.75″ (Newtonian / 1911 half-angle)",
-                )
-                .with_evidence([format!(
-                    "δ = {delta:.4}\" (Eddington 1.75\"; Newtonian 2GM/c²R = {:.4}\")",
-                    2.0 * solar_m().value() / solar_radius().value() * ARCSEC_PER_RAD
-                )])
-            }
+            let delta = solar_deflection_arcsec_n(gr, n_light);
+            let residual =
+                relative_residual_hull(delta, EDDINGTON_ARCSEC, light_truncation_arcsec(n_light));
+            let band = eddington_rel_band();
+            let relation = residual_relation(residual, band);
+            let mut evidence = solar_error_budget_evidence(n_light, n_mercury);
+            evidence.push(format!(
+                "δ = {delta:.4}\" (analytic 4GM/c²R = {:.4}\"; Newtonian 2GM/c²R = {:.4}\")",
+                analytic_four_gm_arcsec(),
+                analytic_two_gm_arcsec()
+            ));
+            evidence.push(format!(
+                "truncation residual hull {residual} vs relative 3% Eddington band {band} ({relation}); overlap is not equality"
+            ));
+            decide_truncation_residual(
+                claim,
+                relation,
+                residual,
+                "grazing solar deflection is 1.75″ (Eddington / Schwarzschild)",
+                "grazing deflection is not 1.75″ (Newtonian / 1911 half-angle)",
+                evidence,
+            )
         }
         MERCURY_PERIHELION => {
-            let extra = mercury_arcsec_per_century(gr);
+            let extra = mercury_arcsec_per_century_n(gr, n_mercury);
             let analytic = mercury_analytic_arcsec_per_century();
-            if (extra - MERCURY_ARCSEC_PER_CENTURY).abs() < 1.5 {
-                Verdict::holds(claim, "Mercury's extra perihelion is 43″ per century")
-                    .with_evidence([format!(
-                    "Δω = {extra:.2}\" / century (analytic 6π GM/(c²a(1−e²)) = {analytic:.2}\"/cy)"
-                )])
-            } else {
-                Verdict::fails(
-                    claim,
-                    "inverse-square ellipses do not precess; the 43″ remainder is missing",
-                )
-                .with_evidence([format!(
-                    "Δω = {extra:.3}\" / century (GR analytic {analytic:.2}\"/cy)"
-                )])
-            }
+            let residual = arcsec_residual_hull(
+                extra,
+                MERCURY_ARCSEC_PER_CENTURY,
+                mercury_truncation_arcsec(n_mercury),
+            );
+            let band = mercury_abs_band();
+            let relation = residual_relation(residual, band);
+            let mut evidence = solar_error_budget_evidence(n_light, n_mercury);
+            evidence.push(format!(
+                "Δω = {extra:.2}\" / century (analytic 6π GM/(c²a(1−e²)) = {analytic:.2}\"/cy)"
+            ));
+            evidence.push(format!(
+                "truncation residual hull {residual} vs 1.5″ Mercury band {band} ({relation}); overlap is not equality"
+            ));
+            decide_truncation_residual(
+                claim,
+                relation,
+                residual,
+                "Mercury's extra perihelion is 43″ per century",
+                "inverse-square ellipses do not precess; the 43″ remainder is missing",
+                evidence,
+            )
         }
         _ => Verdict::inapplicable(claim, "claim not made by a solar-system gravity object"),
     }
@@ -568,9 +728,11 @@ pub fn gravity() -> ExperimentReport {
          standing Newtonian theory fail those theorems, while Schwarzschild \
          geodesics hold them?",
         "Both numbers are RK4 integrals of the Binet equation, checked against \
-         2 GM/(c² R), 4 GM/(c² R), and 6π GM/(c² a (1−e²)). Verdicts are \
-         internal to the encoding. The 43″ is the *remainder* after Newtonian \
-         planetary perturbations, which this lab does not integrate.",
+         2 GM/(c² R), 4 GM/(c² R), and 6π GM/(c² a (1−e²)). Evidence names \
+         input, rounding, and truncation; the RK4 remainder is not a \
+         certificate. Verdicts are internal to the encoding. The 43″ is the \
+         *remainder* after Newtonian planetary perturbations, which this lab \
+         does not integrate.",
         vec![
             "`gr.newton-half-deflection` is the standing Soldner/1911 claim: it holds for Newton and fails for GR (spatial curvature doubles the angle).".into(),
             "`gr.eddington-deflection` and `gr.mercury-perihelion` are the observations Newtonian gravity fails.".into(),
@@ -591,7 +753,8 @@ pub fn gravity() -> ExperimentReport {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
-    use physis_core::Dimensionless;
+    use physis_core::{DerivationAssurance, Dimensionless, EmpiricalStatus};
+    use physis_numeric::{Interval, Ratio};
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
@@ -968,6 +1131,178 @@ mod tests {
             high_d.get("dim").unwrap(),
             KnobValue::UInt(5),
             "dim stays on GR"
+        );
+    }
+
+    fn solar_claim(id: &str) -> Claim {
+        solar_claims()
+            .into_iter()
+            .find(|c| c.id_str() == id)
+            .unwrap()
+    }
+
+    fn evidence_blob(v: &Verdict) -> String {
+        v.evidence.join("\n")
+    }
+
+    fn assert_solar_error_budget(blob: &str, n_light: usize, n_mercury: usize) {
+        assert!(
+            blob.contains("GM_sun") && blob.contains("R_sun"),
+            "input must name IAU GM_sun and R_sun: {blob}"
+        );
+        assert!(
+            blob.contains("conversion ruler") || blob.contains("conversion rulers"),
+            "GM_sun/R_sun are conversion rulers, not measured mass/radius: {blob}"
+        );
+        assert!(
+            blob.contains("not measured"),
+            "IAU rulers are not measured solar mass/radius: {blob}"
+        );
+        assert!(
+            blob.contains("exact Ratio"),
+            "GM_sun/R_sun are exact Ratio rulers: {blob}"
+        );
+        assert!(
+            blob.contains("Mercury")
+                && blob.contains("point")
+                && blob.contains("no hull")
+                && blob.contains("not a dataset"),
+            "Mercury a,e are point Qty, no hull, not a dataset: {blob}"
+        );
+        assert!(
+            blob.contains("rounding")
+                && blob.contains("f64")
+                && (blob.contains("Approximate") || blob.contains("approximate")),
+            "rounding must name f64 RK4 / NumericTier::Approximate: {blob}"
+        );
+        assert!(
+            blob.contains(&format!("n={n_light}")) && blob.contains("π/(2n)"),
+            "light truncation must name n={n_light}, h=π/(2n): {blob}"
+        );
+        assert!(
+            blob.contains(&format!("n={n_mercury}")) && blob.contains("2π/n"),
+            "Mercury truncation must name n={n_mercury}, h=2π/n: {blob}"
+        );
+        assert!(
+            blob.contains("not a certificate"),
+            "RK4 remainder is not a certificate: {blob}"
+        );
+    }
+
+    fn assert_not_certified(v: &Verdict) {
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_ne!(v.empirical(), EmpiricalStatus::Compatible);
+    }
+
+    #[test]
+    fn default_solar_evaluations_name_input_rounding_and_truncation() {
+        let newton = NewtonianGravity::default();
+        let gr = GeneralRelativity::default();
+        for (theory, id) in [
+            (&newton as &dyn Theory, NEWTON_HALF),
+            (&newton, EDDINGTON),
+            (&newton, MERCURY_PERIHELION),
+            (&gr, NEWTON_HALF),
+            (&gr, EDDINGTON),
+            (&gr, MERCURY_PERIHELION),
+        ] {
+            let c = theory
+                .claims()
+                .into_iter()
+                .find(|c| c.id_str() == id)
+                .unwrap();
+            let v = theory.evaluate(&c);
+            assert_not_certified(&v);
+            assert_solar_error_budget(
+                &evidence_blob(&v),
+                DEFAULT_LIGHT_STEPS,
+                DEFAULT_MERCURY_STEPS,
+            );
+        }
+        let n = NewtonianGravity::default();
+        assert_eq!(verdict(&n, NEWTON_HALF), VerdictKind::Holds);
+        assert_eq!(verdict(&n, EDDINGTON), VerdictKind::Fails);
+        assert_eq!(verdict(&n, MERCURY_PERIHELION), VerdictKind::Fails);
+        let g = GeneralRelativity::default();
+        assert_eq!(verdict(&g, NEWTON_HALF), VerdictKind::Fails);
+        assert_eq!(verdict(&g, EDDINGTON), VerdictKind::Holds);
+        assert_eq!(verdict(&g, MERCURY_PERIHELION), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn coarse_rk4_step_is_not_certified_numeric() {
+        let eddington = solar_claim(EDDINGTON);
+        let mercury = solar_claim(MERCURY_PERIHELION);
+        let newton_half = solar_claim(NEWTON_HALF);
+
+        let coarse_gr_light = eval_solar_with_steps(true, 4, &eddington, 50, DEFAULT_MERCURY_STEPS);
+        assert_not_certified(&coarse_gr_light);
+        assert_solar_error_budget(&evidence_blob(&coarse_gr_light), 50, DEFAULT_MERCURY_STEPS);
+        assert_eq!(
+            coarse_gr_light.kind,
+            VerdictKind::Undecidable,
+            "coarse GR Eddington truncation must straddle the 3% band: {} {:?}",
+            coarse_gr_light.summary,
+            coarse_gr_light.evidence
+        );
+        assert_eq!(coarse_gr_light.empirical(), EmpiricalStatus::Inconclusive);
+        let j = physis_core::judgment::Judgment::from_lab(
+            coarse_gr_light.class,
+            coarse_gr_light.kind,
+            coarse_gr_light.empirical(),
+            coarse_gr_light.derivation(),
+            false,
+            coarse_gr_light.numeric_lo(),
+            coarse_gr_light.numeric_hi(),
+            coarse_gr_light.statistical_nll(),
+        );
+        assert_eq!(j.label(), "numeric unresolved");
+
+        let coarse_newton_eddington =
+            eval_solar_with_steps(false, 4, &eddington, 50, DEFAULT_MERCURY_STEPS);
+        assert_not_certified(&coarse_newton_eddington);
+        assert_eq!(
+            coarse_newton_eddington.kind,
+            VerdictKind::Fails,
+            "coarse Newton-on-Eddington stays disjoint from 1.75″: {} {:?}",
+            coarse_newton_eddington.summary,
+            coarse_newton_eddington.evidence
+        );
+
+        let coarse_gr_mercury = eval_solar_with_steps(true, 4, &mercury, DEFAULT_LIGHT_STEPS, 200);
+        assert_not_certified(&coarse_gr_mercury);
+        assert_eq!(
+            coarse_gr_mercury.kind,
+            VerdictKind::Undecidable,
+            "coarse GR Mercury truncation must straddle the 1.5″ band: {} {:?}",
+            coarse_gr_mercury.summary,
+            coarse_gr_mercury.evidence
+        );
+        assert_eq!(coarse_gr_mercury.empirical(), EmpiricalStatus::Inconclusive);
+
+        let coarse_newton_half =
+            eval_solar_with_steps(false, 4, &newton_half, 50, DEFAULT_MERCURY_STEPS);
+        assert_not_certified(&coarse_newton_half);
+
+        let delta = solar_deflection_arcsec_n(true, 50);
+        let wrapped = Interval::point(Ratio::nearest(delta, 100));
+        let forged = Verdict::holds(&eddington, "coarse point wrap")
+            .with_certified_numeric(wrapped.lo.to_string(), wrapped.hi.to_string());
+        assert_eq!(forged.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_ne!(
+            coarse_gr_light.derivation(),
+            forged.derivation(),
+            "shipped coarse path must not mint CertifiedNumeric by wrapping a point"
+        );
+        assert_ne!(coarse_gr_light.kind, VerdictKind::Holds);
+        let _ = light_deflection_rad(solar_m().value(), solar_radius().value(), true, 50);
+        let _ = perihelion_advance_rad(
+            solar_m().value(),
+            mercury_semi_major().value(),
+            mercury_eccentricity().value(),
+            true,
+            200,
         );
     }
 }
