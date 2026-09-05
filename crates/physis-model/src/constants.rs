@@ -4,7 +4,9 @@
 //! They are *knobs of nature* in a deeper theory; here they are constants
 //! so that theories can be compared against the same measuring sticks.
 //! Overlapping SI/CODATA floats lockstep the versioned constants ledger
-//! in tests; evaluators still use these `f64` Qty values, not that ledger.
+//! in tests; evaluators still use these `f64` Qty values, not that ledger,
+//! except special-relativity mass-shell, which reads versioned `c` and
+//! `m_e`. Qty remains the lockstep centre test.
 
 use physis_core::dim::{
     Acceleration, Action, Current, Dimensionless, Energy, EnergyDensity, Force, Frequency,

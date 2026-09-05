@@ -107,9 +107,11 @@ Lorentz by default, Galilean under the knob:
   0.9615c < c` (holds); Galilean `u+v = 1.5c ≥ c` (fails). Minus-uv
   composition `(u+v)/(1−uv) ≈ 3.41c ≥ c` is an IR mutation, not this knob.
 - **Mass shell**: a particle at rest has `(E, pc) = (mc², 0)`, with `mc²` a typed
-  `Qty<Energy>` built from the electron mass and `c`. Boosting the 4-momentum
-  and checking `E² − (pc)²` against `(mc²)²` holds under Lorentz and fails under
-  a Galilean boost.
+  `Qty<Energy>` built from versioned ledger `c` (SI 2019 Ratio) and `m_e`
+  (CODATA 2018 SciInterval). Evidence cites those live hashes and hulls;
+  the evaluator stays Executed. Boosting the 4-momentum and checking
+  `E² − (pc)²` against `(mc²)²` holds under Lorentz and fails under a
+  Galilean boost.
 - **Cross-product Jacobi**: the x-component of `a × (b × c) + cyclic` is the
   zero polynomial over the integers. Both expanders agree. Galilean boosts,
   binomial γ, and minus-uv composition do not touch this cell.

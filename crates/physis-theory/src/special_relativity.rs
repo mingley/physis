@@ -30,10 +30,11 @@ use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
-use physis_core::{Energy, Momentum, Qty};
+use physis_core::{Energy, Mass, Momentum, Qty, Velocity};
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
-use physis_model::constants::{electron_mass, C};
+use physis_model::constants::C;
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
+use physis_numeric::SciExact;
 use physis_proof::catalog::{
     cross_product_jacobi, einstein_composition, energy_momentum, lagrange_identity,
     lorentz_interval, matrix_det_product,
@@ -201,6 +202,46 @@ fn parse_sr_encoding(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
 
 fn gamma_lorentz(beta: f64) -> f64 {
     1.0 / (1.0 - beta * beta).sqrt()
+}
+
+/// Midpoint of a same-exp10 [`physis_numeric::SciInterval`]. Not a certificate.
+fn sci_interval_centre(hull: physis_numeric::SciInterval) -> SciExact {
+    assert_eq!(
+        hull.lo.exp10, hull.hi.exp10,
+        "LEDGER m_e SciInterval endpoints must share exp10 so the midpoint is a SciExact"
+    );
+    SciExact::new(
+        (hull.lo.significand + hull.hi.significand) / 2,
+        hull.lo.exp10,
+    )
+}
+
+/// Versioned `c` and `m_e` for the mass-shell sample. Missing LEDGER names fail closed.
+fn versioned_mass_shell_inputs() -> (Qty<Mass>, Qty<Velocity>, [String; 2]) {
+    let c_listing =
+        physis_constants::lookup("c").expect("LEDGER name c must exist for SR mass-shell");
+    let me_listing =
+        physis_constants::lookup("m_e").expect("LEDGER name m_e must exist for SR mass-shell");
+    let c: Qty<Velocity> = Qty::new(physis_constants::speed_of_light().value.to_f64());
+    let m: Qty<Mass> =
+        Qty::new(sci_interval_centre(physis_constants::electron_mass().value).to_f64());
+    let lines = [
+        format!(
+            "versioned c  kind {}  hash {}  value {}  unit {}  exact SI 2019 Ratio (not a measured hull, not P3N)",
+            c_listing.kind,
+            c_listing.hash.to_hex(),
+            c_listing.value,
+            c_listing.unit
+        ),
+        format!(
+            "versioned m_e  kind {}  hash {}  hull {}  unit {}  CODATA 2018 one-sigma SciInterval (not an SI defining Ratio, not P3N)",
+            me_listing.kind,
+            me_listing.hash.to_hex(),
+            me_listing.value,
+            me_listing.unit
+        ),
+    ];
+    (m, c, lines)
 }
 
 fn gamma_binomial(beta: f64) -> f64 {
@@ -470,9 +511,9 @@ impl Theory for SpecialRelativity {
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        let c = C.value();
         match claim.id_str() {
             SR_INVARIANT_INTERVAL => {
+                let c = C.value();
                 let ct0 = c * 1.0e-8;
                 let x0 = 2.0;
                 let s0 = ct0 * ct0 - x0 * x0;
@@ -520,12 +561,12 @@ impl Theory for SpecialRelativity {
                 }
             }
             SR_ENERGY_MOMENTUM => {
-                let m = electron_mass();
-                let mc2: Qty<Energy> = m * C * C;
+                let (m, c, versioned) = versioned_mass_shell_inputs();
+                let mc2: Qty<Energy> = m * c * c;
                 let (e1, pc1) = self.boost(mc2.value(), 0.0, BETA);
                 let shell = e1 * e1 - pc1 * pc1;
                 let rest = mc2.value() * mc2.value();
-                let p1: Qty<Momentum> = Qty::new(pc1 / c);
+                let p1: Qty<Momentum> = Qty::<Energy>::new(pc1) / c;
                 if self.binomial_gamma {
                     let residual = binomial_gamma_residual(BETA);
                     Verdict::fails(
@@ -535,6 +576,7 @@ impl Theory for SpecialRelativity {
                     .with_evidence([format!(
                         "γ_L − γ_bin = {residual:.6} at β = {BETA}; E² − (pc)² = {shell:.4e} J² vs (mc²)² = {rest:.4e} J²"
                     )])
+                    .with_evidence(versioned)
                 } else {
                     let invariant = (shell - rest).abs() <= 1e-9 * rest.abs();
                     if invariant {
@@ -547,11 +589,13 @@ impl Theory for SpecialRelativity {
                                 ),
                                 format!("E² − (pc)² = {shell:.4e} J² vs (mc²)² = {rest:.4e} J²"),
                             ])
+                            .with_evidence(versioned)
                     } else {
                         Verdict::fails(claim, "the mass shell is not preserved by a Galilean boost")
                             .with_evidence([format!(
                                 "E² − (pc)² = {shell:.4e} J² ≠ (mc²)² = {rest:.4e} J²"
                             )])
+                            .with_evidence(versioned)
                     }
                 }
             }
@@ -634,6 +678,8 @@ impl Theory for SpecialRelativity {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
+    use physis_core::DerivationAssurance;
+    use physis_numeric::SciExact;
 
     fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
@@ -1271,5 +1317,102 @@ mod tests {
                 .all(|(label, _)| label != "add-minus-uv"),
             "type-i must not grow add-minus-uv"
         );
+    }
+
+    fn evidence_cites_listing(evidence: &[String], listing: &physis_constants::ConstantListing) {
+        assert!(
+            evidence.iter().any(|line| {
+                line.contains(&listing.name)
+                    && line.contains(listing.kind)
+                    && line.contains(&listing.hash.to_hex())
+                    && line.contains(&listing.value)
+            }),
+            "evidence must cite {} kind {} hash {} display {}: {:?}",
+            listing.name,
+            listing.kind,
+            listing.hash.to_hex(),
+            listing.value,
+            evidence
+        );
+    }
+
+    fn live_me_centre(hull: physis_numeric::SciInterval) -> SciExact {
+        assert_eq!(
+            hull.lo.exp10, hull.hi.exp10,
+            "live m_e hull endpoints must share exp10"
+        );
+        SciExact::new(
+            (hull.lo.significand + hull.hi.significand) / 2,
+            hull.lo.exp10,
+        )
+    }
+
+    #[test]
+    fn mass_shell_cites_versioned_c_and_m_e() {
+        let sr = SpecialRelativity::default();
+        let claim = sr
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_ENERGY_MOMENTUM)
+            .unwrap();
+        let v = sr.evaluate(&claim);
+        let c_listing = physis_constants::lookup("c").expect("c is on LEDGER");
+        let me_listing = physis_constants::lookup("m_e").expect("m_e is on LEDGER");
+        assert_eq!(c_listing.kind, "ratio");
+        assert_eq!(me_listing.kind, "sci-interval");
+        evidence_cites_listing(&v.evidence, &c_listing);
+        evidence_cites_listing(&v.evidence, &me_listing);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_eq!(v.kind, VerdictKind::Holds);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        assert_eq!(
+            physis_constants::speed_of_light().value.to_f64(),
+            physis_model::constants::C.value(),
+            "ledger c Ratio to_f64 locksteps model C"
+        );
+        let me_centre = live_me_centre(physis_constants::electron_mass().value);
+        assert_eq!(
+            me_centre.to_f64(),
+            physis_model::constants::electron_mass().value(),
+            "SciInterval midpoint locksteps model electron_mass Qty"
+        );
+
+        let mut galilean = SpecialRelativity::default();
+        galilean
+            .set("absolute_time", KnobValue::Bool(true))
+            .unwrap();
+        assert_eq!(kind(&galilean, SR_INVARIANT_INTERVAL), VerdictKind::Fails);
+        assert_eq!(
+            kind(&galilean, SR_SUBLUMINAL_COMPOSITION),
+            VerdictKind::Fails
+        );
+        let gal_claim = galilean
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_ENERGY_MOMENTUM)
+            .unwrap();
+        let gal = galilean.evaluate(&gal_claim);
+        assert_eq!(gal.kind, VerdictKind::Fails);
+        assert_eq!(gal.derivation(), DerivationAssurance::Executed);
+        evidence_cites_listing(&gal.evidence, &c_listing);
+        evidence_cites_listing(&gal.evidence, &me_listing);
+        assert_eq!(kind(&galilean, SR_CROSS_PRODUCT_JACOBI), VerdictKind::Holds);
+        assert_eq!(kind(&galilean, SR_LAGRANGE_IDENTITY), VerdictKind::Holds);
+        assert_eq!(kind(&galilean, SR_MATRIX_DET_PRODUCT), VerdictKind::Holds);
+
+        let binomial = SpecialRelativity {
+            binomial_gamma: true,
+            ..SpecialRelativity::default()
+        };
+        let bin_claim = binomial
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_ENERGY_MOMENTUM)
+            .unwrap();
+        let bin = binomial.evaluate(&bin_claim);
+        assert_eq!(bin.kind, VerdictKind::Fails);
+        assert_eq!(bin.derivation(), DerivationAssurance::Executed);
+        evidence_cites_listing(&bin.evidence, &c_listing);
+        evidence_cites_listing(&bin.evidence, &me_listing);
     }
 }

@@ -76,9 +76,11 @@ Treat these as load-bearing. Regression is a bug.
 
 Evidence is the live tree, not intent.
 
-- Live evaluators still use `physis_model` `f64` `Qty`. Threshold
-  Holds/Fails on kinematics, gravity integrals, blackbody, solids, and
-  lattices are not certificate-first.
+- Live evaluators still use `physis_model` `f64` `Qty`, except
+  special-relativity mass-shell which reads versioned `c` and `m_e`
+  (still Executed, not P3N). Threshold Holds/Fails on kinematics,
+  gravity integrals, blackbody, solids, and lattices are not
+  certificate-first.
 - `ħ` is not stored (π). Thomson, Φ₀, G₀, Y₀, quantum of circulation,
   and gyromagnetic reconstructions stay blocked for that reason — do
   not leftover-flip a sibling instead.
@@ -449,7 +451,7 @@ consistency; they do not require the executable gates in steps 2-7.
 
 ## Checklist (maintainers / later agents)
 
-- [ ] C1.1 SR mass shell from versioned constants
+- [x] C1.1 SR mass shell from versioned constants
 - [ ] C1.2 SR interval enclosure
 - [ ] C1.3 gravity enclosure
 - [ ] C1.4 `ħ` stored as listing

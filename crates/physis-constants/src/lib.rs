@@ -9743,7 +9743,9 @@ fn codata_2018_electron_mass_interval() -> SciInterval {
 /// `10^{40}` is the 10× trap (the centre becomes `9.109…×10^{-30}`).
 /// This is not the CODATA 2022 last-digit `7139` as the stored centre.
 /// The 2018 hull does not contain that 2022 centre. This is not P3N.
-/// Theories still use `physis_model` `f64` Qty.
+/// Special-relativity mass-shell evaluation reads this ledger entry
+/// and cites the live hash and hull; other theories still use
+/// `physis_model` `f64` Qty.
 pub fn electron_mass() -> Constant<SciInterval> {
     Constant::new(
         "m_e",

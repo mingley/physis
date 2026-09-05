@@ -10,6 +10,20 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Theory
+
+- **Special-relativity mass shell reads versioned `c` and `m_e`.**
+  Live `sr.energy-momentum-invariant` evaluation looks up LEDGER `c`
+  (SI 2019 Ratio) and `m_e` (CODATA 2018 SciInterval), reconstructs the
+  rest-energy sample from those values, and cites the live hashes and
+  hulls in verdict evidence. `physis why` prints that evidence.
+  Galilean `absolute_time` still fails the three kinematic claims;
+  Jacobi, Lagrange, and det-product still hold. Derivation stays
+  executed: not CertifiedNumeric, not P3N, not a kernel proof. P3N
+  count stays 4. No new table row. Unique-vacuum graph id unchanged.
+  Encode pin unchanged. Interval still uses model `C` (C1.2). Qty
+  lockstep centres for `c` and `m_e` still pass.
+
 ### Plans
 
 - **Agentic research implementation queue and contracts.** Added `TODO.md`

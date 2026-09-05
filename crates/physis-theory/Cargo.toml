@@ -11,6 +11,7 @@ description = "Theories as first-class objects: Standard Model, GR, strings, obs
 [dependencies]
 physis-core.workspace = true
 physis-model.workspace = true
+physis-constants.workspace = true
 physis-numeric.workspace = true
 physis-data.workspace = true
 physis-proof.workspace = true

@@ -729,6 +729,12 @@ impl Lab {
                                 v.kind.as_str(),
                                 v.summary
                             ));
+                            if !v.evidence.is_empty() {
+                                text.push_str("  evidence:\n");
+                                for line in &v.evidence {
+                                    text.push_str(&format!("    - {line}\n"));
+                                }
+                            }
                             match self.receipts.by_statement(c.statement_hash()) {
                                 Some(r) => {
                                     text.push_str(&format!(
@@ -2855,6 +2861,59 @@ mod tests {
         why.split("theory ")
             .find(|b| b.starts_with(&format!("{theory}\n")))
             .unwrap_or_else(|| panic!("missing theory {theory} in:\n{why}"))
+    }
+
+    #[test]
+    fn why_mass_shell_cites_versioned_c_and_m_e() {
+        let mut lab = Lab::standard();
+        let why = lab
+            .exec(Command::Why {
+                claim: "sr.energy-momentum-invariant".into(),
+            })
+            .text()
+            .to_string();
+        let srb = why_theory_block(&why, "special-relativity");
+        assert!(srb.contains("derivation: executed"), "{srb}");
+        assert!(srb.contains("kernel proof: none"), "{srb}");
+        let c_listing = physis_constants::lookup("c").expect("c is on LEDGER");
+        let me_listing = physis_constants::lookup("m_e").expect("m_e is on LEDGER");
+        assert_eq!(c_listing.kind, "ratio");
+        assert_eq!(me_listing.kind, "sci-interval");
+        assert!(
+            srb.contains(&c_listing.hash.to_hex()) && srb.contains(c_listing.kind),
+            "why must cite live c identity: {srb}"
+        );
+        assert!(
+            srb.contains(&c_listing.value),
+            "why must cite live c value: {srb}"
+        );
+        assert!(
+            srb.contains(&me_listing.hash.to_hex()) && srb.contains(me_listing.kind),
+            "why must cite live m_e identity: {srb}"
+        );
+        assert!(
+            srb.contains(&me_listing.value),
+            "why must cite live m_e hull: {srb}"
+        );
+        assert!(!srb.contains("CertifiedNumeric"), "{srb}");
+        assert!(!srb.contains("certified-numeric"), "{srb}");
+        assert!(
+            !srb.contains("trust:      P3N"),
+            "mass-shell must not mint P3N: {srb}"
+        );
+        assert!(!srb.contains("kernel proof: receipt"), "{srb}");
+
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p3n.lines().any(|l| l.trim() == "count 4"),
+            "P3N count stays 4: {p3n}"
+        );
     }
 
     #[test]
