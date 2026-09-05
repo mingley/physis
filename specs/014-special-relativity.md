@@ -100,18 +100,29 @@ Both the spacetime coordinates `(cΔt, Δx)` and the energy–momentum `(E, pc)`
 4-vectors, so `SpecialRelativity::boost` applies the *same* transform to each —
 Lorentz by default, Galilean under the knob:
 
-- **Interval**: a timelike event `(c·10 ns, 2 m)` is boosted by `β = 0.6`. Under
-  Lorentz, `s²` is unchanged (holds); under a Galilean boost `x' = x − βct` with
-  `t` absolute, `s²` changes (fails).
+- **Interval**: a timelike event `(c·10 ns, 2 m)` is boosted by `β = 0.6`. The
+  numerical sample encloses the relative residual `(s0−s1)/|s0|` and classifies
+  it against a 64-ulp IEEE rounding band (`2^{-46}`, ~20 flops of this
+  arithmetic, not folklore `1e-9`). Contained → holds; disjoint → fails
+  (Galilean); overlap without containment is **unresolved** (`undecidable` /
+  `inconclusive` / `numeric unresolved`), not equality and not a failed
+  theorem. The catalog `lorentz_interval` polynomial is a distinct kernel
+  obligation; this floating-point sample is not `identity_is_zero` and is
+  not P3N. Under Lorentz the residual is contained (holds); under a Galilean
+  boost `x' = x − βct` with `t` absolute, the residual is O(1) and disjoint
+  (fails).
 - **Velocity composition**: `0.8c ⊕ 0.7c`. Relativistic `(u+v)/(1+uv/c²) ≈
   0.9615c < c` (holds); Galilean `u+v = 1.5c ≥ c` (fails). Minus-uv
   composition `(u+v)/(1−uv) ≈ 3.41c ≥ c` is an IR mutation, not this knob.
 - **Mass shell**: a particle at rest has `(E, pc) = (mc², 0)`, with `mc²` a typed
   `Qty<Energy>` built from versioned ledger `c` (SI 2019 Ratio) and `m_e`
   (CODATA 2018 SciInterval). Evidence cites those live hashes and hulls;
-  the evaluator stays Executed. Boosting the 4-momentum and checking
-  `E² − (pc)²` against `(mc²)²` holds under Lorentz and fails under a
-  Galilean boost.
+  `c` is exact SI Ratio and the `m_e` SciInterval is input identity, not this
+  rounding bound. The evaluator stays Executed and uses the same residual-vs-band
+  classifier as the interval sample (not folklore `1e-9`, not P3N). The catalog
+  `energy_momentum` polynomial is a distinct kernel obligation. Boosting the
+  4-momentum and checking `E² − (pc)²` against `(mc²)²` is contained under
+  Lorentz (holds) and disjoint under a Galilean boost (fails).
 - **Cross-product Jacobi**: the x-component of `a × (b × c) + cyclic` is the
   zero polynomial over the integers. Both expanders agree. Galilean boosts,
   binomial γ, and minus-uv composition do not touch this cell.

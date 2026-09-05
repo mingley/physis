@@ -12,6 +12,21 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Theory
 
+- **Special-relativity interval and mass-shell samples use a residual-vs-band
+  classifier.** Naked `|Δ| ≤ 1e-9 |scale|` is gone on the Lorentz/Galilean
+  branches. The 1+1 Minkowski sample (`β = 0.6`, event `(c·10 ns, 2 m)` /
+  rest electron) encloses a relative residual and compares it to a 64-ulp
+  IEEE rounding band (`2^{-46}`, ~20 flops of this arithmetic; not folklore
+  `1e-9` and not the CODATA `m_e` hull). Contained → Holds; disjoint → Fails
+  (Galilean); overlap without containment is `Undecidable` + `Inconclusive`
+  (`numeric unresolved`), not equality. Evidence names the sample domain and
+  error sources; overlap is not equality; the catalog integer identity is a
+  distinct kernel obligation from this floating-point sample. Derivation stays
+  executed: not CertifiedNumeric, not P3N, not a kernel proof. Diagnostic
+  interval enclosure is independently parseable and is not P3N. Composition
+  stays an inequality. Binomial γ / minus-uv stay Fails-by-encoding. Jacobi,
+  Lagrange, and det-product still dual-expand. P3N count stays 4.
+
 - **Special-relativity mass shell reads versioned `c` and `m_e`.**
   Live `sr.energy-momentum-invariant` evaluation looks up LEDGER `c`
   (SI 2019 Ratio) and `m_e` (CODATA 2018 SciInterval), reconstructs the

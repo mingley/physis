@@ -29,12 +29,13 @@ use physis_core::claim::{Claim, Verdict};
 use physis_core::error::CoreError;
 use physis_core::id::LayerId;
 use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
+use physis_core::EmpiricalStatus;
 use physis_core::ParameterOrigin;
 use physis_core::{Energy, Mass, Momentum, Qty, Velocity};
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::C;
 use physis_model::{GaugeGroup, Manifold, Spectrum, World};
-use physis_numeric::SciExact;
+use physis_numeric::{residual_relation, Interval, Ratio, ResidualRelation, SciExact};
 use physis_proof::catalog::{
     cross_product_jacobi, einstein_composition, energy_momentum, lagrange_identity,
     lorentz_interval, matrix_det_product,
@@ -260,6 +261,96 @@ fn minus_uv_residual(u: f64, v: f64) -> f64 {
     let einstein = (u + v) / (1.0 + u * v);
     let minus = (u + v) / (1.0 - u * v);
     minus - einstein
+}
+
+/// Half-width of the relative IEEE rounding band, in ulps of 1.0.
+///
+/// 64 ulps = `2^{-46}`. This 1+1 sample does ~20 flops (two Minkowski
+/// squares, a Lorentz or Galilean boost including `√(1-β²)` and a
+/// reciprocal, then a relative difference). Round-to-nearest is ≤ 0.5 ulp
+/// per op; sqrt is ~1 ulp. A few-dozen-ulp relative band is several times
+/// that count. It is **not** folklore `1e-9` and **not** the CODATA `m_e`
+/// hull. Measured residuals of this sample: interval `|s0−s1|/|s0| ≈
+/// 1.78e-16` (~1 ulp of `s² ~ 5`); mass-shell residual `0` (γ(β=0.6) is
+/// exactly 1.25 in f64). Galilean relative error is O(1).
+const SAMPLE_ROUNDING_ULPS: i128 = 64;
+const F64_ULP_DEN: i128 = 1i128 << 52;
+
+/// Relative IEEE rounding band around 0 for this sample's boost arithmetic.
+fn sample_rounding_band() -> Interval {
+    Interval::new(
+        Ratio::new(-SAMPLE_ROUNDING_ULPS, F64_ULP_DEN),
+        Ratio::new(SAMPLE_ROUNDING_ULPS, F64_ULP_DEN),
+    )
+}
+
+/// Enclose the relative residual `(before − after) / |before|`.
+///
+/// The computed ratio is snapped to a dyadic of `2^{-52}` (one ulp of 1)
+/// and widened by one ulp. That is the scale of [`sample_rounding_band`].
+/// `Interval::from_f64_approx` of a ~1 ulp relative residual saturates
+/// `i128` products (denominators ~`2^{105}`) and is not this enclosure.
+fn relative_residual_hull(before: f64, after: f64) -> Interval {
+    let scale = before.abs();
+    let rel = if scale == 0.0 {
+        after
+    } else {
+        (before - after) / scale
+    };
+    if !rel.is_finite() {
+        return Interval::from_f64_approx(0.0);
+    }
+    let snapped = Ratio::nearest(rel, F64_ULP_DEN);
+    let ulp = Ratio::new(1, F64_ULP_DEN);
+    Interval::new(snapped - ulp, snapped + ulp)
+}
+
+/// Classify a residual hull against this sample's IEEE rounding band.
+fn classify_boost_residual(residual: Interval) -> ResidualRelation {
+    residual_relation(residual, sample_rounding_band())
+}
+
+fn sample_numeric_evidence(
+    domain: &str,
+    residual: Interval,
+    extra: impl IntoIterator<Item = String>,
+) -> Vec<String> {
+    let band = sample_rounding_band();
+    let relation = classify_boost_residual(residual);
+    let mut lines = vec![
+        format!("sample domain: {domain}"),
+        "error sources: IEEE rounding of this boost arithmetic (64-ulp relative band 2^{-46} for ~20 flops; not folklore 1e-9); overlap of intervals is not equality".into(),
+        "the catalog integer identity is a distinct kernel obligation, not this floating-point sample".into(),
+        format!("relative residual hull {residual} vs rounding band {band} ({relation})"),
+    ];
+    lines.extend(extra);
+    lines
+}
+
+/// Decide a Lorentz/Galilean interval or mass-shell **sample**.
+///
+/// Contained → Holds. Disjoint → Fails. Overlap without containment →
+/// `Undecidable` + `Inconclusive` (`numeric unresolved`), not a theorem.
+/// Derivation stays Executed. Does not mint CertifiedNumeric / P3N.
+fn decide_boost_sample(
+    claim: &Claim,
+    residual: Interval,
+    hold_summary: impl Into<String>,
+    fail_summary: impl Into<String>,
+    evidence: impl IntoIterator<Item = String>,
+) -> Verdict {
+    let relation = classify_boost_residual(residual);
+    let v = match relation {
+        ResidualRelation::Contained => Verdict::holds(claim, hold_summary),
+        ResidualRelation::Disjoint => Verdict::fails(claim, fail_summary),
+        ResidualRelation::OverlapsWithoutContainment => Verdict::undecidable(
+            claim,
+            "relative residual overlaps the IEEE rounding band without containment; overlap is not equality",
+        )
+        .with_empirical(EmpiricalStatus::Inconclusive),
+    };
+    v.with_evidence(evidence)
+        .with_interval_enclosure(residual.lo.to_string(), residual.hi.to_string())
 }
 
 const SPECS: &[KnobSpec] = &[KnobSpec {
@@ -513,6 +604,8 @@ impl Theory for SpecialRelativity {
     fn evaluate(&self, claim: &Claim) -> Verdict {
         match claim.id_str() {
             SR_INVARIANT_INTERVAL => {
+                // Floating-point sample. Not identity_is_zero: the catalog
+                // lorentz_interval polynomial is a distinct kernel obligation.
                 let c = C.value();
                 let ct0 = c * 1.0e-8;
                 let x0 = 2.0;
@@ -526,18 +619,22 @@ impl Theory for SpecialRelativity {
                         "γ_L − γ_bin = {residual:.6} at β = {BETA}; s² = {s0:.4e} m² → {s1:.4e} m²"
                     )])
                 } else {
-                    let invariant = (s0 - s1).abs() <= 1e-9 * s0.abs();
-                    if invariant {
-                        Verdict::holds(claim, "s² is unchanged by the Lorentz boost").with_evidence(
-                            [format!("s² = {s0:.4e} m² before and {s1:.4e} m² after")],
-                        )
-                    } else {
-                        Verdict::fails(
-                            claim,
-                            "the interval is not invariant under a Galilean boost",
-                        )
-                        .with_evidence([format!("s² = {s0:.4e} m² → {s1:.4e} m² (changed)")])
-                    }
+                    let residual = relative_residual_hull(s0, s1);
+                    decide_boost_sample(
+                        claim,
+                        residual,
+                        "s² is unchanged by the Lorentz boost",
+                        "the interval is not invariant under a Galilean boost",
+                        sample_numeric_evidence(
+                            "1+1 Minkowski, β=0.6, event (c·10 ns, 2 m)",
+                            residual,
+                            [
+                                format!("s² = {s0:.4e} m² before and {s1:.4e} m² after"),
+                                "interval uses model C (SI exact Ratio as f64); not a new constant"
+                                    .into(),
+                            ],
+                        ),
+                    )
                 }
             }
             SR_SUBLUMINAL_COMPOSITION => {
@@ -561,6 +658,8 @@ impl Theory for SpecialRelativity {
                 }
             }
             SR_ENERGY_MOMENTUM => {
+                // Floating-point sample. Not identity_is_zero: the catalog
+                // energy_momentum polynomial is a distinct kernel obligation.
                 let (m, c, versioned) = versioned_mass_shell_inputs();
                 let mc2: Qty<Energy> = m * c * c;
                 let (e1, pc1) = self.boost(mc2.value(), 0.0, BETA);
@@ -578,25 +677,28 @@ impl Theory for SpecialRelativity {
                     )])
                     .with_evidence(versioned)
                 } else {
-                    let invariant = (shell - rest).abs() <= 1e-9 * rest.abs();
-                    if invariant {
-                        Verdict::holds(claim, "E² − (pc)² equals (mc²)² in the boosted frame")
-                            .with_evidence([
-                                format!(
-                                    "mc² = {:.4e} J, boosted |p| = {:.4e} kg·m/s",
-                                    mc2.value(),
-                                    p1.value()
-                                ),
-                                format!("E² − (pc)² = {shell:.4e} J² vs (mc²)² = {rest:.4e} J²"),
-                            ])
-                            .with_evidence(versioned)
-                    } else {
-                        Verdict::fails(claim, "the mass shell is not preserved by a Galilean boost")
-                            .with_evidence([format!(
-                                "E² − (pc)² = {shell:.4e} J² ≠ (mc²)² = {rest:.4e} J²"
-                            )])
-                            .with_evidence(versioned)
-                    }
+                    let residual = relative_residual_hull(rest, shell);
+                    let mut extra = vec![
+                        format!(
+                            "mc² = {:.4e} J, boosted |p| = {:.4e} kg·m/s",
+                            mc2.value(),
+                            p1.value()
+                        ),
+                        format!("E² − (pc)² = {shell:.4e} J² vs (mc²)² = {rest:.4e} J²"),
+                        "c is exact SI 2019 Ratio; m_e SciInterval is input identity, not this rounding bound".into(),
+                    ];
+                    extra.extend(versioned);
+                    decide_boost_sample(
+                        claim,
+                        residual,
+                        "E² − (pc)² equals (mc²)² in the boosted frame",
+                        "the mass shell is not preserved by a Galilean boost",
+                        sample_numeric_evidence(
+                            "1+1 Minkowski, β=0.6, rest electron",
+                            residual,
+                            extra,
+                        ),
+                    )
                 }
             }
             SR_CROSS_PRODUCT_JACOBI => match identity_is_zero(&cross_product_jacobi()) {
@@ -684,6 +786,40 @@ mod tests {
     fn kind(t: &dyn Theory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
+    }
+
+    fn verdict(t: &dyn Theory, id: &str) -> Verdict {
+        let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
+        t.evaluate(&c)
+    }
+
+    fn evidence_blob(v: &Verdict) -> String {
+        v.evidence.join("\n")
+    }
+
+    fn assert_numeric_sample_honesty(blob: &str) {
+        assert!(blob.contains("1+1 Minkowski"), "{blob}");
+        assert!(blob.contains("β=0.6"), "{blob}");
+        assert!(
+            blob.contains("IEEE") && blob.contains("rounding"),
+            "error sources must name IEEE rounding: {blob}"
+        );
+        assert!(
+            blob.contains("overlap") && blob.contains("not equality"),
+            "overlap is not equality: {blob}"
+        );
+        assert!(
+            blob.contains("catalog") && blob.contains("sample"),
+            "catalog polynomial is not this sample: {blob}"
+        );
+        assert!(
+            !blob.contains("zero polynomial"),
+            "float sample must not claim identity_is_zero: {blob}"
+        );
+        assert!(
+            !blob.contains("expanders agree"),
+            "float sample must not call identity_is_zero: {blob}"
+        );
     }
 
     #[test]
@@ -902,7 +1038,10 @@ mod tests {
         let (ct1, x1) = sr.boost(ct0, x0, BETA);
         let s0 = ct0 * ct0 - x0 * x0;
         let s1 = ct1 * ct1 - x1 * x1;
-        assert!((s0 - s1).abs() <= 1e-9 * s0.abs());
+        assert_eq!(
+            classify_boost_residual(relative_residual_hull(s0, s1)),
+            ResidualRelation::Contained
+        );
     }
 
     #[test]
@@ -991,8 +1130,9 @@ mod tests {
         let (ct1, x1) = fork.boost(ct0, x0, BETA_VANISHING);
         let s0 = ct0 * ct0 - x0 * x0;
         let s1 = ct1 * ct1 - x1 * x1;
-        assert!(
-            (s0 - s1).abs() <= 1e-9 * s0.abs(),
+        assert_eq!(
+            classify_boost_residual(relative_residual_hull(s0, s1)),
+            ResidualRelation::Contained,
             "tiny β makes the sample look Lorentzian; residual is not the encoding"
         );
         assert_eq!(
@@ -1414,5 +1554,123 @@ mod tests {
         assert_eq!(bin.derivation(), DerivationAssurance::Executed);
         evidence_cites_listing(&bin.evidence, &c_listing);
         evidence_cites_listing(&bin.evidence, &me_listing);
+    }
+
+    #[test]
+    fn lorentz_interval_and_mass_shell_samples_name_domain_and_error_sources() {
+        let sr = SpecialRelativity::default();
+        let interval = verdict(&sr, SR_INVARIANT_INTERVAL);
+        assert_eq!(interval.kind, VerdictKind::Holds);
+        assert_eq!(interval.derivation(), DerivationAssurance::Executed);
+        assert_ne!(
+            interval.derivation(),
+            DerivationAssurance::CertifiedNumeric,
+            "float sample is not P3N"
+        );
+        let ib = evidence_blob(&interval);
+        assert_numeric_sample_honesty(&ib);
+        assert!(
+            ib.contains("10 ns") && ib.contains("2 m"),
+            "interval sample event: {ib}"
+        );
+
+        let mass = verdict(&sr, SR_ENERGY_MOMENTUM);
+        assert_eq!(mass.kind, VerdictKind::Holds);
+        assert_eq!(mass.derivation(), DerivationAssurance::Executed);
+        assert_ne!(mass.derivation(), DerivationAssurance::CertifiedNumeric);
+        let mb = evidence_blob(&mass);
+        assert_numeric_sample_honesty(&mb);
+        assert!(mb.contains("rest electron"), "{mb}");
+        assert!(
+            mb.contains("input identity") && mb.contains("m_e"),
+            "m_e SciInterval is input identity, not this rounding bound: {mb}"
+        );
+        let c_listing = physis_constants::lookup("c").expect("c is on LEDGER");
+        let me_listing = physis_constants::lookup("m_e").expect("m_e is on LEDGER");
+        evidence_cites_listing(&mass.evidence, &c_listing);
+        evidence_cites_listing(&mass.evidence, &me_listing);
+
+        let pkg = sr.package();
+        let bound = physis_proof::catalog_tree_binding(pkg.lean_ref.as_deref(), &pkg.equations)
+            .unwrap()
+            .expect("live SR must bind the interval tree");
+        assert_eq!(bound.claim_id, SR_INVARIANT_INTERVAL);
+        assert_eq!(pkg.equations[1], INTERVAL_EQ);
+        assert_eq!(pkg.equations[3], MASS_SHELL_EQ);
+        // Float Holds is not a kernel proof: Jacobi still uses identity_is_zero.
+        let jacobi = verdict(&sr, SR_CROSS_PRODUCT_JACOBI);
+        assert_eq!(jacobi.kind, VerdictKind::Holds);
+        assert!(
+            evidence_blob(&jacobi).contains("expanders agree"),
+            "Jacobi still dual-expands: {:?}",
+            jacobi.evidence
+        );
+        assert!(evidence_blob(&verdict(&sr, SR_LAGRANGE_IDENTITY)).contains("expanders agree"));
+        assert!(evidence_blob(&verdict(&sr, SR_MATRIX_DET_PRODUCT)).contains("expanders agree"));
+    }
+
+    #[test]
+    fn galilean_boost_sample_fails_with_numeric_honesty() {
+        let mut galilean = SpecialRelativity::default();
+        galilean
+            .set("absolute_time", KnobValue::Bool(true))
+            .unwrap();
+        let interval = verdict(&galilean, SR_INVARIANT_INTERVAL);
+        assert_eq!(interval.kind, VerdictKind::Fails);
+        assert_eq!(interval.derivation(), DerivationAssurance::Executed);
+        assert_numeric_sample_honesty(&evidence_blob(&interval));
+        assert_eq!(
+            kind(&galilean, SR_SUBLUMINAL_COMPOSITION),
+            VerdictKind::Fails
+        );
+        let mass = verdict(&galilean, SR_ENERGY_MOMENTUM);
+        assert_eq!(mass.kind, VerdictKind::Fails);
+        assert_numeric_sample_honesty(&evidence_blob(&mass));
+        assert_eq!(kind(&galilean, SR_CROSS_PRODUCT_JACOBI), VerdictKind::Holds);
+        assert_eq!(kind(&galilean, SR_LAGRANGE_IDENTITY), VerdictKind::Holds);
+        assert_eq!(kind(&galilean, SR_MATRIX_DET_PRODUCT), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn boost_residual_straddle_is_undecidable_not_a_theorem() {
+        // Residual twice as wide as the 64-ulp band 2^{-46}: overlap without
+        // containment. Not equality.
+        let residual = Interval::new(Ratio::new(-1, 1i128 << 45), Ratio::new(1, 1i128 << 45));
+        let band = sample_rounding_band();
+        assert_eq!(
+            residual_relation(residual, band),
+            ResidualRelation::OverlapsWithoutContainment
+        );
+        assert_eq!(
+            classify_boost_residual(residual),
+            ResidualRelation::OverlapsWithoutContainment
+        );
+        let claim = SpecialRelativity::default()
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SR_INVARIANT_INTERVAL)
+            .unwrap();
+        let v = decide_boost_sample(
+            &claim,
+            residual,
+            "s² is unchanged by the Lorentz boost",
+            "the interval is not invariant under a Galilean boost",
+            vec!["synthetic straddle".into()],
+        );
+        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.empirical(), EmpiricalStatus::Inconclusive);
+        assert_eq!(v.derivation(), DerivationAssurance::Executed);
+        assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
+        let j = physis_core::judgment::Judgment::from_lab(
+            v.class,
+            v.kind,
+            v.empirical(),
+            v.derivation(),
+            false,
+            v.numeric_lo(),
+            v.numeric_hi(),
+            v.statistical_nll(),
+        );
+        assert_eq!(j.label(), "numeric unresolved");
     }
 }

@@ -2917,6 +2917,69 @@ mod tests {
     }
 
     #[test]
+    fn why_sr_numeric_sample_states_domain_and_error_sources() {
+        let mut lab = Lab::standard();
+        let interval = lab
+            .exec(Command::Why {
+                claim: "sr.invariant-interval".into(),
+            })
+            .text()
+            .to_string();
+        let ib = why_theory_block(&interval, "special-relativity");
+        assert!(ib.contains("derivation: executed"), "{ib}");
+        assert!(ib.contains("kernel proof: none"), "{ib}");
+        assert!(ib.contains("1+1 Minkowski"), "{ib}");
+        assert!(
+            ib.contains("IEEE") || ib.contains("rounding") || ib.contains("sample"),
+            "interval why must name domain/error sources: {ib}"
+        );
+        assert!(ib.contains("rounding") && ib.contains("IEEE"), "{ib}");
+        assert!(ib.contains("sample"), "{ib}");
+        assert!(!ib.contains("CertifiedNumeric"), "{ib}");
+        assert!(!ib.contains("certified-numeric"), "{ib}");
+        assert!(!ib.contains("trust:      P3N"), "{ib}");
+        assert!(!ib.contains("kernel proof: receipt"), "{ib}");
+
+        let mass = lab
+            .exec(Command::Why {
+                claim: "sr.energy-momentum-invariant".into(),
+            })
+            .text()
+            .to_string();
+        let srb = why_theory_block(&mass, "special-relativity");
+        assert!(srb.contains("derivation: executed"), "{srb}");
+        assert!(srb.contains("kernel proof: none"), "{srb}");
+        assert!(srb.contains("1+1 Minkowski"), "{srb}");
+        assert!(srb.contains("rounding") && srb.contains("IEEE"), "{srb}");
+        assert!(srb.contains("sample"), "{srb}");
+        let c_listing = physis_constants::lookup("c").expect("c is on LEDGER");
+        let me_listing = physis_constants::lookup("m_e").expect("m_e is on LEDGER");
+        assert!(
+            srb.contains(&c_listing.hash.to_hex()) && srb.contains(c_listing.kind),
+            "mass-shell why must cite live c identity: {srb}"
+        );
+        assert!(
+            srb.contains(&me_listing.hash.to_hex()) && srb.contains(me_listing.kind),
+            "mass-shell why must cite live m_e identity: {srb}"
+        );
+        assert!(!srb.contains("CertifiedNumeric"), "{srb}");
+        assert!(!srb.contains("certified-numeric"), "{srb}");
+        assert!(!srb.contains("trust:      P3N"), "{srb}");
+
+        let p3n = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3N".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            p3n.lines().any(|l| l.trim() == "count 4"),
+            "P3N count stays 4: {p3n}"
+        );
+    }
+
+    #[test]
     fn turning_iib_dimension_flips_critical_claim() {
         let mut lab = Lab::standard();
         let diffs = lab.set_knob("type-iib", "total_dim", "9").unwrap().2;

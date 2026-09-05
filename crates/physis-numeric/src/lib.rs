@@ -9,7 +9,8 @@
 //! input-interval enclose path: the overlay is not the certificate, and
 //! it is not P3N. [`Ratio`] order uses a 256-bit product when `i128`
 //! cross-multiply overflows, so a CODATA-scale mass hull is independently
-//! checkable.
+//! checkable. [`residual_relation`] classifies a residual hull against an
+//! allowed rounding band: overlap without containment is not equality.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -640,6 +641,55 @@ impl std::fmt::Display for Interval {
     }
 }
 
+/// How a residual hull sits relative to an allowed rounding band.
+///
+/// Overlap without containment is **not** equality. Do not treat
+/// `!disjoint` as [`ResidualRelation::Contained`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ResidualRelation {
+    /// `band.contains(residual)`: every point of the residual lies in the band.
+    /// A sample may Hold.
+    Contained,
+    /// `residual.disjoint(band)`: no common point. A sample may Fail.
+    Disjoint,
+    /// The hulls share a point, but the residual is not inside the band.
+    /// This is unresolved, not a theorem and not an exclusion.
+    OverlapsWithoutContainment,
+}
+
+impl ResidualRelation {
+    /// Stable kebab-case name.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Contained => "contained",
+            Self::Disjoint => "disjoint",
+            Self::OverlapsWithoutContainment => "overlaps-without-containment",
+        }
+    }
+}
+
+impl std::fmt::Display for ResidualRelation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// Classify a residual hull against an allowed rounding band.
+///
+/// - [`ResidualRelation::Contained`] when `band.contains(residual)` (may Hold)
+/// - [`ResidualRelation::Disjoint`] when `residual.disjoint(band)` (may Fail)
+/// - [`ResidualRelation::OverlapsWithoutContainment`] otherwise — **not**
+///   equality, and not `!disjoint`
+pub fn residual_relation(residual: Interval, band: Interval) -> ResidualRelation {
+    if band.contains(residual) {
+        ResidualRelation::Contained
+    } else if residual.disjoint(band) {
+        ResidualRelation::Disjoint
+    } else {
+        ResidualRelation::OverlapsWithoutContainment
+    }
+}
+
 fn cmp_ratio(a: Ratio, b: Ratio) -> std::cmp::Ordering {
     // a.num/a.den ? b.num/b.den  →  a.num*b.den ? b.num*a.den
     // dens are positive. Saturation would collapse CODATA-scale masses
@@ -812,6 +862,68 @@ mod tests {
         assert!(!a.disjoint(b));
         assert!(a.contains(b));
         assert!(!b.contains(a));
+    }
+
+    #[test]
+    fn residual_relation_contains_a_hull_inside_a_zero_band() {
+        let residual = Interval::new(Ratio::new(-1, 1000), Ratio::new(1, 1000));
+        let band = Interval::new(Ratio::int(-1), Ratio::int(1));
+        assert_eq!(
+            residual_relation(residual, band),
+            ResidualRelation::Contained
+        );
+        assert!(band.contains(residual));
+        assert!(!residual.disjoint(band));
+    }
+
+    #[test]
+    fn residual_relation_straddle_is_overlap_not_equality() {
+        let residual = Interval::new(Ratio::int(-2), Ratio::int(2));
+        let band = Interval::new(Ratio::int(-1), Ratio::int(1));
+        assert_eq!(
+            residual_relation(residual, band),
+            ResidualRelation::OverlapsWithoutContainment
+        );
+        assert!(!band.contains(residual));
+        assert!(!residual.disjoint(band));
+        // overlapping_intervals_are_not_an_exclusion is the oracle: !disjoint
+        // is not contained.
+        let a = Interval::new(Ratio::new(1, 5), Ratio::new(1, 4));
+        let b = Interval::new(Ratio::new(22, 100), Ratio::new(24, 100));
+        assert!(!a.disjoint(b));
+        assert!(a.contains(b));
+        assert!(!b.contains(a));
+        assert_eq!(residual_relation(b, a), ResidualRelation::Contained);
+        assert_eq!(
+            residual_relation(a, b),
+            ResidualRelation::OverlapsWithoutContainment,
+            "overlap without containment is not equality; !disjoint is not contained"
+        );
+        let mz = Interval::new(Ratio::new(23121, 100000), Ratio::new(23123, 100000));
+        let wide = Interval::point(Ratio::new(23122, 100000)).relative_envelope(Ratio::new(3, 100));
+        assert!(wide.contains(mz));
+        assert!(!mz.contains(wide));
+        assert!(!wide.disjoint(mz));
+        assert_eq!(residual_relation(mz, wide), ResidualRelation::Contained);
+        assert_eq!(
+            residual_relation(wide, mz),
+            ResidualRelation::OverlapsWithoutContainment
+        );
+    }
+
+    #[test]
+    fn residual_relation_disjoint_when_far_from_the_band() {
+        let residual = Interval::point(Ratio::int(2));
+        let band = Interval::new(Ratio::int(-1), Ratio::int(1));
+        assert_eq!(
+            residual_relation(residual, band),
+            ResidualRelation::Disjoint
+        );
+        assert!(residual.disjoint(band));
+        let gut = Interval::point(Ratio::new(3, 8));
+        let mz = Interval::new(Ratio::new(23121, 100000), Ratio::new(23123, 100000));
+        assert!(gut.disjoint(mz));
+        assert_eq!(residual_relation(gut, mz), ResidualRelation::Disjoint);
     }
 
     #[test]
