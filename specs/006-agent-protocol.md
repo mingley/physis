@@ -147,3 +147,11 @@ event on reload.
 - Natural language as a command
 - Unbounded Python in the loop
 - Networked multi-agent consensus
+
+## Next-stage contracts
+
+The proposed bounded campaign layer is specified in
+[022-research-campaigns.md](022-research-campaigns.md), with independent
+reproduction in [021-independent-reproduction.md](021-independent-reproduction.md).
+These do not change the current command, replay or assurance guarantees.
+Implementation and dependencies are tracked in [TODO.md](../TODO.md).

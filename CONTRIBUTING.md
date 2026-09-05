@@ -2,6 +2,11 @@
 
 `physis` is a laboratory. Changes that do not move a knob, a claim, a layer, or a test usually do not belong.
 
+Research contracts, accurate architecture docs and actionable task handoffs
+also belong. Start from [TODO.md](TODO.md), select one dependency-ready task,
+and read [the research workflow](docs/RESEARCH-LAB.md). Do not substitute a
+new constant or an unrelated catalog identity for the task's scientific goal.
+
 ## Setup
 
 ```bash
@@ -33,3 +38,9 @@ See `specs/007-reuse-domains.md`. Domain work should not fork the core. It shoul
 - One mechanical idea per PR.
 - Name the claims you changed.
 - Do not expand the string-critique honesty notes into marketing.
+- Include the task ID, assumptions/domain, expected scientific-axis change,
+  negative control, evidence and remaining uncertainty.
+- Update TODO status only when its acceptance condition is demonstrated.
+  Documentation-only changes must not mark planned runtime behavior complete.
+  Check their links and consistency; executable changes still follow the
+  existing Rust gates.

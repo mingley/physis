@@ -2,6 +2,11 @@
 
 Physis is a laboratory that grows by making more of its claims *checkable* and more of its domains *real*. Calendar estimates are not used here. Milestones are mechanical. Active agent plan: `plans/006-civilization-lab.md`.
 
+Current task pickup: [TODO.md](../TODO.md). It supplies dependencies,
+acceptance criteria and completed documentation slices for plan 006.
+The historical checks below describe individual implemented slices, not a
+completed autonomous research environment.
+
 ```
 M0 foundation     ✓ typed layers, knobs, claims, string-critique lab, CLI
 M1 string lab     ✓ journal replay, all constructions, anomaly claim, moduli
@@ -123,6 +128,9 @@ Each milestone must:
 See:
 
 - `specs/020-proof-carrying.md`
+- [Independent reproduction contract](../specs/021-independent-reproduction.md) (C6.1 specified; C6.2 unimplemented)
+- [Research campaign contract](../specs/022-research-campaigns.md) (specified; implementation queue R1-R8)
+- [Agent-ready TODO queue](../TODO.md)
 - `plans/006-civilization-lab.md` (civilization-useful lab; subsequent agents)
 
 - `plans/001-m0-foundation.md`

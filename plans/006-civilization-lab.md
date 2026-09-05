@@ -4,6 +4,12 @@ Status: active (plan). Subsequent agents execute this document.
 Audience: agents
 Does not weaken `specs/020-proof-carrying.md`. Calendar estimates are not used.
 
+Task pickup, dependencies and acceptance criteria now live in
+[TODO.md](../TODO.md). This plan retains the scientific scope and `C*` IDs;
+the TODO queue refines execution order and adds the gated campaign work.
+Architecture, entry docs and the C6.1 contract are delivered; implementation
+tasks remain open. Writing a contract does not implement its behavior.
+
 ## Objective
 
 Make `physis` the laboratory a civilization would actually use for
@@ -95,7 +101,8 @@ Evidence is the live tree, not intent.
 - GR live package is `action einstein-hilbert` without a catalog tree.
   Do not add a cosmetic `lean_ref`.
 - Continuum is 1D lattices and encoded gauge facts, not 3+1 dynamics.
-- `docs/ARCHITECTURE.md` still describes the pre-proof crate graph.
+- Architecture and research entry docs now describe the crate and trust
+  boundaries; persistent campaigns and independent reproduction remain future work.
 
 ## End state (testable)
 
@@ -169,7 +176,8 @@ is wrong.
 - FormalClaim identity commits to statement, quantifiers, units,
   constants, assumptions, domain, conventions, theory version,
   definitions, datasets, and formal-library versions. Changing
-  forall/exists, sign, units, or boundary conditions is a new ClaimId.
+  forall/exists, sign, units, or boundary conditions is a new statement
+  hash; the human-facing slug may remain unchanged.
 - Hidden assumptions are bugs. Extrapolation outside `DomainOfValidity`
   is a new claim or a warning.
 - Proposers cannot promote their own results.
@@ -208,11 +216,11 @@ as the primary diff of a turn has failed this plan.
 
 ## Workstreams
 
-Execute **in stream order** unless a slice says it is independent.
-Inside a stream, execute numbered slices in order. One slice per
-commit. Trunk-based: commit to `main` with
-`area: imperative summary`, blank line, body, no backticks in the
-message, `Co-authored-by: mingley <mingley@users.noreply.github.com>`.
+Use the dependency order in [TODO.md](../TODO.md); the first-turn list below
+identifies the initial vertical slices. One scientific idea per commit.
+Use `area: imperative summary` and a body explaining the change.
+Follow the applicable branch workflow and publish only when authorized;
+do not add attribution trailers.
 
 ### C1 — Certificate-first evaluators
 
@@ -226,20 +234,22 @@ Keep derivation `Executed`. Galilean still Fails. Lockstep tests must
 still pass. Do not leftover-flip a new constant.
 
 **C1.2 Interval sample, not naked tolerance.** The SR interval
-evaluator Holds only if boosted and unboosted `s²` agree inside an
-`Interval` / documented enclosure, not a raw `1e-9` relative `f64`.
-Catalog integer identity remains the kernel obligation. Do not mint
-CertifiedNumeric unless the enclosure is a real `Ratio`/`Interval`
-parse like the P3N cells.
+evaluator reports the domain and justified error bounds, not only a raw
+`1e-9` relative `f64` comparison. Overlap of two intervals does not prove
+equality. Catalog integer identity remains the kernel obligation.
+Parsing an interval does not certify how it was calculated; keep diagnostic
+enclosures separate from `CertifiedNumeric` unless the full bound is checked.
 
 **C1.3 Same pattern on gravity.** Eddington / Mercury RK4 results
 report an enclosure. Holds/Fails against the *computed* Schwarzschild
 vs Soldner factor stays model-internal until C3 attaches datasets.
 
-**C1.4 ħ as a stored listing.** Store CODATA 2018 reduced Planck
-constant as a table Interval/SciExact **listing**, not as a FormalClaim
-that it equals `h/2π`. This unblocks later electromagnetic quantum
-constants. Do not also leftover-flip Thomson/Φ₀ in the same commit.
+**C1.4 ħ as a stored listing.** Represent the sourced reduced Planck
+constant with an explicit rounding bound. SI-exact `h/(2*pi)` is not a
+finite decimal, and its approximation is not a measured uncertainty.
+Do not call that decimal a FormalClaim of equality to `h/(2*pi)`.
+This unblocks later electromagnetic quantum constants; do not also
+leftover-flip Thomson/Φ₀ in the same commit.
 
 **Done when:** `physis why sr.energy-momentum-invariant` evidence cites
 the versioned `m_e` / `c` hashes; interval evidence cites an enclosure;
@@ -288,7 +298,9 @@ at civilization scale. The lab already *computes* solar-system numbers.
 **C3.1 Light deflection dataset.** Hash a real locator (Dyson/Eddington
 1919 and/or a modern VLBI compilation) as `Dataset`. Compare the
 computed 1.75″ Schwarzschild prediction as `EmpiricalReceipt`.
-Newton/Soldner stays excluded or tension. Not P3N. Not dim-5.
+Evaluate Newton/Soldner under the same predeclared comparison rule; preserve
+compatible or inconclusive outcomes if the selected measurements cannot
+exclude it. Do not tune uncertainty to force a winner. Not P3N. Not dim-5.
 
 **C3.2 Mercury perihelion dataset.** Same pattern for 43″/century.
 `add-schwarzschild` remains IR, not a knob.
@@ -340,17 +352,18 @@ id; missing tree still fails closed without the word `receipt`.
 
 **Why.** Remint is the same binary checking itself.
 
-**C6.1** Write `specs/021-independent-reproduction.md`. Point to it
-from `plans/000-roadmap.md` See-also and from this file. Do **not**
+**C6.1 (documentation complete)** [Independent reproduction](../specs/021-independent-reproduction.md).
+The contract is linked from `plans/000-roadmap.md` and this file. Do **not**
 edit `specs/020-proof-carrying.md`: adding a Related bullet grows the
 file past 730 lines; inserting P4 text shifts Hartree off line 183.
 020 already says in-process remint is not P4. That sentence stays.
 
-**C6.2** A second crate or language (for example a small Lean-only
-or independent Rust crate that does not share `physis-verifier`
-internals) replays one catalog export and prints agree/disagree.
-The lab assigns P4 only from that path. In-process reproduce stays
-not P4.
+**C6.2** An independently implemented Rust checker consumes one explicit
+catalog obligation under spec 021's isolation and identity contract.
+It does not share the production parser, expression constructors or verifier
+internals. The host validates agreement and execution evidence before any
+P4 admission; printing agree/disagree alone is insufficient. In-process
+reproduce stays not P4.
 
 **Done when:** CLI reproduce still refuses P4; a documented second
 checker can agree on `dec.d-squared-zero` export.
@@ -360,10 +373,12 @@ checker can agree on `dec.d-squared-zero` export.
 **Why.** Loop proving every catalog slug is a demo, not a scientist.
 
 **C7.1** Loop (or a budgeted subcommand) picks one `physis gaps`
-node: missing-dataset → refuse prove, request cite/enclose;
+node: missing-dataset -> refuse prove, cite an existing registered source
+or emit a concrete missing-source/dataset work item;
 missing-theorem on an evaluator-Holds catalog claim → prove;
 insufficient-precision → do not upgrade to compatible;
-intractable/open → leave Asserted.
+intractable/open → leave Asserted. The selector, no-progress behavior and
+role/trust/budget preservation are specified in spec 022.
 
 **C7.2** Hypothesis search: constrained structural mutation remains
 the only search. Do not invent a free-form LLM theory generator that
@@ -391,22 +406,21 @@ rules without reading CHANGELOG archaeology.
 
 ## First eight agent turns (do these in order)
 
-If you are an agent picking up this plan, your next commit is the
-first unchecked slice:
+Architecture (C8.1), README guidance (C8.2) and the P4 specification (C6.1)
+are delivered. The next implementation turns, subject to TODO dependencies:
 
-1. C8.1 — architecture doc matches the live crates (safe, no Hartree
-   risk, unblocks humans).
-2. C1.1 — SR mass shell reads versioned constants.
-3. C1.2 — SR interval enclosure.
-4. C3.1 — Eddington/VLBI `EmpiricalReceipt`.
-5. C2.1 — kinematic receipt wiring tests if not already complete.
-6. C7.1 — gap-driven loop step.
-7. C1.4 — store `ħ` as a listing.
-8. C6.1 — P4 spec in `specs/021-independent-reproduction.md` (do not
-   edit `specs/020-proof-carrying.md`).
+1. C1.1 - SR mass shell reads versioned constants.
+2. C1.2 - SR numerical bounds.
+3. C1.3 - gravity numerical error budget.
+4. C2.1 - kinematic receipt wiring tests if not already complete.
+5. C3.1 - measured light-deflection comparison.
+6. C7.1 - one gap-driven loop step.
+7. C1.4 - reduced Planck constant representation.
+8. C3.2 - measured Mercury perihelion.
 
-Then continue C3.2, C5.1, C4.1, C6.2. Do not start a ninth catalog
-polynomial until C1–C3 and C7.1 are true.
+Continue from the dependency-ready queue, including C3.3 before scaling the
+agent machinery. C6.2 requires durable bundles and an isolated independent
+checker. Do not start a ninth catalog polynomial instead of these tasks.
 
 ## Slice protocol (every turn)
 
@@ -424,11 +438,14 @@ polynomial until C1–C3 and C7.1 are true.
    split them.
 8. CHANGELOG Unreleased bullet. Pin hashes only after a failing
    `PIN_…` test prints the live value.
-9. Commit on `main`, push, Bugbot (`Diff: natural language`), reuse
-   CI subscription `sub_60b03e81-121b-4cd7-8e78-878107ae0f7a` with
-   `notifyOnSuccess: true`. Do not create a PR unless the human asks.
-10. Update the checklist below. Do not mark the civilization goal
+9. Commit and publish using the authorized repository workflow. Inspect the
+   current CI configuration rather than reusing another session's subscription
+   or assuming a review service is installed. Do not create a PR unless asked.
+10. Update this checklist and TODO.md together. Do not mark the civilization goal
     complete until the end state is evidenced.
+
+Documentation-only changes check links, source correspondence and status
+consistency; they do not require the executable gates in steps 2-7.
 
 ## Checklist (maintainers / later agents)
 
@@ -443,19 +460,26 @@ polynomial until C1–C3 and C7.1 are true.
 - [ ] C3.3 thermal or spectroscopic EmpiricalReceipt
 - [ ] C4.1 computed 2D area law
 - [ ] C4.2 Maxwell on live 2-complex
+- [ ] C4.3 named GR geometry computation
+- [ ] C2.4 substantive GR formalization (later)
 - [ ] C5.1 typed catalog trees in IR
-- [ ] C6.1 P4 spec
+- [ ] C5.2 gap-query completeness check (reuse if already implemented)
+- [x] C6.1 P4 spec (spec 021; no runtime P4 implementation)
 - [ ] C6.2 second implementation
 - [ ] C7.1 gap-driven loop
-- [ ] C8.1 architecture doc
-- [ ] C8.2 README trust paragraph
+- [ ] C7.2 typed hypothesis search
+- [x] C8.1 architecture doc
+- [x] C8.2 README trust paragraph
 - [ ] C8.3 AGENTS.md item 2 still one line (standing; do not wrap)
 
 ## Related
 
 - `plans/000-roadmap.md` — mechanical milestones already landed
+- [TODO.md](../TODO.md) - dependency-ready implementation queue and campaign work
+- [Independent reproduction](../specs/021-independent-reproduction.md) - C6.1 contract
+- [Research campaigns](../specs/022-research-campaigns.md) - C7/R-series contract
 - `specs/020-proof-carrying.md` — trust kernel contract (do not edit
   in C-slices; C6.1 is `specs/021-independent-reproduction.md`)
 - `specs/000-overview.md` — v0 success (already true; this plan is after v0)
 - `AGENTS.md` — standing orders
-- `docs/ARCHITECTURE.md` — update in C8.1
+- `docs/ARCHITECTURE.md` — current crate and trust-boundary guide

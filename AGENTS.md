@@ -135,3 +135,8 @@ Until then, report the matrix and the diffs. That *is* the work. A kernel proof 
 - When you add a knob, add it to specs if it is load-bearing.
 
 Active plan: `plans/006-civilization-lab.md`. Do not leftover-flip remaining CODATA / BIPM / PDG siblings. Do not add a ninth SR integer polynomial.
+
+Task pickup and acceptance criteria: [TODO.md](TODO.md). Research workflow:
+[docs/RESEARCH-LAB.md](docs/RESEARCH-LAB.md). Future campaign and reproduction
+contracts are specs 022 and 021; neither is implemented merely by being
+documented. Keep standing-orders item 2 unchanged when updating task status.

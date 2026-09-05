@@ -2,6 +2,18 @@
 
 A pure-Rust workspace for **mechanically verifiable models of reality**.
 
+The direction is an **agentic physics research environment**: a lab where
+agents construct executable models, derive scoped consequences, search for
+counterexamples, and test predictions against measurements. Programming is
+the modeling medium; Rust types, mechanical verification, and empirical
+evidence impose different checks on what a result actually means.
+
+**Build the lab:** start with the [agent-ready TODO queue](TODO.md),
+[research workflow](docs/RESEARCH-LAB.md), and
+[campaign contract](specs/022-research-campaigns.md).
+Typed experiments and verification already exist; persistent research
+campaigns and independent reproduction are planned, not shipped.
+
 Theories are objects. Knobs are typed. Claims return verdicts. Turning a knob is required to produce a **diff of behavioral state** — not a vibe.
 
 ```
@@ -122,6 +134,17 @@ inserts a content-addressed Evidence DAG; that snapshot is not
 deserialized as authority. `physis --json <command>` emits the typed
 matrices and verdict diffs for agents.
 
+## How to read a research result
+
+Start with `physis why <claim>`: read the statement hash, assumptions and
+domain, then the class, derivation, empirical and semantic axes. `holds`
+means the evaluator accepted that encoding; a receipt checks a particular
+formal obligation, not the whole physical interpretation. Inspect the
+actual backend (`ExactCertificate` is not a Lean kernel proof), and keep
+the danger note on an unreviewed encoding visible. A measured comparison
+is separate evidence; `kernel proof: none`, insufficient precision and
+open problems are honest results, not labels to suppress.
+
 ## Smallest level of modern physics
 
 Empirically confirmed description currently bottoms out at **quantum fields of the Standard Model** (quarks, leptons, gauge bosons, Higgs) on a classical 3+1 spacetime, down to the electroweak scale. Planck-scale pictures (strings, loops, causal sets, unique geometries) are first-class *theories* in this workspace. They are not smuggled in as substrate. See `docs/LAYERS.md` and `specs/002-ontology-layers.md`.
@@ -233,6 +256,7 @@ specs/     what the system is, contract-level
 plans/     what we build next, in order (active: plans/006-civilization-lab.md)
 docs/      how it works (architecture, layers, knobs, theories, agents)
 crates/    the Rust
+TODO.md    dependency-ordered research tasks, acceptance criteria, handoffs
 AGENTS.md  standing orders for long-horizon agents
 ```
 

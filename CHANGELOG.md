@@ -12,6 +12,16 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Plans
 
+- **Agentic research implementation queue and contracts.** Added `TODO.md`
+  with dependency-ordered scientific and campaign tasks, acceptance criteria,
+  negative controls and agent handoffs. Spec 021 defines independent
+  reproduction without P4-from-remint; spec 022 defines bounded, gap-driven
+  campaigns, durable evidence, isolated workers and empirical-data discipline.
+  Updated architecture and entry docs, linked plan 006, and marked only its
+  completed documentation slices. Clarified numerical bounds and data-driven
+  outcomes so future agents cannot promote interval overlap or force an
+  empirical winner. No runtime behavior or spec 020 changes.
+
 - **Civilization-lab plan** (`plans/006-civilization-lab.md`).
   Subsequent agents execute this, not leftover CODATA flips and not
   a ninth SR integer polynomial. Trust kernel stays; scientific

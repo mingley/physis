@@ -2,6 +2,12 @@
 
 See `specs/006-agent-protocol.md` and `AGENTS.md`.
 
+For task selection and handoffs, use [TODO.md](../TODO.md) and
+[the research workflow](RESEARCH-LAB.md). The proposed campaign protocol is
+in [spec 022](../specs/022-research-campaigns.md); its `research` commands
+are not available yet. Existing role flags are application permissions,
+not process isolation.
+
 ## CLI
 
 ```
