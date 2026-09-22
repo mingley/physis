@@ -903,4 +903,22 @@ mod tests {
             "special-relativity must not grow add-brans-dicke"
         );
     }
+
+    #[test]
+    fn dim_knob_flips_observed_4d_and_parks_the_solar_tests() {
+        // The GR knob → verdict diff: the 4D Schwarzschild predictions only
+        // apply in four dimensions.
+        let mut g = GeneralRelativity::default();
+        assert_eq!(verdict(&g, claims::OBSERVED_4D), VerdictKind::Holds);
+        assert_eq!(verdict(&g, EDDINGTON), VerdictKind::Holds);
+        assert_eq!(verdict(&g, MERCURY_PERIHELION), VerdictKind::Holds);
+        g.set("dim", KnobValue::UInt(5)).unwrap();
+        assert_eq!(verdict(&g, claims::OBSERVED_4D), VerdictKind::Fails);
+        assert_eq!(verdict(&g, EDDINGTON), VerdictKind::Inapplicable);
+        assert_eq!(verdict(&g, MERCURY_PERIHELION), VerdictKind::Inapplicable);
+        // Restoring D=4 restores the predictions.
+        g.set("dim", KnobValue::UInt(4)).unwrap();
+        assert_eq!(verdict(&g, claims::OBSERVED_4D), VerdictKind::Holds);
+        assert_eq!(verdict(&g, EDDINGTON), VerdictKind::Holds);
+    }
 }

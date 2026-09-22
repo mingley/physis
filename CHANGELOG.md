@@ -23,6 +23,11 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   markers, three role-refusal paths, and a positive control. Exit codes
   plus stable markers only; no prose goldens.
 
+- **U3: knob-diff coverage gaps.** Three new tests: Dirac dispersion on a
+  coarse lattice (`continuum`), SU(2) strong-coupling area law
+  (`gauge_field`), GR `dim` flip parking the solar tests (`relativity`).
+  Test-only; no behavior change.
+
 ### Plans
 
 - **Plan 007 (engineering track) approved.** Nine units U0-U8: gate

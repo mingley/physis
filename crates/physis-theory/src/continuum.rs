@@ -1784,4 +1784,15 @@ mod tests {
             "klein-gordon keeps the mass_squared knob"
         );
     }
+
+    #[test]
+    fn coarse_lattice_breaks_the_dirac_dispersion() {
+        // The Dirac knob → verdict diff: four sites cannot resolve E² = m² + k².
+        let mut d = DiracFermion::default();
+        assert_eq!(verdict(&d, DISPERSION), VerdictKind::Holds);
+        d.set("sites", KnobValue::UInt(4)).unwrap();
+        assert_eq!(verdict(&d, DISPERSION), VerdictKind::Fails);
+        // The naive doubling is still there on the coarse even lattice.
+        assert_eq!(verdict(&d, NO_DOUBLERS), VerdictKind::Fails);
+    }
 }

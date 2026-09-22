@@ -1072,6 +1072,17 @@ mod tests {
     }
 
     #[test]
+    fn su2_strong_coupling_area_law_is_knob_sensitive() {
+        // wilson-su2 is its own default-lab theory: σ = −ln(β/8) holds at
+        // β=2.3 and fails at very weak coupling, mirroring su3.
+        let mut w = WilsonSun::su2();
+        assert_eq!(w.id(), "wilson-su2");
+        assert_eq!(verdict(&w, STRONG_COUPLING_AREA_LAW), VerdictKind::Holds);
+        w.set("beta", KnobValue::Float(50.0)).unwrap();
+        assert_eq!(verdict(&w, STRONG_COUPLING_AREA_LAW), VerdictKind::Fails);
+    }
+
+    #[test]
     fn string_tension_matches_the_closed_form() {
         // −ln(β/2N²) for SU(3) at β=18 is exactly 0 (the strong-coupling radius).
         assert!(super::strong_coupling_string_tension(18.0, 3.0).abs() < 1e-12);
