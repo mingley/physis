@@ -43,6 +43,11 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   (TODO.md/plan 006) untouched. Each changing unit lands as its own atomic
   commit on main.
 
+- **Plan 007 executed.** All lanes done: U0 green; U1/U2/U3/U6/U7/U8
+  landed as atomic commits; U4/U5 recorded as findings (coverage check
+  built, `lab.rs` split aborted per guardrail). Outcomes appendix in
+  `plans/007-lab-improvement.md`; plan marked complete.
+
 ### Docs
 
 - **Reading-guide polish, no behavior change.** README quick start is

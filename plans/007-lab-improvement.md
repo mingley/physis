@@ -1,6 +1,6 @@
 # 007 — Lab improvement (engineering track)
 
-Status: active (plan). Audience: agents.
+Status: complete. Audience: agents.
 Does not weaken `specs/020-proof-carrying.md`. Does not fork TODO.md/plan 006.
 Calendar estimates are not used.
 
@@ -152,3 +152,68 @@ U4's recommendation; U8 is small and parallel-safe.
 
 None. All material facts were verified in the tree (see Context); the U4
 and U5 questions are answered by their own audits during execution.
+
+## Outcomes (recorded 2026-09-22; every commit on main)
+
+- U0 — green baseline verified by the lane agent (fmt, clippy
+  `-D warnings`, workspace tests, string-critique experiment,
+  `dec.d-squared-zero` prove). No commit.
+- U1 — landed: `gr.cosmological-constant-small` wired to
+  `cosmological_constant` (|Λ| ≤ 1e-2 holds); Dead-knobs note retired.
+- U2 — landed: docs/spec consistency audit (live `ClaimClass`
+  vocabulary, eight catalog identities, shipped domains).
+- U3 — landed: three knob-diff tests (Dirac dispersion, SU(2) area law,
+  GR `dim` flip).
+- U4 — read-only audit; findings below. No commit. Its recommendation
+  was implemented by U7.
+- U5 — map-only; split aborted per guardrail. Map below. No commit.
+- U6 — landed: facade CLI smoke tests (8 tests).
+- U7 — landed: lockstep ledger coverage check (per U4).
+- U8 — landed: MSRV story in CONTRIBUTING.
+
+## U4 ledger findings (verdict: tooling-recommended, coverage not generator)
+
+- Ledger `physis-constants/src/lib.rs`: `ConstantRelease`/`Constant<T>`
+  core (:419-452), 282-entry LEDGER registry (:10516), `lookup()` (:10817).
+  Triple-duplication entry pattern (value fn + `_source()` + pub fn);
+  283 pub fns (215 Interval, 54 Ratio, 3 SciExact, 10 SciInterval);
+  280 tests with pinned hash hex.
+- Mirror `physis-model/src/constants.rs`: 293 pub fns + C; 267 shared
+  names with the ledger; 26 model-only; 16 ledger-only.
+- Lockstep enforcement is ONE test
+  (`overlapping_qty_floats_lockstep_the_versioned_ledger`, ~11k lines):
+  exact `assert_eq` vs `to_f64`, hull containment, kind/name and
+  hash-inequality guards.
+- Value drift is low (exact asserts + hash pins fail loudly). The gap is
+  structural: nothing maps LEDGER names to lockstep blocks, so a new
+  entry can be silently uncovered.
+- Generator rejected: entries are bespoke in content (disambiguation
+  docs, prime notes, hash pins, 4 value types, heterogeneous semantics);
+  a data table would have to encode all prose anyway.
+- Implemented by U7: `covered` vec threaded through the lockstep test,
+  asserted equal to LEDGER minus a documented exclusion list, plus a
+  LEDGER-growth guard test.
+
+## U5 lab.rs module map (verdict: map-only, no split)
+
+- Survey: 29,553 lines, 196 fns = 64 prod (one `impl Lab` block,
+  L124-2703) + 132 test fns (`mod tests`, ~26.7k lines). Public API is
+  only `Lab` and `EXPERIMENTS`.
+- Blockers: B1 — 142 direct `self.<priv-field>` accesses across all 12
+  Lab fields (submodules need `pub(crate)` fields); B2 — 41 cross-calls
+  into 43 private handlers across every candidate boundary; B3 — tests
+  call private `gap_for` directly (13 sites); B4 — `include!` split
+  rejected (rustfmt skips included files, dropping fmt coverage).
+- Prod map (`lab/`): core (Lab, branches, journal, roles, budgets,
+  knob get/set, snapshot/restore); dispatch (exec, trust gates,
+  journal restore); experiments (EXPERIMENTS, sweep, compare, design);
+  evidence; numeric (enclose); provenance (cite, constant); encoding;
+  judgment; query (inspect, gaps); prove (+reproduce); review; research
+  (loop, hypothesize, falsify, formalize, sensitivity).
+- Test map (132 fns): verdict_render, knob_flips (~17), hypothesize_ir
+  (~45, largest), prove_review (~14), evidence_store (~19), roles (~10),
+  workflow (~12).
+- Recommendation: a split needs an explicit waiver for `pub(crate)`
+  visibility widening (no public API change) with tests moving
+  alongside; otherwise keep single-file (prod logic is only ~2.8k
+  lines; 90% is tests).
