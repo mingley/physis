@@ -27,7 +27,10 @@ A claim is a sentence with:
   formal-library identity)
 - `ClaimCommitments` so a unit or ∀/∃ change is a new identity without
   renaming the lab slug
-- catalog identities (`d²`, interval, composition, mass shell) are
+- catalog identities (`dec.d-squared-zero`, `dec.d-squared-one`,
+  `sr.invariant-interval`, `sr.subluminal-composition`,
+  `sr.energy-momentum-invariant`, `sr.cross-product-jacobi`,
+  `sr.lagrange-identity`, `sr.matrix-det-product`) are
   `IdentitySpec::lab_claim()` so ExactIdentity and `physis review` bind
   to that FormalClaim, not the slug
 - an evaluator that returns `Verdict { kind, class, derivation, empirical, semantic, summary, evidence }`

@@ -27,8 +27,12 @@ Each line is a one-shot lab (fresh defaults). Library users keep a `Lab` alive t
 
 ## How to read the matrix
 
-- `holds` + `theorem` — trust this cell as a fact about the *encoding of the construction*
-- `holds` + `encoded-fact` — textbook result stored as data
+Verdict (`holds` / `fails` / …) is one axis; `class` is another. There is no
+`theorem` tag: a kernel-checked result is a `Verified<T>` receipt, not a label
+an encoding can set.
+
+- `holds` + `model-internal` (`executed`) — trust this cell as a fact about the *encoding of the construction*
+- `holds` + `phenomenological` — textbook result stored or checked as data
 - `holds` + `heuristic` — folklore, knob-sensitive
 - `holds` + `conjecture` — the program asserts it; we did not derive it
 - `fails` — the current knobs violate the claim

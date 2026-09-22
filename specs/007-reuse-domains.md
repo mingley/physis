@@ -19,23 +19,27 @@ Layer: all
 ## Shared goods every domain gets for free
 
 - Dimensional quantities (electricity needs this immediately)
-- Knobs, claims, verdicts, epistemic tags
+- Knobs, claims, verdicts, assurance axes (`class`, `derivation`, `empirical`, `semantic`)
 - Agent protocol and journal
 - The rule that illegal states are type errors or domain errors
 
-## Electricity (planned)
+## Electricity (shipped)
 
-See `plans/004-m3-domain-reuse.md`. Sketch:
+See `specs/008-electromagnetism.md` and `plans/004-m3-domain-reuse.md`
+(`em-vacuum` experiment: `maxwell-vacuum`, `linear-medium`, `ohm-circuit`):
 
-- Knobs: permittivity, permeability, or more honestly: unit system + Maxwell constitutive knobs in a linear medium
-- Claims: Gauss, Faraday, speed of EM waves `1/√(εμ)` matching `c` in vacuum (this should become a theorem in the encoding)
-- Control: circuit theory as an *effective* layer of Maxwell
+- Knobs: `epsilon_r`, `mu_r` on `linear-medium`; `frequency_hz` on `ohm-circuit`
+- Claims: Gauss, Faraday, Ampère–Maxwell, speed of EM waves `1/√(εμ)` matching `c` in vacuum (`em.wave-speed-c` holds as a model-internal evaluated claim, not a stored fact)
+- Control: circuit theory as an *effective* layer of Maxwell (`ohm-circuit`)
 
-## Computation (planned)
+## Computation (shipped)
+
+See `specs/009-computation.md` (`computation` experiment:
+`combinational-circuit`, `turing-machine`, plus the `landauer-engine` bridge):
 
 - States as typed configurations
-- Claims: invariants, complexity upper/lower bounds tagged honestly
-- A reversible-computing / Landauer experiment sitting on `information` + `statistical` once those layers exist
+- Claims: invariants, complexity upper/lower bounds tagged honestly (`comp.p-equals-np` is `undecidable`, class `open-problem`)
+- A reversible-computing / Landauer check on `information` + `statistical` (`run landauer-engine`)
 
 ## What reuse is not
 

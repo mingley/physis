@@ -93,11 +93,11 @@ reversibility (thermo-free still fails).
 
 ## Honest unknowns: P vs NP
 
-`comp.p-equals-np` is `undecidable` with epistemic tag `open` for the Turing
+`comp.p-equals-np` is `undecidable` with class `open-problem` for the Turing
 machine. This is deliberate: the lab refuses to record `holds` or `fails` for a
 famous open problem. It is `inapplicable` to a single fixed circuit (P vs NP is
 about uniform machine models). This is the epistemic honesty the whole project
-is built on — an `open` verdict is a first-class, respected outcome.
+is built on — an `undecidable` verdict with class `open-problem` is a first-class, respected outcome.
 
 ## The knob → verdict diff
 

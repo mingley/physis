@@ -29,8 +29,8 @@ Eric Weinstein’s public critique (string theory as a wrong turn; uniqueness an
 | `type-iib` | Type IIB superstring (chiral N=2, no perturbative GUT group) |
 | `type-iia` | Type IIA superstring (non-chiral N=2, no perturbative GUT group) |
 | `type-i` | Type I superstring (open + closed, Chan-Paton SO(32); `add-chan-paton-16` is IR) |
-| `heterotic-e8e8` | Heterotic E₈×E₈ (SM embedding is an encoded fact; `add-missing-e8` is IR) |
-| `heterotic-so32` | Heterotic SO(32) (SM embedding is an encoded fact; `add-so16` is IR) |
+| `heterotic-e8e8` | Heterotic E₈×E₈ (SM embedding is phenomenological; `add-missing-e8` is IR) |
+| `heterotic-so32` | Heterotic SO(32) (SM embedding is phenomenological; `add-so16` is IR) |
 | `bosonic` | 26D bosonic string (tachyon, no fermions) |
 | `m-theory` | 11D M-theory (membrane; critical dimension 11) |
 | `observer-geometry` | unique-geometry scaffold (total D = observed 4 + fibre 10; the fibre 10 is the minimal carrier of Spin(10), so 14 is a toy constraint, not a magic number) |
@@ -38,9 +38,9 @@ Eric Weinstein’s public critique (string theory as a wrong turn; uniqueness an
 All five superstring/M constructions plus the bosonic string are in the default
 lab and matrix. Type II and M have no perturbative 10D/11D GUT group, so their
 `empirical.sm-gauge` is `undecidable`; the SO(32)/E₈×E₈ constructions carry an
-encoded SM embedding, so theirs `holds` (as `encoded-fact`).
+encoded SM embedding, so theirs `holds` (as `phenomenological`).
 
-## Distinctive string facts encoded as theorems / encoded facts
+## Distinctive string facts encoded as model-internal / phenomenological claims
 
 - Critical dimension **derived from the conformal anomaly** (not tabulated):
   `c_matter·D + c_ghost = 0` gives 26 (bosonic: `1·D − 26`) and 10 (superstring:
@@ -50,9 +50,9 @@ encoded SM embedding, so theirs `holds` (as `encoded-fact`).
 - Bosonic tachyon
 - Superstring tachyon absence when SUSY is on
 - Closed strings include a graviton
-- Heterotic 10D gauge groups SO(32) and E₈×E₈, with SM embeddings as encoded facts
+- Heterotic 10D gauge groups SO(32) and E₈×E₈, with SM embeddings as phenomenological claims
 - Type II 10D theories have no GUT group; SM from compactification/branes is `undecidable` here
-- Green–Schwarz anomaly cancellation selects exactly SO(32) and E₈×E₈ in 10D N=1 (both dimension 496). `consistency.anomaly-cancellation` encodes this via `GaugeGroup::gs_anomaly_free_10d` — an `encoded-fact`, not a re-derivation of the anomaly polynomial. It is knob-sensitive: off the critical dimension the claim is `undecidable`. The bosonic string is `inapplicable` (non-chiral). The Standard Model row is an **exact Ratio certificate**: all four gauge
+- Green–Schwarz anomaly cancellation selects exactly SO(32) and E₈×E₈ in 10D N=1 (both dimension 496). `consistency.anomaly-cancellation` encodes this via `GaugeGroup::gs_anomaly_free_10d` — `phenomenological`, not a re-derivation of the anomaly polynomial. It is knob-sensitive: off the critical dimension the claim is `undecidable`. The bosonic string is `inapplicable` (non-chiral). The Standard Model row is an **exact Ratio certificate**: all four gauge
 anomalies — `[SU(3)]²U(1)`, `[SU(2)]²U(1)`, `[grav]²U(1)` (`ΣY`), and
 `[U(1)]³` (`ΣY³`) — are summed over one generation from the representation
 content and vanish identically, and the SU(2) doublet count is even (Witten).
@@ -91,7 +91,7 @@ The Standard Model also carries `sm.hypercharge-derivation`, which goes one step
 Not v0. A serious claim would need at least one of:
 
 - A **theorem-level** obstruction that applies to all viable constructions (not just the bosonic tachyon, not just a heuristic landscape)
-- A competing construction whose empirical rows are `theorem` or `encoded-fact` and whose uniqueness is not an axiom
+- A competing construction whose empirical rows are `model-internal` or `phenomenological` and whose uniqueness is not an axiom
 
 Until then, the output is the matrix plus knob diffs. That is already more than a podcast.
 

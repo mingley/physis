@@ -106,9 +106,9 @@ The lab contrasts compact U(1) (QED-like) with SU(2)/SU(3) Yang–Mills:
 - U(1) is **not** asymptotically free and **deconfines** in 4D above β ≈ 1.01.
 - SU(N) **is** asymptotically free and is *expected* to confine in 4D — but 4D
   Yang–Mills existence and the mass gap are unproven (a Clay Millennium
-  Problem), so `gauge.confining` for SU(N) in 4D `holds` with epistemic tag
-  `conjecture`, not `theorem`. This is the honesty discipline again: a famous
-  open problem is recorded as open.
+  Problem), so `gauge.confining` for SU(N) in 4D `holds` with class
+  `conjecture`. There is no `theorem` tag to assign. This is the honesty
+  discipline again: a famous open problem is recorded as open.
 
 In two dimensions the gauge theories are **exactly solvable**. For compact U(1)
 the gauge integral factorizes plaquette by plaquette, so the fundamental Wilson
@@ -142,7 +142,7 @@ physis set wilson-su3 beta 100      # weak coupling: strong-coupling area law fa
 ## Non-goals (this milestone seed)
 
 - A full 3+1 lattice field theory or a real-time PDE solver.
-- Monte-Carlo sampling behind confinement verdicts (still encoded facts plus
+- Monte-Carlo sampling behind confinement verdicts (still phenomenological cells plus
   one heuristic 4D U(1) transition).
 - Interactions / renormalization beyond the Wilson stencil.
 

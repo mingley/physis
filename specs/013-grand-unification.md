@@ -35,7 +35,7 @@ empirically refuted — exactly the epistemic honesty the project is built on.
 
 | id | meaning | status |
 |---|---|---|
-| `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10`. On `su5-gut` this names a complete 5bar + 10 generation. `add-missing-10` appends `missing 10` and the cell fails. That is not a knob. `supersymmetric` stays a knob | `encoded-fact`, holds (verified chain). Domain: complete 5bar + 10 generation |
+| `gut.sm-embedding` | SM fermions fill `5̄ ⊕ 10`. On `su5-gut` this names a complete 5bar + 10 generation. `add-missing-10` appends `missing 10` and the cell fails. That is not a knob. `supersymmetric` stays a knob | `phenomenological`, holds (verified chain). Domain: complete 5bar + 10 generation |
 | `gut.charge-quantization` | `Tr Q = 0` over the multiplet forces quantized charge | **executed** (`ΣY`, already the grav anomaly; not a second P3N) |
 | `gut.weinberg-angle` | `sin²θ_W = 3/8` at unification | **exact Ratio** / P3N, not GQW at `M_Z`. Domain: unification-scale |
 | `gut.weinberg-angle-mz` | GQW running of that 3/8 down to `M_Z` matches 0.231 | **computed** (one-loop RGE), knob-sensitive, `heuristic`. Domain: `M_Z` |

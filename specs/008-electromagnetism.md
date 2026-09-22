@@ -36,16 +36,16 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 
 ## Claims
 
-| id | meaning | epistemic |
+| id | meaning | class |
 |---|---|---|
-| `em.wave-speed-c` | EM waves travel at c | theorem (vacuum); fails in a medium |
-| `em.gauss` | Gauss's law | theorem on `maxwell-vacuum` (named domain: source-free massless Maxwell). `add-proca` appends `proca m2 A` and the Coulomb residual of `∇·E + m² φ` is the Proca mass term, so this cell fails. That is not a knob. Linear-medium Gauss stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Gauss is lumped Q = CV (encoding-wide Holds) |
-| `em.faraday` | Faraday's law | theorem on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays an encoded macroscopic fact (encoding-wide). Ohm-circuit Faraday is lumped KVL (named domain: lumped Kirchhoff voltage). `add-flux` appends `loop dPhi/dt` and the mesh residual of `∮E·dl + dΦ/dt` is `dB/dt × L²`, so this cell fails. That is not a knob |
-| `em.ampere` | Ampère–Maxwell law | theorem (vacuum: verified numerically on a plane wave); encoded-fact in a medium |
-| `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | theorem in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
-| `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | theorem on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. `add-chiral` appends `constitutive chiral` and n_L ≠ n_R, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
-| `em.lorentz-invariance` | boost invariance of the field equations | theorem (vacuum); fails in a medium or circuit |
-| `em.quasi-static-valid` | the lumped-element approximation is valid | encoded-fact (ohm-circuit names `λ > 100 ×` circuit size); inapplicable to full Maxwell (encoding-wide) |
+| `em.wave-speed-c` | EM waves travel at c | model-internal (vacuum, evaluated); fails in a medium |
+| `em.gauss` | Gauss's law | model-internal on `maxwell-vacuum` (named domain: source-free massless Maxwell; verified numerically on a Coulomb field). `add-proca` appends `proca m2 A` and the Coulomb residual of `∇·E + m² φ` is the Proca mass term, so this cell fails. That is not a knob. Linear-medium Gauss stays a phenomenological macroscopic fact (encoding-wide). Ohm-circuit Gauss is lumped Q = CV (encoding-wide Holds) |
+| `em.faraday` | Faraday's law | model-internal on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`; verified numerically on a plane wave). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays a phenomenological macroscopic fact (encoding-wide). Ohm-circuit Faraday is lumped KVL (named domain: lumped Kirchhoff voltage). `add-flux` appends `loop dPhi/dt` and the mesh residual of `∮E·dl + dΦ/dt` is `dB/dt × L²`, so this cell fails. That is not a knob |
+| `em.ampere` | Ampère–Maxwell law | model-internal (vacuum: verified numerically on a plane wave); phenomenological in a medium |
+| `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | model-internal in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
+| `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | model-internal on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. `add-chiral` appends `constitutive chiral` and n_L ≠ n_R, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
+| `em.lorentz-invariance` | boost invariance of the field equations | model-internal (vacuum, evaluated); fails in a medium or circuit |
+| `em.quasi-static-valid` | the lumped-element approximation is valid | phenomenological (ohm-circuit names `λ > 100 ×` circuit size); inapplicable to full Maxwell (encoding-wide) |
 
 ## The control: `ohm-circuit`
 
@@ -78,7 +78,7 @@ differences to satisfy `∂B/∂t + ∇×E = 0` and `∂E/∂t − ∇×B = 0` t
 the residual of `∂B/∂t + ∇×E + J_m` is the uniform current and Faraday fails.
 A Proca mass term is a second package mutation (`add-proca`): the Coulomb
 residual of `∇·E + m² φ` is the mass term and Gauss fails. In a medium
-Faraday/Ampère/Gauss revert to encoded facts (macroscopic form).
+Faraday/Ampère/Gauss revert to phenomenological cells (macroscopic form).
 
 ## The theorem
 
@@ -91,7 +91,7 @@ correct SI dimensions. Then
 
 type-checks (the units cancel by construction) and evaluates to `1` to CODATA
 precision. That *is* `1/√(ε₀μ₀) = c`. The `em.wave-speed-c` claim reports it as
-a theorem in vacuum.
+a model-internal evaluated claim in vacuum.
 
 ## Knob → verdict
 
@@ -119,8 +119,9 @@ neither is a silent linear-medium install.
 ## Non-goals (this milestone)
 
 - A PDE field solver or a numerical FDTD engine.
-- Typed exterior calculus / differential forms (a later milestone may encode
-  Faraday/Ampère as `dF = 0`, `d⋆F = ⋆J`).
+- Smooth differential forms. Discrete exterior calculus shipped separately
+  (`specs/015-exterior-calculus.md`): the de Rham coboundary makes `d ∘ d = 0`
+  exact on a simplicial complex, the algebra behind homogeneous `dF = 0`.
 - Circuit theory (`ohm-circuit`) as a full SPICE engine or transmission-line
   PDE. The IR forks are a delay equation and a lumped Faraday residual,
   not a simulator.

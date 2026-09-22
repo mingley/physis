@@ -44,6 +44,12 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   lattices plus Wilson plaquettes); `THEORIES.md` gains a pointers section
   for theories beyond the flagship page. Links checked against the tree.
 
+- **U2: consistency audit.** Specs and docs now use the live `ClaimClass`
+  vocabulary (`model-internal`, `phenomenological`, `open-problem`; no
+  `theorem` tag), name all eight catalog identities, mark electricity
+  and computation shipped, and record the discrete-exterior-calculus
+  follow-up. Every rename verified against `assurance.rs`/catalog/em.rs.
+
 ### Theory
 
 - **Gravity deflection and perihelion name an RK4 error budget.** Default
