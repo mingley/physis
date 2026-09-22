@@ -10,6 +10,12 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### CI
+
+- **U8: MSRV story documented.** CONTRIBUTING gains the floor (Rust 1.85
+  via workspace `rust-version`, inherited by all 15 crates), the stable
+  day-to-day toolchain, and why no pinned-1.85 CI job exists.
+
 ### Tests
 
 - **U6: facade CLI smoke tests.** New `crates/physis/tests/cli_smoke.rs`

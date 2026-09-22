@@ -16,6 +16,22 @@ cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
+## MSRV story
+
+- Floor: Rust 1.85, declared once as workspace `rust-version` in
+  [Cargo.toml](Cargo.toml) and inherited by every crate
+  (`rust-version.workspace = true`). Do not use language or library
+  features newer than 1.85 in workspace code.
+- Day-to-day toolchain: stable (`rust-toolchain.toml`; CI installs
+  `dtolnay/rust-toolchain@stable`). CI gates stable only — fmt check,
+  `clippy -D warnings`, workspace tests, the `string-critique`
+  experiment, and the `dec.d-squared-zero` prove. There is deliberately
+  no pinned-1.85 CI job: the edition-2021 workspace rarely risks
+  MSRV drift, and a second toolchain job would slow every gate for
+  little signal.
+- Raising the floor means changing the workspace `rust-version` and this
+  section together, in one commit.
+
 ## Adding a theory
 
 1. New file under `crates/physis-theory/src/`.
