@@ -12,7 +12,15 @@ A theory is not a PDF. It is an object that can be wrong *inside the lab*.
 
 ## String constructions
 
-`StringTheory` is parameterized by `StringKind`. Critical dimension is a theorem of the construction. Landscape uniqueness is a heuristic that grows with extra dimensions and `flux_bits`. Complete `E8 x E8` lives on the IR package of `heterotic-e8e8`; `hypothesize heterotic-e8e8` forks a missing E8 as IR (`add-missing-e8`); that is not the `kind` or `total_dim` knob. Complete `SO(32)` lives on the IR package of `heterotic-so32`; `hypothesize heterotic-so32` forks `SO(16)` as IR (`add-so16`); that is not those knobs. Complete `Chan-Paton SO(32)` lives on the IR package of `type-i`; `hypothesize type-i` forks `Chan-Paton SO(16)` as IR (`add-chan-paton-16`); that is not those knobs. Other string constructions have no package.
+`StringTheory` is parameterized by `StringKind`. Critical dimension is a theorem of the construction. Landscape uniqueness is a heuristic that grows with extra dimensions and `flux_bits`.
+
+Complete gauge data lives on IR packages, probed with `hypothesize` (package forks, not knob turns):
+
+- `heterotic-e8e8`: complete `E8 x E8`; `add-missing-e8` forks a missing E8
+- `heterotic-so32`: complete `SO(32)`; `add-so16` forks `SO(16)`
+- `type-i`: complete Chan-Paton `SO(32)`; `add-chan-paton-16` forks `SO(16)`
+
+Other string constructions have no package.
 
 The bosonic string is included because it is the cleanest *theorem-level* failure mode we have (tachyon, no fermions). Superstrings are the serious candidates; they should not be confused with it.
 
@@ -33,6 +41,10 @@ This object exists so uniqueness can sit on the same matrix as the string landsc
 ## Olbers' paradox
 
 **Static Euclidean starlight** is inverse-square cancellation applied to an infinite, eternal, uniformly filled sky — a standing 19th-century theory. It holds its axiom (`astro.shell-cancellation`: `dF/dr` independent of `r`) and fails the observations (finite integrated brightness, a dark night sky). A **finite-age horizon** keeps the axiom and holds those observations: `F = ρ_L c t`, `τ ~ 10⁻¹⁵` at a Hubble time. **Hubble dimming** is an independent knob: `dF = ρ_L dr / (1+z)²` saturates at `ρ_L c/H`, so cancellation *fails* and the sky stays dark. **Tired light** is an IR mutation on `olbers-static`, not those knobs: `dF ∝ e^{-Hr/c} dr` fails cancellation and caps energy, while covering `τ = n σ R` still diverges. `set olbers-static finite_age true` is the finite-age resolution. `set olbers-horizon age_yr 1e26` is the reminder that a merely finite universe is not automatically dark.
+
+## Beyond this page
+
+This page covers the flagship matrix plus cavity, solid, and night-sky theories. Everything else implements the same `Theory` trait; start from the experiments table in the [README](../README.md), the knob inventory in [KNOBS.md](KNOBS.md), and the contracts in `specs/` (notably `008` electromagnetism, `009` computation, `010` continuum, `011` thermodynamics, `012` quantum foundations, `013` grand unification, `014` special relativity, `015` exterior calculus).
 
 ## Adding one
 

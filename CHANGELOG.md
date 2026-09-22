@@ -10,6 +10,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Docs
+
+- **Reading-guide polish, no behavior change.** README quick start is
+  grouped with section comments and ten duplicated lines removed; the
+  crate table condenses the `physis-constants` ledger row; the experiment
+  count is fixed (eleven experiments across five domains).
+  `docs/README.md` is a start-here guide by audience;
+  `AGENT-PROTOCOL.md` documents global flags and the 13-role gate table;
+  `LAYERS.md` no longer claims the field layer is flags-only (M4 partial:
+  lattices plus Wilson plaquettes); `THEORIES.md` gains a pointers section
+  for theories beyond the flagship page. Links checked against the tree.
+
 ### Theory
 
 - **Gravity deflection and perihelion name an RK4 error budget.** Default

@@ -55,7 +55,7 @@ This repository does **not** decide whether string theory is false. It makes the
 | `physis-ir` | declarative theory packages and constrained mutations |
 | `physis-audit` | red-team corpus |
 | `physis-semantic` | encoding review from evidence; no `Canonical` variant |
-| `physis-constants` | versioned SI 2019 defining constants (`Ratio` / `SciExact` for `h`) and CODATA `G`/`mu0`/`epsilon0`/`Z0`/`alpha`/`inv_alpha`/`cRinf`/`hcRinf`/`Rinf`/`a0`/`Eh`/`me_mmu`/`me_mp`/`me_mn`/`me_md`/`me_mt`/`me_mh`/`me_malpha`/`e_me`/`M_e`/`lambdabar_C`/`lambda_C`/`re`/`mu_e`/`mu_e_muB`/`mu_e_muN`/`ae`/`ge`/`mu_e_mmu`/`mu_e_mup`/`mu_e_mu0p`/`mu_e_mun`/`mu_e_mud`/`mu_e_mu0h`/`m_mu`/`m_mu_u`/`m_mu_c2`/`m_mu_c2_MeV`/`mmu_me`/`mmu_mp`/`mmu_mn`/`M_mu`/`lambda_C_mu`/`mu_mu`/`mu_mu_muB`/`mu_mu_muN`/`amu`/`gmu`/`mu_mu_mup`/`m_p` (`Interval`); `physis constant [name]` rebuilds; omitted name rebuilds the full LEDGER; overlapping `physis_model` Qty floats lockstep the ledger (e/k via SI decimal, not reduced Ratio::to_f64) |
+| `physis-constants` | versioned SI 2019 defining constants + CODATA 2018 ledger (`Ratio` / `SciExact` / `Interval`); `physis constant [name]` rebuilds one entry, omitted name rebuilds the full LEDGER; overlapping `physis_model` Qty floats lockstep the ledger |
 | `physis-agent` | Lab, protocol v2, hash-linked journal |
 | `physis` | Facade + CLI |
 
@@ -78,7 +78,7 @@ Read `class` and `derivation` before treating a cell as physics. A `holds` that 
 
 ## Five domains, one substrate
 
-The same typed knob→verdict machine hosts five sciences (`physis experiments`):
+The same typed knob→verdict machine hosts eleven experiments across five domains (`physis experiments` lists them):
 
 | experiment | what it scrutinizes |
 |---|---|
@@ -152,12 +152,15 @@ Empirically confirmed description currently bottoms out at **quantum fields of t
 ## Quick start
 
 ```bash
+# baseline: green tests, then survey the lab
 cargo test --workspace
 cargo run -p physis -- layers
 cargo run -p physis -- theories
 cargo run -p physis -- knobs type-iib
 cargo run -p physis -- run type-iib
 cargo run -p physis -- set type-iib total_dim 9
+
+# every domain on the same substrate
 cargo run -p physis -- experiments
 cargo run -p physis -- experiment string-critique
 cargo run -p physis -- experiment em-vacuum
@@ -167,6 +170,8 @@ cargo run -p physis -- experiment gauge-lattice
 cargo run -p physis -- experiment thermo
 cargo run -p physis -- experiment blackbody
 cargo run -p physis -- experiment solid
+
+# heat capacity: knob turns and IR forks
 cargo run -p physis -- set einstein-solid temperature 4000
 cargo run -p physis -- set einstein-solid spectrum debye   # T³ fails → holds
 cargo run -p physis -- hypothesize debye-solid            # add-2d is IR, not set
@@ -176,12 +181,16 @@ cargo run -p physis -- hypothesize heterotic-so32         # add-so16 is IR, not 
 cargo run -p physis -- hypothesize type-i                 # add-chan-paton-16 is IR, not set
 cargo run -p physis -- hypothesize standard-model         # add-missing-eR is IR, not set
 cargo run -p physis -- hypothesize observer-geometry      # add-missing-spin10 is IR, not set
+
+# gravity, night sky, Bell
 cargo run -p physis -- experiment gravity
 cargo run -p physis -- set general-relativity dim 5
 cargo run -p physis -- experiment olbers
 cargo run -p physis -- hypothesize olbers-static  # add-tired-light is IR, not set
 cargo run -p physis -- set olbers-static finite_age true   # catastrophe fails → holds
 cargo run -p physis -- experiment bell
+
+# geometry, relativity, radiation, unification
 cargo run -p physis -- run de-rham          # d²=0, Betti numbers; set shape disk/circle/torus/klein/sphere
 cargo run -p physis -- run special-relativity   # invariants; then flip absolute_time
 cargo run -p physis -- hypothesize special-relativity  # add-binomial-gamma and add-minus-uv are IR, not set
@@ -191,6 +200,8 @@ cargo run -p physis -- set planck quantum false   # ultraviolet catastrophe
 cargo run -p physis -- run su5-gut          # SU(5): 3/8 at M_GUT; GQW misses 0.231 at M_Z
 cargo run -p physis -- hypothesize su5-gut  # add-missing-10 is IR, not set
 cargo run -p physis -- set su5-gut supersymmetric true   # GQW + unification fail → hold
+
+# evidence, proofs, and trust inspection
 cargo run -p physis -- score heterotic-e8e8
 cargo run -p physis -- epistemics
 cargo run -p physis -- why consistency.critical-dimension
@@ -204,6 +215,8 @@ cargo run -p physis -- inspect judgment statistical-computed
 cargo run -p physis -- inspect judgment empirical-excluded
 cargo run -p physis -- why gut.weinberg-angle-mz-interval
 cargo run -p physis -- why gut.proton-lifetime-sk
+
+# roles gate authority (each refusal is the feature working)
 cargo run -p physis -- --role explorer prove dec.d-squared-zero   # refused
 cargo run -p physis -- --role explorer score standard-model       # refused
 cargo run -p physis -- --role empirical-analyst score standard-model
@@ -212,24 +225,16 @@ cargo run -p physis -- --role explorer enclose gut.weinberg-angle   # refused
 cargo run -p physis -- --role provenance-auditor cite gut.proton-lifetime-sk
 cargo run -p physis -- --role reviewer cite gut.proton-lifetime-sk  # refused
 cargo run -p physis -- --role formalizer formalize dec.d-squared-zero
-cargo run -p physis -- prove dec.d-squared-zero
 cargo run -p physis -- --role proof-searcher reproduce dec.d-squared-zero  # refused
 cargo run -p physis -- --role replication-agent reproduce dec.d-squared-zero  # not P4
+
+# gaps, loops, forks, sweeps
 cargo run -p physis -- gaps
 cargo run -p physis -- loop
 cargo run -p physis -- falsify consistency.critical-dimension
 cargo run -p physis -- hypothesize type-iib
 cargo run -p physis -- hypothesize combinational-circuit
 cargo run -p physis -- hypothesize turing-machine  # add-oracle is IR, not set
-cargo run -p physis -- hypothesize olbers-static   # add-tired-light is IR, not set
-cargo run -p physis -- hypothesize su5-gut         # add-missing-10 is IR, not set
-cargo run -p physis -- hypothesize debye-solid     # add-2d is IR, not set
-cargo run -p physis -- hypothesize dulong-petit    # add-quartic is IR, not set
-cargo run -p physis -- hypothesize heterotic-e8e8  # add-missing-e8 is IR, not set
-cargo run -p physis -- hypothesize heterotic-so32  # add-so16 is IR, not set
-cargo run -p physis -- hypothesize type-i          # add-chan-paton-16 is IR, not set
-cargo run -p physis -- hypothesize standard-model  # add-missing-eR is IR, not set
-cargo run -p physis -- hypothesize observer-geometry  # add-missing-spin10 is IR, not set
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- enclose gut.weinberg-angle
 cargo run -p physis -- cite gut.proton-lifetime-sk

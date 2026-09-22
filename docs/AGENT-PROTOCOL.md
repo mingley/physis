@@ -31,6 +31,37 @@ cargo run -p physis -- replay session.jsonl
 cargo run -p physis -- --json experiment string-critique
 ```
 
+## Global flags
+
+| Flag | Meaning |
+|---|---|
+| `--journal <file.jsonl>` | Record the session across process runs; each run restores prior state first |
+| `--json` | Structured output for agents (typed matrices + verdict diffs) |
+| `--role <role>` | Run as a named role (default `lab`); the lab refuses commands outside the role |
+| `--budget prove=N,review=N,set=N` | Cap those actions per lab; application-level counts, not time/memory limits |
+
+## Roles
+
+Thirteen roles (`lab` default). Roles are application permissions, not process
+isolation or authenticated identity. Each row names the role's characteristic
+command; refusals name the protocol verb.
+
+| Role | Does | Cannot |
+|---|---|---|
+| `lab` | full protocol | — |
+| `explorer` | observe, inspect, compare, hypothesize | set, prove, review, score, audit; cannot mint |
+| `formalizer` | emit untrusted encoding (`formalize`) | prove |
+| `proof-searcher` | request a dual-check mint (`prove`) | remint a stored receipt |
+| `falsifier` | search failing evaluations (`falsify`) | prove, review |
+| `reviewer` | request encoding review (`review`) | prove |
+| `auditor` | run the red-team corpus (`audit`) | prove, review |
+| `replication-agent` | remint a stored receipt in-process (`reproduce`, not P4) | prove |
+| `empirical-analyst` | score a theory (`score`) | prove |
+| `numerical-verifier` | parse a `CertifiedNumeric` enclosure (`enclose`) | prove |
+| `provenance-auditor` | rebuild a SourceRecord / Constant (`cite`, `constant`) | prove, review |
+| `encoding-auditor` | round-trip an IR package (`encode`) | prove, review |
+| `judge` | rebuild a `from_lab` judgment (`judge`) | prove; JSON cannot mint `logical proved` |
+
 ## Library
 
 ```rust,ignore

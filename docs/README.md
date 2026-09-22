@@ -1,5 +1,13 @@
 # physis documentation
 
+## Start here
+
+- **New to the lab?** Read the [README](../README.md), then [RESEARCH-LAB.md](RESEARCH-LAB.md), then run the [string lab](STRING-EXPERIMENT.md).
+- **Implementing a task?** Pick one up from [TODO.md](../TODO.md), follow [the research workflow](RESEARCH-LAB.md), and check [ARCHITECTURE.md](ARCHITECTURE.md) for the crate you touch.
+- **Driving the CLI as an agent?** See [AGENT-PROTOCOL.md](AGENT-PROTOCOL.md) for commands, flags, roles, and journals.
+
+## Page index
+
 | Doc | Contents |
 |---|---|
 | [RESEARCH-LAB.md](RESEARCH-LAB.md) | Research approach, current CLI session, evidence reading and agent handoff |

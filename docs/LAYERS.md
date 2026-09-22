@@ -14,7 +14,7 @@ A claim names a layer. A knob names a layer. Worlds are slices across layers. Wh
 
 **quantum.** Finite kets, Born rule, Pauli. Enough to prove the layer is real. Not QFT.
 
-**field.** Occupied by theory flags (`kind`, `supersymmetry`) until M4.
+**field.** Klein–Gordon and Dirac 1D lattices plus Wilson U(1)/SU(2)/SU(3) plaquettes as live IR packages (M4 partial); theory flags (`kind`, `supersymmetry`) remain for string constructions. Not yet 3+1 dynamics.
 
 **particle.** SM catalog. Graviton is `Hypothetical`.
 
