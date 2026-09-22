@@ -38,6 +38,14 @@ const QUADRATIC_XI: f64 = 1.0;
 /// Brans–Dicke ω used as residual evidence. ω → ∞ recovers GR
 /// solar tests and the uniqueness cell still fails.
 const BRANS_DICKE_OMEGA: f64 = 1.0;
+/// The cosmological constant is small in Planck units, so the Λ = 0
+/// Schwarzschild background behind the solar-system cells applies.
+pub const LAMBDA_SMALL: &str = "gr.cosmological-constant-small";
+/// Order-of-magnitude ceiling for [`LAMBDA_SMALL`]: |Λ| at or below this
+/// (in Planck units) counts as a flat background at the knob's own
+/// resolution. The observed Λℓ_P² ~ 10⁻¹²² is far below it; Λ = ±1 puts
+/// the de Sitter radius at a few Planck lengths.
+const LAMBDA_SMALL_MAX: f64 = 1e-2;
 
 fn parse_gr_action(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
     let mut eh = false;
@@ -139,7 +147,7 @@ const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "cosmological_constant",
         layer: LayerId::Spacetime,
-        doc: "Λ in Planck units (order-of-magnitude knob, not a precision cosmology fit).",
+        doc: "Λ in Planck units (order-of-magnitude knob, not a precision cosmology fit). |Λ| above 1e-2 fails gr.cosmological-constant-small.",
         origin: ParameterOrigin::Chosen,
         domain: KnobDomain::Float {
             min: -1.0,
@@ -384,6 +392,12 @@ impl Theory for GeneralRelativity {
                 "A unique classical Lagrangian is not a unique quantum vacuum. Using \
                  this as a string-landscape theorem is a new claim.",
             )),
+            claims::c(
+                LAMBDA_SMALL,
+                "The cosmological constant is small in Planck units (|Λ| ≤ 0.01), so the Λ = 0 Schwarzschild background behind the solar-system cells applies.",
+                LayerId::Spacetime,
+                ClaimClass::ModelInternal,
+            ),
         ];
         c.extend(solar_claims());
         c
@@ -444,6 +458,27 @@ impl Theory for GeneralRelativity {
                         claim,
                         "classical GR is a unique theory given D and Λ, not a landscape of 10^500 vacua",
                     )
+                }
+            }
+            LAMBDA_SMALL => {
+                let lambda = self.cosmological_constant;
+                if lambda.abs() <= LAMBDA_SMALL_MAX {
+                    Verdict::holds(
+                        claim,
+                        "Λ is small in Planck units; the Λ = 0 solar background applies",
+                    )
+                    .with_evidence([format!(
+                        "Λ = {lambda} (Planck units); |Λ| ≤ {LAMBDA_SMALL_MAX} keeps the Schwarzschild solar cells self-consistent"
+                    )])
+                } else {
+                    Verdict::fails(
+                        claim,
+                        "Planck-scale Λ curves even the solar-system background",
+                    )
+                    .with_evidence([format!(
+                        "Λ = {lambda} (Planck units); |Λ| > {LAMBDA_SMALL_MAX}: de Sitter radius √(3/|Λ|) ≈ {:.2} ℓ_P, not a Λ = 0 background",
+                        (3.0 / lambda.abs()).sqrt()
+                    )])
                 }
             }
             NEWTON_HALF | EDDINGTON | MERCURY_PERIHELION => {
@@ -920,5 +955,72 @@ mod tests {
         g.set("dim", KnobValue::UInt(4)).unwrap();
         assert_eq!(verdict(&g, claims::OBSERVED_4D), VerdictKind::Holds);
         assert_eq!(verdict(&g, EDDINGTON), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn cosmological_constant_knob_flips_the_lambda_small_verdict() {
+        // The Λ knob → verdict diff: a Planck-scale cosmological constant
+        // curves even the solar-system background.
+        let t = GeneralRelativity::default();
+        assert_eq!(verdict(&t, LAMBDA_SMALL), VerdictKind::Holds);
+        let mut large = GeneralRelativity::default();
+        large
+            .set("cosmological_constant", KnobValue::Float(1.0))
+            .unwrap();
+        assert_eq!(verdict(&large, LAMBDA_SMALL), VerdictKind::Fails);
+        let mut ads = GeneralRelativity::default();
+        ads.set("cosmological_constant", KnobValue::Float(-1.0))
+            .unwrap();
+        assert_eq!(verdict(&ads, LAMBDA_SMALL), VerdictKind::Fails);
+        let mut small = GeneralRelativity::default();
+        small
+            .set("cosmological_constant", KnobValue::Float(1e-3))
+            .unwrap();
+        assert_eq!(verdict(&small, LAMBDA_SMALL), VerdictKind::Holds);
+        large
+            .set("cosmological_constant", KnobValue::Float(0.0))
+            .unwrap();
+        assert_eq!(verdict(&large, LAMBDA_SMALL), VerdictKind::Holds);
+        // The new claim is the only Λ reader: nothing else moves with the knob.
+        let mut planck_scale = GeneralRelativity::default();
+        planck_scale
+            .set("cosmological_constant", KnobValue::Float(1.0))
+            .unwrap();
+        let before = t.evaluate_all();
+        let after = planck_scale.evaluate_all();
+        let moved: Vec<&str> = before
+            .iter()
+            .zip(after.iter())
+            .filter(|((_, vb), (_, va))| vb.kind != va.kind)
+            .map(|((c, _), _)| c.id_str())
+            .collect();
+        assert_eq!(moved, vec![LAMBDA_SMALL]);
+        // The failure evidence names the knob value and the de Sitter scale.
+        let cell = planck_scale
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == LAMBDA_SMALL)
+            .unwrap();
+        let v = planck_scale.evaluate(&cell);
+        assert!(
+            v.evidence.iter().any(|e| e.contains("Λ = 1")),
+            "failure must name the knob value, got {:?}",
+            v.evidence
+        );
+        // IR forks are orthogonal: R² and Brans-Dicke do not touch the Λ cell.
+        let r2 = GeneralRelativity {
+            r_squared: true,
+            ..GeneralRelativity::default()
+        };
+        assert_eq!(verdict(&r2, LAMBDA_SMALL), VerdictKind::Holds);
+        let bd = GeneralRelativity {
+            brans_dicke: true,
+            ..GeneralRelativity::default()
+        };
+        assert_eq!(verdict(&bd, LAMBDA_SMALL), VerdictKind::Holds);
+        // The Λ cell is dim-independent: it is about curvature scale, not D.
+        let mut high_d = GeneralRelativity::default();
+        high_d.set("dim", KnobValue::UInt(5)).unwrap();
+        assert_eq!(verdict(&high_d, LAMBDA_SMALL), VerdictKind::Holds);
     }
 }

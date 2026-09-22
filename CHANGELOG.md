@@ -57,6 +57,12 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Theory
 
+- **U1: `cosmological_constant` wired to a claim.** New
+  `gr.cosmological-constant-small` (model-internal, Spacetime): holds
+  while |Λ| ≤ 1e-2 in Planck units, fails at Planck-scale Λ with the de
+  Sitter radius in evidence. The Dead-knobs note is retired; KNOBS.md
+  documents the flip. Only the new cell moves with the knob.
+
 - **Gravity deflection and perihelion name an RK4 error budget.** Default
   Newton/GR solar cells still Hold/Fail against the *computed* Schwarzschild
   vs Soldner integrals (half-angle, 1.75″ Eddington, 43″ Mercury remainder).

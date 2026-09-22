@@ -27,7 +27,7 @@ lists every fitted knob in the lab.
 
 ### general-relativity
 - `dim` — solar-system tests (Eddington, Mercury) are 4D; other values make them inapplicable. The Einstein–Hilbert action is not this knob: `add-r-squared` is an IR mutation. Brans–Dicke is not this knob: `add-brans-dicke` is an IR mutation
-- `cosmological_constant` (Planck units, order-of-magnitude)
+- `cosmological_constant` (Planck units, order-of-magnitude) — `set general-relativity cosmological_constant 1` flips `gr.cosmological-constant-small` holds → fails; the solar-system cells assume the Λ = 0 background
 
 ### newtonian-gravity
 - (none — inverse-square is a single law; the Schwarzschild 3GM u² term is an IR mutation, not a knob. A Yukawa e^{-μr}/r potential is a second IR mutation, not a knob. GR keeps `dim`.)
@@ -146,4 +146,4 @@ not a magic literal. Setting `fibre_dim < 10` with `derive_gauge=true` makes
 
 ## Dead knobs
 
-If you find a knob that no claim reads, either wire it or delete it. v0 `cosmological_constant` is *weakly* dead (it appears in the world note, not in a verdict). That is an accepted M0 hole; M1 should give Λ a claim or drop the knob.
+If you find a knob that no claim reads, either wire it or delete it. `cosmological_constant` was *weakly* dead in v0 (world note only); it is now wired to `gr.cosmological-constant-small`. No known dead knobs.
