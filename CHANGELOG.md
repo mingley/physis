@@ -10,6 +10,15 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Plans
+
+- **Plan 007 (engineering track) approved.** Nine units U0-U8: gate
+  baseline, dead-knob resolution, docs/spec consistency, test-coverage
+  audit, constants-ledger audit, `lab.rs` modularization probe, CLI smoke
+  tests, drift tooling (gated), CI/MSRV verification. Science queue
+  (TODO.md/plan 006) untouched. Each changing unit lands as its own atomic
+  commit on main.
+
 ### Docs
 
 - **Reading-guide polish, no behavior change.** README quick start is
