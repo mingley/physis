@@ -3649,13 +3649,18 @@ mod tests {
     fn overlapping_qty_floats_lockstep_the_versioned_ledger() {
         use physis_numeric::{Interval, Ratio, SciExact, SciInterval};
 
+        // Coverage ledger for the final assertion below: one push per block.
+        let mut covered: Vec<&str> = vec![];
+
         assert_eq!(
             C.value(),
             physis_constants::speed_of_light().value.to_f64(),
             "c is an integer Ratio; Qty matches to_f64"
         );
+        covered.push("c");
 
         let e = physis_constants::elementary_charge();
+        covered.push("e");
         assert_eq!(
             e.value,
             Ratio::new(1_602_176_634, 10i128.pow(28)),
@@ -3673,6 +3678,7 @@ mod tests {
         );
 
         let k = physis_constants::boltzmann();
+        covered.push("k");
         assert_eq!(k.value, Ratio::new(1_380_649, 10i128.pow(29)));
         assert_eq!(SciExact::new(1_380_649, -29).to_ratio(), Some(k.value));
         assert_eq!(
@@ -3682,6 +3688,7 @@ mod tests {
         );
 
         let h = physis_constants::planck_h();
+        covered.push("h");
         assert_eq!(h.value.to_ratio(), None, "h still does not fit in i128");
         assert_eq!(
             planck_h().value(),
@@ -3690,6 +3697,7 @@ mod tests {
         );
 
         let g = physis_constants::newtonian_g();
+        covered.push("G");
         let centre = Ratio::new(667_430, 10i128.pow(16));
         assert_eq!(
             g_newton().value(),
@@ -3706,6 +3714,7 @@ mod tests {
         );
 
         let mp = physis_constants::planck_mass();
+        covered.push("mP");
         let mp_centre = Ratio::new(2_176_434, 10i128.pow(14));
         assert_eq!(
             planck_mass().value(),
@@ -3727,6 +3736,7 @@ mod tests {
         );
 
         let mpc2 = physis_constants::planck_mass_energy_equivalent_in_gev();
+        covered.push("mPc2");
         let mpc2_centre = Ratio::int(1_220_890i128 * 10i128.pow(13));
         assert_eq!(
             planck_mass_energy_equivalent_in_gev().value(),
@@ -3753,6 +3763,7 @@ mod tests {
         );
 
         let tp = physis_constants::planck_temperature();
+        covered.push("TP");
         let tp_centre = Ratio::int(1_416_784i128 * 10i128.pow(26));
         assert_eq!(
             planck_temperature().value(),
@@ -3784,6 +3795,7 @@ mod tests {
         );
 
         let lp = physis_constants::planck_length();
+        covered.push("lP");
         let lp_centre = SciExact::new(1_616_255, -41);
         assert_eq!(
             planck_length().value(),
@@ -3820,6 +3832,7 @@ mod tests {
         );
 
         let tptime = physis_constants::planck_time();
+        covered.push("tP");
         let tp_centre = SciExact::new(5_391_247, -50);
         assert_eq!(
             planck_time().value(),
@@ -3861,6 +3874,7 @@ mod tests {
         );
 
         let mu0_c = physis_constants::vacuum_permeability();
+        covered.push("mu0");
         let mu0_centre = Ratio::new(125_663_706_212, 10i128.pow(17));
         assert_eq!(
             mu0().value(),
@@ -3881,6 +3895,7 @@ mod tests {
         );
 
         let eps = physis_constants::vacuum_permittivity();
+        covered.push("epsilon0");
         let eps_centre = Ratio::new(88_541_878_128, 10i128.pow(22));
         assert_eq!(
             epsilon0().value(),
@@ -3901,6 +3916,7 @@ mod tests {
         );
 
         let z0_c = physis_constants::vacuum_impedance();
+        covered.push("Z0");
         let z0_centre = Ratio::new(376_730_313_668, 10i128.pow(9));
         assert_eq!(
             z0().value(),
@@ -3925,6 +3941,7 @@ mod tests {
         );
 
         let alpha = physis_constants::fine_structure_constant();
+        covered.push("alpha");
         let alpha_centre = Ratio::new(72_973_525_693, 10i128.pow(13));
         assert_eq!(
             fine_structure_constant().value(),
@@ -3949,6 +3966,7 @@ mod tests {
         );
 
         let inv = physis_constants::inverse_fine_structure_constant();
+        covered.push("inv_alpha");
         let inv_centre = Ratio::new(137_035_999_084, 10i128.pow(9));
         assert_eq!(
             inv_alpha().value(),
@@ -3973,6 +3991,7 @@ mod tests {
         );
 
         let rinf = physis_constants::rydberg_constant();
+        covered.push("Rinf");
         let rinf_centre = Ratio::new(10_973_731_568_160, 10i128.pow(6));
         assert_eq!(
             rydberg().value(),
@@ -3993,6 +4012,7 @@ mod tests {
         );
 
         let crinf = physis_constants::rydberg_frequency();
+        covered.push("cRinf");
         let crinf_centre = Ratio::int(3_289_841_960_250_800);
         assert_eq!(
             rydberg_frequency().value(),
@@ -4013,6 +4033,7 @@ mod tests {
         );
 
         let hcrinf = physis_constants::rydberg_energy_equivalent();
+        covered.push("hcRinf");
         let hcrinf_centre = Ratio::new(21_798_723_611_035, 10i128.pow(31));
         assert_eq!(
             rydberg_energy_equivalent().value(),
@@ -4033,6 +4054,7 @@ mod tests {
         );
 
         let hcrinf_ev = physis_constants::rydberg_energy_equivalent_in_ev();
+        covered.push("hcRinf_eV");
         let hcrinf_ev_centre = Ratio::new(13_605_693_122_994, 10i128.pow(12));
         assert_eq!(
             rydberg_energy_equivalent_in_ev().value(),
@@ -4060,6 +4082,7 @@ mod tests {
         );
 
         let a0_c = physis_constants::bohr_radius();
+        covered.push("a0");
         let a0_centre = Ratio::new(529_177_210_903, 10i128.pow(22));
         assert_eq!(
             bohr_radius().value(),
@@ -4084,6 +4107,7 @@ mod tests {
         );
 
         let eh_c = physis_constants::hartree_energy();
+        covered.push("Eh");
         let eh_centre = Ratio::new(43_597_447_222_071, 10i128.pow(31));
         assert_eq!(
             hartree_energy().value(),
@@ -4104,6 +4128,7 @@ mod tests {
         );
 
         let eh_ev = physis_constants::hartree_energy_in_ev();
+        covered.push("Eh_eV");
         let eh_ev_centre = Ratio::new(27_211_386_245_988, 10i128.pow(12));
         assert_eq!(
             hartree_energy_in_ev().value(),
@@ -4131,6 +4156,7 @@ mod tests {
         );
 
         let me_mmu = physis_constants::electron_muon_mass_ratio();
+        covered.push("me_mmu");
         let me_mmu_centre = Ratio::new(483_633_169, 10i128.pow(11));
         assert_eq!(
             electron_muon_mass_ratio().value(),
@@ -4151,6 +4177,7 @@ mod tests {
         );
 
         let me_mp = physis_constants::electron_proton_mass_ratio();
+        covered.push("me_mp");
         let me_mp_centre = Ratio::new(544_617_021_487, 10i128.pow(15));
         assert_eq!(
             electron_proton_mass_ratio().value(),
@@ -4171,6 +4198,7 @@ mod tests {
         );
 
         let me_mn = physis_constants::electron_neutron_mass_ratio();
+        covered.push("me_mn");
         let me_mn_centre = Ratio::new(54_386_734_424, 10i128.pow(14));
         assert_eq!(
             electron_neutron_mass_ratio().value(),
@@ -4190,6 +4218,7 @@ mod tests {
             "me/m_n is not a ledger name; the live name is me_mn"
         );
         let me_md = physis_constants::electron_deuteron_mass_ratio();
+        covered.push("me_md");
         let me_md_centre = Ratio::new(2_724_437_107_462, 10i128.pow(16));
         assert_eq!(
             electron_deuteron_mass_ratio().value(),
@@ -4209,6 +4238,7 @@ mod tests {
             "me/m_d is not a ledger name; the live name is me_md"
         );
         let me_mt = physis_constants::electron_triton_mass_ratio();
+        covered.push("me_mt");
         let me_mt_centre = Ratio::new(1_819_200_062_251, 10i128.pow(16));
         assert_eq!(
             electron_triton_mass_ratio().value(),
@@ -4228,6 +4258,7 @@ mod tests {
             "me/m_t is not a ledger name; the live name is me_mt"
         );
         let me_mh = physis_constants::electron_helion_mass_ratio();
+        covered.push("me_mh");
         let me_mh_centre = Ratio::new(1_819_543_074_573, 10i128.pow(16));
         assert_eq!(
             electron_helion_mass_ratio().value(),
@@ -4247,6 +4278,7 @@ mod tests {
             "me/m_h is not a ledger name; the live name is me_mh"
         );
         let me_malpha = physis_constants::electron_alpha_mass_ratio();
+        covered.push("me_malpha");
         let me_malpha_centre = Ratio::new(1_370_933_554_787, 10i128.pow(16));
         assert_eq!(
             electron_alpha_mass_ratio().value(),
@@ -4266,6 +4298,7 @@ mod tests {
             "me/m_a is not a ledger name; the live name is me_malpha"
         );
         let e_me = physis_constants::electron_charge_to_mass();
+        covered.push("e_me");
         let e_me_centre = Ratio::int(-175_882_001_076);
         assert_eq!(
             electron_charge_to_mass().value(),
@@ -4286,6 +4319,7 @@ mod tests {
         );
 
         let me_u = physis_constants::electron_mass_in_u();
+        covered.push("m_e_u");
         let me_u_centre = Ratio::new(548_579_909_065, 10i128.pow(15));
         assert_eq!(
             electron_mass_in_u().value(),
@@ -4317,6 +4351,7 @@ mod tests {
         );
 
         let me_c2 = physis_constants::electron_mass_energy_equivalent();
+        covered.push("m_e_c2");
         let me_c2_centre = Ratio::new(81_871_057_769, 10i128.pow(24));
         assert_eq!(
             electron_mass_energy_equivalent().value(),
@@ -4344,6 +4379,7 @@ mod tests {
         );
 
         let me_c2_mev = physis_constants::electron_mass_energy_equivalent_in_mev();
+        covered.push("m_e_c2_MeV");
         let me_c2_mev_centre = Ratio::new(51_099_895_000, 10i128.pow(11));
         assert_eq!(
             electron_mass_energy_equivalent_in_mev().value(),
@@ -4375,6 +4411,7 @@ mod tests {
         );
 
         let molar = physis_constants::electron_molar_mass();
+        covered.push("M_e");
         let molar_centre = Ratio::new(54_857_990_888, 10i128.pow(17));
         assert_eq!(
             electron_molar_mass().value(),
@@ -4394,6 +4431,7 @@ mod tests {
             "Me is not a ledger name; the live name is M_e"
         );
         let rcbar = physis_constants::reduced_compton_wavelength();
+        covered.push("lambdabar_C");
         let rcbar_centre = Ratio::new(38_615_926_796, 10i128.pow(23));
         assert_eq!(
             reduced_compton_wavelength().value(),
@@ -4413,6 +4451,7 @@ mod tests {
             "lambdaC is not a ledger name; the live name is lambda_C"
         );
         let rc = physis_constants::compton_wavelength();
+        covered.push("lambda_C");
         let rc_centre = Ratio::new(242_631_023_867, 10i128.pow(23));
         assert_eq!(
             compton_wavelength().value(),
@@ -4432,6 +4471,7 @@ mod tests {
             "r_e is not a ledger name; the live name is re"
         );
         let re = physis_constants::classical_electron_radius();
+        covered.push("re");
         let re_centre = Ratio::new(28_179_403_262, 10i128.pow(25));
         assert_eq!(
             classical_electron_radius().value(),
@@ -4455,6 +4495,7 @@ mod tests {
             "mue is not a ledger name; the live name is mu_e"
         );
         let mu_e = physis_constants::electron_magnetic_moment();
+        covered.push("mu_e");
         let mu_e_centre = Ratio::new(-92_847_647_043, 10i128.pow(34));
         assert_eq!(
             electron_magnetic_moment().value(),
@@ -4478,6 +4519,7 @@ mod tests {
             "mue_muB is not a ledger name; the live name is mu_e_muB"
         );
         let mu_e_mu_b = physis_constants::electron_magnetic_moment_to_bohr_magneton();
+        covered.push("mu_e_muB");
         let mu_e_mu_b_centre = Ratio::new(-100_115_965_218_128, 10i128.pow(14));
         assert_eq!(
             electron_magnetic_moment_to_bohr_magneton().value(),
@@ -4497,6 +4539,7 @@ mod tests {
             "mue_muN is not a ledger name; the live name is mu_e_muN"
         );
         let mu_e_mu_n = physis_constants::electron_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu_e_muN");
         let mu_e_mu_n_centre = Ratio::new(-183_828_197_188, 10i128.pow(8));
         assert_eq!(
             electron_magnetic_moment_to_nuclear_magneton().value(),
@@ -4516,6 +4559,7 @@ mod tests {
             "a_e is not a ledger name; the live name is ae"
         );
         let ae = physis_constants::electron_magnetic_moment_anomaly();
+        covered.push("ae");
         let ae_centre = Ratio::new(115_965_218_128, 10i128.pow(14));
         assert_eq!(
             electron_magnetic_moment_anomaly().value(),
@@ -4531,6 +4575,7 @@ mod tests {
             "ledger ae stays an Interval; the Qty is not that Interval"
         );
         let ge = physis_constants::electron_g_factor();
+        covered.push("ge");
         let ge_centre = Ratio::new(-200_231_930_436_256, 10i128.pow(14));
         assert_eq!(
             electron_g_factor().value(),
@@ -4550,6 +4595,7 @@ mod tests {
             "mue_mmu is not a ledger name; the live name is mu_e_mmu"
         );
         let mu_e_mmu = physis_constants::electron_muon_magnetic_moment_ratio();
+        covered.push("mu_e_mmu");
         let mu_e_mmu_centre = Ratio::new(2_067_669_883, 10i128.pow(7));
         assert_eq!(
             electron_muon_magnetic_moment_ratio().value(),
@@ -4574,6 +4620,7 @@ mod tests {
             "mue_mup is not a ledger name; the live name is mu_e_mup"
         );
         let mu_e_mup = physis_constants::electron_proton_magnetic_moment_ratio();
+        covered.push("mu_e_mup");
         let mu_e_mup_centre = Ratio::new(-65_821_068_789, 10i128.pow(8));
         assert_eq!(
             electron_proton_magnetic_moment_ratio().value(),
@@ -4598,6 +4645,7 @@ mod tests {
             "mue_mu0p is not a ledger name; the live name is mu_e_mu0p"
         );
         let mu_e_mu0p = physis_constants::electron_to_shielded_proton_magnetic_moment_ratio();
+        covered.push("mu_e_mu0p");
         let mu_e_mu0p_centre = Ratio::new(-6_582_275_971, 10i128.pow(7));
         assert_eq!(
             electron_to_shielded_proton_magnetic_moment_ratio().value(),
@@ -4627,6 +4675,7 @@ mod tests {
             "mue_mun is not a ledger name; the live name is mu_e_mun"
         );
         let mu_e_mun = physis_constants::electron_neutron_magnetic_moment_ratio();
+        covered.push("mu_e_mun");
         let mu_e_mun_centre = Ratio::new(96_092_050, 10i128.pow(5));
         assert_eq!(
             electron_neutron_magnetic_moment_ratio().value(),
@@ -4651,6 +4700,7 @@ mod tests {
             "mue_mud is not a ledger name; the live name is mu_e_mud"
         );
         let mu_e_mud = physis_constants::electron_deuteron_magnetic_moment_ratio();
+        covered.push("mu_e_mud");
         let mu_e_mud_centre = Ratio::new(-21_439_234_915, 10i128.pow(7));
         assert_eq!(
             electron_deuteron_magnetic_moment_ratio().value(),
@@ -4675,6 +4725,7 @@ mod tests {
             "mue_mu0h is not a ledger name; the live name is mu_e_mu0h"
         );
         let mu_e_mu0h = physis_constants::electron_to_shielded_helion_magnetic_moment_ratio();
+        covered.push("mu_e_mu0h");
         let mu_e_mu0h_centre = Ratio::new(864_058_257, 10i128.pow(6));
         assert_eq!(
             electron_to_shielded_helion_magnetic_moment_ratio().value(),
@@ -4709,6 +4760,7 @@ mod tests {
             "mmu is not a ledger name; the live name is m_mu"
         );
         let m_mu = physis_constants::muon_mass();
+        covered.push("m_mu");
         let m_mu_centre = Ratio::new(1_883_531_627, 10i128.pow(37));
         assert_eq!(
             muon_mass().value(),
@@ -4738,6 +4790,7 @@ mod tests {
             "mmu_u is not a ledger name; the live name is m_mu_u"
         );
         let m_mu_u = physis_constants::muon_mass_in_u();
+        covered.push("m_mu_u");
         let m_mu_u_centre = Ratio::new(1_134_289_259, 10i128.pow(10));
         assert_eq!(
             muon_mass_in_u().value(),
@@ -4777,6 +4830,7 @@ mod tests {
             "mmu_c2 is not a ledger name; the live name is m_mu_c2"
         );
         let m_mu_c2 = physis_constants::muon_mass_energy_equivalent();
+        covered.push("m_mu_c2");
         let m_mu_c2_centre = Ratio::new(1_692_833_804, 10i128.pow(20));
         assert_eq!(
             muon_mass_energy_equivalent().value(),
@@ -4816,6 +4870,7 @@ mod tests {
             "mmuc2_MeV is not a ledger name; the live name is m_mu_c2_MeV"
         );
         let m_mu_c2_mev = physis_constants::muon_mass_energy_equivalent_in_mev();
+        covered.push("m_mu_c2_MeV");
         let m_mu_c2_mev_centre = Ratio::new(1_056_583_755, 10i128.pow(7));
         assert_eq!(
             muon_mass_energy_equivalent_in_mev().value(),
@@ -4852,6 +4907,7 @@ mod tests {
             "m_mu_me is not a ledger name; the live name is mmu_me"
         );
         let mmu_me = physis_constants::muon_electron_mass_ratio();
+        covered.push("mmu_me");
         let mmu_me_centre = Ratio::new(2_067_682_830, 10i128.pow(7));
         assert_eq!(
             muon_electron_mass_ratio().value(),
@@ -4890,6 +4946,7 @@ mod tests {
             "muon-tau is a PDG reprint of m_tau c^2 and is not stored"
         );
         let mmu_mp = physis_constants::muon_proton_mass_ratio();
+        covered.push("mmu_mp");
         let mmu_mp_centre = Ratio::new(1_126_095_264, 10i128.pow(10));
         assert_eq!(
             muon_proton_mass_ratio().value(),
@@ -4924,6 +4981,7 @@ mod tests {
             "m_mu_mn is not a ledger name; the live name is mmu_mn"
         );
         let mmu_mn = physis_constants::muon_neutron_mass_ratio();
+        covered.push("mmu_mn");
         let mmu_mn_centre = Ratio::new(1_124_545_170, 10i128.pow(10));
         assert_eq!(
             muon_neutron_mass_ratio().value(),
@@ -4958,6 +5016,7 @@ mod tests {
             "Mmu is not a ledger name; the live name is M_mu"
         );
         let m_mu_molar = physis_constants::muon_molar_mass();
+        covered.push("M_mu");
         let m_mu_molar_centre = Ratio::new(1_134_289_259, 10i128.pow(13));
         assert_eq!(
             muon_molar_mass().value(),
@@ -5004,6 +5063,7 @@ mod tests {
             "lambda_Cmu is not a ledger name; the live name is lambda_C_mu"
         );
         let lambda_c_mu = physis_constants::muon_compton_wavelength();
+        covered.push("lambda_C_mu");
         let lambda_c_mu_centre = Ratio::new(1_173_444_110, 10i128.pow(23));
         assert_eq!(
             muon_compton_wavelength().value(),
@@ -5054,6 +5114,7 @@ mod tests {
             "mumu is not a ledger name; the live name is mu_mu"
         );
         let mu_mu = physis_constants::muon_magnetic_moment();
+        covered.push("mu_mu");
         let mu_mu_centre = Ratio::new(-449_044_830, 10i128.pow(34));
         assert_eq!(
             muon_magnetic_moment().value(),
@@ -5098,6 +5159,7 @@ mod tests {
             "mumu_muB is not a ledger name; the live name is mu_mu_muB"
         );
         let mu_mu_mu_b = physis_constants::muon_magnetic_moment_to_bohr_magneton();
+        covered.push("mu_mu_muB");
         let mu_mu_mu_b_centre = Ratio::new(-484_197_047, 10i128.pow(11));
         assert_eq!(
             muon_magnetic_moment_to_bohr_magneton().value(),
@@ -5144,6 +5206,7 @@ mod tests {
             "mumu_muN is not a ledger name; the live name is mu_mu_muN"
         );
         let mu_mu_mu_n = physis_constants::muon_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu_mu_muN");
         let mu_mu_mu_n_centre = Ratio::new(-889_059_703, 10i128.pow(8));
         assert_eq!(
             muon_magnetic_moment_to_nuclear_magneton().value(),
@@ -5195,6 +5258,7 @@ mod tests {
             "a_mu is not a ledger name; the live name is amu"
         );
         let amu = physis_constants::muon_magnetic_moment_anomaly();
+        covered.push("amu");
         let amu_centre = Ratio::new(116_592_089, 10i128.pow(11));
         assert_eq!(
             muon_magnetic_moment_anomaly().value(),
@@ -5249,6 +5313,7 @@ mod tests {
             "g_mu is not a ledger name; the live name is gmu"
         );
         let gmu = physis_constants::muon_g_factor();
+        covered.push("gmu");
         let gmu_centre = Ratio::new(-20_023_318_418, 10i128.pow(10));
         assert_eq!(
             muon_g_factor().value(),
@@ -5308,6 +5373,7 @@ mod tests {
             "mumu_mup is not a ledger name; the live name is mu_mu_mup"
         );
         let mu_mu_mup = physis_constants::muon_proton_magnetic_moment_ratio();
+        covered.push("mu_mu_mup");
         let mu_mu_mup_centre = Ratio::new(-3_183_345_142, 10i128.pow(9));
         assert_eq!(
             muon_proton_magnetic_moment_ratio().value(),
@@ -5359,6 +5425,7 @@ mod tests {
         );
 
         let mp = physis_constants::proton_mass();
+        covered.push("m_p");
         let mp_centre = Ratio::new(167_262_192_369, 10i128.pow(38));
         assert_eq!(
             proton_mass().value(),
@@ -5378,6 +5445,7 @@ mod tests {
             "mp_u is not a ledger name; the live name is m_p_u"
         );
         let m_p_u = physis_constants::proton_mass_in_u();
+        covered.push("m_p_u");
         let m_p_u_centre = Ratio::new(1_007_276_466_621, 10i128.pow(12));
         assert_eq!(
             proton_mass_in_u().value(),
@@ -5412,6 +5480,7 @@ mod tests {
             "mpc2 is not a ledger name; the live name is m_p_c2"
         );
         let m_p_c2 = physis_constants::proton_mass_energy_equivalent();
+        covered.push("m_p_c2");
         let m_p_c2_centre = Ratio::new(150_327_761_598, 10i128.pow(21));
         assert_eq!(
             proton_mass_energy_equivalent().value(),
@@ -5451,6 +5520,7 @@ mod tests {
             "mpc2_MeV is not a ledger name; the live name is m_p_c2_MeV"
         );
         let m_p_c2_mev = physis_constants::proton_mass_energy_equivalent_in_mev();
+        covered.push("m_p_c2_MeV");
         let m_p_c2_mev_centre = Ratio::new(93_827_208_816, 10i128.pow(8));
         assert_eq!(
             proton_mass_energy_equivalent_in_mev().value(),
@@ -5487,6 +5557,7 @@ mod tests {
             "m_p_me is not a ledger name; the live name is mp_me"
         );
         let mp_me = physis_constants::proton_electron_mass_ratio();
+        covered.push("mp_me");
         let mp_me_centre = Ratio::new(183_615_267_343, 10i128.pow(8));
         assert_eq!(
             proton_electron_mass_ratio().value(),
@@ -5521,6 +5592,7 @@ mod tests {
             "m_p_mmu is not a ledger name; the live name is mp_mmu"
         );
         let mp_mmu = physis_constants::proton_muon_mass_ratio();
+        covered.push("mp_mmu");
         let mp_mmu_centre = Ratio::new(888_024_337, 10i128.pow(8));
         assert_eq!(
             proton_muon_mass_ratio().value(),
@@ -5559,6 +5631,7 @@ mod tests {
             "m_p_mn is not a ledger name; the live name is mp_mn"
         );
         let mp_mn = physis_constants::proton_neutron_mass_ratio();
+        covered.push("mp_mn");
         let mp_mn_centre = Ratio::new(99_862_347_812, 10i128.pow(11));
         assert_eq!(
             proton_neutron_mass_ratio().value(),
@@ -5593,6 +5666,7 @@ mod tests {
             "e/mp is not a ledger name; the live name is e_mp"
         );
         let e_mp = physis_constants::proton_charge_to_mass();
+        covered.push("e_mp");
         let e_mp_centre = Ratio::new(95_788_331_560, 10i128.pow(3));
         assert_eq!(
             proton_charge_to_mass().value(),
@@ -5627,6 +5701,7 @@ mod tests {
             "Mp is not a ledger name; the live name is M_p"
         );
         let m_p_molar = physis_constants::proton_molar_mass();
+        covered.push("M_p");
         let m_p_molar_centre = Ratio::new(100_727_646_627, 10i128.pow(14));
         assert_eq!(
             proton_molar_mass().value(),
@@ -5666,6 +5741,7 @@ mod tests {
             "reduced proton Compton is hbar/m_p c and is not stored"
         );
         let lambda_c_p = physis_constants::proton_compton_wavelength();
+        covered.push("lambda_C_p");
         let lambda_c_p_centre = Ratio::new(132_140_985_539, 10i128.pow(26));
         assert_eq!(
             proton_compton_wavelength().value(),
@@ -5712,6 +5788,7 @@ mod tests {
             "r_p is not a ledger name; the live name is rp"
         );
         let rp = physis_constants::proton_rms_charge_radius();
+        covered.push("rp");
         let rp_centre = Ratio::new(8414, 10i128.pow(19));
         assert_eq!(
             proton_rms_charge_radius().value(),
@@ -5755,6 +5832,7 @@ mod tests {
             "mup is not a ledger name; the live name is mu_p"
         );
         let mu_p = physis_constants::proton_magnetic_moment();
+        covered.push("mu_p");
         let mu_p_centre = Ratio::new(141_060_679_736, 10i128.pow(37));
         assert_eq!(
             proton_magnetic_moment().value(),
@@ -5803,6 +5881,7 @@ mod tests {
             "mup_muB is not a ledger name; the live name is mu_p_muB"
         );
         let mu_p_mu_b = physis_constants::proton_magnetic_moment_to_bohr_magneton();
+        covered.push("mu_p_muB");
         let mu_p_mu_b_centre = Ratio::new(152_103_220_230, 10i128.pow(14));
         assert_eq!(
             proton_magnetic_moment_to_bohr_magneton().value(),
@@ -5842,6 +5921,7 @@ mod tests {
             "mup_muN is not a ledger name; the live name is mu_p_muN"
         );
         let mu_p_mu_n = physis_constants::proton_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu_p_muN");
         let mu_p_mu_n_centre = Ratio::new(279_284_734_463, 10i128.pow(11));
         assert_eq!(
             proton_magnetic_moment_to_nuclear_magneton().value(),
@@ -5881,6 +5961,7 @@ mod tests {
             "g_p is not a ledger name; the live name is gp"
         );
         let gp = physis_constants::proton_g_factor();
+        covered.push("gp");
         let gp_centre = Ratio::new(55_856_946_893, 10i128.pow(10));
         assert_eq!(
             proton_g_factor().value(),
@@ -5919,6 +6000,7 @@ mod tests {
             "mup_mun is not a ledger name; the live name is mu_p_mun"
         );
         let mu_p_mun = physis_constants::proton_neutron_magnetic_moment_ratio();
+        covered.push("mu_p_mun");
         let mu_p_mun_centre = Ratio::new(-145_989_805, 10i128.pow(8));
         assert_eq!(
             proton_neutron_magnetic_moment_ratio().value(),
@@ -5953,6 +6035,7 @@ mod tests {
             "mu_0p is not a ledger name; the live name is mu0p"
         );
         let mu0p = physis_constants::shielded_proton_magnetic_moment();
+        covered.push("mu0p");
         let mu0p_centre = Ratio::new(1_410_570_560, 10i128.pow(35));
         assert_eq!(
             shielded_proton_magnetic_moment().value(),
@@ -5987,6 +6070,7 @@ mod tests {
             "mu0p_mub is not a ledger name; the live name is mu0p_muB"
         );
         let mu0p_mu_b = physis_constants::shielded_proton_magnetic_moment_to_bohr_magneton();
+        covered.push("mu0p_muB");
         let mu0p_mu_b_centre = Ratio::new(1_520_993_128, 10i128.pow(12));
         assert_eq!(
             shielded_proton_magnetic_moment_to_bohr_magneton().value(),
@@ -6026,6 +6110,7 @@ mod tests {
             "mu0p_mun is not a ledger name; the live name is mu0p_muN"
         );
         let mu0p_mu_n = physis_constants::shielded_proton_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu0p_muN");
         let mu0p_mu_n_centre = Ratio::new(2_792_775_599, 10i128.pow(9));
         assert_eq!(
             shielded_proton_magnetic_moment_to_nuclear_magneton().value(),
@@ -6065,6 +6150,7 @@ mod tests {
             "sigma_p is not a ledger name; the live name is sigma0p"
         );
         let sigma0p = physis_constants::proton_magnetic_shielding_correction();
+        covered.push("sigma0p");
         let sigma0p_centre = Ratio::new(25_689, 10i128.pow(9));
         assert_eq!(
             proton_magnetic_shielding_correction().value(),
@@ -6104,6 +6190,7 @@ mod tests {
             "mn is not a ledger name; the live name is m_n"
         );
         let m_n = physis_constants::neutron_mass();
+        covered.push("m_n");
         let m_n_centre = Ratio::new(167_492_749_804, 10i128.pow(38));
         assert_eq!(
             neutron_mass().value(),
@@ -6148,6 +6235,7 @@ mod tests {
             "mn_u is not a ledger name; the live name is m_n_u"
         );
         let m_n_u = physis_constants::neutron_mass_in_u();
+        covered.push("m_n_u");
         let m_n_u_centre = Ratio::new(100_866_491_595, 10i128.pow(11));
         assert_eq!(
             neutron_mass_in_u().value(),
@@ -6187,6 +6275,7 @@ mod tests {
             "mnc2 is not a ledger name; the live name is m_n_c2"
         );
         let m_n_c2 = physis_constants::neutron_mass_energy_equivalent();
+        covered.push("m_n_c2");
         let m_n_c2_centre = Ratio::new(150_534_976_287, 10i128.pow(21));
         assert_eq!(
             neutron_mass_energy_equivalent().value(),
@@ -6226,6 +6315,7 @@ mod tests {
             "mnc2_MeV is not a ledger name; the live name is m_n_c2_MeV"
         );
         let m_n_c2_mev = physis_constants::neutron_mass_energy_equivalent_in_mev();
+        covered.push("m_n_c2_MeV");
         let m_n_c2_mev_centre = Ratio::new(93_956_542_052, 10i128.pow(8));
         assert_eq!(
             neutron_mass_energy_equivalent_in_mev().value(),
@@ -6267,6 +6357,7 @@ mod tests {
             "mn/me is not a ledger name; the live name is mn_me"
         );
         let mn_me = physis_constants::neutron_electron_mass_ratio();
+        covered.push("mn_me");
         let mn_me_centre = Ratio::new(183_868_366_173, 10i128.pow(8));
         assert_eq!(
             neutron_electron_mass_ratio().value(),
@@ -6306,6 +6397,7 @@ mod tests {
             "mn/mmu is not a ledger name; the live name is mn_mmu"
         );
         let mn_mmu = physis_constants::neutron_muon_mass_ratio();
+        covered.push("mn_mmu");
         let mn_mmu_centre = Ratio::new(889_248_406, 10i128.pow(8));
         assert_eq!(
             neutron_muon_mass_ratio().value(),
@@ -6345,6 +6437,7 @@ mod tests {
             "mn/mp is not a ledger name; the live name is mn_mp"
         );
         let mn_mp = physis_constants::neutron_proton_mass_ratio();
+        covered.push("mn_mp");
         let mn_mp_centre = Ratio::new(100_137_841_931, 10i128.pow(11));
         assert_eq!(
             neutron_proton_mass_ratio().value(),
@@ -6384,6 +6477,7 @@ mod tests {
             "mn-mp is not a ledger name; the live name is mn_minus_mp"
         );
         let mn_minus_mp = physis_constants::neutron_proton_mass_difference();
+        covered.push("mn_minus_mp");
         let mn_minus_mp_centre = Ratio::new(230_557_435, 10i128.pow(38));
         assert_eq!(
             neutron_proton_mass_difference().value(),
@@ -6420,6 +6514,7 @@ mod tests {
             "mn-mp_u is not a ledger name; the live name is mn_minus_mp_u"
         );
         let mn_minus_mp_u = physis_constants::neutron_proton_mass_difference_in_u();
+        covered.push("mn_minus_mp_u");
         let mn_minus_mp_u_centre = Ratio::new(138_844_933, 10i128.pow(11));
         assert_eq!(
             neutron_proton_mass_difference_in_u().value(),
@@ -6456,6 +6551,7 @@ mod tests {
             "mn-mp_c2 is not a ledger name; the live name is mn_minus_mp_c2"
         );
         let mn_minus_mp_c2 = physis_constants::neutron_proton_mass_difference_energy_equivalent();
+        covered.push("mn_minus_mp_c2");
         let mn_minus_mp_c2_centre = Ratio::new(207_214_689, 10i128.pow(21));
         assert_eq!(
             neutron_proton_mass_difference_energy_equivalent().value(),
@@ -6493,6 +6589,7 @@ mod tests {
         );
         let mn_minus_mp_c2_mev =
             physis_constants::neutron_proton_mass_difference_energy_equivalent_in_mev();
+        covered.push("mn_minus_mp_c2_MeV");
         let mn_minus_mp_c2_mev_centre = Ratio::new(129_333_236, 10i128.pow(8));
         assert_eq!(
             neutron_proton_mass_difference_energy_equivalent_in_mev().value(),
@@ -6529,6 +6626,7 @@ mod tests {
             "Mn is not a ledger name; the live name is M_n"
         );
         let m_n_molar = physis_constants::neutron_molar_mass();
+        covered.push("M_n");
         let m_n_molar_centre = Ratio::new(100_866_491_560, 10i128.pow(14));
         assert_eq!(
             neutron_molar_mass().value(),
@@ -6563,6 +6661,7 @@ mod tests {
             "lambdabar_C_n is not a ledger name; reduced neutron Compton cites hbar"
         );
         let lambda_c_n = physis_constants::neutron_compton_wavelength();
+        covered.push("lambda_C_n");
         let lambda_c_n_centre = Ratio::new(131_959_090_581, 10i128.pow(26));
         assert_eq!(
             neutron_compton_wavelength().value(),
@@ -6599,6 +6698,7 @@ mod tests {
             "mun is not a ledger name; the live name is mu_n"
         );
         let mu_n = physis_constants::neutron_magnetic_moment();
+        covered.push("mu_n");
         let mu_n_centre = Ratio::new(-96_623_651, 10i128.pow(34));
         assert_eq!(
             neutron_magnetic_moment().value(),
@@ -6638,6 +6738,7 @@ mod tests {
             "mun_muB is not a ledger name; the live name is mu_n_muB"
         );
         let mu_n_mu_b = physis_constants::neutron_magnetic_moment_to_bohr_magneton();
+        covered.push("mu_n_muB");
         let mu_n_mu_b_centre = Ratio::new(-104_187_563, 10i128.pow(11));
         assert_eq!(
             neutron_magnetic_moment_to_bohr_magneton().value(),
@@ -6677,6 +6778,7 @@ mod tests {
             "mun_muN is not a ledger name; the live name is mu_n_muN"
         );
         let mu_n_mu_n = physis_constants::neutron_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu_n_muN");
         let mu_n_mu_n_centre = Ratio::new(-191_304_273, 10i128.pow(8));
         assert_eq!(
             neutron_magnetic_moment_to_nuclear_magneton().value(),
@@ -6721,6 +6823,7 @@ mod tests {
             "g_n is not a ledger name; the live name is gn"
         );
         let gn = physis_constants::neutron_g_factor();
+        covered.push("gn");
         let gn_centre = Ratio::new(-382_608_545, 10i128.pow(8));
         assert_eq!(
             neutron_g_factor().value(),
@@ -6760,6 +6863,7 @@ mod tests {
             "mun_mue is not a ledger name; the live name is mu_n_mue"
         );
         let mu_n_mue = physis_constants::neutron_electron_magnetic_moment_ratio();
+        covered.push("mu_n_mue");
         let mu_n_mue_centre = Ratio::new(104_066_882, 10i128.pow(11));
         assert_eq!(
             neutron_electron_magnetic_moment_ratio().value(),
@@ -6799,6 +6903,7 @@ mod tests {
             "mun_mup is not a ledger name; the live name is mu_n_mup"
         );
         let mu_n_mup = physis_constants::neutron_proton_magnetic_moment_ratio();
+        covered.push("mu_n_mup");
         let mu_n_mup_centre = Ratio::new(-68_497_934, 10i128.pow(8));
         assert_eq!(
             neutron_proton_magnetic_moment_ratio().value(),
@@ -6838,6 +6943,7 @@ mod tests {
             "mun_mu0p is not a ledger name; the live name is mu_n_mu0p"
         );
         let mu_n_mu0p = physis_constants::neutron_to_shielded_proton_magnetic_moment_ratio();
+        covered.push("mu_n_mu0p");
         let mu_n_mu0p_centre = Ratio::new(-68_499_694, 10i128.pow(8));
         assert_eq!(
             neutron_to_shielded_proton_magnetic_moment_ratio().value(),
@@ -6877,6 +6983,7 @@ mod tests {
             "md is not a ledger name; the live name is m_d"
         );
         let m_d = physis_constants::deuteron_mass();
+        covered.push("m_d");
         let m_d_centre = Ratio::new(33_435_837_724, 10i128.pow(37));
         assert_eq!(
             deuteron_mass().value(),
@@ -6916,6 +7023,7 @@ mod tests {
             "md_u is not a ledger name; the live name is m_d_u"
         );
         let m_d_u = physis_constants::deuteron_mass_in_u();
+        covered.push("m_d_u");
         let m_d_u_centre = Ratio::new(2_013_553_212_745, 10i128.pow(12));
         assert_eq!(
             deuteron_mass_in_u().value(),
@@ -6955,6 +7063,7 @@ mod tests {
             "mdc2 is not a ledger name; the live name is m_d_c2"
         );
         let m_d_c2 = physis_constants::deuteron_mass_energy_equivalent();
+        covered.push("m_d_c2");
         let m_d_c2_centre = Ratio::new(300_506_323_102, 10i128.pow(21));
         assert_eq!(
             deuteron_mass_energy_equivalent().value(),
@@ -6999,6 +7108,7 @@ mod tests {
             "mdc2_MeV is not a ledger name; the live name is m_d_c2_MeV"
         );
         let m_d_c2_mev = physis_constants::deuteron_mass_energy_equivalent_in_mev();
+        covered.push("m_d_c2_MeV");
         let m_d_c2_mev_centre = Ratio::new(187_561_294_257, 10i128.pow(8));
         assert_eq!(
             deuteron_mass_energy_equivalent_in_mev().value(),
@@ -7040,6 +7150,7 @@ mod tests {
             "md/me is not a ledger name; the live name is md_me"
         );
         let md_me = physis_constants::deuteron_electron_mass_ratio();
+        covered.push("md_me");
         let md_me_centre = Ratio::new(367_048_296_788, 10i128.pow(8));
         assert_eq!(
             deuteron_electron_mass_ratio().value(),
@@ -7079,6 +7190,7 @@ mod tests {
             "md/mp is not a ledger name; the live name is md_mp"
         );
         let md_mp = physis_constants::deuteron_proton_mass_ratio();
+        covered.push("md_mp");
         let md_mp_centre = Ratio::new(199_900_750_139, 10i128.pow(11));
         assert_eq!(
             deuteron_proton_mass_ratio().value(),
@@ -7113,6 +7225,7 @@ mod tests {
             "Md is not a ledger name; the live name is M_d"
         );
         let m_d_molar = physis_constants::deuteron_molar_mass();
+        covered.push("M_d");
         let m_d_molar_centre = Ratio::new(201_355_321_205, 10i128.pow(14));
         assert_eq!(
             deuteron_molar_mass().value(),
@@ -7152,6 +7265,7 @@ mod tests {
             "r_d is not a ledger name; the live name is rd"
         );
         let rd = physis_constants::deuteron_rms_charge_radius();
+        covered.push("rd");
         let rd_centre = Ratio::new(212_799, 10i128.pow(20));
         assert_eq!(
             deuteron_rms_charge_radius().value(),
@@ -7186,6 +7300,7 @@ mod tests {
             "mu-d is not a ledger name; the live name is mu_d"
         );
         let mu_d = physis_constants::deuteron_magnetic_moment();
+        covered.push("mu_d");
         let mu_d_centre = Ratio::new(4_330_735_094, 10i128.pow(36));
         assert_eq!(
             deuteron_magnetic_moment().value(),
@@ -7225,6 +7340,7 @@ mod tests {
             "mu_d/muB is not a ledger name; the live name is mu_d_muB"
         );
         let mu_d_mub = physis_constants::deuteron_magnetic_moment_to_bohr_magneton();
+        covered.push("mu_d_muB");
         let mu_d_mub_centre = Ratio::new(4_669_754_570, 10i128.pow(13));
         assert_eq!(
             deuteron_magnetic_moment_to_bohr_magneton().value(),
@@ -7259,6 +7375,7 @@ mod tests {
             "mu_d/muN is not a ledger name; the live name is mu_d_muN"
         );
         let mu_d_to_mu_n = physis_constants::deuteron_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu_d_muN");
         let mu_d_to_mu_n_centre = Ratio::new(8_574_382_338, 10i128.pow(10));
         assert_eq!(
             deuteron_magnetic_moment_to_nuclear_magneton().value(),
@@ -7295,6 +7412,7 @@ mod tests {
             "g_d is not a ledger name; the live name is gd"
         );
         let gd = physis_constants::deuteron_g_factor();
+        covered.push("gd");
         let gd_centre = Ratio::new(8_574_382_338, 10i128.pow(10));
         assert_eq!(
             deuteron_g_factor().value(),
@@ -7334,6 +7452,7 @@ mod tests {
             "mu_d/mue is not a ledger name; the live name is mu_d_mue"
         );
         let mu_d_mue = physis_constants::deuteron_electron_magnetic_moment_ratio();
+        covered.push("mu_d_mue");
         let mu_d_mue_centre = Ratio::new(-4_664_345_551, 10i128.pow(13));
         assert_eq!(
             deuteron_electron_magnetic_moment_ratio().value(),
@@ -7373,6 +7492,7 @@ mod tests {
             "mu_d/mup is not a ledger name; the live name is mu_d_mup"
         );
         let mu_d_mup = physis_constants::deuteron_proton_magnetic_moment_ratio();
+        covered.push("mu_d_mup");
         let mu_d_mup_centre = Ratio::new(30_701_220_939, 10i128.pow(11));
         assert_eq!(
             deuteron_proton_magnetic_moment_ratio().value(),
@@ -7412,6 +7532,7 @@ mod tests {
             "mu_d/mun is not a ledger name; the live name is mu_d_mun"
         );
         let mu_d_mun = physis_constants::deuteron_neutron_magnetic_moment_ratio();
+        covered.push("mu_d_mun");
         let mu_d_mun_centre = Ratio::new(-44_820_653, 10i128.pow(8));
         assert_eq!(
             deuteron_neutron_magnetic_moment_ratio().value(),
@@ -7451,6 +7572,7 @@ mod tests {
             "mt is not a ledger name; the live name is m_t"
         );
         let m_t = physis_constants::triton_mass();
+        covered.push("m_t");
         let m_t_centre = Ratio::new(50_073_567_446, 10i128.pow(37));
         assert_eq!(
             triton_mass().value(),
@@ -7495,6 +7617,7 @@ mod tests {
             "mt_u is not a ledger name; the live name is m_t_u"
         );
         let m_t_u = physis_constants::triton_mass_in_u();
+        covered.push("m_t_u");
         let m_t_u_centre = Ratio::new(301_550_071_621, 10i128.pow(11));
         assert_eq!(
             triton_mass_in_u().value(),
@@ -7544,6 +7667,7 @@ mod tests {
             "mtc2 is not a ledger name; the live name is m_t_c2"
         );
         let m_t_c2 = physis_constants::triton_mass_energy_equivalent();
+        covered.push("m_t_c2");
         let m_t_c2_centre = Ratio::new(45_003_878_060, 10i128.pow(20));
         assert_eq!(
             triton_mass_energy_equivalent().value(),
@@ -7598,6 +7722,7 @@ mod tests {
             "mtc2_MeV is not a ledger name; the live name is m_t_c2_MeV"
         );
         let m_t_c2_mev = physis_constants::triton_mass_energy_equivalent_in_mev();
+        covered.push("m_t_c2_MeV");
         let m_t_c2_mev_centre = Ratio::new(280_892_113_298, 10i128.pow(8));
         assert_eq!(
             triton_mass_energy_equivalent_in_mev().value(),
@@ -7649,6 +7774,7 @@ mod tests {
             "mt/me is not a ledger name; the live name is mt_me"
         );
         let mt_me = physis_constants::triton_electron_mass_ratio();
+        covered.push("mt_me");
         let mt_me_centre = Ratio::new(549_692_153_573, 10i128.pow(8));
         assert_eq!(
             triton_electron_mass_ratio().value(),
@@ -7693,6 +7819,7 @@ mod tests {
             "mt/mp is not a ledger name; the live name is mt_mp"
         );
         let mt_mp = physis_constants::triton_proton_mass_ratio();
+        covered.push("mt_mp");
         let mt_mp_centre = Ratio::new(299_371_703_414, 10i128.pow(11));
         assert_eq!(
             triton_proton_mass_ratio().value(),
@@ -7732,6 +7859,7 @@ mod tests {
             "Mt is not a ledger name; the live name is M_t"
         );
         let m_t_molar = physis_constants::triton_molar_mass();
+        covered.push("M_t");
         let m_t_molar_centre = Ratio::new(301_550_071_517, 10i128.pow(14));
         assert_eq!(
             triton_molar_mass().value(),
@@ -7776,6 +7904,7 @@ mod tests {
             "mut is not a ledger name; the live name is mu_t"
         );
         let mu_t = physis_constants::triton_magnetic_moment();
+        covered.push("mu_t");
         let mu_t_centre = Ratio::new(15_046_095_202, 10i128.pow(36));
         assert_eq!(
             triton_magnetic_moment().value(),
@@ -7830,6 +7959,7 @@ mod tests {
             "mut_muB is not a ledger name; the live name is mu_t_muB"
         );
         let mu_t_mub = physis_constants::triton_magnetic_moment_to_bohr_magneton();
+        covered.push("mu_t_muB");
         let mu_t_mub_centre = Ratio::new(16_223_936_651, 10i128.pow(13));
         assert_eq!(
             triton_magnetic_moment_to_bohr_magneton().value(),
@@ -7879,6 +8009,7 @@ mod tests {
             "mu_t/muN is not a ledger name; the live name is mu_t_muN"
         );
         let mu_t_to_mu_n = physis_constants::triton_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu_t_muN");
         let mu_t_to_mu_n_centre = Ratio::new(29_789_624_656, 10i128.pow(10));
         assert_eq!(
             triton_magnetic_moment_to_nuclear_magneton().value(),
@@ -7935,6 +8066,7 @@ mod tests {
             "g_t is not a ledger name; the live name is gt"
         );
         let gt = physis_constants::triton_g_factor();
+        covered.push("gt");
         let gt_centre = Ratio::new(5_957_924_931, 10i128.pow(9));
         assert_eq!(
             triton_g_factor().value(),
@@ -7984,6 +8116,7 @@ mod tests {
             "mh is not a ledger name; the live name is m_h"
         );
         let mu_t_mup = physis_constants::triton_proton_magnetic_moment_ratio();
+        covered.push("mu_t_mup");
         let mu_t_mup_centre = Ratio::new(10_666_399_191, 10i128.pow(10));
         assert_eq!(
             triton_proton_magnetic_moment_ratio().value(),
@@ -8026,6 +8159,7 @@ mod tests {
             "D41 is not a second name for mu_t_mup"
         );
         let sigma_dp = physis_constants::shielding_difference_d_p_in_hd();
+        covered.push("sigma_dp");
         let sigma_dp_centre = Ratio::new(20_200, 10i128.pow(12));
         assert_eq!(
             shielding_difference_d_p_in_hd().value(),
@@ -8068,6 +8202,7 @@ mod tests {
             "D42 is not a second name for sigma_dp"
         );
         let sigma_tp = physis_constants::shielding_difference_t_p_in_ht();
+        covered.push("sigma_tp");
         let sigma_tp_centre = Ratio::new(24_140, 10i128.pow(12));
         assert_eq!(
             shielding_difference_t_p_in_ht().value(),
@@ -8110,6 +8245,7 @@ mod tests {
             "D43 is not a second name for sigma_tp"
         );
         let sigma_h = physis_constants::helion_shielding_shift();
+        covered.push("sigma_h");
         let sigma_h_centre = Ratio::new(5_996_743, 10i128.pow(11));
         assert_eq!(
             helion_shielding_shift().value(),
@@ -8157,6 +8293,7 @@ mod tests {
             "helion_shielding is not a second name for sigma_h"
         );
         let m_h = physis_constants::helion_mass();
+        covered.push("m_h");
         let m_h_centre = Ratio::new(50_064_127_796, 10i128.pow(37));
         assert_eq!(
             helion_mass().value(),
@@ -8206,6 +8343,7 @@ mod tests {
             "mh_u is not a ledger name; the live name is m_h_u"
         );
         let m_h_u = physis_constants::helion_mass_in_u();
+        covered.push("m_h_u");
         let m_h_u_centre = Ratio::new(3_014_932_247_175, 10i128.pow(12));
         assert_eq!(
             helion_mass_in_u().value(),
@@ -8265,6 +8403,7 @@ mod tests {
             "mhc2 is not a ledger name; the live name is m_h_c2"
         );
         let m_h_c2 = physis_constants::helion_mass_energy_equivalent();
+        covered.push("m_h_c2");
         let m_h_c2_centre = Ratio::new(44_995_394_125, 10i128.pow(20));
         assert_eq!(
             helion_mass_energy_equivalent().value(),
@@ -8324,6 +8463,7 @@ mod tests {
             "mhc2_MeV is not a ledger name; the live name is m_h_c2_MeV"
         );
         let m_h_c2_mev = physis_constants::helion_mass_energy_equivalent_in_mev();
+        covered.push("m_h_c2_MeV");
         let m_h_c2_mev_centre = Ratio::new(280_839_160_743, 10i128.pow(8));
         assert_eq!(
             helion_mass_energy_equivalent_in_mev().value(),
@@ -8380,6 +8520,7 @@ mod tests {
             "mh/me is not a ledger name; the live name is mh_me"
         );
         let mh_me = physis_constants::helion_electron_mass_ratio();
+        covered.push("mh_me");
         let mh_me_centre = Ratio::new(549_588_528_007, 10i128.pow(8));
         assert_eq!(
             helion_electron_mass_ratio().value(),
@@ -8434,6 +8575,7 @@ mod tests {
             "mh/mp is not a ledger name; the live name is mh_mp"
         );
         let mh_mp = physis_constants::helion_proton_mass_ratio();
+        covered.push("mh_mp");
         let mh_mp_centre = Ratio::new(299_315_267_167, 10i128.pow(11));
         assert_eq!(
             helion_proton_mass_ratio().value(),
@@ -8488,6 +8630,7 @@ mod tests {
             "Mh is not a ledger name; the live name is M_h"
         );
         let m_h_molar = physis_constants::helion_molar_mass();
+        covered.push("M_h");
         let m_h_molar_centre = Ratio::new(301_493_224_613, 10i128.pow(14));
         assert_eq!(
             helion_molar_mass().value(),
@@ -8552,6 +8695,7 @@ mod tests {
             "muh is not a ledger name; the live name is mu_h"
         );
         let mu_h = physis_constants::helion_magnetic_moment();
+        covered.push("mu_h");
         let mu_h_centre = Ratio::new(-1_074_617_532, 10i128.pow(35));
         assert_eq!(
             helion_magnetic_moment().value(),
@@ -8615,6 +8759,7 @@ mod tests {
             "muh_muB is not a ledger name; the live name is mu_h_muB"
         );
         let mu_h_mub = physis_constants::helion_magnetic_moment_to_bohr_magneton();
+        covered.push("mu_h_muB");
         let mu_h_mub_centre = Ratio::new(-1_158_740_958, 10i128.pow(12));
         assert_eq!(
             helion_magnetic_moment_to_bohr_magneton().value(),
@@ -8683,6 +8828,7 @@ mod tests {
             "mu_h/muN is not a ledger name; the live name is mu_h_muN"
         );
         let mu_h_to_mu_n = physis_constants::helion_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu_h_muN");
         let mu_h_to_mu_n_centre = Ratio::new(-2_127_625_307, 10i128.pow(9));
         assert_eq!(
             helion_magnetic_moment_to_nuclear_magneton().value(),
@@ -8748,6 +8894,7 @@ mod tests {
             "g_h is not a ledger name; the live name is gh"
         );
         let gh = physis_constants::helion_g_factor();
+        covered.push("gh");
         let gh_centre = Ratio::new(-4_255_250_615, 10i128.pow(9));
         assert_eq!(
             helion_g_factor().value(),
@@ -8806,6 +8953,7 @@ mod tests {
             "mu_0h is not a ledger name; the live name is mu0h"
         );
         let mu0h = physis_constants::shielded_helion_magnetic_moment();
+        covered.push("mu0h");
         let mu0h_centre = Ratio::new(-1_074_553_090, 10i128.pow(35));
         assert_eq!(
             shielded_helion_magnetic_moment().value(),
@@ -8859,6 +9007,7 @@ mod tests {
             "mu0h_mub is not a ledger name; the live name is mu0h_muB"
         );
         let mu0h_mub = physis_constants::shielded_helion_magnetic_moment_to_bohr_magneton();
+        covered.push("mu0h_muB");
         let mu0h_mub_centre = Ratio::new(-1_158_671_471, 10i128.pow(12));
         assert_eq!(
             shielded_helion_magnetic_moment_to_bohr_magneton().value(),
@@ -8922,6 +9071,7 @@ mod tests {
             "mu0h_mun is not a ledger name; the live name is mu0h_muN"
         );
         let mu0h_mun = physis_constants::shielded_helion_magnetic_moment_to_nuclear_magneton();
+        covered.push("mu0h_muN");
         let mu0h_mun_centre = Ratio::new(-2_127_497_719, 10i128.pow(9));
         assert_eq!(
             shielded_helion_magnetic_moment_to_nuclear_magneton().value(),
@@ -8980,6 +9130,7 @@ mod tests {
             "mu0h/mup is not a ledger name; the live name is mu0h_mup"
         );
         let mu0h_mup = physis_constants::shielded_helion_to_proton_magnetic_moment_ratio();
+        covered.push("mu0h_mup");
         let mu0h_mup_centre = Ratio::new(-7_617_665_618, 10i128.pow(10));
         assert_eq!(
             shielded_helion_to_proton_magnetic_moment_ratio().value(),
@@ -9039,6 +9190,7 @@ mod tests {
         );
         let mu0h_mu0p =
             physis_constants::shielded_helion_to_shielded_proton_magnetic_moment_ratio();
+        covered.push("mu0h_mu0p");
         let mu0h_mu0p_centre = Ratio::new(-7_617_861_313, 10i128.pow(10));
         assert_eq!(
             shielded_helion_to_shielded_proton_magnetic_moment_ratio().value(),
@@ -9097,6 +9249,7 @@ mod tests {
             "malpha is not a ledger name; the live name is m_alpha"
         );
         let m_alpha = physis_constants::alpha_particle_mass();
+        covered.push("m_alpha");
         let m_alpha_centre = Ratio::new(66_446_573_357, 10i128.pow(37));
         assert_eq!(
             alpha_particle_mass().value(),
@@ -9155,6 +9308,7 @@ mod tests {
             "malpha_u is not a ledger name; the live name is m_alpha_u"
         );
         let m_alpha_u = physis_constants::alpha_particle_mass_in_u();
+        covered.push("m_alpha_u");
         let m_alpha_u_centre = Ratio::new(4_001_506_179_127, 10i128.pow(12));
         assert_eq!(
             alpha_particle_mass_in_u().value(),
@@ -9233,6 +9387,7 @@ mod tests {
             "malpha_c2 is not a ledger name; the live name is m_alpha_c2"
         );
         let m_alpha_c2 = physis_constants::alpha_particle_mass_energy_equivalent();
+        covered.push("m_alpha_c2");
         let m_alpha_c2_centre = Ratio::new(59_719_201_914, 10i128.pow(20));
         assert_eq!(
             alpha_particle_mass_energy_equivalent().value(),
@@ -9313,6 +9468,7 @@ mod tests {
             "malpha_c2_MeV is not a ledger name; the live name is m_alpha_c2_MeV"
         );
         let m_alpha_c2_mev = physis_constants::alpha_particle_mass_energy_equivalent_in_mev();
+        covered.push("m_alpha_c2_MeV");
         let m_alpha_c2_mev_centre = Ratio::new(37_273_794_066, 10i128.pow(7));
         assert_eq!(
             alpha_particle_mass_energy_equivalent_in_mev().value(),
@@ -9388,6 +9544,7 @@ mod tests {
             "malpha/me is not a ledger name; the live name is malpha_me"
         );
         let malpha_me = physis_constants::alpha_particle_electron_mass_ratio();
+        covered.push("malpha_me");
         let malpha_me_centre = Ratio::new(729_429_954_142, 10i128.pow(8));
         assert_eq!(
             alpha_particle_electron_mass_ratio().value(),
@@ -9461,6 +9618,7 @@ mod tests {
             "malpha/mp is not a ledger name; the live name is malpha_mp"
         );
         let malpha_mp = physis_constants::alpha_particle_proton_mass_ratio();
+        covered.push("malpha_mp");
         let malpha_mp_centre = Ratio::new(397_259_969_009, 10i128.pow(11));
         assert_eq!(
             alpha_particle_proton_mass_ratio().value(),
@@ -9535,6 +9693,7 @@ mod tests {
             "Malpha is not a ledger name; the live name is M_alpha"
         );
         let m_alpha_molar = physis_constants::alpha_particle_molar_mass();
+        covered.push("M_alpha");
         let m_alpha_molar_centre = Ratio::new(40_015_061_777, 10i128.pow(13));
         assert_eq!(
             alpha_particle_molar_mass().value(),
@@ -9625,6 +9784,7 @@ mod tests {
             "unified atomic mass unit is the same digits and is not stored under a second name"
         );
         let m_u = physis_constants::atomic_mass_constant();
+        covered.push("m_u");
         let m_u_centre = Ratio::new(166_053_906_660, 10i128.pow(38));
         assert_eq!(
             atomic_mass_constant().value(),
@@ -9709,6 +9869,7 @@ mod tests {
             "muc2 is not a ledger name; the live name is m_u_c2"
         );
         let m_u_c2 = physis_constants::atomic_mass_constant_energy_equivalent();
+        covered.push("m_u_c2");
         let m_u_c2_centre = Ratio::new(149_241_808_560, 10i128.pow(21));
         assert_eq!(
             atomic_mass_constant_energy_equivalent().value(),
@@ -9793,6 +9954,7 @@ mod tests {
             "muc2_MeV is not a ledger name; the live name is m_u_c2_MeV"
         );
         let m_u_c2_mev = physis_constants::atomic_mass_constant_energy_equivalent_in_mev();
+        covered.push("m_u_c2_MeV");
         let m_u_c2_mev_centre = Ratio::new(93_149_410_242, 10i128.pow(8));
         assert_eq!(
             atomic_mass_constant_energy_equivalent_in_mev().value(),
@@ -9879,6 +10041,7 @@ mod tests {
             "Mu is not a ledger name; the live name is M_u"
         );
         let m_u_molar = physis_constants::molar_mass_constant();
+        covered.push("M_u");
         let m_u_molar_centre = Ratio::new(99_999_999_965, 10i128.pow(14));
         assert_eq!(
             molar_mass_constant().value(),
@@ -9963,6 +10126,7 @@ mod tests {
             "M12C is not a ledger name; the live name is M_12C"
         );
         let m_12c = physis_constants::carbon_12_molar_mass();
+        covered.push("M_12C");
         let m_12c_centre = Ratio::new(119_999_999_958, 10i128.pow(13));
         assert_eq!(
             carbon_12_molar_mass().value(),
@@ -10052,6 +10216,7 @@ mod tests {
             "NA_h is not a ledger name; the live name is NAh"
         );
         let n_a_h = physis_constants::molar_planck_constant();
+        covered.push("NAh");
         let n_a_h_value = Ratio::new(602_214_076i128 * 662_607_015i128, 10i128.pow(27));
         assert_eq!(
             n_a_h.value, n_a_h_value,
@@ -10112,6 +10277,7 @@ mod tests {
             "R is not a ledger name; the live name is NAk"
         );
         let n_a_k = physis_constants::molar_gas_constant();
+        covered.push("NAk");
         let n_a_k_value = Ratio::new(602_214_076i128 * 1_380_649i128, 10i128.pow(14));
         assert_eq!(
             n_a_k.value, n_a_k_value,
@@ -10173,6 +10339,7 @@ mod tests {
         );
 
         let k_ev = physis_constants::boltzmann_in_ev_per_kelvin();
+        covered.push("k_eV");
         let k_ev_value = Ratio::new(1_380_649, 1_602_176_634i128 * 10);
         assert_eq!(k_ev.value, k_ev_value, "ledger k_eV is the exact SI Ratio");
         assert_eq!(
@@ -10217,6 +10384,7 @@ mod tests {
         assert_eq!(physis_constants::lookup("k_eV").unwrap().kind, "ratio");
 
         let k_hz = physis_constants::boltzmann_in_hz_per_kelvin();
+        covered.push("k_Hz");
         let k_hz_value = Ratio::new(1_380_649i128 * 10i128.pow(13), 662_607_015i128);
         assert_eq!(k_hz.value, k_hz_value, "ledger k_Hz is the exact SI Ratio");
         assert_eq!(
@@ -10256,6 +10424,7 @@ mod tests {
         assert_eq!(physis_constants::lookup("k_Hz").unwrap().kind, "ratio");
 
         let k_m = physis_constants::boltzmann_in_inverse_meter_per_kelvin();
+        covered.push("k_m");
         let k_m_value = Ratio::new(
             1_380_649i128 * 10i128.pow(13),
             662_607_015i128 * 299_792_458i128,
@@ -10307,6 +10476,7 @@ mod tests {
         );
 
         let h_evhz = physis_constants::planck_in_ev_per_hz();
+        covered.push("h_eVHz");
         let h_evhz_value = Ratio::new(662_607_015i128, 1_602_176_634i128 * 10i128.pow(14));
         assert_eq!(
             h_evhz.value, h_evhz_value,
@@ -10353,6 +10523,7 @@ mod tests {
         );
 
         let kg_j = physis_constants::kilogram_in_joule();
+        covered.push("kg_J");
         let kg_j_value = Ratio::int(299_792_458i128 * 299_792_458i128);
         assert_eq!(
             kg_j.value, kg_j_value,
@@ -10399,6 +10570,7 @@ mod tests {
         );
 
         let j_kg = physis_constants::joule_in_kilogram();
+        covered.push("J_kg");
         let j_kg_value = Ratio::new(1, 299_792_458i128 * 299_792_458i128);
         assert_eq!(j_kg.value, j_kg_value, "ledger J_kg is the exact SI Ratio");
         assert_eq!(
@@ -10441,6 +10613,7 @@ mod tests {
         );
 
         let m_j = physis_constants::inverse_meter_in_joule();
+        covered.push("m_J");
         let m_j_value = SciExact::new(662_607_015i128 * 299_792_458i128, -42);
         assert_eq!(m_j.value, m_j_value, "ledger m_J is the exact SI product");
         assert_eq!(m_j.value.to_ratio(), None, "m_J does not fit Ratio");
@@ -10481,6 +10654,7 @@ mod tests {
         );
 
         let m_ev = physis_constants::inverse_meter_in_electronvolt();
+        covered.push("m_eV");
         let m_ev_value = Ratio::new(
             662_607_015i128 * 299_792_458i128,
             1_602_176_634i128 * 10i128.pow(14),
@@ -10527,6 +10701,7 @@ mod tests {
         );
 
         let j_ev = physis_constants::joule_in_electronvolt();
+        covered.push("J_eV");
         let j_ev_value = Ratio::new(10i128.pow(28), 1_602_176_634);
         assert_eq!(j_ev.value, j_ev_value, "ledger J_eV is the exact SI Ratio");
         assert_eq!(
@@ -10574,6 +10749,7 @@ mod tests {
         );
 
         let j_k = physis_constants::joule_in_kelvin();
+        covered.push("J_K");
         let j_k_value = Ratio::new(10i128.pow(29), 1_380_649);
         assert_eq!(j_k.value, j_k_value, "ledger J_K is the exact SI Ratio");
         assert_eq!(
@@ -10621,6 +10797,7 @@ mod tests {
         );
 
         let ev_hz = physis_constants::electron_volt_in_hertz();
+        covered.push("eV_Hz");
         let ev_hz_value = Ratio::new(1_602_176_634i128 * 10i128.pow(14), 662_607_015);
         assert_eq!(
             ev_hz.value, ev_hz_value,
@@ -10675,6 +10852,7 @@ mod tests {
         );
 
         let ev_k = physis_constants::electron_volt_in_kelvin();
+        covered.push("eV_K");
         let ev_k_value = Ratio::new(1_602_176_634i128 * 10, 1_380_649);
         assert_eq!(ev_k.value, ev_k_value, "ledger eV_K is the exact SI Ratio");
         assert_eq!(
@@ -10718,6 +10896,7 @@ mod tests {
         );
 
         let hz_k = physis_constants::hertz_in_kelvin();
+        covered.push("Hz_K");
         let hz_k_value = Ratio::new(662_607_015i128, 1_380_649i128 * 10i128.pow(13));
         assert_eq!(hz_k.value, hz_k_value, "ledger Hz_K is the exact SI Ratio");
         assert_eq!(
@@ -10761,6 +10940,7 @@ mod tests {
         );
 
         let hz_m = physis_constants::hertz_in_inverse_meter();
+        covered.push("Hz_m");
         let hz_m_value = Ratio::new(1, 299_792_458);
         assert_eq!(hz_m.value, hz_m_value, "ledger Hz_m is the exact SI Ratio");
         assert_eq!(
@@ -10803,6 +10983,7 @@ mod tests {
         );
 
         let ev_m = physis_constants::electron_volt_in_inverse_meter();
+        covered.push("eV_m");
         let ev_m_value = Ratio::new(
             1_602_176_634i128 * 10i128.pow(14),
             662_607_015i128 * 299_792_458i128,
@@ -10848,6 +11029,7 @@ mod tests {
         );
 
         let hz_eh = physis_constants::hertz_in_hartree();
+        covered.push("Hz_Eh");
         let hz_eh_centre = Ratio::new(15_198_298_460_570, 10i128.pow(29));
         assert_eq!(
             hertz_in_hartree().value(),
@@ -10889,6 +11071,7 @@ mod tests {
         );
 
         let hz_u = physis_constants::hertz_in_atomic_mass_unit();
+        covered.push("Hz_u");
         let hz_u_centre = Ratio::new(44_398_216_652, 10i128.pow(34));
         assert_eq!(
             hertz_in_atomic_mass_unit().value(),
@@ -10930,6 +11113,7 @@ mod tests {
         );
 
         let u_hz = physis_constants::atomic_mass_unit_in_hertz();
+        covered.push("u_Hz");
         let u_hz_centre = Ratio::int(225_234_271_871i128 * 10i128.pow(12));
         assert_eq!(
             atomic_mass_unit_in_hertz().value(),
@@ -10970,6 +11154,7 @@ mod tests {
         );
 
         let eh_hz = physis_constants::hartree_in_hertz();
+        covered.push("Eh_Hz");
         let eh_hz_centre = Ratio::int(6_579_683_920_502i128 * 10i128.pow(3));
         assert_eq!(
             hartree_in_hertz().value(),
@@ -11010,6 +11195,7 @@ mod tests {
         );
 
         let eh_m = physis_constants::hartree_in_inverse_meter();
+        covered.push("Eh_m");
         let eh_m_centre = Ratio::new(21_947_463_136_320, 10i128.pow(6));
         assert_eq!(
             hartree_in_inverse_meter().value(),
@@ -11046,6 +11232,7 @@ mod tests {
         );
 
         let m_eh = physis_constants::inverse_meter_in_hartree();
+        covered.push("m_Eh");
         let m_eh_centre = Ratio::new(45_563_352_529_120, 10i128.pow(21));
         assert_eq!(
             inverse_meter_in_hartree().value(),
@@ -11086,6 +11273,7 @@ mod tests {
         );
 
         let eh_k = physis_constants::hartree_in_kelvin();
+        covered.push("Eh_K");
         let eh_k_centre = Ratio::new(31_577_502_480_407, 10i128.pow(8));
         assert_eq!(
             hartree_in_kelvin().value(),
@@ -11122,6 +11310,7 @@ mod tests {
         );
 
         let k_eh = physis_constants::kelvin_in_hartree();
+        covered.push("K_Eh");
         let k_eh_centre = Ratio::new(31_668_115_634_556, 10i128.pow(19));
         assert_eq!(
             kelvin_in_hartree().value(),
@@ -11162,6 +11351,7 @@ mod tests {
         );
 
         let eh_u = physis_constants::hartree_in_atomic_mass_unit();
+        covered.push("Eh_u");
         let eh_u_centre = Ratio::new(292_126_232_205, 10i128.pow(19));
         assert_eq!(
             hartree_in_atomic_mass_unit().value(),
@@ -11198,6 +11388,7 @@ mod tests {
         );
 
         let ev_eh = physis_constants::electron_volt_in_hartree();
+        covered.push("eV_Eh");
         let ev_eh_centre = Ratio::new(36_749_322_175_655, 10i128.pow(15));
         assert_eq!(
             electron_volt_in_hartree().value(),
@@ -11238,6 +11429,7 @@ mod tests {
         );
 
         let j_eh = physis_constants::joule_in_hartree();
+        covered.push("J_Eh");
         let j_eh_centre = Ratio::int(22_937_122_783_963i128 * 10i128.pow(4));
         assert_eq!(
             joule_in_hartree().value(),
@@ -11278,6 +11470,7 @@ mod tests {
         );
 
         let u_eh = physis_constants::atomic_mass_unit_in_hartree();
+        covered.push("u_Eh");
         let u_eh_centre = Ratio::new(34_231_776_874, 10i128.pow(3));
         assert_eq!(
             atomic_mass_unit_in_hartree().value(),
@@ -11318,6 +11511,7 @@ mod tests {
         );
 
         let kg_eh = physis_constants::kilogram_in_hartree();
+        covered.push("kg_Eh");
         let kg_eh_centre = Ratio::int(20_614_857_887_409i128 * 10i128.pow(21));
         assert_eq!(
             kilogram_in_hartree().value(),
@@ -11358,6 +11552,7 @@ mod tests {
         );
 
         let kg_u = physis_constants::kilogram_in_atomic_mass_unit();
+        covered.push("kg_u");
         let kg_u_centre = Ratio::int(60_221_407_621i128 * 10i128.pow(16));
         assert_eq!(
             kilogram_in_atomic_mass_unit().value(),
@@ -11398,6 +11593,7 @@ mod tests {
         );
 
         let j_u = physis_constants::joule_in_atomic_mass_unit();
+        covered.push("J_u");
         let j_u_centre = Ratio::new(67_005_352_565, 10);
         assert_eq!(
             joule_in_atomic_mass_unit().value(),
@@ -11438,6 +11634,7 @@ mod tests {
         );
 
         let k_u = physis_constants::kelvin_in_atomic_mass_unit();
+        covered.push("K_u");
         let k_u_centre = Ratio::new(92_510_873_014, 10i128.pow(24));
         assert_eq!(
             kelvin_in_atomic_mass_unit().value(),
@@ -11478,6 +11675,7 @@ mod tests {
         );
 
         let ev_u = physis_constants::electron_volt_in_atomic_mass_unit();
+        covered.push("eV_u");
         let ev_u_centre = Ratio::new(107_354_410_233, 10i128.pow(20));
         assert_eq!(
             electron_volt_in_atomic_mass_unit().value(),
@@ -11518,6 +11716,7 @@ mod tests {
         );
 
         let u_ev = physis_constants::atomic_mass_unit_in_electronvolt();
+        covered.push("u_eV");
         let u_ev_centre = Ratio::new(93_149_410_242, 10i128.pow(2));
         assert_eq!(
             atomic_mass_unit_in_electronvolt().value(),
@@ -11562,6 +11761,7 @@ mod tests {
         );
 
         let u_m = physis_constants::atomic_mass_unit_in_inverse_meter();
+        covered.push("u_m");
         let u_m_centre = Ratio::int(75_130_066_104i128 * 10i128.pow(4));
         assert_eq!(
             atomic_mass_unit_in_inverse_meter().value(),
@@ -11602,6 +11802,7 @@ mod tests {
         );
 
         let u_k = physis_constants::atomic_mass_unit_in_kelvin();
+        covered.push("u_K");
         let u_k_centre = Ratio::int(108_095_401_916i128 * 10i128.pow(2));
         assert_eq!(
             atomic_mass_unit_in_kelvin().value(),
@@ -11642,6 +11843,7 @@ mod tests {
         );
 
         let eh_kg = physis_constants::hartree_in_kilogram();
+        covered.push("Eh_kg");
         let eh_kg_centre = SciExact::new(48_508_702_095_432, -48);
         assert_eq!(
             hartree_in_kilogram().value(),
@@ -11685,6 +11887,7 @@ mod tests {
         );
 
         let a_si = physis_constants::lattice_parameter_of_silicon();
+        covered.push("a_Si");
         let a_si_centre = Ratio::new(5_431_020_511, 10i128.pow(19));
         assert_eq!(
             lattice_parameter_of_silicon().value(),
@@ -11729,6 +11932,7 @@ mod tests {
         );
 
         let vm_si = physis_constants::molar_volume_of_silicon();
+        covered.push("Vm_Si");
         let vm_si_centre = Ratio::new(1_205_883_199, 10i128.pow(14));
         assert_eq!(
             molar_volume_of_silicon().value(),
@@ -11770,6 +11974,7 @@ mod tests {
         assert_eq!(physis_constants::lookup("Vm").unwrap().kind, "ratio");
 
         let astar = physis_constants::angstrom_star();
+        covered.push("Astar");
         let astar_centre = Ratio::new(100_001_495, 10i128.pow(18));
         assert_eq!(
             angstrom_star().value(),
@@ -11812,6 +12017,7 @@ mod tests {
         assert_eq!(physis_constants::lookup("au_I").unwrap().kind, "interval");
 
         let xu_cu = physis_constants::copper_x_unit();
+        covered.push("xu_Cu");
         let xu_cu_centre = Ratio::new(100_207_697, 10i128.pow(21));
         assert_eq!(
             copper_x_unit().value(),
@@ -11851,6 +12057,7 @@ mod tests {
             "copper_xu is not a second name for xu_Cu"
         );
         let xu_mo = physis_constants::molybdenum_x_unit();
+        covered.push("xu_Mo");
         let xu_mo_centre = Ratio::new(100_209_952, 10i128.pow(21));
         assert_eq!(
             molybdenum_x_unit().value(),
@@ -11894,6 +12101,7 @@ mod tests {
             "d220 is not stored; xu_Mo is not an a/sqrt(8) certificate"
         );
         let au_i = physis_constants::atomic_unit_of_current();
+        covered.push("au_I");
         let au_i_centre = Ratio::new(6_623_618_237_510, 10i128.pow(15));
         assert_eq!(
             atomic_unit_of_current().value(),
@@ -11937,6 +12145,7 @@ mod tests {
             "d220 is not stored; au_I is not an a/sqrt(8) certificate"
         );
         let au_rho = physis_constants::atomic_unit_of_charge_density();
+        covered.push("au_rho");
         let au_rho_centre = Ratio::int(1_081_202_384_570);
         assert_eq!(
             atomic_unit_of_charge_density().value(),
@@ -11980,6 +12189,7 @@ mod tests {
             "d220 is not stored; au_rho is not an a/sqrt(8) certificate"
         );
         let au_e = physis_constants::atomic_unit_of_electric_field();
+        covered.push("au_E");
         let au_e_centre = Ratio::int(514_220_674_763);
         assert_eq!(
             atomic_unit_of_electric_field().value(),
@@ -12023,6 +12233,7 @@ mod tests {
             "d220 is not stored; au_E is not an a/sqrt(8) certificate"
         );
         let au_efg = physis_constants::atomic_unit_of_electric_field_gradient();
+        covered.push("au_EFG");
         let au_efg_centre = Ratio::int(97_173_624_292 * 10i128.pow(11));
         assert_eq!(
             atomic_unit_of_electric_field_gradient().value(),
@@ -12066,6 +12277,7 @@ mod tests {
             "d220 is not stored; au_EFG is not an a/sqrt(8) certificate"
         );
         let ea0 = physis_constants::atomic_unit_of_electric_dipole_moment();
+        covered.push("ea0");
         let ea0_centre = SciExact::new(84_783_536_255, -40);
         assert_eq!(
             atomic_unit_of_electric_dipole_moment().value(),
@@ -12112,6 +12324,7 @@ mod tests {
             "d220 is not stored; ea0 is not an a/sqrt(8) certificate"
         );
         let ea02 = physis_constants::atomic_unit_of_electric_quadrupole_moment();
+        covered.push("ea02");
         let ea02_centre = SciExact::new(44_865_515_246, -50);
         assert_eq!(
             atomic_unit_of_electric_quadrupole_moment().value(),
@@ -12158,6 +12371,7 @@ mod tests {
             "d220 is not stored; ea02 is not an a/sqrt(8) certificate"
         );
         let au_pol = physis_constants::atomic_unit_of_electric_polarizability();
+        covered.push("au_pol");
         let au_pol_centre = SciExact::new(164_877_727_436, -52);
         assert_eq!(
             atomic_unit_of_electric_polarizability().value(),
@@ -12209,6 +12423,7 @@ mod tests {
             "d220 is not stored; au_pol is not an a/sqrt(8) certificate"
         );
         let au_hyp = physis_constants::atomic_unit_of_first_hyperpolarizability();
+        covered.push("au_hyp");
         let au_hyp_centre = SciExact::new(32_063_613_061, -63);
         assert_eq!(
             atomic_unit_of_first_hyperpolarizability().value(),
@@ -12255,6 +12470,7 @@ mod tests {
             "d220 is not stored; au_hyp is not an a/sqrt(8) certificate"
         );
         let au_hyp2 = physis_constants::atomic_unit_of_second_hyperpolarizability();
+        covered.push("au_hyp2");
         let au_hyp2_centre = SciExact::new(62_353_799_905, -75);
         assert_eq!(
             atomic_unit_of_second_hyperpolarizability().value(),
@@ -12301,6 +12517,7 @@ mod tests {
             "d220 is not stored; au_hyp2 is not an a/sqrt(8) certificate"
         );
         let au_mu = physis_constants::atomic_unit_of_magnetic_dipole_moment();
+        covered.push("au_mu");
         let au_mu_centre = Ratio::new(185_480_201_566, 10i128.pow(34));
         assert_eq!(
             atomic_unit_of_magnetic_dipole_moment().value(),
@@ -12344,6 +12561,7 @@ mod tests {
             "d220 is not stored; au_mu is not an a/sqrt(8) certificate"
         );
         let au_b = physis_constants::atomic_unit_of_magnetic_flux_density();
+        covered.push("au_B");
         let au_b_centre = Ratio::new(235_051_756_758, 10i128.pow(6));
         assert_eq!(
             atomic_unit_of_magnetic_flux_density().value(),
@@ -12387,6 +12605,7 @@ mod tests {
             "d220 is not stored; au_B is not an a/sqrt(8) certificate"
         );
         let au_chi = physis_constants::atomic_unit_of_magnetizability();
+        covered.push("au_chi");
         let au_chi_centre = SciExact::new(78_910_366_008, -39);
         assert_eq!(
             atomic_unit_of_magnetizability().value(),
@@ -12438,6 +12657,7 @@ mod tests {
             "F is not a ledger name; the live name is NAe"
         );
         let n_a_e = physis_constants::faraday_constant();
+        covered.push("NAe");
         let n_a_e_value = Ratio::new(602_214_076i128 * 1_602_176_634i128, 10i128.pow(13));
         assert_eq!(
             n_a_e.value, n_a_e_value,
@@ -12503,6 +12723,7 @@ mod tests {
             "bar is not a ledger name; the live name is p0"
         );
         let p_0 = physis_constants::standard_state_pressure();
+        covered.push("p0");
         assert_eq!(
             p_0.value,
             Ratio::int(100_000),
@@ -12548,6 +12769,7 @@ mod tests {
             "Torr is not a ledger name; the live name is atm"
         );
         let std_atm = physis_constants::standard_atmosphere();
+        covered.push("atm");
         assert_eq!(
             std_atm.value,
             Ratio::int(101_325),
@@ -12594,6 +12816,7 @@ mod tests {
         );
 
         let v_m = physis_constants::molar_volume_ideal_gas();
+        covered.push("Vm");
         let v_m_value = Ratio::new(602_214_076i128 * 1_380_649i128 * 27_315i128, 10i128.pow(21));
         assert_eq!(v_m.value, v_m_value, "ledger Vm is the exact SI product");
         assert_eq!(
@@ -12642,6 +12865,7 @@ mod tests {
         );
 
         let n_0 = physis_constants::loschmidt_constant();
+        covered.push("n0");
         let n_0_value = Ratio::new(10i128.pow(36), 1_380_649i128 * 27_315i128);
         assert_eq!(n_0.value, n_0_value, "ledger n0 is the exact SI Ratio");
         assert_eq!(
@@ -12680,6 +12904,7 @@ mod tests {
         );
 
         let v_m_atm = physis_constants::molar_volume_ideal_gas_atm();
+        covered.push("Vm_atm");
         let v_m_atm_value = Ratio::new(
             602_214_076i128 * 1_380_649i128 * 27_315i128,
             101_325i128 * 10i128.pow(16),
@@ -12724,6 +12949,7 @@ mod tests {
         );
 
         let n_0_atm = physis_constants::loschmidt_constant_atm();
+        covered.push("n0_atm");
         let n_0_atm_value = Ratio::new(101_325i128 * 10i128.pow(31), 1_380_649i128 * 27_315i128);
         assert_eq!(
             n_0_atm.value, n_0_atm_value,
@@ -12765,6 +12991,7 @@ mod tests {
         );
 
         let s_0_r = physis_constants::sackur_tetrode_constant();
+        covered.push("S0_R");
         let s_0_r_centre = Ratio::new(-115_170_753_706, 10i128.pow(11));
         assert_eq!(
             sackur_tetrode_constant().value(),
@@ -12810,6 +13037,7 @@ mod tests {
         );
 
         let s_0_r_atm = physis_constants::sackur_tetrode_constant_atm();
+        covered.push("S0_R_atm");
         let s_0_r_atm_centre = Ratio::new(-116_487_052_358, 10i128.pow(11));
         assert_eq!(
             sackur_tetrode_constant_atm().value(),
@@ -12855,6 +13083,7 @@ mod tests {
         );
 
         let c_1_l = physis_constants::first_radiation_constant_spectral_radiance();
+        covered.push("c1L");
         let c_1_l_value = SciExact::new(2 * 662_607_015i128 * 299_792_458i128.pow(2), -42);
         assert_eq!(
             c_1_l.value, c_1_l_value,
@@ -12896,6 +13125,7 @@ mod tests {
         );
 
         let c_2 = physis_constants::second_radiation_constant();
+        covered.push("c2");
         let c_2_value = Ratio::new(
             662_607_015i128 * 299_792_458i128,
             1_380_649i128 * 10i128.pow(13),
@@ -12949,6 +13179,7 @@ mod tests {
         );
 
         let k_j = physis_constants::josephson_constant();
+        covered.push("KJ");
         let k_j_value = Ratio::new(2 * 1_602_176_634i128 * 10i128.pow(14), 662_607_015i128);
         assert_eq!(k_j.value, k_j_value, "ledger KJ is the exact SI Ratio");
         assert_eq!(
@@ -12995,6 +13226,7 @@ mod tests {
         );
 
         let r_k = physis_constants::von_klitzing_constant();
+        covered.push("RK");
         let r_k_value = Ratio::new(
             662_607_015i128 * 10i128.pow(14),
             1_602_176_634i128 * 1_602_176_634i128,
@@ -13044,6 +13276,7 @@ mod tests {
         );
 
         let mu_b = physis_constants::bohr_magneton();
+        covered.push("muB");
         let mu_b_centre = Ratio::new(92_740_100_783, 10i128.pow(34));
         assert_eq!(
             bohr_magneton().value(),
@@ -13079,6 +13312,7 @@ mod tests {
         );
 
         let mu_b_ev = physis_constants::bohr_magneton_in_ev_per_tesla();
+        covered.push("muB_eV");
         let mu_b_ev_centre = Ratio::new(57_883_818_060, 10i128.pow(15));
         assert_eq!(
             bohr_magneton_in_ev_per_tesla().value(),
@@ -13114,6 +13348,7 @@ mod tests {
         );
 
         let mu_b_hz = physis_constants::bohr_magneton_in_hz_per_tesla();
+        covered.push("muB_Hz");
         let mu_b_hz_centre = Ratio::new(139_962_449_361, 10i128.pow(1));
         assert_eq!(
             bohr_magneton_in_hz_per_tesla().value(),
@@ -13149,6 +13384,7 @@ mod tests {
         );
 
         let mu_b_m = physis_constants::bohr_magneton_in_inverse_meter_per_tesla();
+        covered.push("muB_m");
         let mu_b_m_centre = Ratio::new(46_686_447_783, 10i128.pow(9));
         assert_eq!(
             bohr_magneton_in_inverse_meter_per_tesla().value(),
@@ -13184,6 +13420,7 @@ mod tests {
         );
 
         let mu_b_k = physis_constants::bohr_magneton_in_kelvin_per_tesla();
+        covered.push("muB_K");
         let mu_b_k_centre = Ratio::new(67_171_381_563, 10i128.pow(11));
         assert_eq!(
             bohr_magneton_in_kelvin_per_tesla().value(),
@@ -13219,6 +13456,7 @@ mod tests {
         );
 
         let mu_nuc = physis_constants::nuclear_magneton();
+        covered.push("muN");
         let mu_nuc_centre = Ratio::new(50_507_837_461, 10i128.pow(37));
         assert_eq!(
             nuclear_magneton().value(),
@@ -13254,6 +13492,7 @@ mod tests {
         );
 
         let mu_nuc_ev = physis_constants::nuclear_magneton_in_ev_per_tesla();
+        covered.push("muN_eV");
         let mu_nuc_ev_centre = Ratio::new(315_245_125_844, 10i128.pow(19));
         assert_eq!(
             nuclear_magneton_in_ev_per_tesla().value(),
@@ -13289,6 +13528,7 @@ mod tests {
         );
 
         let mu_nuc_m = physis_constants::nuclear_magneton_in_inverse_meter_per_tesla();
+        covered.push("muN_m");
         let mu_nuc_m_centre = Ratio::new(254_262_341_353, 10i128.pow(13));
         assert_eq!(
             nuclear_magneton_in_inverse_meter_per_tesla().value(),
@@ -13329,6 +13569,7 @@ mod tests {
         );
 
         let mu_nuc_k = physis_constants::nuclear_magneton_in_kelvin_per_tesla();
+        covered.push("muN_K");
         let mu_nuc_k_centre = Ratio::new(36_582_677_756, 10i128.pow(14));
         assert_eq!(
             nuclear_magneton_in_kelvin_per_tesla().value(),
@@ -13369,6 +13610,7 @@ mod tests {
         );
 
         let mu_nuc_mhz = physis_constants::nuclear_magneton_in_mhz_per_tesla();
+        covered.push("muN_MHz");
         let mu_nuc_mhz_centre = Ratio::new(76_225_932_291, 10i128.pow(10));
         assert_eq!(
             nuclear_magneton_in_mhz_per_tesla().value(),
@@ -13411,6 +13653,7 @@ mod tests {
         );
 
         let gamma_p = physis_constants::proton_gyromagnetic_ratio();
+        covered.push("gamma_p");
         let gamma_p_centre = Ratio::new(26_752_218_744, 10i128.pow(2));
         assert_eq!(
             proton_gyromagnetic_ratio().value(),
@@ -13451,6 +13694,7 @@ mod tests {
         );
 
         let gamma_p_mhz = physis_constants::proton_gyromagnetic_ratio_in_mhz_per_tesla();
+        covered.push("gamma_p_MHz");
         let gamma_p_mhz_centre = Ratio::new(42_577_478_518, 10i128.pow(9));
         assert_eq!(
             proton_gyromagnetic_ratio_in_mhz_per_tesla().value(),
@@ -13493,6 +13737,7 @@ mod tests {
         );
 
         let gamma0p = physis_constants::shielded_proton_gyromagnetic_ratio();
+        covered.push("gamma0p");
         let gamma0p_centre = Ratio::new(2_675_153_151, 10i128.pow(1));
         assert_eq!(
             shielded_proton_gyromagnetic_ratio().value(),
@@ -13533,6 +13778,7 @@ mod tests {
         );
 
         let gamma0p_mhz = physis_constants::shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla();
+        covered.push("gamma0p_MHz");
         let gamma0p_mhz_centre = Ratio::new(4_257_638_474, 10i128.pow(8));
         assert_eq!(
             shielded_proton_gyromagnetic_ratio_in_mhz_per_tesla().value(),
@@ -13575,6 +13821,7 @@ mod tests {
         );
 
         let gamma_n = physis_constants::neutron_gyromagnetic_ratio();
+        covered.push("gamma_n");
         let gamma_n_centre = Ratio::new(183_247_171, 10i128.pow(0));
         assert_eq!(
             neutron_gyromagnetic_ratio().value(),
@@ -13625,6 +13872,7 @@ mod tests {
         );
 
         let gamma_n_mhz = physis_constants::neutron_gyromagnetic_ratio_in_mhz_per_tesla();
+        covered.push("gamma_n_MHz");
         let gamma_n_mhz_centre = Ratio::new(291_646_931, 10i128.pow(7));
         assert_eq!(
             neutron_gyromagnetic_ratio_in_mhz_per_tesla().value(),
@@ -13672,6 +13920,7 @@ mod tests {
         );
 
         let gamma_e = physis_constants::electron_gyromagnetic_ratio();
+        covered.push("gamma_e");
         let gamma_e_centre = Ratio::new(176_085_963_023, 10i128.pow(0));
         assert_eq!(
             electron_gyromagnetic_ratio().value(),
@@ -13711,6 +13960,7 @@ mod tests {
             "gamma_e is not gamma_p"
         );
         let gamma_e_mhz = physis_constants::electron_gyromagnetic_ratio_in_mhz_per_tesla();
+        covered.push("gamma_e_MHz");
         let gamma_e_mhz_centre = Ratio::new(280_249_514_242, 10i128.pow(7));
         assert_eq!(
             electron_gyromagnetic_ratio_in_mhz_per_tesla().value(),
@@ -13740,6 +13990,7 @@ mod tests {
         );
 
         let gamma0h = physis_constants::shielded_helion_gyromagnetic_ratio();
+        covered.push("gamma0h");
         let gamma0h_centre = Ratio::new(2_037_894_569, 10i128.pow(1));
         assert_eq!(
             shielded_helion_gyromagnetic_ratio().value(),
@@ -13767,6 +14018,7 @@ mod tests {
         );
 
         let gamma0h_mhz = physis_constants::shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla();
+        covered.push("gamma0h_MHz");
         let gamma0h_mhz_centre = Ratio::new(3_243_409_942, 10i128.pow(8));
         assert_eq!(
             shielded_helion_gyromagnetic_ratio_in_mhz_per_tesla().value(),
@@ -13816,6 +14068,7 @@ mod tests {
         );
 
         let me = physis_constants::electron_mass();
+        covered.push("m_e");
         let me_centre = SciExact::new(91_093_837_015, -41);
         assert_eq!(
             electron_mass().value(),
@@ -13857,6 +14110,7 @@ mod tests {
         );
 
         let nup = physis_constants::natural_unit_of_momentum();
+        covered.push("nu_p");
         let nup_centre = physis_numeric::Ratio::new(273_092_453_075, 10i128.pow(33));
         assert_eq!(
             natural_unit_of_momentum().value(),
@@ -13895,6 +14149,7 @@ mod tests {
         );
 
         let auf = physis_constants::atomic_unit_of_force();
+        covered.push("au_F");
         let auf_centre = physis_numeric::Ratio::new(82_387_234_983, 10i128.pow(18));
         assert_eq!(
             atomic_unit_of_force().value(),
@@ -13933,6 +14188,7 @@ mod tests {
         );
 
         let auv = physis_constants::atomic_unit_of_velocity();
+        covered.push("au_v");
         let auv_centre = physis_numeric::Ratio::new(218_769_126_364, 10i128.pow(5));
         assert_eq!(
             atomic_unit_of_velocity().value(),
@@ -13971,6 +14227,7 @@ mod tests {
         );
 
         let aueps = physis_constants::atomic_unit_of_permittivity();
+        covered.push("au_eps");
         let aueps_centre = physis_numeric::Ratio::new(111_265_005_545, 10i128.pow(21));
         assert_eq!(
             atomic_unit_of_permittivity().value(),
@@ -14013,6 +14270,7 @@ mod tests {
         );
 
         let aup = physis_constants::atomic_unit_of_momentum();
+        covered.push("au_p");
         let aup_centre = physis_numeric::Ratio::new(199_285_191_410, 10i128.pow(35));
         assert_eq!(
             atomic_unit_of_momentum().value(),
@@ -14051,6 +14309,7 @@ mod tests {
         );
 
         let aut = physis_constants::atomic_unit_of_time();
+        covered.push("au_t");
         let aut_centre = physis_numeric::Ratio::new(24_188_843_265_857, 10i128.pow(30));
         assert_eq!(
             atomic_unit_of_time().value(),
@@ -14093,6 +14352,7 @@ mod tests {
         );
 
         let nut = physis_constants::natural_unit_of_time();
+        covered.push("nu_t");
         let nut_centre = physis_numeric::Ratio::new(128_808_866_819, 10i128.pow(32));
         assert_eq!(
             natural_unit_of_time().value(),
@@ -14136,6 +14396,7 @@ mod tests {
         );
 
         let au = physis_constants::astronomical_unit();
+        covered.push("au");
         assert_eq!(au.value, Ratio::int(149_597_870_700), "ledger au is exact");
         assert_eq!(
             astronomical_unit().value(),
@@ -14149,6 +14410,7 @@ mod tests {
         );
 
         let angstrom_c = physis_constants::angstrom();
+        covered.push("angstrom");
         assert_eq!(
             angstrom_c.value,
             Ratio::new(1, 10i128.pow(10)),
@@ -14171,6 +14433,7 @@ mod tests {
         );
 
         let gal_c = physis_constants::gal();
+        covered.push("gal");
         assert_eq!(gal_c.value, Ratio::new(1, 100), "ledger gal is exact");
         assert_eq!(
             gal().value(),
@@ -14194,6 +14457,7 @@ mod tests {
         );
 
         let nmi_c = physis_constants::nautical_mile();
+        covered.push("nautical_mile");
         assert_eq!(
             nmi_c.value,
             Ratio::int(1852),
@@ -14221,6 +14485,7 @@ mod tests {
         );
 
         let knot_c = physis_constants::knot();
+        covered.push("knot");
         assert_eq!(knot_c.value, Ratio::new(1852, 3600), "ledger knot is exact");
         assert_eq!(
             knot().value(),
@@ -14244,6 +14509,7 @@ mod tests {
         );
 
         let gm = physis_constants::solar_gm();
+        covered.push("GM_sun");
         assert_eq!(
             gm.value,
             Ratio::int(13_271_244i128 * 10i128.pow(13)),
@@ -14261,6 +14527,7 @@ mod tests {
         );
 
         let r = physis_constants::solar_radius();
+        covered.push("R_sun");
         assert_eq!(
             r.value,
             Ratio::int(695_700_000),
@@ -14278,6 +14545,7 @@ mod tests {
         );
 
         let l = physis_constants::solar_luminosity();
+        covered.push("L_sun");
         assert_eq!(
             l.value,
             Ratio::int(3_828i128 * 10i128.pow(23)),
@@ -14295,6 +14563,7 @@ mod tests {
         );
 
         let s = physis_constants::solar_irradiance();
+        covered.push("S_sun");
         assert_eq!(
             s.value,
             Ratio::int(1361),
@@ -14326,6 +14595,7 @@ mod tests {
         );
 
         let teff = physis_constants::solar_effective_temperature();
+        covered.push("T_sun");
         assert_eq!(
             teff.value,
             Ratio::int(5772),
@@ -14357,6 +14627,7 @@ mod tests {
         );
 
         let re = physis_constants::terrestrial_equatorial_radius();
+        covered.push("R_earth");
         assert_eq!(
             re.value,
             Ratio::int(6_378_100),
@@ -14388,6 +14659,7 @@ mod tests {
         );
 
         let rp = physis_constants::terrestrial_polar_radius();
+        covered.push("R_earth_p");
         assert_eq!(
             rp.value,
             Ratio::int(6_356_800),
@@ -14415,6 +14687,7 @@ mod tests {
         );
 
         let rj = physis_constants::jovian_equatorial_radius();
+        covered.push("R_jup");
         assert_eq!(
             rj.value,
             Ratio::int(71_492_000),
@@ -14451,6 +14724,7 @@ mod tests {
         );
 
         let rjp = physis_constants::jovian_polar_radius();
+        covered.push("R_jup_p");
         assert_eq!(
             rjp.value,
             Ratio::int(66_854_000),
@@ -14483,6 +14757,7 @@ mod tests {
         );
 
         let gme = physis_constants::terrestrial_gm();
+        covered.push("GM_earth");
         assert_eq!(
             gme.value,
             Ratio::int(3_986_004i128 * 10i128.pow(8)),
@@ -14515,6 +14790,7 @@ mod tests {
         );
 
         let gmj = physis_constants::jovian_gm();
+        covered.push("GM_jup");
         assert_eq!(
             gmj.value,
             Ratio::int(12_668_653i128 * 10i128.pow(10)),
@@ -14552,6 +14828,7 @@ mod tests {
         );
 
         let l0 = physis_constants::bolometric_zero_luminosity();
+        covered.push("L_0");
         assert_eq!(
             l0.value,
             Ratio::int(30_128i128 * 10i128.pow(24)),
@@ -14588,6 +14865,7 @@ mod tests {
         );
 
         let g0 = physis_constants::standard_gravity();
+        covered.push("g0");
         assert_eq!(
             g0.value,
             Ratio::new(196_133, 20_000),
@@ -14624,6 +14902,7 @@ mod tests {
         );
 
         let ev = physis_constants::electron_volt();
+        covered.push("eV");
         assert_eq!(
             ev.value,
             Ratio::new(1_602_176_634, 10i128.pow(28)),
@@ -14640,6 +14919,53 @@ mod tests {
             electron_volt().value(),
             e_charge().value(),
             "1 eV is e * 1 V numerically"
+        );
+
+        // Lockstep coverage: every LEDGER entry with a Qty mirror is pinned
+        // by one block above. A new LEDGER entry fails here until it gets a
+        // block or a documented exclusion in LOCKSTEP_EXCLUDED.
+        covered.sort_unstable();
+        covered.dedup();
+        let mut expected: Vec<&str> = physis_constants::LEDGER
+            .iter()
+            .copied()
+            .filter(|name| !LOCKSTEP_EXCLUDED.contains(name))
+            .collect();
+        expected.sort_unstable();
+        assert_eq!(
+            covered, expected,
+            "lockstep coverage drift: cover each LEDGER entry with a block above \
+             or list it in LOCKSTEP_EXCLUDED"
+        );
+    }
+
+    /// LEDGER entries with no Qty mirror in `physis-model`, hence uncovered
+    /// by `overlapping_qty_floats_lockstep_the_versioned_ledger`.
+    ///
+    /// - `delta-nu-Cs`: Cs hyperfine frequency; no frequency Qty block.
+    /// - `N_A`: Avogadro constant; hash cross-checks only, no Qty.
+    /// - `K_cd`: photometric efficacy; no Qty dimension.
+    /// - `barn`, `hectare`, `are`: conventional area units; no Qty mirrors.
+    const LOCKSTEP_EXCLUDED: &[&str] = &["delta-nu-Cs", "N_A", "K_cd", "barn", "hectare", "are"];
+
+    #[test]
+    fn ledger_coverage_exclusion_list_tracks_ledger_growth() {
+        for name in LOCKSTEP_EXCLUDED {
+            assert!(
+                physis_constants::LEDGER.contains(name),
+                "excluded {name} left the LEDGER; drop it from LOCKSTEP_EXCLUDED"
+            );
+        }
+        assert_eq!(
+            physis_constants::LEDGER.len(),
+            282,
+            "LEDGER grew or shrank; cover the new entry in the lockstep test \
+             or exclude it in LOCKSTEP_EXCLUDED"
+        );
+        assert_eq!(
+            LOCKSTEP_EXCLUDED.len(),
+            6,
+            "exclusion list changed size without review; update the ledger-size pin alongside"
         );
     }
 }

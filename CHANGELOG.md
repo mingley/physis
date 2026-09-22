@@ -28,6 +28,12 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
   (`gauge_field`), GR `dim` flip parking the solar tests (`relativity`).
   Test-only; no behavior change.
 
+- **U7: lockstep ledger coverage check.** The Qty-lockstep test now threads
+  a `covered` vec through every per-constant block and asserts it equals
+  LEDGER minus a documented exclusion list; a second test fails if
+  LEDGER grows without updating that list. Closes the silent-drift hole
+  for new entries (per U4; a generator was rejected). Test-only.
+
 ### Plans
 
 - **Plan 007 (engineering track) approved.** Nine units U0-U8: gate
