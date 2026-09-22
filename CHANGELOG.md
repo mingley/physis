@@ -10,6 +10,13 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Tests
+
+- **U6: facade CLI smoke tests.** New `crates/physis/tests/cli_smoke.rs`
+  covers bare/`--help`/`help` usage, unknown-command and unknown-role
+  markers, three role-refusal paths, and a positive control. Exit codes
+  plus stable markers only; no prose goldens.
+
 ### Plans
 
 - **Plan 007 (engineering track) approved.** Nine units U0-U8: gate
