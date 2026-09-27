@@ -248,6 +248,17 @@ impl Complex {
         )
     }
 
+    /// Signs of the 2-sphere's fundamental cycle over the stored triangle
+    /// order: `Σ sᵢ·tᵢ` bounds nothing (a 2-cycle; verified in tests).
+    ///
+    /// Shared orientation data: the EM flux check pairs magnetic 2-cochains
+    /// against these signs through the same `d₁` the dec claims use. Exact
+    /// cochains pair to zero (Stokes); a monopole delta pairs to `s₀ = +1`.
+    /// This is topology data for `Complex::sphere`, not a field value.
+    pub fn sphere_fundamental_signs() -> [f64; 4] {
+        [1.0, -1.0, 1.0, -1.0]
+    }
+
     /// True if every edge borders exactly two triangles — the combinatorial
     /// signature of a closed surface (a validity check for the constructions).
     pub fn is_closed_surface(&self) -> bool {
@@ -303,8 +314,9 @@ impl Complex {
             .collect()
     }
 
-    /// The incidence matrix of `d₁` (triangles × edges).
-    fn d1_matrix(&self) -> Vec<Vec<f64>> {
+    /// The incidence matrix of `d₁` (triangles × edges). Crate-visible so
+    /// the EM obligation assessment builds its polynomial from live data.
+    pub(crate) fn d1_matrix(&self) -> Vec<Vec<f64>> {
         self.triangles
             .iter()
             .map(|t| {
@@ -601,6 +613,7 @@ impl DeRham {
             } else {
                 Some(spec.lean_type.into())
             },
+            typed_equations: vec![],
         }
     }
 
@@ -731,6 +744,9 @@ impl Knobbed for DeRham {
 }
 
 impl Theory for DeRham {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "de-rham"
     }
@@ -1067,6 +1083,29 @@ mod tests {
             let ddf = cx.d1(&cx.d0(&f));
             assert!(ddf.is_zero(1e-12), "d² should vanish");
         }
+    }
+
+    #[test]
+    fn sphere_fundamental_signs_form_a_cycle() {
+        // C4.2: the shared orientation data for the EM flux pairing. The
+        // signed triangles must bound nothing (a 2-cycle), pair exact
+        // 2-cochains to zero (Stokes), and detect a monopole delta.
+        let c = Complex::sphere();
+        let s = Complex::sphere_fundamental_signs();
+        assert_eq!(s.len(), c.triangles.len());
+        // Cycle: Σ s_i · (d1 row i) vanishes on every edge.
+        let d1 = c.d1_matrix();
+        for e in 0..c.edges.len() {
+            let b: f64 = s.iter().zip(d1.iter()).map(|(x, r)| x * r[e]).sum();
+            assert!(b.abs() < 1e-12, "edge {e}: boundary {b}");
+        }
+        // Stokes: exact B = dA pairs to zero ...
+        let a = Cochain::<G1>::new(vec![1.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        let b = c.d1(&a);
+        let flux: f64 = s.iter().zip(b.values.iter()).map(|(x, y)| x * y).sum();
+        assert!(flux.abs() < 1e-12, "exact flux {flux}");
+        // ... while a monopole delta on triangle 0 pairs to s_0 = +1.
+        assert!((s[0] - 1.0).abs() < 1e-12, "signs {s:?}");
     }
 
     #[test]

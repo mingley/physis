@@ -42,9 +42,11 @@ use physis_core::{Energy, EnergyDensity, Frequency, LengthTemperature, SpectralE
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{k_boltzmann, planck_energy_density, planck_h, C};
 use physis_model::{GaugeGroup, Manifold, SimpleGroup, Species, Spectrum, World};
+use physis_numeric::Ratio;
 
 use crate::critique::{report_from_rows, ExperimentReport};
 use crate::framework::Theory;
+use crate::gravity::snapped_hull;
 
 /// Every cavity mode has mean energy kT (classical equipartition).
 pub const MODE_EQUIPARTITION: &str = "thermo.mode-equipartition";
@@ -233,6 +235,7 @@ impl Blackbody {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -346,6 +349,23 @@ impl Blackbody {
     /// Full Planck energy density (improper integral, independent of cutoff).
     fn full_planck_u(&self) -> Qty<EnergyDensity> {
         self.planck_u_to(f64::INFINITY)
+    }
+
+    /// σ = (c/4)·u_∞/T⁴ from the live numerical integral, when the live
+    /// branch has a finite total (Planck or Wien occupation). Zero-point
+    /// and classical branches diverge: no σ to compare (withhold).
+    /// T-independent by construction (the T⁴ ratio); evaluated at the
+    /// live temperature knob.
+    fn stefan_sigma_prediction(&self) -> Option<f64> {
+        if self.zero_point || !self.quantum {
+            return None;
+        }
+        let u = if self.wien_occupation() {
+            self.full_wien_u()
+        } else {
+            self.full_planck_u()
+        };
+        Some(C.value() / 4.0 * u.value() / self.temperature_k.powi(4))
     }
 
     fn full_wien_u(&self) -> Qty<EnergyDensity> {
@@ -464,6 +484,65 @@ fn wien_x_wavelength() -> f64 {
 }
 
 /// Analytic Wien constant `λ_max T = hc / (k x)`.
+/// Representation snap for σ predictions: 1e-13, ~1/150 of the Quinn–Martin
+/// 2σ halfwidth. `10^13` fits `i128`, so the prediction stays [`Interval`].
+const SIGMA_SNAP_DEN: i128 = 10_000_000_000_000;
+
+/// Overlay the Quinn & Martin 1985 comparison on a finite-σ Stefan sample.
+/// The verdict kind stays model-internal (the T⁴ scaling decision); only
+/// the empirical axis moves, under the predeclared two-sigma rule.
+/// Branches with no finite σ (zero-point, classical) withhold comparison:
+/// there is no prediction to compare. The quadrature has no certified
+/// remainder (trapezoid n=4000, x-tail 40); the comparison is
+/// data-derived, not a numerical certificate.
+fn attach_quinn_martin_receipt(
+    verdict: Verdict,
+    sigma_pred: Option<f64>,
+    temperature_k: f64,
+) -> Verdict {
+    let Some(sigma) = sigma_pred else {
+        return verdict.with_evidence([
+            "no finite σ in this branch (zero-point/classical diverges); withholding the Quinn–Martin 1985 comparison"
+                .to_string(),
+        ]);
+    };
+    let dataset = physis_data::quinn_martin_1985_sigma();
+    let prediction = snapped_hull(sigma, 0.0, SIGMA_SNAP_DEN);
+    let x = Ratio::nearest(sigma, SIGMA_SNAP_DEN);
+    match physis_data::EmpiricalReceipt::compare_two_sigma(prediction, &dataset, Some(x)) {
+        Ok(rec) => {
+            let evidence = vec![
+                format!(
+                    "prediction σ = (c/4)·u_∞/T⁴ = {sigma:.4e} → {prediction} (T = {temperature_k} K live knob; σ is T-independent by construction; trapezoid n=4000 x-tail 40, no certified remainder) vs {} 2σ hull",
+                    physis_data::QUINN_MARTIN_1985_SIGMA
+                ),
+                format!(
+                    "dataset {} hash {} license {} unit W m^{{-2}} K^{{-4}} (NPL cryogenic radiometry at T_tp; electrical-substitution calibration independent of σ; not SI 2π⁵k⁴/(15h³c²))",
+                    dataset.id,
+                    dataset.artifact_hash.to_hex(),
+                    dataset.license.as_deref().unwrap_or("unknown"),
+                ),
+                format!(
+                    "two-sigma excluded={} compatible={} inconclusive={} (1σ hull is not an exclusion rule)",
+                    rec.excluded, rec.compatible, rec.inconclusive
+                ),
+                format!(
+                    "gaussian-nll {} at x={x} (exact Ratio; Quinn–Martin μ=5.66967e-8 σ=7.6e-12)",
+                    rec.nll
+                        .map(|n| n.to_string())
+                        .unwrap_or_else(|| "none".into())
+                ),
+            ];
+            let v = verdict.with_empirical(rec.status()).with_evidence(evidence);
+            match rec.nll {
+                Some(nll) => v.with_statistical_nll(nll),
+                None => v,
+            }
+        }
+        Err(e) => verdict.with_evidence([format!("empirical comparison refused: {e}")]),
+    }
+}
+
 fn wien_constant() -> Qty<LengthTemperature> {
     planck_h() * C / (k_boltzmann() * wien_x_wavelength())
 }
@@ -518,6 +597,9 @@ impl Knobbed for Blackbody {
 }
 
 impl Theory for Blackbody {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         self.id
     }
@@ -688,7 +770,8 @@ impl Theory for Blackbody {
                 }
             }
             STEFAN_BOLTZMANN => {
-                if self.zero_point && self.quantum {
+                let sigma_pred = self.stefan_sigma_prediction();
+                let v = if self.zero_point && self.quantum {
                     let u_t = self.energy_density_to(self.cutoff_hz);
                     let mut hot = self.clone();
                     hot.temperature_k *= 2.0;
@@ -746,7 +829,8 @@ impl Theory for Blackbody {
                     .with_evidence([format!(
                         "u(2T)/u(T) = {ratio:.3} at fixed ν_max (Stefan–Boltzmann requires 16)"
                     )])
-                }
+                };
+                attach_quinn_martin_receipt(v, sigma_pred, self.temperature_k)
             }
             WIEN_DISPLACEMENT => {
                 if self.zero_point && self.quantum {
@@ -935,6 +1019,7 @@ pub fn blackbody() -> ExperimentReport {
 mod tests {
     use super::*;
     use physis_core::claim::VerdictKind;
+    use physis_core::EmpiricalStatus;
 
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
@@ -1010,6 +1095,102 @@ mod tests {
             uv.domain().is_encoding_wide(),
             "UV finiteness stays encoding-wide (improper integral, not the IR probe)"
         );
+    }
+
+    fn stefan_verdict(t: &Blackbody) -> Verdict {
+        let c = t
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == STEFAN_BOLTZMANN)
+            .unwrap();
+        t.evaluate(&c)
+    }
+
+    fn assert_sigma_nll_wiring(t: &Blackbody, v: &Verdict, blob: &str) {
+        let sigma = t
+            .stefan_sigma_prediction()
+            .expect("finite-σ branch predicts σ");
+        let x = Ratio::nearest(sigma, SIGMA_SNAP_DEN);
+        let expected = x.gaussian_nll(
+            Ratio::new(566967, 10i128.pow(13)),
+            Ratio::new(76, 10i128.pow(13)),
+        );
+        assert!(
+            blob.contains(&format!("gaussian-nll {expected} at x={x}")),
+            "NLL is derived from the live integral, not a constant: {blob}"
+        );
+        assert_eq!(v.statistical_nll(), Some(expected.to_string()).as_deref());
+        let nll = v.statistical_nll().expect("NLL overlay is set");
+        assert!(
+            nll.contains('/'),
+            "NLL overlay is an exact Ratio string, not a float: {nll}"
+        );
+    }
+
+    #[test]
+    fn stefan_planck_sigma_is_compatible_with_quinn_martin() {
+        // C3.3: the T⁴ kind stays model-internal; the integrated σ moves
+        // the empirical axis under the predeclared two-sigma rule.
+        let p = Blackbody::planck();
+        let v = stefan_verdict(&p);
+        assert_eq!(v.kind, VerdictKind::Holds);
+        assert_eq!(v.empirical(), EmpiricalStatus::Compatible);
+        let blob = v.evidence.join("\n");
+        assert!(blob.contains("quinn-martin-1985-sigma"), "{blob}");
+        assert!(blob.contains("two-sigma"), "{blob}");
+        assert!(blob.contains("1σ hull is not an exclusion rule"), "{blob}");
+        assert!(blob.contains("public-domain"), "{blob}");
+        assert!(blob.contains("electrical-substitution"), "{blob}");
+        assert!(blob.contains("not SI 2π⁵k⁴/(15h³c²)"), "{blob}");
+        assert_sigma_nll_wiring(&p, &v, &blob);
+    }
+
+    #[test]
+    fn stefan_wien_sigma_is_excluded_by_quinn_martin() {
+        // Wien occupation scales as T⁴ (kind holds) with the wrong
+        // prefactor (empirical excluded): kind and data stay separate.
+        let mut fork = Blackbody::planck();
+        fork.wien = true;
+        let v = stefan_verdict(&fork);
+        assert_eq!(v.kind, VerdictKind::Holds);
+        assert_eq!(v.empirical(), EmpiricalStatus::Excluded);
+        let blob = v.evidence.join("\n");
+        assert!(blob.contains("quinn-martin-1985-sigma"), "{blob}");
+        assert!(blob.contains("two-sigma"), "{blob}");
+        assert_sigma_nll_wiring(&fork, &v, &blob);
+        let planck_nll = stefan_verdict(&Blackbody::planck())
+            .statistical_nll()
+            .unwrap()
+            .to_string();
+        assert_ne!(v.statistical_nll(), Some(planck_nll.as_str()));
+    }
+
+    #[test]
+    fn stefan_divergent_branches_withhold_sigma() {
+        let rj = Blackbody::rayleigh_jeans();
+        let v = stefan_verdict(&rj);
+        assert_eq!(v.kind, VerdictKind::Fails);
+        assert_eq!(v.empirical(), EmpiricalStatus::NotApplicable);
+        let blob = v.evidence.join("\n");
+        assert!(blob.contains("no finite σ in this branch"), "{blob}");
+        assert!(
+            blob.contains("withholding the Quinn–Martin 1985 comparison"),
+            "{blob}"
+        );
+        assert!(!blob.contains("two-sigma"), "{blob}");
+        assert!(v.statistical_nll().is_none());
+
+        let mut zp = Blackbody::planck();
+        zp.zero_point = true;
+        let z = stefan_verdict(&zp);
+        assert_eq!(z.empirical(), EmpiricalStatus::NotApplicable);
+        let zblob = z.evidence.join("\n");
+        assert!(
+            zblob.contains("withholding the Quinn–Martin 1985 comparison"),
+            "{zblob}"
+        );
+        assert!(!zblob.contains("two-sigma"), "{zblob}");
+        assert!(z.statistical_nll().is_none());
     }
 
     #[test]

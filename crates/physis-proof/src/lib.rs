@@ -22,7 +22,8 @@ pub mod physlib;
 
 pub use artifact::{scan_lean_source, ScanReport, UntrustedProof};
 pub use catalog::{
-    catalog_tree_binding, catalog_trees_in, lookup, lookup_matching, IdentitySpec, CATALOG,
+    catalog_tree_binding, catalog_trees_in, lookup, lookup_matching, verify_typed_equations,
+    IdentitySpec, CATALOG,
 };
 pub use challenge::Challenge;
 pub use expand::{identity_is_zero, Poly};

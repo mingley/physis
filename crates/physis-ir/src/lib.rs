@@ -29,6 +29,9 @@ pub struct TheoryPackage {
     pub claims: Vec<ClaimDecl>,
     /// Optional Lean/Physlib theorem reference.
     pub lean_ref: Option<String>,
+    /// Typed identities attached to equation tokens. Empty for legacy
+    /// token-only packages; their renders are unchanged.
+    pub typed_equations: Vec<TypedEquation>,
 }
 
 /// A declared parameter.
@@ -53,6 +56,21 @@ pub struct ClaimDecl {
     pub class: String,
 }
 
+/// A typed identity attached to one equation's legacy tokens.
+///
+/// `equation` indexes [`TheoryPackage::equations`]. `tree` is the
+/// infix form of the parsed tree (it re-parses to itself). The IR
+/// stores it verbatim alongside the tokens; semantic checks (index in
+/// range, tree parses, tree matches the tokens, tree matches a catalog
+/// row) fail closed at bind time, not here.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TypedEquation {
+    /// Index into [`TheoryPackage::equations`].
+    pub equation: usize,
+    /// Infix form of the attached tree.
+    pub tree: String,
+}
+
 /// Parse a minimal `theory.toml`-like listing.
 ///
 /// Format (line oriented, not full TOML — agents can emit this without a
@@ -66,6 +84,7 @@ pub struct ClaimDecl {
 /// equation dF = 0
 /// claim mathematical spacetime math.d2 : d^2 = 0
 /// lean_ref Physlib.Relativity.Interval.invariant
+/// typed 0 (b - a) - (c - a) + (c - b)
 /// ```
 pub fn parse_package(src: &str) -> Result<TheoryPackage, String> {
     let mut pkg = TheoryPackage {
@@ -76,6 +95,7 @@ pub fn parse_package(src: &str) -> Result<TheoryPackage, String> {
         equations: Vec::new(),
         claims: Vec::new(),
         lean_ref: None,
+        typed_equations: Vec::new(),
     };
     for (i, line) in src.lines().enumerate() {
         let line = line.trim();
@@ -119,6 +139,23 @@ pub fn parse_package(src: &str) -> Result<TheoryPackage, String> {
                 });
             }
             "lean_ref" => pkg.lean_ref = Some(rest.to_string()),
+            "typed" => {
+                // typed <equation-index> <infix-tree>
+                let (idx, tree) = rest
+                    .split_once(' ')
+                    .ok_or_else(|| format!("L{}: typed <index> <tree>", i + 1))?;
+                let equation: usize = idx
+                    .parse()
+                    .map_err(|_| format!("L{}: typed index '{idx}' is not a number", i + 1))?;
+                let tree = tree.trim();
+                if tree.is_empty() {
+                    return Err(format!("L{}: typed <index> <tree>", i + 1));
+                }
+                pkg.typed_equations.push(TypedEquation {
+                    equation,
+                    tree: tree.to_string(),
+                });
+            }
             other => return Err(format!("L{}: unknown key '{other}'", i + 1)),
         }
     }
@@ -143,6 +180,9 @@ pub fn render_package(pkg: &TheoryPackage) -> String {
     }
     for e in &pkg.equations {
         out.push_str(&format!("equation {e}\n"));
+    }
+    for t in &pkg.typed_equations {
+        out.push_str(&format!("typed {} {}\n", t.equation, t.tree));
     }
     for c in &pkg.claims {
         out.push_str(&format!(
@@ -303,6 +343,38 @@ lean_ref Physlib.Exterior.d_squared
         let canonical = certify_round_trip(&pkg).unwrap();
         assert_eq!(parse_package(&canonical).unwrap(), pkg);
         assert!(canonical.contains("nand 0 1 -> 2"));
+    }
+
+    #[test]
+    fn typed_identity_round_trips_alongside_legacy_tokens() {
+        let pkg = parse_package(
+            "id = discrete-d2\n\
+             equation (b - a) - (c - a) + (c - b)\n\
+             typed 0 (b - a) - (c - a) + (c - b)\n\
+             claim mathematical spacetime dec.d-squared-zero : d^2 = 0\n",
+        )
+        .unwrap();
+        assert_eq!(pkg.equations.len(), 1);
+        assert_eq!(pkg.typed_equations.len(), 1);
+        assert_eq!(pkg.typed_equations[0].equation, 0);
+        assert_eq!(pkg.typed_equations[0].tree, "(b - a) - (c - a) + (c - b)");
+        let canonical = certify_round_trip(&pkg).unwrap();
+        assert!(canonical.contains("typed 0 (b - a) - (c - a) + (c - b)"));
+        assert_eq!(parse_package(&canonical).unwrap(), pkg);
+    }
+
+    #[test]
+    fn token_only_packages_render_unchanged() {
+        let pkg = parse_package("id = legacy\nequation nand 0 1 -> 2\n").unwrap();
+        assert!(pkg.typed_equations.is_empty());
+        assert!(!render_package(&pkg).contains("typed"));
+    }
+
+    #[test]
+    fn malformed_typed_lines_fail_closed() {
+        assert!(parse_package("id = x\ntyped 0\n").is_err());
+        assert!(parse_package("id = x\ntyped nope (a + b)\n").is_err());
+        assert!(parse_package("id = x\ntyped 0 \n").is_err());
     }
 
     #[test]

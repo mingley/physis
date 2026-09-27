@@ -9,6 +9,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use physis_core::artifact::ArtifactId;
 use serde::{Deserialize, Serialize};
 
+pub mod durable;
+
+pub use durable::{DurableError, DurableStore};
+
 /// Kind of stored object.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

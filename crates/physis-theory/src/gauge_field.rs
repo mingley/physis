@@ -16,10 +16,17 @@
 //!
 //! In two dimensions the theory is **exactly solvable**: the gauge integral
 //! factorizes plaquette by plaquette, so the fundamental Wilson loop of area `A`
-//! is exactly `⟨W⟩ = (I₁(β)/I₀(β))ᴬ`, an area law with string tension
-//! `σ = −ln(I₁(β)/I₀(β)) > 0` at *every* finite coupling. That exact confinement
+//! is exactly `⟨W⟩ = (c₁/c₀)ᴬ`, an area law with string tension
+//! `σ = −ln(c₁/c₀) > 0` at *every* finite coupling, where `cₙ` are the
+//! single-cell transfer-matrix character eigenvalues. That exact confinement
 //! result (`gauge.exact-area-law-2d`) is a theorem, in honest contrast to the
-//! 4D Yang–Mills mass gap, which stays a `conjecture`.
+//! 4D Yang–Mills mass gap, which stays a `conjecture`. For U(1) the verdict
+//! rests on a computed benchmark: the character ratio from grid quadrature
+//! (single-plaquette volume, periodic-θ boundary, open-boundary 2D
+//! factorization) must agree with the independent Bessel-series reference
+//! `I₁(β)/I₀(β)` to `1e-9`; disagreement is `undecidable` numerics, never a
+//! claim about the theorem. SU(N) keeps its exact Casimir tension
+//! `σ = (N²−1)/(2β)`.
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -99,6 +106,7 @@ fn wilson_package(id: &str, name: &str, rectangle: bool, higgs: bool) -> TheoryP
             class: "model-internal".into(),
         }],
         lean_ref: None,
+        typed_equations: vec![],
     }
 }
 
@@ -140,6 +148,9 @@ fn area_law_2d_domain() -> DomainOfValidity {
 /// each term is built from the previous by a bounded ratio).
 ///
 /// `I₀(x) = Σ (x²/4)ᵏ/(k!)²` and `I₁(x) = (x/2)·Σ (x²/4)ᵏ/(k!(k+1)!)`.
+/// This power-series value is the independently derived reference for the
+/// transfer-matrix benchmark: the verdict rests on the grid-quadrature
+/// computation agreeing with it.
 fn bessel_i1_over_i0(x: f64) -> f64 {
     let z = x * x / 4.0;
     let (mut i0, mut term0) = (1.0_f64, 1.0_f64);
@@ -175,16 +186,82 @@ fn exact_2d_string_tension_sun(n: f64, beta: f64) -> f64 {
     (n / beta) * su_casimir_fundamental(n)
 }
 
-/// The **exact** string tension of 2D compact U(1) lattice gauge theory,
-/// `σ = −ln(I₁(β)/I₀(β))`.
+/// One character (Fourier) coefficient of the single-plaquette Boltzmann
+/// weight, `cₙ = (1/2π)·∫₋π^π cos(n·θ)·e^{s·β·cosθ} dθ`, by trapezoidal
+/// quadrature on a uniform `grid`-point mesh.
 ///
-/// In two dimensions the gauge integral factorizes plaquette by plaquette, so
-/// the fundamental Wilson loop of area `A` (in plaquettes) is exactly
-/// `⟨W⟩ = (I₁(β)/I₀(β))ᴬ = e^{−σA}`. Since `0 < I₁/I₀ < 1` for every finite `β`,
-/// `σ > 0` always: 2D compact U(1) confines at **all** couplings. This is a
-/// theorem, not a strong-coupling approximation.
-fn exact_2d_string_tension(beta: f64) -> f64 {
-    -bessel_i1_over_i0(beta).ln()
+/// The transfer matrix across one plaquette row is diagonal in the character
+/// basis with these eigenvalues; the fundamental Wilson loop of area `A` is
+/// `(c₁/c₀)ᴬ`. The trapezoidal rule on a periodic analytic integrand converges
+/// spectrally, so modest grids reach machine precision; production calls this
+/// with `character = 1` and `weight_sign = 1.0`, and the benchmark tests drive
+/// the same path with mutated arguments.
+///
+/// Named assumptions: the volume is a **single plaquette cell** — 2D
+/// open-boundary factorization reduces an area-`A` loop to the `A`th power of
+/// this ratio, so no finite volume is simulated and no thermodynamic or
+/// periodic-lattice `1/V` correction is included. The boundary is **periodic in
+/// the compact group angle** `θ ∈ [−π, π]`.
+fn plaquette_character(beta: f64, character: u32, grid: usize, weight_sign: f64) -> f64 {
+    use std::f64::consts::PI;
+    let mut sum = 0.0;
+    for j in 0..grid {
+        let theta = -PI + 2.0 * PI * (j as f64) / (grid as f64);
+        sum += (f64::from(character) * theta).cos() * (weight_sign * beta * theta.cos()).exp();
+    }
+    sum / (grid as f64)
+}
+
+/// Outcome of the single-cell transfer-matrix benchmark for one coupling.
+struct TransferMatrixCheck {
+    /// Computed character ratio `c₁/c₀` (the per-plaquette Wilson factor).
+    ratio: f64,
+    /// Computed string tension `σ = −ln(ratio)`.
+    sigma: f64,
+    /// Grid the ratio converged on.
+    grid: usize,
+    /// Independent Bessel power-series reference `I₁(β)/I₀(β)`.
+    reference: f64,
+    /// True when the grid converged, the ratio matches the reference to
+    /// `1e-9`, and the tension is positive.
+    agrees: bool,
+}
+
+/// Grid-converged transfer-matrix check of the fundamental 2D Wilson loop.
+fn transfer_matrix_check(beta: f64) -> TransferMatrixCheck {
+    transfer_matrix_check_as(beta, 1, 1.0)
+}
+
+/// The same benchmark path with an explicit character and Boltzmann-weight
+/// sign, so mutation tests drive production code rather than a copy.
+fn transfer_matrix_check_as(beta: f64, character: u32, weight_sign: f64) -> TransferMatrixCheck {
+    fn ratio_on(beta: f64, character: u32, grid: usize, weight_sign: f64) -> f64 {
+        plaquette_character(beta, character, grid, weight_sign)
+            / plaquette_character(beta, 0, grid, weight_sign)
+    }
+    let mut grid = 64;
+    let mut prev = ratio_on(beta, character, grid, weight_sign);
+    let (ratio, converged) = loop {
+        grid *= 2;
+        let next = ratio_on(beta, character, grid, weight_sign);
+        if (next - prev).abs() <= 1e-12 {
+            break (next, true);
+        }
+        if grid >= 4096 {
+            break (next, false);
+        }
+        prev = next;
+    };
+    let reference = bessel_i1_over_i0(beta);
+    let sigma = -ratio.ln();
+    let agrees = converged && (ratio - reference).abs() <= 1e-9 && sigma > 0.0;
+    TransferMatrixCheck {
+        ratio,
+        sigma,
+        grid,
+        reference,
+        agrees,
+    }
 }
 
 /// Matrix rows for the lattice-gauge lab.
@@ -357,6 +434,9 @@ impl Knobbed for WilsonU1 {
 }
 
 impl Theory for WilsonU1 {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "wilson-u1"
     }
@@ -464,23 +544,34 @@ impl Theory for WilsonU1 {
                         "exact plaquette factorization is pure 2D Yang-Mills; a fundamental Higgs is a new encoding",
                     )
                 } else if self.dimension == 2 {
-                    let sigma = exact_2d_string_tension(self.beta);
-                    let ratio = bessel_i1_over_i0(self.beta);
-                    if sigma > 0.0 {
+                    let tm = transfer_matrix_check(self.beta);
+                    if tm.agrees {
                         Verdict::holds(claim,
                             format!(
-                                "exact 2D string tension σ = −ln(I₁/I₀) = {sigma:.4} > 0 at β = {}: confines at all couplings",
-                                self.beta
+                                "exact 2D string tension σ = −ln(c₁/c₀) = {:.4} > 0 at β = {}: confines at all couplings",
+                                tm.sigma, self.beta
                             ),
                         )
                         .with_evidence([
-                            format!("⟨W⟩ = (I₁(β)/I₀(β))^Area = {ratio:.4}^Area (exact plaquette factorization)"),
-                            "0 < I₁/I₀ < 1 for all finite β, so σ > 0 for every coupling".to_string(),
+                            format!(
+                                "transfer-matrix single-cell ratio c₁/c₀ = {:.6} on a {}-point periodic-θ grid (open-boundary 2D factorization)",
+                                tm.ratio, tm.grid
+                            ),
+                            format!(
+                                "independent Bessel-series reference I₁/I₀ = {:.6}: agrees to 1e-9",
+                                tm.reference
+                            ),
+                            "0 < c₁/c₀ < 1 for all finite β, so σ > 0 for every coupling".to_string(),
                         ])
                     } else {
-                        // Only reachable in the β → ∞ continuum limit (σ → 0⁺).
-                        Verdict::fails(claim,
-                            format!("σ = {sigma:.4} ≤ 0 at β = {}", self.beta),
+                        // The theorem is untouched: our two numerical paths
+                        // disagree (or the grid did not converge), so the
+                        // benchmark — not the claim — is inconclusive.
+                        Verdict::undecidable(claim,
+                            format!(
+                                "transfer-matrix benchmark inconclusive at β = {}: c₁/c₀ = {:.6} on grid {} vs Bessel I₁/I₀ = {:.6}",
+                                self.beta, tm.ratio, tm.grid, tm.reference
+                            ),
                         )
                     }
                 } else {
@@ -728,6 +819,9 @@ impl Knobbed for WilsonSun {
 }
 
 impl Theory for WilsonSun {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         match self.n {
             2 => "wilson-su2",
@@ -1102,7 +1196,7 @@ mod tests {
 
     #[test]
     fn two_d_u1_confines_at_all_couplings_exactly() {
-        // The exact (not strong-coupling) 2D area law: σ = −ln(I₁/I₀) > 0 for
+        // The exact (not strong-coupling) 2D area law: σ = −ln(c₁/c₀) > 0 for
         // every β — 2D compact U(1) confines at all couplings.
         let mut w = WilsonU1::default();
         w.set("dimension", KnobValue::UInt(2)).unwrap();
@@ -1113,10 +1207,71 @@ mod tests {
                 VerdictKind::Holds,
                 "β = {beta}"
             );
-            assert!(super::exact_2d_string_tension(beta) > 0.0, "β = {beta}");
+            assert!(super::transfer_matrix_check(beta).sigma > 0.0, "β = {beta}");
         }
         // The tension decreases with β (toward the continuum limit).
-        assert!(super::exact_2d_string_tension(1.0) > super::exact_2d_string_tension(10.0));
+        assert!(super::transfer_matrix_check(1.0).sigma > super::transfer_matrix_check(10.0).sigma);
+    }
+
+    #[test]
+    fn transfer_matrix_matches_bessel_reference() {
+        // C4.1: the single-cell transfer-matrix ratio (trapezoidal character
+        // quadrature, an independent numerical path) must agree with the
+        // Bessel power-series reference to 1e-9 at every probed coupling.
+        for beta in [0.1, 1.0, 2.0, 10.0, 50.0] {
+            let tm = super::transfer_matrix_check(beta);
+            assert!(
+                tm.agrees,
+                "β = {beta}: ratio = {}, reference = {}, grid = {}",
+                tm.ratio, tm.reference, tm.grid
+            );
+            assert!(tm.sigma > 0.0, "β = {beta}");
+            assert!(tm.grid <= 4096, "β = {beta}: grid = {}", tm.grid);
+        }
+    }
+
+    #[test]
+    fn transfer_matrix_mutants_fail_the_benchmark() {
+        // C4.1: the benchmark comparison must flip on mutation. A charge-2
+        // character and a sign-flipped Boltzmann weight do not match the
+        // fundamental-loop reference.
+        let wrong_charge = super::transfer_matrix_check_as(2.0, 2, 1.0);
+        assert!(
+            !wrong_charge.agrees,
+            "charge-2 ratio {} must not match I₁/I₀ = {}",
+            wrong_charge.ratio, wrong_charge.reference
+        );
+        let sign_flip = super::transfer_matrix_check_as(2.0, 1, -1.0);
+        assert!(
+            !sign_flip.agrees,
+            "sign-flipped ratio {} must fail the benchmark",
+            sign_flip.ratio
+        );
+        assert!(
+            sign_flip.ratio < 0.0,
+            "sign flip must give a negative ratio: {}",
+            sign_flip.ratio
+        );
+    }
+
+    #[test]
+    fn exact_area_law_verdict_carries_the_computed_ratio() {
+        // C4.1: the claim is a computation, not only an encoding: the verdict
+        // evidence must name the transfer-matrix ratio and its grid.
+        let mut w = WilsonU1::default();
+        w.set("dimension", KnobValue::UInt(2)).unwrap();
+        let c = w
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == EXACT_AREA_LAW_2D)
+            .unwrap();
+        let v = w.evaluate(&c);
+        assert_eq!(v.kind, VerdictKind::Holds);
+        let evidence = v.evidence.join("\n");
+        assert!(
+            evidence.contains("transfer-matrix") && evidence.contains("grid"),
+            "verdict must cite the computed benchmark: {evidence}"
+        );
     }
 
     #[test]

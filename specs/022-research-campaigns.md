@@ -1,6 +1,16 @@
 # 022 - Reproducible research campaigns
 
-Status: specified, not implemented. C7.1 is the first behavioral slice.
+Status: C7.1 implemented (`step`: one gap, one justified action).
+R1 (manifest + dry-run plan), R2 (durable bundles), R3 (worker
+boundary), R4 (serial dispatch: `research step` / `research status`),
+and R5 (experiment design: ranked observables, frozen comparison
+rules, disclosures) implemented. R6 (inspectable report: `research
+export`, versioned JSON plus labeled Markdown projection) implemented.
+R7 (adversarial campaign regression: `audit` runs the red-team corpus
+plus the campaign corpus — stale receipts, malformed obligations,
+tampered executables/bundles, restart/budget bypass, false checker
+agreement; none promotes trust) implemented. R8+ remain specified,
+not implemented.
 Layer: agent orchestration over the existing lab.
 
 ## The research model
@@ -29,15 +39,26 @@ execution initially accepts only registered operations and constrained IR.
 ## Current boundary
 
 `Lab::exec` already gates roles, trust and prove/review/set budgets.
-`hypothesize` probes chosen/fitted knobs and predefined structural mutations;
-it does not install mutants. `gaps` derives a graph from live evaluations.
+`hypothesize` runs a bounded typed search (C7.2): the structural-mutation
+closure to depth 2 plus chosen/fitted knob probes, all evaluated on owned
+forks — candidates cannot modify the baseline. Dimensionally invalid
+candidates are rejected with reasons, refuted ones retained with
+counterexamples, measured inputs frozen. It does not install mutants.
+`gaps` derives a graph from live evaluations.
 `loop` runs a largely fixed set of operations. The artifact DAG is in-memory;
 JSONL restoration rebuilds selected evidence against live definitions, and
 `replay` compares `set-knob` diffs, not all research outcomes.
 
-Persistent campaigns, a durable artifact store, generalized replay, worker
-isolation and independent P4 reproduction are future work. Existing
-commands must not silently change their replay or assurance promises.
+R2 shipped the durable substrate: content-addressed object blobs plus a
+hash-chained intent/result journal per campaign bundle
+(`physis-store::DurableStore`, `physis-agent::Bundle`), with crash
+recovery across every write boundary. R3 shipped the worker boundary
+(`physis-core::worker`): reviewed-local tools run with wall-time kill,
+output caps, scrubbed env, private scratch, and input-integrity
+refusal; memory limits and untrusted execution are refused without an
+approved OS backend, of which none exists yet. Persistent campaigns (R4 dispatch) and reporting (R6 export)
+shipped; generalized replay is future work. Existing commands must not
+silently change their replay or assurance promises.
 
 ## Manifest v1
 
@@ -128,6 +149,19 @@ is unavailable, refuse that execution mode; do not silently degrade to
 ambient host privileges. A reviewed local CLI calculation is not evidence
 that arbitrary generated programs are safe to execute.
 
+### Approved isolation backends (R3)
+
+None. `physis_core::worker::approved_backends()` is empty on every
+platform, so `WorkerTrust::Untrusted` is always refused and memory
+limits are always refused as unenforceable. Reviewed-local tools (the
+pinned Lean pipeline) run with wall-time kill, output caps, scrubbed
+env, private scratch cwd, null stdin, and input-integrity refusal;
+host networking and same-uid filesystem access remain, by documented
+design, the operator's review burden. A backend joins the approved
+list only with a platform prober plus enforced memory caps, network
+denial, and process-group containment. Tested platforms: macOS and
+Linux (worker fixtures: echo, pwd, env, cat, sleep, yes, sh).
+
 Only existing verifier and assurance admission paths can promote a result.
 Independent reproduction follows [spec 021](021-independent-reproduction.md).
 No worker may install dependencies, alter checker policy, publish, spend
@@ -157,9 +191,11 @@ empirically excluded. A negative experiment is a first-class result.
 
 ## Proposed CLI surface (not available today)
 
-R1-R4 may add `research plan <manifest>`, `research step <campaign>`,
-`research status <campaign>` and `research export <campaign>`. Final syntax
-must be covered by CLI parsing tests and the protocol reference when shipped.
+R1 shipped `research plan <manifest>` (dry run only; CLI parsing tests in
+`crates/physis/src/main.rs`, smoke tests in `cli_smoke.rs`, protocol row in
+spec 006). R4 shipped `research step <manifest> <campaign>` and
+`research status <campaign>` with the same coverage. R6 shipped `research export <campaign> [json|markdown]` with the same
+coverage.
 `plan` is a dry run; `step` performs at most one action. No background daemon,
 automatic network access or model-provider dependency is required.
 

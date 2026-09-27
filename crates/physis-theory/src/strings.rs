@@ -539,6 +539,7 @@ impl StringTheory {
                 class: "phenomenological".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -561,6 +562,7 @@ impl StringTheory {
                 class: "phenomenological".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -583,6 +585,7 @@ impl StringTheory {
                 class: "phenomenological".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -738,6 +741,9 @@ impl Knobbed for StringTheory {
 }
 
 impl Theory for StringTheory {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         self.kind.as_str()
     }

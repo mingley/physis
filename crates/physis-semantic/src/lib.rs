@@ -236,6 +236,25 @@ lean_ref ∀ (a11 a12 a21 a22 b11 b12 b21 b22 : Int), (((((a11 * b11) + (a12 * b
 "#,
 };
 
+/// First Bianchi identity component: Misner-Thorne-Wheeler, not a
+/// slogan "textbook".
+const BIANCHI: Dossier = Dossier {
+    claim_id: "gr.first-bianchi",
+    work: "Gravitation (Misner, Thorne, Wheeler)",
+    edition: "W. H. Freeman",
+    version: "1973",
+    section: Some("Chapter 15, Bianchi identities"),
+    equation: Some("R^rho_[sigma mu nu] = 0"),
+    ir: r#"
+id = first-bianchi
+name = First Bianchi identity component
+assumption torsion-free-connection
+equation (((((((((((((((((((((((((((((DHTRP - DPTRH) + (GTTH * GTRP)) - (GTTP * GTRH)) + (GTRH * GRRP)) - (GTRP * GRRH)) + (GTHH * GHRP)) - (GTHP * GHRH)) + (GTHP * GPRP)) - (GTPP * GPRH)) + DPTRH) - DRTHP) + (GTTP * GTRH)) - (GTTR * GTHP)) + (GTRP * GRRH)) - (GTRR * GRHP)) + (GTHP * GHRH)) - (GTRH * GHHP)) + (GTPP * GPRH)) - (GTRP * GPHP)) + DRTHP) - DHTRP) + (GTTR * GTHP)) - (GTTH * GTRP)) + (GTRR * GRHP)) - (GTRH * GRRP)) + (GTRH * GHHP)) - (GTHH * GHRP)) + (GTRP * GPHP)) - (GTHP * GPRP))
+claim spacetime model-internal gr.first-bianchi : The first Bianchi identity holds for a torsion-free connection.
+lean_ref ∀ (DHTRP DPTRH DRTHP GHHP GHRH GHRP GPHP GPRH GPRP GRHP GRRH GRRP GTHH GTHP GTPP GTRH GTRP GTRR GTTH GTTP GTTR : Int), (((((((((((((((((((((((((((((DHTRP - DPTRH) + (GTTH * GTRP)) - (GTTP * GTRH)) + (GTRH * GRRP)) - (GTRP * GRRH)) + (GTHH * GHRP)) - (GTHP * GHRH)) + (GTHP * GPRP)) - (GTPP * GPRH)) + DPTRH) - DRTHP) + (GTTP * GTRH)) - (GTTR * GTHP)) + (GTRP * GRRH)) - (GTRR * GRHP)) + (GTHP * GHRH)) - (GTRH * GHHP)) + (GTPP * GPRH)) - (GTRP * GPHP)) + DRTHP) - DHTRP) + (GTTR * GTHP)) - (GTTH * GTRP)) + (GTRR * GRHP)) - (GTRH * GRRP)) + (GTRH * GHHP)) - (GTHH * GHRP)) + (GTRP * GPHP)) - (GTHP * GPRP)) = 0
+"#,
+};
+
 const DOSSIERS: &[Dossier] = &[
     D2,
     D2_ONE,
@@ -245,6 +264,7 @@ const DOSSIERS: &[Dossier] = &[
     JACOBI,
     LAGRANGE,
     DET_PRODUCT,
+    BIANCHI,
 ];
 
 fn dossier(claim_id: &str) -> Option<&'static Dossier> {

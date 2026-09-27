@@ -131,13 +131,16 @@ impl Role {
                 | Command::Compare { .. }
                 | Command::Design { .. }
                 | Command::Hypothesize { .. }
+                | Command::ResearchPlan { .. }
+                | Command::ResearchStatus { .. }
+                | Command::ResearchExport { .. }
         )
     }
 
     /// Whether this role may issue `cmd`.
     ///
-    /// `loop` and `replay` stay lab-only: they orchestrate or certify, and
-    /// must not be a back door for an explorer to mint.
+    /// `loop`, `step`, and `replay` stay lab-only: they orchestrate or
+    /// certify, and must not be a back door for an explorer to mint.
     pub fn permits(self, cmd: &Command) -> bool {
         if matches!(self, Role::Lab) {
             return true;
@@ -291,6 +294,9 @@ mod tests {
         }));
         assert!(Role::Explorer.permits(&Command::Gaps));
         assert!(Role::Explorer.permits(&Command::Hypothesize { theory: None }));
+        assert!(Role::Explorer.permits(&Command::ResearchPlan {
+            path: "m.json".into(),
+        }));
         assert!(Role::Explorer.permits(&Command::Evidence {
             claim: "predictivity.unique-vacuum".into(),
         }));
@@ -455,6 +461,19 @@ mod tests {
         }));
         assert!(!Role::Falsifier.permits(&prove()));
         assert!(!Role::Explorer.permits(&set));
+    }
+
+    #[test]
+    fn step_is_lab_only() {
+        let step = Command::Step {
+            scope: None,
+            max_steps: 1,
+        };
+        assert!(Role::Lab.permits(&step));
+        assert!(!Role::Explorer.permits(&step));
+        assert!(!Role::ProofSearcher.permits(&step));
+        assert!(!Role::Formalizer.permits(&step));
+        assert!(!Role::ProvenanceAuditor.permits(&step));
     }
 
     #[test]

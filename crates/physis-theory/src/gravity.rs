@@ -65,6 +65,399 @@ pub fn gravity_rows() -> [&'static str; 3] {
     [NEWTON_HALF, EDDINGTON, MERCURY_PERIHELION]
 }
 
+/// Coordinate chart for the Schwarzschild exterior computation. Charts are
+/// inputs (a `chart` knob on the GR object), not hidden assumptions: the
+/// reciprocal identity holds in Schwarzschild coordinates and fails in
+/// Eddington–Finkelstein coordinates, by computation in each chart.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Chart {
+    /// Schwarzschild `(t, r)`: diagonal metric, singular at `r = 2M`.
+    Schwarzschild,
+    /// Advanced Eddington–Finkelstein `(v, r)`: regular at `r = 2M`,
+    /// with `g_rr = 0`.
+    EddingtonFinkelstein,
+}
+
+impl Chart {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Chart::Schwarzschild => "schwarzschild",
+            Chart::EddingtonFinkelstein => "eddington-finkelstein",
+        }
+    }
+
+    pub(crate) fn from_name(s: &str) -> Option<Self> {
+        match s {
+            "schwarzschild" => Some(Chart::Schwarzschild),
+            "eddington-finkelstein" => Some(Chart::EddingtonFinkelstein),
+            _ => None,
+        }
+    }
+}
+
+/// Horizon radius in units of `M` (`r = 2M`): a coordinate singularity in
+/// Schwarzschild chart, a regular null surface in EF chart.
+pub(crate) const HORIZON_R_M: f64 = 2.0;
+/// Outer edge of the exterior sampling domain, in units of `M`. Fixed and
+/// documented: the reciprocal identity is `r`-independent, so the outer
+/// edge is a sampling choice, not physics. The inner edge is the `r_min`
+/// knob (0.5–9M); the `r = 0` curvature singularity is never sampled.
+pub(crate) const EXTERIOR_R_MAX_M: f64 = 10.0;
+/// Half-width around `r = 2M` excluded from the Jacobian cross-check: the
+/// transform path divides by `(1 − 2M/r)` and loses precision at the
+/// horizon even though the EF components stay regular there.
+const TRANSFORM_SAFE_HALF_WIDTH_M: f64 = 0.1;
+/// Samples across `[r_min, r_max]`, endpoints included.
+const RECIPROCAL_SAMPLES: usize = 8;
+
+/// `f(r) = 1 − 2M/r` with `M = 1` (geometric units; radii in units of `M`).
+fn schwarzschild_f(r_m: f64) -> f64 {
+    1.0 - HORIZON_R_M / r_m
+}
+
+/// Direct metric components `(g_tt, g_rr)` in Schwarzschild coordinates
+/// (signature `−+++`).
+fn metric_schwarzschild(r_m: f64) -> (f64, f64) {
+    let f = schwarzschild_f(r_m);
+    (-f, 1.0 / f)
+}
+
+/// Direct metric components `(g_vv, g_vr, g_rr)` in advanced EF coordinates.
+fn metric_ef(r_m: f64) -> (f64, f64, f64) {
+    (-schwarzschild_f(r_m), 1.0, 0.0)
+}
+
+/// EF `g_rr` via the Jacobian transform from Schwarzschild components: with
+/// `t = v − r*` and `∂t/∂r = −1/f`, `g'_rr = (∂t/∂r)²g_tt + g_rr`, which
+/// cancels to zero. This is the independent path behind the cross-check.
+fn jacobian_ef_grr(r_m: f64) -> f64 {
+    let f = schwarzschild_f(r_m);
+    let dtdr = -1.0 / f;
+    let (g_tt, g_rr) = metric_schwarzschild(r_m);
+    dtdr * dtdr * g_tt + g_rr
+}
+
+/// Outcome of the reciprocal-identity computation on one domain.
+pub(crate) struct ReciprocalCheck {
+    /// Max over samples of `|product − expected|`, where the expected
+    /// product is `−1` (Schwarzschild) or `0` (EF).
+    pub max_dev: f64,
+    /// The `g_tt·g_rr` product at the inner domain edge.
+    pub product_at_rmin: f64,
+    /// Number of domain samples.
+    pub n_samples: usize,
+    /// Whether the Jacobian transform reproduces EF `g_rr = 0` to `1e-9`
+    /// on every qualifying sample.
+    pub transform_agrees: bool,
+    /// Samples qualifying for the transform check (`|r − 2M| > 0.1M`).
+    pub transform_samples: usize,
+}
+
+/// Shared domain rule for the Schwarzschild computations: a
+/// Schwarzschild-chart domain reaching the coordinate singularity
+/// (`r_min ≤ 2M`) is refused, never extrapolated. EF coordinates are
+/// regular at the horizon and always compute.
+fn domain_refused(chart: Chart, r_min_m: f64) -> bool {
+    chart != Chart::EddingtonFinkelstein && r_min_m <= HORIZON_R_M
+}
+
+/// Check `g_tt·g_rr` on `[r_min_m, 10M]` in the given chart.
+///
+/// Returns `None` when [`domain_refused`] applies. The identity is
+/// `Λ`-independent (any static spherical `f(r)` gives the same reciprocal
+/// product), so this is chart geometry, never an Einstein-equation proof.
+pub(crate) fn schwarzschild_reciprocal(chart: Chart, r_min_m: f64) -> Option<ReciprocalCheck> {
+    if domain_refused(chart, r_min_m) {
+        return None;
+    }
+    let expected = match chart {
+        Chart::Schwarzschild => -1.0,
+        Chart::EddingtonFinkelstein => 0.0,
+    };
+    let mut max_dev = 0.0_f64;
+    let mut product_at_rmin = 0.0_f64;
+    let mut transform_max = 0.0_f64;
+    let mut transform_samples = 0;
+    for i in 0..RECIPROCAL_SAMPLES {
+        let r =
+            r_min_m + (EXTERIOR_R_MAX_M - r_min_m) * (i as f64) / ((RECIPROCAL_SAMPLES - 1) as f64);
+        let product = match chart {
+            Chart::Schwarzschild => {
+                let (g_tt, g_rr) = metric_schwarzschild(r);
+                g_tt * g_rr
+            }
+            Chart::EddingtonFinkelstein => {
+                let (g_vv, _, g_rr) = metric_ef(r);
+                g_vv * g_rr
+            }
+        };
+        if i == 0 {
+            product_at_rmin = product;
+        }
+        max_dev = max_dev.max((product - expected).abs());
+        if (r - HORIZON_R_M).abs() > TRANSFORM_SAFE_HALF_WIDTH_M {
+            transform_max = transform_max.max(jacobian_ef_grr(r).abs());
+            transform_samples += 1;
+        }
+    }
+    Some(ReciprocalCheck {
+        max_dev,
+        product_at_rmin,
+        n_samples: RECIPROCAL_SAMPLES,
+        transform_agrees: transform_max <= 1e-9,
+        transform_samples,
+    })
+}
+
+/// A 4×4 matrix in coordinate components.
+pub(crate) type Mat4 = [[f64; 4]; 4];
+/// Christoffel symbols `Γ[ρ][μ][ν]`, symmetric in `μν` (torsion-free).
+pub(crate) type Gamma = [[[f64; 4]; 4]; 4];
+/// Riemann tensor `R[ρ][σ][μ][ν]`.
+pub(crate) type Riemann = [[[[f64; 4]; 4]; 4]; 4];
+
+/// Central-difference step for the tensor engine. Probed: `1e-4` balances
+/// truncation against roundoff (Kretschmann rel err ≲ 1e-6 at r = 3–10M).
+const FD_H: f64 = 1e-4;
+/// Fixed probe colatitude. The poles are coordinate singularities of the
+/// spherical chart (`g_φφ = 0` kills the inverse), so the engine probes
+/// off-pole; this is a documented sampling choice, not physics.
+const PROBE_THETA: f64 = 1.0;
+/// Fixed probe azimuth (the metric is axisymmetric; any value works).
+const PROBE_PHI: f64 = 0.5;
+
+/// Inverse of a 4×4 matrix by Gauss–Jordan elimination with partial
+/// pivoting. Generic: the EF chart has an off-diagonal `g_vr`, so no
+/// diagonal shortcut is taken.
+pub(crate) fn invert_4x4(m: Mat4) -> Mat4 {
+    let mut a = [[0.0_f64; 8]; 4];
+    for (i, row) in a.iter_mut().enumerate() {
+        row[..4].copy_from_slice(&m[i]);
+        row[4 + i] = 1.0;
+    }
+    for c in 0..4 {
+        let mut p = c;
+        for r in (c + 1)..4 {
+            if a[r][c].abs() > a[p][c].abs() {
+                p = r;
+            }
+        }
+        a.swap(c, p);
+        let d = a[c][c];
+        for v in a[c].iter_mut() {
+            *v /= d;
+        }
+        for r in 0..4 {
+            if r != c {
+                let k = a[r][c];
+                let crow = a[c];
+                for (x, y) in a[r].iter_mut().zip(crow.iter()) {
+                    *x -= k * y;
+                }
+            }
+        }
+    }
+    let mut out = [[0.0_f64; 4]; 4];
+    for (i, row) in out.iter_mut().enumerate() {
+        row.copy_from_slice(&a[i][4..8]);
+    }
+    out
+}
+
+/// Schwarzschild metric components at `x = (t|v, r, θ, φ)` with `M = 1`
+/// (geometric units, signature `−+++`). Index 0 is `t` (Schwarzschild
+/// chart) or `v` (EF chart). Nothing here is a series in `M/r`: the
+/// full `f(r) = 1 − 2M/r` is encoded.
+pub(crate) fn schwarzschild_metric(chart: Chart, x: [f64; 4]) -> Mat4 {
+    let r = x[1];
+    let th = x[2];
+    let f = schwarzschild_f(r);
+    let mut g = [[0.0_f64; 4]; 4];
+    g[0][0] = -f;
+    g[2][2] = r * r;
+    g[3][3] = r * r * th.sin() * th.sin();
+    match chart {
+        Chart::Schwarzschild => {
+            g[1][1] = 1.0 / f;
+        }
+        Chart::EddingtonFinkelstein => {
+            g[0][1] = 1.0;
+            g[1][0] = 1.0;
+        }
+    }
+    g
+}
+
+/// Levi-Civita connection from numeric metric derivatives:
+/// `Γ^ρ_μν = ½g^ρσ(∂_μg_νσ + ∂_νg_μσ − ∂_σg_μν)`.
+/// Symmetric in `μν` by construction (torsion-free assumption).
+pub(crate) fn christoffel(chart: Chart, x: [f64; 4]) -> Gamma {
+    let mut dg = [[[0.0_f64; 4]; 4]; 4];
+    for lam in 0..4 {
+        let mut xp = x;
+        xp[lam] += FD_H;
+        let mut xm = x;
+        xm[lam] -= FD_H;
+        let gp = schwarzschild_metric(chart, xp);
+        let gm = schwarzschild_metric(chart, xm);
+        for mu in 0..4 {
+            for nu in 0..4 {
+                dg[mu][nu][lam] = (gp[mu][nu] - gm[mu][nu]) / (2.0 * FD_H);
+            }
+        }
+    }
+    let gi = invert_4x4(schwarzschild_metric(chart, x));
+    let mut gam = [[[0.0_f64; 4]; 4]; 4];
+    for rho in 0..4 {
+        for mu in 0..4 {
+            for nu in 0..4 {
+                let mut s = 0.0_f64;
+                for sgm in 0..4 {
+                    s += gi[rho][sgm] * (dg[nu][sgm][mu] + dg[mu][sgm][nu] - dg[mu][nu][sgm]);
+                }
+                gam[rho][mu][nu] = 0.5 * s;
+            }
+        }
+    }
+    gam
+}
+
+/// Riemann tensor from numeric connection derivatives:
+/// `R^ρ_σμν = ∂_μΓ^ρ_νσ − ∂_νΓ^ρ_μσ + Γ^ρ_μλΓ^λ_νσ − Γ^ρ_νλΓ^λ_μσ`.
+///
+/// `flip` negates the ΓΓ subtrahend (a sign-mutated engine for tests
+/// only; production always passes `false`). This breaks the Bianchi
+/// cancellation structure rather than rescaling it.
+// Tensor index contractions have no iterator form.
+#[allow(clippy::needless_range_loop)]
+pub(crate) fn riemann(chart: Chart, x: [f64; 4], flip: bool) -> Riemann {
+    let mut dgam = [[[[0.0_f64; 4]; 4]; 4]; 4];
+    for mu in 0..4 {
+        let mut xp = x;
+        xp[mu] += FD_H;
+        let mut xm = x;
+        xm[mu] -= FD_H;
+        let gp = christoffel(chart, xp);
+        let gm = christoffel(chart, xm);
+        for rho in 0..4 {
+            for nu in 0..4 {
+                for sgm in 0..4 {
+                    dgam[rho][nu][sgm][mu] = (gp[rho][nu][sgm] - gm[rho][nu][sgm]) / (2.0 * FD_H);
+                }
+            }
+        }
+    }
+    let gam = christoffel(chart, x);
+    let sign = if flip { -1.0 } else { 1.0 };
+    let mut r = [[[[0.0_f64; 4]; 4]; 4]; 4];
+    for rho in 0..4 {
+        for sgm in 0..4 {
+            for mu in 0..4 {
+                for nu in 0..4 {
+                    let mut s = dgam[rho][nu][sgm][mu] - dgam[rho][mu][sgm][nu];
+                    for lam in 0..4 {
+                        s += gam[rho][mu][lam] * gam[lam][nu][sgm]
+                            - sign * gam[rho][nu][lam] * gam[lam][mu][sgm];
+                    }
+                    r[rho][sgm][mu][nu] = s;
+                }
+            }
+        }
+    }
+    r
+}
+
+/// Kretschmann scalar `K = R_ρσμν R^ρσμν` (all three lower indices
+/// raised). Closed form on Schwarzschild: `48M²/r⁶` with `M = 1`.
+pub(crate) fn kretschmann(chart: Chart, x: [f64; 4]) -> f64 {
+    let r = riemann(chart, x, false);
+    let g = schwarzschild_metric(chart, x);
+    let gi = invert_4x4(g);
+    let mut k = 0.0_f64;
+    for rho in 0..4 {
+        for sgm in 0..4 {
+            for mu in 0..4 {
+                for nu in 0..4 {
+                    let mut up = 0.0_f64;
+                    for b in 0..4 {
+                        for c in 0..4 {
+                            for d in 0..4 {
+                                up += gi[sgm][b] * gi[mu][c] * gi[nu][d] * r[rho][b][c][d];
+                            }
+                        }
+                    }
+                    let mut low = 0.0_f64;
+                    for a in 0..4 {
+                        low += g[rho][a] * r[a][sgm][mu][nu];
+                    }
+                    k += low * up;
+                }
+            }
+        }
+    }
+    k
+}
+
+/// Max over all index positions of the first-Bianchi cyclic sum
+/// `|R^ρ_σμν + R^ρ_μνσ + R^ρ_νσμ|`. `flip` threads through to
+/// [`riemann`] (tests only).
+// Tensor index contractions and cyclic permutes have no iterator form.
+#[allow(clippy::needless_range_loop)]
+pub(crate) fn bianchi_residual(chart: Chart, x: [f64; 4], flip: bool) -> f64 {
+    let r = riemann(chart, x, flip);
+    let mut max = 0.0_f64;
+    for rho in 0..4 {
+        for sgm in 0..4 {
+            for mu in 0..4 {
+                for nu in 0..4 {
+                    max = max.max(
+                        (r[rho][sgm][mu][nu] + r[rho][mu][nu][sgm] + r[rho][nu][sgm][mu]).abs(),
+                    );
+                }
+            }
+        }
+    }
+    max
+}
+
+/// Outcome of the Bianchi computation over the domain samples.
+pub(crate) struct BianchiCheck {
+    /// Max Bianchi residual over the samples.
+    pub max_residual: f64,
+    /// Max relative deviation of Kretschmann from `48/r⁶` over the
+    /// samples (the invariant anchor for the engine).
+    pub kretschmann_rel_dev: f64,
+    /// Number of domain samples.
+    pub n_samples: usize,
+}
+
+/// Check the first Bianchi identity over `[r_min_m, 10M]` in the given
+/// chart, at the fixed probe angles. Returns `None` when
+/// [`domain_refused`] applies. Tensorial: unlike the reciprocal
+/// identity, this holds in both charts, including through the EF
+/// horizon.
+pub(crate) fn schwarzschild_bianchi(chart: Chart, r_min_m: f64) -> Option<BianchiCheck> {
+    if domain_refused(chart, r_min_m) {
+        return None;
+    }
+    let mut max_residual = 0.0_f64;
+    let mut kretschmann_rel_dev = 0.0_f64;
+    for i in 0..RECIPROCAL_SAMPLES {
+        let r =
+            r_min_m + (EXTERIOR_R_MAX_M - r_min_m) * (i as f64) / ((RECIPROCAL_SAMPLES - 1) as f64);
+        let x = [0.0, r, PROBE_THETA, PROBE_PHI];
+        max_residual = max_residual.max(bianchi_residual(chart, x, false));
+        let k = kretschmann(chart, x);
+        kretschmann_rel_dev =
+            kretschmann_rel_dev.max((k - 48.0 / r.powi(6)).abs() / (48.0 / r.powi(6)));
+    }
+    Some(BianchiCheck {
+        max_residual,
+        kretschmann_rel_dev,
+        n_samples: RECIPROCAL_SAMPLES,
+    })
+}
+
 const ARCSEC_PER_RAD: f64 = 180.0 / PI * 3600.0;
 /// Default RK4 steps for grazing light (`h = π/(2n)`).
 pub(crate) const DEFAULT_LIGHT_STEPS: usize = 80_000;
@@ -342,7 +735,7 @@ fn mercury_truncation_arcsec(n: usize) -> f64 {
     h.powi(4) * mercury_orbits_per_century() * ARCSEC_PER_RAD
 }
 
-fn snapped_hull(center: f64, halfwidth: f64, den: i128) -> Interval {
+pub(crate) fn snapped_hull(center: f64, halfwidth: f64, den: i128) -> Interval {
     let c = Ratio::nearest(center, den);
     let mut w = Ratio::nearest(halfwidth.abs(), den);
     if w.is_zero() {
@@ -416,6 +809,116 @@ fn decide_truncation_residual(
         .with_interval_enclosure(residual.lo.to_string(), residual.hi.to_string())
 }
 
+/// Overlay the Sobral 1919 comparison on a numerically decided Eddington
+/// sample. The verdict kind stays model-internal (the 3% truncation-band
+/// decision); only the empirical axis moves, under the same predeclared
+/// two-sigma rule for Newton and GR. Numeric-unresolved samples withhold
+/// comparison: there is no decided prediction to compare.
+fn attach_sobral_receipt(
+    verdict: Verdict,
+    delta: f64,
+    n_light: usize,
+    relation: ResidualRelation,
+) -> Verdict {
+    if matches!(relation, ResidualRelation::OverlapsWithoutContainment) {
+        return verdict.with_evidence([
+            "numeric unresolved: withholding the Sobral 1919 comparison (no decided prediction to compare)"
+                .to_string(),
+        ]);
+    }
+    let dataset = physis_data::dyson_1920_sobral_deflection();
+    let prediction = snapped_hull(delta, light_truncation_arcsec(n_light), ARCSEC_SNAP);
+    let x = Ratio::nearest(delta, ARCSEC_SNAP);
+    match physis_data::EmpiricalReceipt::compare_two_sigma(prediction, &dataset, Some(x)) {
+        Ok(rec) => {
+            let evidence = vec![
+                format!(
+                    "prediction δ = {delta:.4}″ → {prediction} (0.001″ snap; diagnostic h⁴ width, not a remainder certificate) vs {} 2σ hull",
+                    physis_data::DYSON_1920_SOBRAL_DEFLECTION
+                ),
+                format!(
+                    "dataset {} hash {} license {} unit arcsec (Sobral 4-inch only; Principe 1.61±0.30 p.e. not registered)",
+                    dataset.id,
+                    dataset.artifact_hash.to_hex(),
+                    dataset.license.as_deref().unwrap_or("unknown"),
+                ),
+                format!(
+                    "two-sigma excluded={} compatible={} inconclusive={} (1σ hull is not an exclusion rule)",
+                    rec.excluded, rec.compatible, rec.inconclusive
+                ),
+                format!(
+                    "gaussian-nll {} at x={x} (exact Ratio; Sobral μ=1.98 σ=0.18)",
+                    rec.nll
+                        .map(|n| n.to_string())
+                        .unwrap_or_else(|| "none".into())
+                ),
+            ];
+            let v = verdict.with_empirical(rec.status()).with_evidence(evidence);
+            match rec.nll {
+                Some(nll) => v.with_statistical_nll(nll),
+                None => v,
+            }
+        }
+        Err(e) => verdict.with_evidence([format!("empirical comparison refused: {e}")]),
+    }
+}
+
+/// Overlay the Clemence 1947 comparison on a numerically decided Mercury
+/// sample. The verdict kind stays model-internal (the 1.5″ truncation-band
+/// decision); only the empirical axis moves, under the same predeclared
+/// two-sigma rule for Newton and GR. Numeric-unresolved samples withhold
+/// comparison: there is no decided prediction to compare. The dataset is
+/// the measured residual (observed minus Newtonian-planetary), not the
+/// 5599.74 total and not a GR prediction.
+fn attach_clemence_receipt(
+    verdict: Verdict,
+    extra: f64,
+    n_mercury: usize,
+    relation: ResidualRelation,
+) -> Verdict {
+    if matches!(relation, ResidualRelation::OverlapsWithoutContainment) {
+        return verdict.with_evidence([
+            "numeric unresolved: withholding the Clemence 1947 comparison (no decided prediction to compare)"
+                .to_string(),
+        ]);
+    }
+    let dataset = physis_data::clemence_1947_mercury_residual();
+    let prediction = snapped_hull(extra, mercury_truncation_arcsec(n_mercury), ARCSEC_SNAP);
+    let x = Ratio::nearest(extra, ARCSEC_SNAP);
+    match physis_data::EmpiricalReceipt::compare_two_sigma(prediction, &dataset, Some(x)) {
+        Ok(rec) => {
+            let evidence = vec![
+                format!(
+                    "prediction Δω = {extra:.2}″/cy → {prediction} (0.001″ snap; diagnostic h⁴ width, not a remainder certificate) vs {} 2σ hull",
+                    physis_data::CLEMENCE_1947_MERCURY_RESIDUAL
+                ),
+                format!(
+                    "dataset {} hash {} license {} unit arcsec cy^{{-1}} (residual after computed Newtonian motion incl. 5025.65 precession; not the 5599.74 total; not Clemence Table I 43.03)",
+                    dataset.id,
+                    dataset.artifact_hash.to_hex(),
+                    dataset.license.as_deref().unwrap_or("unknown"),
+                ),
+                format!(
+                    "two-sigma excluded={} compatible={} inconclusive={} (1σ hull is not an exclusion rule)",
+                    rec.excluded, rec.compatible, rec.inconclusive
+                ),
+                format!(
+                    "gaussian-nll {} at x={x} (exact Ratio; Clemence μ=42.56 σ=1880/1349)",
+                    rec.nll
+                        .map(|n| n.to_string())
+                        .unwrap_or_else(|| "none".into())
+                ),
+            ];
+            let v = verdict.with_empirical(rec.status()).with_evidence(evidence);
+            match rec.nll {
+                Some(nll) => v.with_statistical_nll(nll),
+                None => v,
+            }
+        }
+        Err(e) => verdict.with_evidence([format!("empirical comparison refused: {e}")]),
+    }
+}
+
 /// Evaluate the three solar-system claims for Newton (`gr = false`) or GR.
 pub fn eval_solar(gr: bool, dim: u8, claim: &Claim) -> Verdict {
     eval_solar_with_steps(gr, dim, claim, DEFAULT_LIGHT_STEPS, DEFAULT_MERCURY_STEPS)
@@ -482,14 +985,15 @@ pub(crate) fn eval_solar_with_steps(
             evidence.push(format!(
                 "truncation residual hull {residual} vs relative 3% Eddington band {band} ({relation}); overlap is not equality"
             ));
-            decide_truncation_residual(
+            let v = decide_truncation_residual(
                 claim,
                 relation,
                 residual,
                 "grazing solar deflection is 1.75″ (Eddington / Schwarzschild)",
                 "grazing deflection is not 1.75″ (Newtonian / 1911 half-angle)",
                 evidence,
-            )
+            );
+            attach_sobral_receipt(v, delta, n_light, relation)
         }
         MERCURY_PERIHELION => {
             let extra = mercury_arcsec_per_century_n(gr, n_mercury);
@@ -508,14 +1012,15 @@ pub(crate) fn eval_solar_with_steps(
             evidence.push(format!(
                 "truncation residual hull {residual} vs 1.5″ Mercury band {band} ({relation}); overlap is not equality"
             ));
-            decide_truncation_residual(
+            let v = decide_truncation_residual(
                 claim,
                 relation,
                 residual,
                 "Mercury's extra perihelion is 43″ per century",
                 "inverse-square ellipses do not precess; the 43″ remainder is missing",
                 evidence,
-            )
+            );
+            attach_clemence_receipt(v, extra, n_mercury, relation)
         }
         _ => Verdict::inapplicable(claim, "claim not made by a solar-system gravity object"),
     }
@@ -584,6 +1089,7 @@ impl NewtonianGravity {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -624,6 +1130,9 @@ impl Knobbed for NewtonianGravity {
 }
 
 impl Theory for NewtonianGravity {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "newtonian-gravity"
     }
@@ -766,6 +1275,119 @@ mod tests {
         let m: Qty<Length> = solar_m();
         let dimensionless: Qty<Dimensionless> = m / solar_radius();
         assert!(dimensionless.value() > 0.0);
+    }
+
+    #[test]
+    fn schwarzschild_reciprocal_holds_on_exterior() {
+        // C4.3: g_tt·g_rr = −1 on the exterior domain, computed per sample.
+        let check = schwarzschild_reciprocal(Chart::Schwarzschild, 3.0)
+            .expect("r_min = 3M is outside the horizon");
+        assert!(check.max_dev < 1e-12, "max dev {}", check.max_dev);
+        assert!(check.n_samples >= 4, "samples {}", check.n_samples);
+    }
+
+    #[test]
+    fn reciprocal_fails_in_eddington_finkelstein() {
+        // C4.3: conventions are inputs. In EF coordinates g_rr = 0, so the
+        // reciprocal product is 0, not −1 — computed, with the Jacobian
+        // cross-check agreeing on the transform.
+        let check = schwarzschild_reciprocal(Chart::EddingtonFinkelstein, 3.0)
+            .expect("EF chart computes on the exterior");
+        assert!(
+            check.product_at_rmin.abs() < 1e-12,
+            "EF product {}",
+            check.product_at_rmin
+        );
+        assert!(
+            check.transform_agrees,
+            "Jacobian transform must agree with direct EF components"
+        );
+        assert!(check.transform_samples >= 4);
+    }
+
+    #[test]
+    fn horizon_inside_domain_is_refused_in_schwarzschild_chart() {
+        // C4.3: the coordinate singularity is an input, not a silent
+        // extrapolation. r_min ≤ 2M refuses in Schwarzschild chart ...
+        assert!(schwarzschild_reciprocal(Chart::Schwarzschild, 2.0).is_none());
+        assert!(schwarzschild_reciprocal(Chart::Schwarzschild, 1.5).is_none());
+        // ... while EF coordinates are regular at the horizon and compute.
+        let check = schwarzschild_reciprocal(Chart::EddingtonFinkelstein, 1.5)
+            .expect("EF is regular at r = 2M");
+        assert!(check.product_at_rmin.abs() < 1e-12);
+    }
+
+    #[test]
+    // Transpose comparison needs explicit indices.
+    #[allow(clippy::needless_range_loop)]
+    fn christoffel_matches_closed_forms() {
+        // C2.4a: live tensor engine. Γ from numeric ∂g matches Schwarzschild
+        // closed forms: Γ^t_tr = 1/(r²f), Γ^r_tt = f/r².
+        for r in [3.0, 6.0] {
+            let f = 1.0 - 2.0 / r;
+            let g = christoffel(Chart::Schwarzschild, [0.0, r, 1.0, 0.5]);
+            assert!(
+                (g[0][1][0] - 1.0 / (r * r * f)).abs() < 1e-9,
+                "r = {r}: Γ^t_tr = {}",
+                g[0][1][0]
+            );
+            assert!(
+                (g[1][0][0] - f / (r * r)).abs() < 1e-9,
+                "r = {r}: Γ^r_tt = {}",
+                g[1][0][0]
+            );
+            // Torsion-free by construction: symmetric in the lower indices.
+            for rho in 0..4 {
+                for mu in 0..4 {
+                    for nu in 0..4 {
+                        assert!(
+                            (g[rho][mu][nu] - g[rho][nu][mu]).abs() < 1e-12,
+                            "Γ[{rho}][{mu}][{nu}] asymmetric"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn riemann_matches_closed_form() {
+        // C2.4a: R^t_rtr = 2M/(f r³) with M = 1.
+        let r = 3.0;
+        let f = 1.0 - 2.0 / r;
+        let rm = riemann(Chart::Schwarzschild, [0.0, r, 1.0, 0.5], false);
+        assert!(
+            (rm[0][1][0][1] - 2.0 / (f * r * r * r)).abs() < 1e-7,
+            "R^t_rtr = {}",
+            rm[0][1][0][1]
+        );
+    }
+
+    #[test]
+    fn kretschmann_matches_48_over_r6_in_both_charts() {
+        // C2.4a: K = 48M²/r⁶ is a scalar invariant — both charts agree.
+        for chart in [Chart::Schwarzschild, Chart::EddingtonFinkelstein] {
+            for r in [3.0_f64, 6.0] {
+                let k = kretschmann(chart, [0.0, r, 1.0, 0.5]);
+                let rel = (k - 48.0 / r.powi(6)).abs() / (48.0 / r.powi(6));
+                assert!(rel < 1e-4, "{chart:?} r = {r}: K = {k} (rel {rel:.1e})");
+            }
+        }
+    }
+
+    #[test]
+    fn bianchi_sign_flip_fails() {
+        // C2.4a: the Bianchi residual vanishes live and blows up when a ΓΓ
+        // sign is mutated — the computation has teeth.
+        let x = [0.0, 3.0, 1.0, 0.5];
+        assert!(
+            bianchi_residual(Chart::Schwarzschild, x, false) < 1e-9,
+            "live Bianchi residual must vanish"
+        );
+        assert!(
+            bianchi_residual(Chart::Schwarzschild, x, true) > 1e-3,
+            "sign-flipped Bianchi residual must not vanish"
+        );
     }
 
     #[test]
@@ -1192,7 +1814,16 @@ mod tests {
     fn assert_not_certified(v: &Verdict) {
         assert_eq!(v.derivation(), DerivationAssurance::Executed);
         assert_ne!(v.derivation(), DerivationAssurance::CertifiedNumeric);
-        assert_ne!(v.empirical(), EmpiricalStatus::Compatible);
+    }
+
+    fn assert_no_dataset_contact(v: &Verdict, id: &str) {
+        // Cells without a registered dataset stay off the empirical axis.
+        assert_eq!(
+            v.empirical(),
+            EmpiricalStatus::NotApplicable,
+            "{id} has no dataset; only Eddington and Mercury compare to registered datasets"
+        );
+        assert!(v.statistical_nll().is_none(), "{id}");
     }
 
     #[test]
@@ -1219,6 +1850,9 @@ mod tests {
                 DEFAULT_LIGHT_STEPS,
                 DEFAULT_MERCURY_STEPS,
             );
+            if id != EDDINGTON && id != MERCURY_PERIHELION {
+                assert_no_dataset_contact(&v, id);
+            }
         }
         let n = NewtonianGravity::default();
         assert_eq!(verdict(&n, NEWTON_HALF), VerdictKind::Holds);
@@ -1228,6 +1862,144 @@ mod tests {
         assert_eq!(verdict(&g, NEWTON_HALF), VerdictKind::Fails);
         assert_eq!(verdict(&g, EDDINGTON), VerdictKind::Holds);
         assert_eq!(verdict(&g, MERCURY_PERIHELION), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn eddington_compares_gr_and_soldner_to_sobral_1919() {
+        // C3.1: the same predeclared two-sigma rule on both theories.
+        // The verdict kind stays model-internal; only the empirical axis
+        // moves, and the outcome is derived from the live RK4 values.
+        let newton = NewtonianGravity::default();
+        let gr = GeneralRelativity::default();
+        let n_claim = newton
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == EDDINGTON)
+            .unwrap();
+        let g_claim = gr
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == EDDINGTON)
+            .unwrap();
+        let n_v = newton.evaluate(&n_claim);
+        let g_v = gr.evaluate(&g_claim);
+        assert_eq!(n_v.kind, VerdictKind::Fails);
+        assert_eq!(n_v.empirical(), EmpiricalStatus::Excluded);
+        assert_eq!(g_v.kind, VerdictKind::Holds);
+        assert_eq!(g_v.empirical(), EmpiricalStatus::Compatible);
+        for (v, delta) in [
+            (&n_v, solar_deflection_arcsec(false)),
+            (&g_v, solar_deflection_arcsec(true)),
+        ] {
+            assert_not_certified(v);
+            let blob = evidence_blob(v);
+            assert!(blob.contains("dyson-1920-sobral-deflection"), "{blob}");
+            assert!(blob.contains("two-sigma"), "{blob}");
+            assert!(blob.contains("1σ hull is not an exclusion rule"), "{blob}");
+            assert!(blob.contains("public-domain"), "{blob}");
+            assert!(
+                blob.contains("Principe 1.61±0.30 p.e. not registered"),
+                "{blob}"
+            );
+            let x = Ratio::nearest(delta, ARCSEC_SNAP);
+            let expected = x.gaussian_nll(Ratio::new(198, 100), Ratio::new(18, 100));
+            assert!(
+                blob.contains(&format!("gaussian-nll {expected} at x={x}")),
+                "NLL is derived from the live prediction, not a constant: {blob}"
+            );
+            assert_eq!(v.statistical_nll(), Some(expected.to_string()).as_deref());
+        }
+        for v in [&n_v, &g_v] {
+            let nll = v.statistical_nll().expect("NLL overlay is set");
+            assert!(
+                nll.contains('/'),
+                "NLL overlay is an exact Ratio string, not a float: {nll}"
+            );
+        }
+        assert_ne!(n_v.statistical_nll(), g_v.statistical_nll());
+    }
+
+    #[test]
+    fn mercury_compares_gr_and_newton_to_clemence_1947() {
+        // C3.2: the same predeclared two-sigma rule on both theories.
+        // The verdict kind stays model-internal; only the empirical axis
+        // moves, and the outcome is derived from the live RK4 values.
+        let newton = NewtonianGravity::default();
+        let gr = GeneralRelativity::default();
+        let n_claim = newton
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == MERCURY_PERIHELION)
+            .unwrap();
+        let g_claim = gr
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == MERCURY_PERIHELION)
+            .unwrap();
+        let n_v = newton.evaluate(&n_claim);
+        let g_v = gr.evaluate(&g_claim);
+        assert_eq!(n_v.kind, VerdictKind::Fails);
+        assert_eq!(n_v.empirical(), EmpiricalStatus::Excluded);
+        assert_eq!(g_v.kind, VerdictKind::Holds);
+        assert_eq!(g_v.empirical(), EmpiricalStatus::Compatible);
+        for (v, extra) in [
+            (&n_v, mercury_arcsec_per_century(false)),
+            (&g_v, mercury_arcsec_per_century(true)),
+        ] {
+            assert_not_certified(v);
+            let blob = evidence_blob(v);
+            assert!(blob.contains("clemence-1947-mercury-residual"), "{blob}");
+            assert!(blob.contains("two-sigma"), "{blob}");
+            assert!(blob.contains("1σ hull is not an exclusion rule"), "{blob}");
+            assert!(blob.contains("public-domain"), "{blob}");
+            assert!(blob.contains("not the 5599.74 total"), "{blob}");
+            assert!(blob.contains("not Clemence Table I 43.03"), "{blob}");
+            let x = Ratio::nearest(extra, ARCSEC_SNAP);
+            let expected = x.gaussian_nll(Ratio::new(4256, 100), Ratio::new(1880, 1349));
+            assert!(
+                blob.contains(&format!("gaussian-nll {expected} at x={x}")),
+                "NLL is derived from the live prediction, not a constant: {blob}"
+            );
+            assert_eq!(v.statistical_nll(), Some(expected.to_string()).as_deref());
+        }
+        for v in [&n_v, &g_v] {
+            let nll = v.statistical_nll().expect("NLL overlay is set");
+            assert!(
+                nll.contains('/'),
+                "NLL overlay is an exact Ratio string, not a float: {nll}"
+            );
+        }
+        assert_ne!(n_v.statistical_nll(), g_v.statistical_nll());
+    }
+
+    #[test]
+    fn coarse_mercury_withholds_the_clemence_comparison() {
+        let mercury = solar_claim(MERCURY_PERIHELION);
+        let v = eval_solar_with_steps(true, 4, &mercury, DEFAULT_LIGHT_STEPS, 50);
+        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.empirical(), EmpiricalStatus::Inconclusive);
+        let blob = evidence_blob(&v);
+        assert!(
+            blob.contains("withholding the Clemence 1947 comparison"),
+            "{blob}"
+        );
+        assert!(!blob.contains("two-sigma"), "{blob}");
+        assert!(v.statistical_nll().is_none());
+    }
+
+    #[test]
+    fn coarse_eddington_withholds_the_sobral_comparison() {
+        let eddington = solar_claim(EDDINGTON);
+        let v = eval_solar_with_steps(true, 4, &eddington, 50, DEFAULT_MERCURY_STEPS);
+        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.empirical(), EmpiricalStatus::Inconclusive);
+        let blob = evidence_blob(&v);
+        assert!(
+            blob.contains("withholding the Sobral 1919 comparison"),
+            "{blob}"
+        );
+        assert!(!blob.contains("two-sigma"), "{blob}");
+        assert!(v.statistical_nll().is_none());
     }
 
     #[test]

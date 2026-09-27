@@ -97,7 +97,7 @@ knob. Knobs: `dimension` (2–4), `beta` (β = 1/g²), `sites_per_side`.
 | `gauge.confining` | static charges are confined | U(1): encoded in 2D/3D, heuristic across the 4D transition near β ≈ 1.01. SU(N): encoded in 2D/3D, **conjecture** in 4D (mass gap). Domain: pure Wilson gauge field. `add-higgs` appends `higgs fundamental` and this cell fails (perimeter-law screening). That is not a knob |
 | `gauge.asymptotic-freedom` | the coupling runs to zero at high energy | U(1) `fails` (Landau pole); SU(N) `holds` (Gross–Wilczek–Politzer) |
 | `gauge.strong-coupling-area-law` | leading strong-coupling expansion gives an area law | **computed**: `σ = −ln(β/2N²) > 0` (theorem of the convergent expansion); fails at weak coupling |
-| `gauge.exact-area-law-2d` | 2D gauge theory confines at all couplings | **exactly computed**: U(1) via `σ = −ln(I₁(β)/I₀(β))`, SU(N) via `σ = (N²−1)/(2β)` (quadratic Casimir); `> 0` for every β (theorem); `inapplicable` in D > 2. Domain: 2D Wilson lattice / exact plaquette factorization |
+| `gauge.exact-area-law-2d` | 2D gauge theory confines at all couplings | **computed benchmark**: U(1) via the single-cell transfer-matrix ratio `c₁/c₀` (grid quadrature; single-plaquette volume, periodic-θ boundary, open-boundary 2D factorization) cross-checked against the independent Bessel reference `I₁(β)/I₀(β)` to `1e-9`; SU(N) via `σ = (N²−1)/(2β)` (quadratic Casimir); `> 0` for every β (theorem); `inapplicable` in D > 2; numerical disagreement is `undecidable`, not a verdict on the theorem. Domain: 2D Wilson lattice / exact plaquette factorization |
 
 ### Abelian vs non-abelian
 
@@ -112,11 +112,18 @@ The lab contrasts compact U(1) (QED-like) with SU(2)/SU(3) Yang–Mills:
 
 In two dimensions the gauge theories are **exactly solvable**. For compact U(1)
 the gauge integral factorizes plaquette by plaquette, so the fundamental Wilson
-loop of area `A` is exactly `⟨W⟩ = (I₁(β)/I₀(β))ᴬ = e^{−σA}` with
-`σ = −ln(I₁(β)/I₀(β))`. Because `0 < I₁/I₀ < 1` for every finite `β`, `σ > 0`
+loop of area `A` is exactly `⟨W⟩ = (c₁/c₀)ᴬ = e^{−σA}` with
+`σ = −ln(c₁/c₀)`, where `cₙ` are the single-cell transfer-matrix character
+eigenvalues. Because `0 < c₁/c₀ < 1` for every finite `β`, `σ > 0`
 always — 2D compact U(1) confines at *all* couplings, a genuine theorem
-(`gauge.exact-area-law-2d`, computed from the modified Bessel-function ratio by a
-convergent series).
+(`gauge.exact-area-law-2d`). The verdict rests on a computed benchmark: the
+ratio comes from trapezoidal character quadrature on a grid-doubled periodic-θ
+mesh (single-plaquette volume; open-boundary 2D factorization; no finite volume
+simulated and no periodic-lattice `1/V` correction claimed) and must agree with
+the independent Bessel power-series reference `I₁(β)/I₀(β)` to `1e-9`. A
+charge-2 character or a sign-flipped Boltzmann weight fails that comparison.
+Grid non-convergence or reference disagreement is `undecidable` numerics, never
+evidence against the theorem.
 
 The non-abelian case is equally exact (2D Yang–Mills is solvable, Migdal/Witten):
 the fundamental Wilson loop has string tension `σ = (g²/2)·C₂(fund) = (N²−1)/(2β)`

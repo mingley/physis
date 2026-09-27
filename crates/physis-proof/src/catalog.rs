@@ -155,6 +155,23 @@ fn mass_shell_domain() -> DomainOfValidity {
     )
 }
 
+fn bianchi_commitments() -> ClaimCommitments {
+    ClaimCommitments::physlib_forall()
+}
+
+fn bianchi_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["torsion-free connection, folded Γ indeterminates".into()],
+        vec!["R^t_[rθφ] component; 21 indeterminates, 30 terms".into()],
+        "The catalog identity is the R^t_[rθφ] Bianchi cyclic sum as an \
+         integer polynomial in folded (Γ, ∂Γ) indeterminates: Γ^ρ_μν and \
+         Γ^ρ_νμ share one indeterminate (torsion-free), the same symmetry \
+         the live engine builds in. It is not the numeric engine and not \
+         a curvature value. Using it for a torsionful connection or a \
+         second Bianchi identity is a new claim.",
+    )
+}
+
 fn jacobi_commitments() -> ClaimCommitments {
     ClaimCommitments::physlib_forall()
 }
@@ -231,6 +248,49 @@ pub fn tetrahedron_d2() -> Expr {
     let face_acd = add(sub(cd.clone(), ad), ac);
     let face_bcd = add(sub(cd, bd), bc);
     sub(add(sub(face_bcd, face_acd), face_abd), face_abc)
+}
+
+/// First Bianchi identity component `R^t_[rθφ] = 0`:
+/// `R^t_rθφ + R^t_θφr + R^t_φrθ ≡ 0` with
+/// `R^ρ_σμν = ∂_μΓ^ρ_νσ − ∂_νΓ^ρ_μσ + Σ_λ(Γ^ρ_μλΓ^λ_νσ − Γ^ρ_νλΓ^λ_μσ)`.
+///
+/// Index codes `T = 0, R = 1, H = 2 (θ), P = 3 (φ)`. Lower Γ pairs are
+/// folded (`Γ^ρ_μν` and `Γ^ρ_νμ` share one indeterminate): that sharing
+/// is the torsion-free assumption, the same symmetry the live engine
+/// builds in by construction. 21 indeterminates, 30 terms; the cyclic
+/// sum vanishes by the ΓΓ pairing, not by hypothesis.
+pub fn first_bianchi() -> Expr {
+    const CODE: [char; 4] = ['T', 'R', 'H', 'P'];
+    fn gam(up: usize, a: usize, b: usize) -> Expr {
+        let (x, y) = if a <= b { (a, b) } else { (b, a) };
+        Expr::var(format!("G{}{}{}", CODE[up], CODE[x], CODE[y]))
+    }
+    fn dgam(mu: usize, up: usize, a: usize, b: usize) -> Expr {
+        let (x, y) = if a <= b { (a, b) } else { (b, a) };
+        Expr::var(format!("D{}{}{}{}", CODE[mu], CODE[up], CODE[x], CODE[y]))
+    }
+    let (t, r, h, p) = (0usize, 1usize, 2usize, 3usize);
+    let mut terms: Vec<(bool, Expr)> = Vec::new();
+    for (sgm, mu, nu) in [(r, h, p), (h, p, r), (p, r, h)] {
+        terms.push((true, dgam(mu, t, nu, sgm)));
+        terms.push((false, dgam(nu, t, mu, sgm)));
+        for lam in 0..4 {
+            terms.push((true, mul(gam(t, mu, lam), gam(lam, nu, sgm))));
+            terms.push((false, mul(gam(t, nu, lam), gam(lam, mu, sgm))));
+        }
+    }
+    let mut it = terms.into_iter();
+    let (_, first) = it.next().expect("bianchi has terms");
+    it.fold(
+        first,
+        |acc, (pos, term)| {
+            if pos {
+                add(acc, term)
+            } else {
+                sub(acc, term)
+            }
+        },
+    )
 }
 
 /// Lorentz interval identity (c = 1):
@@ -462,6 +522,18 @@ pub const CATALOG: &[IdentitySpec] = &[
         axioms: &["integer-arithmetic"],
         identity: matrix_det_product,
     },
+    IdentitySpec {
+        claim_id: "gr.first-bianchi",
+        statement: "The first Bianchi identity R^t_[rθφ] = 0 holds for a torsion-free connection.",
+        class: ClaimClass::ModelInternal,
+        layer: LayerId::Spacetime,
+        commitments: bianchi_commitments,
+        domain: bianchi_domain,
+        lean_theorem: "first_bianchi",
+        lean_type: "∀ (DHTRP DPTRH DRTHP GHHP GHRH GHRP GPHP GPRH GPRP GRHP GRRH GRRP GTHH GTHP GTPP GTRH GTRP GTRR GTTH GTTP GTTR : Int), (((((((((((((((((((((((((((((DHTRP - DPTRH) + (GTTH * GTRP)) - (GTTP * GTRH)) + (GTRH * GRRP)) - (GTRP * GRRH)) + (GTHH * GHRP)) - (GTHP * GHRH)) + (GTHP * GPRP)) - (GTPP * GPRH)) + DPTRH) - DRTHP) + (GTTP * GTRH)) - (GTTR * GTHP)) + (GTRP * GRRH)) - (GTRR * GRHP)) + (GTHP * GHRH)) - (GTRH * GHHP)) + (GTPP * GPRH)) - (GTRP * GPHP)) + DRTHP) - DHTRP) + (GTTR * GTHP)) - (GTTH * GTRP)) + (GTRR * GRHP)) - (GTRH * GRRP)) + (GTRH * GHHP)) - (GTHH * GHRP)) + (GTRP * GPHP)) - (GTHP * GPRP)) = 0",
+        axioms: &["integer-arithmetic"],
+        identity: first_bianchi,
+    },
 ];
 
 /// Lookup by claim slug. Not a catalog proof: a changed FormalClaim
@@ -507,6 +579,45 @@ pub fn catalog_tree_binding(
     }
 }
 
+/// Verify package-attached typed trees against their token equations.
+///
+/// For each `(equation index, infix tree)`: the index must exist, the
+/// tree must parse, the tokens must parse, and both canonical forms
+/// must match. Returns the claim ids of catalog rows matched by
+/// verified trees, in [`CATALOG`] order. A missing index, an
+/// unparsable tree, or a tree/token mismatch fails closed. A verified
+/// tree that matches no catalog row binds to nothing, like an extra
+/// token equation. This is not a kernel proof.
+pub fn verify_typed_equations(
+    equations: &[impl AsRef<str>],
+    typed: &[(usize, &str)],
+) -> Result<Vec<&'static str>, String> {
+    let mut verified = Vec::new();
+    for (index, tree) in typed {
+        let tokens = equations
+            .get(*index)
+            .ok_or_else(|| format!("typed equation {index} names no live equation"))?;
+        let typed_tree =
+            parse_expr(tree).map_err(|e| format!("typed equation {index} does not parse: {e}"))?;
+        let token_tree = parse_expr(tokens.as_ref())
+            .map_err(|_| format!("typed equation {index} tokens do not parse"))?;
+        if typed_tree.canonical() != token_tree.canonical() {
+            return Err(format!(
+                "typed equation {index} tree does not match its tokens"
+            ));
+        }
+        verified.push(typed_tree.canonical());
+    }
+    Ok(CATALOG
+        .iter()
+        .filter(|spec| {
+            let catalog = (spec.identity)().canonical();
+            verified.iter().any(|t| t == &catalog)
+        })
+        .map(|spec| spec.claim_id)
+        .collect())
+}
+
 /// Catalog identities whose trees appear in `equations`.
 ///
 /// Token equations that do not parse are skipped. Order follows
@@ -528,6 +639,49 @@ pub fn catalog_trees_in(equations: &[impl AsRef<str>]) -> Vec<&'static IdentityS
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn typed_interval_tree_verifies_and_binds() {
+        let tree = lorentz_interval().to_string();
+        let bound = verify_typed_equations(
+            &["gamma-lorentz-hint".to_string(), tree.clone()],
+            &[(1, tree.as_str())],
+        )
+        .unwrap();
+        assert_eq!(bound, vec!["sr.invariant-interval"]);
+    }
+
+    #[test]
+    fn typed_tree_failures_close_without_receipts() {
+        let tree = lorentz_interval().to_string();
+        // Index names no equation.
+        let oob = verify_typed_equations(&["a + b"], &[(3, tree.as_str())]).unwrap_err();
+        assert!(oob.contains("names no live equation"), "{oob}");
+        assert!(!oob.contains("receipt"), "{oob}");
+        // Tree does not parse.
+        let bad = verify_typed_equations(&["a + b"], &[(0, "a + + b")]).unwrap_err();
+        assert!(bad.contains("does not parse"), "{bad}");
+        assert!(!bad.contains("receipt"), "{bad}");
+        // Tree parses but does not match the tokens.
+        let comp = einstein_composition().to_string();
+        let mismatch = verify_typed_equations(&[comp], &[(0, tree.as_str())]).unwrap_err();
+        assert!(mismatch.contains("does not match its tokens"), "{mismatch}");
+        assert!(!mismatch.contains("receipt"), "{mismatch}");
+        // Tokens do not parse.
+        let untoken = verify_typed_equations(&["nand 0 1 -> 2"], &[(0, "a + b")]).unwrap_err();
+        assert!(untoken.contains("tokens do not parse"), "{untoken}");
+        assert!(!untoken.contains("receipt"), "{untoken}");
+    }
+
+    #[test]
+    fn verified_non_catalog_tree_binds_to_nothing() {
+        let bound = verify_typed_equations(&["a + b"], &[(0, "a + b")]).unwrap();
+        assert!(bound.is_empty());
+        let empty: Vec<(usize, &str)> = Vec::new();
+        assert!(verify_typed_equations(&["a + b"], &empty)
+            .unwrap()
+            .is_empty());
+    }
 
     #[test]
     fn catalog_covers_the_vertical_slice() {
@@ -960,5 +1114,70 @@ mod tests {
         );
         assert!(!err.contains("receipt"), "{err}");
         assert!(!err.contains("theorem"), "{err}");
+    }
+
+    #[test]
+    fn bianchi_is_not_the_tetrahedron_or_jacobi_challenge() {
+        // C2.4b: genuinely distinct row — different indeterminates and
+        // challenge hash from the coboundary and cross-product algebra.
+        assert_ne!(first_bianchi().canonical(), tetrahedron_d2().canonical());
+        assert_ne!(
+            first_bianchi().canonical(),
+            cross_product_jacobi().canonical()
+        );
+        let spec = lookup("gr.first-bianchi").unwrap();
+        assert_eq!(spec.axioms, ["integer-arithmetic"]);
+        assert_ne!(
+            spec.formal_claim().statement_hash(),
+            lookup("dec.d-squared-one")
+                .unwrap()
+                .formal_claim()
+                .statement_hash()
+        );
+    }
+
+    #[test]
+    fn bianchi_lean_type_embeds_identity_string() {
+        // C2.4b: the lean_type is mechanically the identity string — no
+        // hand transcription. Binder set must equal the indeterminate set.
+        let spec = lookup("gr.first-bianchi").unwrap();
+        let binders = "DHTRP DPTRH DRTHP GHHP GHRH GHRP GPHP GPRH GPRP GRHP GRRH GRRP GTHH GTHP GTPP GTRH GTRP GTRR GTTH GTTP GTTR";
+        assert_eq!(
+            spec.lean_type,
+            format!("∀ ({binders} : Int), {} = 0", first_bianchi())
+        );
+        let canon = first_bianchi().canonical();
+        let mut names: Vec<&str> = binders.split(' ').collect();
+        names.sort_unstable();
+        let mut seen: Vec<&str> = canon
+            .split("v:")
+            .skip(1)
+            .map(|s| s.split(',').next().unwrap_or(""))
+            .collect();
+        seen.sort_unstable();
+        seen.dedup();
+        assert_eq!(seen, names, "binder set must equal indeterminate set");
+        assert_eq!(
+            canon.matches("v:").count(),
+            54,
+            "6 ∂Γ + 24 ΓΓ×2 occurrences"
+        );
+    }
+
+    #[test]
+    fn bianchi_sign_flip_is_rejected() {
+        // C2.4b: a sign-mutated Bianchi artifact is not the identity —
+        // expansion rejects it and binding refuses it.
+        let flipped = first_bianchi().to_string().replacen(" + ", " - ", 1);
+        assert_ne!(flipped, first_bianchi().to_string());
+        let tree = parse_expr(&flipped).expect("flipped tree parses");
+        assert_ne!(tree.canonical(), first_bianchi().canonical());
+        assert!(
+            crate::expand::identity_is_zero(&tree).is_err(),
+            "sign flip must break the identity"
+        );
+        let spec = lookup("gr.first-bianchi").unwrap();
+        let err = catalog_tree_binding(Some(spec.lean_type), &[flipped]).unwrap_err();
+        assert!(err.contains("whose tree is not in the equations"), "{err}");
     }
 }

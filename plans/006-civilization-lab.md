@@ -454,22 +454,22 @@ consistency; they do not require the executable gates in steps 2-7.
 - [x] C1.1 SR mass shell from versioned constants
 - [x] C1.2 SR interval enclosure
 - [x] C1.3 gravity enclosure
-- [ ] C1.4 `ħ` stored as listing
-- [ ] C2.1 kinematic receipt wiring
-- [ ] C2.2 non-leftover Faraday/DEC-Maxwell or documented skip
-- [ ] C3.1 deflection EmpiricalReceipt
-- [ ] C3.2 Mercury EmpiricalReceipt
-- [ ] C3.3 thermal or spectroscopic EmpiricalReceipt
-- [ ] C4.1 computed 2D area law
-- [ ] C4.2 Maxwell on live 2-complex
-- [ ] C4.3 named GR geometry computation
-- [ ] C2.4 substantive GR formalization (later)
-- [ ] C5.1 typed catalog trees in IR
-- [ ] C5.2 gap-query completeness check (reuse if already implemented)
+- [x] C1.4 `ħ` stored as listing
+- [x] C2.1 kinematic receipt wiring
+- [x] C2.2 documented skip (flux is tetrahedron-d2 up to sign)
+- [x] C3.1 deflection EmpiricalReceipt
+- [x] C3.2 Mercury EmpiricalReceipt
+- [x] C3.3 thermal or spectroscopic EmpiricalReceipt
+- [x] C4.1 computed 2D area law
+- [x] C4.2 Maxwell on live 2-complex
+- [x] C4.3 named GR geometry computation
+- [x] C2.4 substantive GR formalization (first Bianchi; contracted ∇·G deferred with reason)
+- [x] C5.1 typed catalog trees in IR
+- [x] C5.2 gap-query completeness check (evidence close, no second graph)
 - [x] C6.1 P4 spec (spec 021; no runtime P4 implementation)
-- [ ] C6.2 second implementation
-- [ ] C7.1 gap-driven loop
-- [ ] C7.2 typed hypothesis search
+- [x] C6.2 second implementation (checker crate, host pipeline, sealed P4, lab hookup; reproduce still not P4)
+- [x] C7.1 gap-driven loop
+- [x] C7.2 typed hypothesis search
 - [x] C8.1 architecture doc
 - [x] C8.2 README trust paragraph
 - [ ] C8.3 AGENTS.md item 2 still one line (standing; do not wrap)

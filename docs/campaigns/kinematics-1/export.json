@@ -1,0 +1,186 @@
+{
+  "schema": "physis-campaign-report",
+  "version": 1,
+  "campaign": "bundle",
+  "manifest_id": "827e2dd507c5f231205fcb8de6448b222bf0af30ff22ecc034460348bcd6a678",
+  "manifest_text": "{\"authority\": {\"hypothesize\": \"explorer\", \"prove\": \"proof-searcher\"}, \"baseline\": {\"assumptions\": [\"live lab definitions\"], \"constants\": [\"c\"], \"datasets\": [], \"evidence\": [], \"knobs\": [{\"knob\": \"absolute_time\", \"theory\": \"special-relativity\", \"value\": \"false\"}], \"source_revision\": \"working-tree\", \"theory_package\": \"special-relativity\"}, \"budget\": {\"actions\": 8, \"attempts\": 16, \"candidates\": 16, \"external_cost\": 0, \"memory_mb\": 512, \"output_bytes\": 65536, \"wall_time_secs\": 300}, \"candidate_space\": {\"max_candidates\": 8, \"operations\": [\"hypothesize\", \"prove\"], \"parameter_ranges\": [], \"seed\": 7, \"structural_mutations\": [{\"label\": \"add-binomial-gamma\", \"theory\": \"special-relativity\"}, {\"label\": \"add-minus-uv\", \"theory\": \"special-relativity\"}]}, \"data\": {\"access_approval\": \"none-required: synthetic dry run\", \"adaptive_use\": [], \"calibration\": [], \"evaluation_inputs\": [], \"sources\": [{\"id\": \"none\", \"license\": \"n/a\", \"locator\": \"synthetic dry run\"}], \"uncertainty\": \"no empirical inputs\"}, \"evaluation\": {\"comparison\": \"diff verdicts against the retained baseline\", \"controls\": [\"unmutated baseline\", \"Galilean absolute_time=true fork\"], \"evidence_required\": [\"verdict diffs\"], \"numeric_tolerance\": 1e-6, \"obligations\": [\"sr.invariant-interval\", \"sr.subluminal-composition\"], \"tolerance_justification\": \"verdict flips are exact; tolerance is a formality\"}, \"objective\": {\"domain\": \"absolute_time in {false, true}; package mutations add-binomial-gamma, add-minus-uv\", \"failure\": \"Lorentz baseline fails either claim\", \"inconclusive\": \"verdict is undecidable or inapplicable\", \"observable\": \"invariant-interval and composition verdicts\", \"question\": \"does the Lorentz encoding keep sr.invariant-interval and sr.subluminal-composition holding while Galilean and truncated-boost candidates fail\", \"statements\": [\"sr.invariant-interval\", \"sr.subluminal-composition\"], \"success\": \"Lorentz baseline holds both claims; Galilean and truncated candidates fail with explained verdicts\", \"theories\": [\"special-relativity\"], \"units\": \"verdict-kind\"}, \"schema\": \"physis-campaign-manifest\", \"stop\": {\"human_pause\": false, \"no_progress_limit\": 3}, \"version\": 1}",
+  "manifest": {
+    "authority": {
+      "hypothesize": "explorer",
+      "prove": "proof-searcher"
+    },
+    "baseline": {
+      "assumptions": [
+        "live lab definitions"
+      ],
+      "constants": [
+        "c"
+      ],
+      "datasets": [],
+      "evidence": [],
+      "knobs": [
+        {
+          "knob": "absolute_time",
+          "theory": "special-relativity",
+          "value": "false"
+        }
+      ],
+      "source_revision": "working-tree",
+      "theory_package": "special-relativity"
+    },
+    "budget": {
+      "actions": 8,
+      "attempts": 16,
+      "candidates": 16,
+      "external_cost": 0,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "wall_time_secs": 300
+    },
+    "candidate_space": {
+      "max_candidates": 8,
+      "operations": [
+        "hypothesize",
+        "prove"
+      ],
+      "parameter_ranges": [],
+      "seed": 7,
+      "structural_mutations": [
+        {
+          "label": "add-binomial-gamma",
+          "theory": "special-relativity"
+        },
+        {
+          "label": "add-minus-uv",
+          "theory": "special-relativity"
+        }
+      ]
+    },
+    "data": {
+      "access_approval": "none-required: synthetic dry run",
+      "adaptive_use": [],
+      "calibration": [],
+      "evaluation_inputs": [],
+      "sources": [
+        {
+          "id": "none",
+          "license": "n/a",
+          "locator": "synthetic dry run"
+        }
+      ],
+      "uncertainty": "no empirical inputs"
+    },
+    "evaluation": {
+      "comparison": "diff verdicts against the retained baseline",
+      "controls": [
+        "unmutated baseline",
+        "Galilean absolute_time=true fork"
+      ],
+      "evidence_required": [
+        "verdict diffs"
+      ],
+      "numeric_tolerance": 1e-6,
+      "obligations": [
+        "sr.invariant-interval",
+        "sr.subluminal-composition"
+      ],
+      "tolerance_justification": "verdict flips are exact; tolerance is a formality"
+    },
+    "objective": {
+      "domain": "absolute_time in {false, true}; package mutations add-binomial-gamma, add-minus-uv",
+      "failure": "Lorentz baseline fails either claim",
+      "inconclusive": "verdict is undecidable or inapplicable",
+      "observable": "invariant-interval and composition verdicts",
+      "question": "does the Lorentz encoding keep sr.invariant-interval and sr.subluminal-composition holding while Galilean and truncated-boost candidates fail",
+      "statements": [
+        "sr.invariant-interval",
+        "sr.subluminal-composition"
+      ],
+      "success": "Lorentz baseline holds both claims; Galilean and truncated candidates fail with explained verdicts",
+      "theories": [
+        "special-relativity"
+      ],
+      "units": "verdict-kind"
+    },
+    "schema": "physis-campaign-manifest",
+    "stop": {
+      "human_pause": false,
+      "no_progress_limit": 3
+    },
+    "version": 1
+  },
+  "state": "stopped (no-progress: no progress for 3 steps (limit 3))",
+  "stop": {
+    "reason": "no-progress",
+    "detail": "no progress for 3 steps (limit 3)"
+  },
+  "budget": {
+    "actions": {
+      "used": 2,
+      "max": 8
+    },
+    "attempts": {
+      "used": 2,
+      "max": 16
+    },
+    "wall_ms": {
+      "used": 1721,
+      "max": 300000
+    },
+    "candidates": {
+      "used": 0,
+      "max": 16
+    }
+  },
+  "no_progress_streak": 3,
+  "no_progress_limit": 3,
+  "attempts": [
+    {
+      "id": "a1",
+      "op": "prove",
+      "parent": "eecc2a286b1c467d00ca5b02429ddff79dd8349ab4e6ea39da94eb512a967279",
+      "inputs": [
+        "a2cf41480daea88616356f1278e83b75353595ba94c02ccd6029d1040beaaca4"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "c2465efc742c3863fcc0815d04d4657ba4b2da71f237a0d09c1162a5debec21f"
+      ],
+      "note": "prove sr.subluminal-composition minted 49d8f0376cc93e0fd81992547ed7aa8d298217a903f7545546cfbbfe487791c4 via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a2",
+      "op": "prove",
+      "parent": "0a9d68ad587649b3a83920695a7c831fb87c80df6ecb72a6abe917e40c6c5fc3",
+      "inputs": [
+        "144c45776d692505a36c6a3c8a5963672344734931773dc249cc46317ce61082"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "7c9471dc832ae6e404a030c412454cca76ffb381503541480ce24de4779beb54"
+      ],
+      "note": "prove sr.invariant-interval minted 472f7b1f98919c02780df0389a47272161f9ec9f890e61b878f72395e79ac091 via expand-recursive + expand-postfix"
+    }
+  ],
+  "blocked": [
+    {
+      "key": "prove:special-relativity:sr.invariant-interval:missing-theorem",
+      "inputs": "d02c5c59842af26aa9e12bed72c40c8023391a68b1b1bf22d70c8246ae2d2a88"
+    },
+    {
+      "key": "prove:special-relativity:sr.subluminal-composition:missing-theorem",
+      "inputs": "c3500bd15bd1a2dd87775c4a0453b7d65cf7221792327ed30de9e81959983252"
+    }
+  ],
+  "declared_datasets": [],
+  "data_sources": [
+    {
+      "id": "none",
+      "locator": "synthetic dry run",
+      "license": "n/a"
+    }
+  ],
+  "journal_tip": "8325d60d1d2d98f6a4e8ef53769ca07ea44a9f0ecf62c598bcfff9ad7b44f96d"
+}

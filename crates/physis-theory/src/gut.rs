@@ -201,6 +201,7 @@ impl Su5Gut {
                 class: "phenomenological".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -223,6 +224,9 @@ impl Su5Gut {
 }
 
 impl Theory for Su5Gut {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "su5-gut"
     }

@@ -188,6 +188,51 @@ pub enum Command {
         /// Claim id (lab slug).
         claim: String,
     },
+    /// One gap-driven research step (C7.1): select one eligible gap in
+    /// scope by documented priority plus stable statement-hash
+    /// tie-break, then run at most one allowed existing operation
+    /// (prove, cite, or enclose) or emit an explicit blocked work item.
+    /// Lab-only: selection never lends a proposer Lab authority.
+    Step {
+        /// Theory id or claim id to scope the scan. `None` scans the lab.
+        #[serde(default)]
+        scope: Option<String>,
+        /// Finite step cap for this call. One action consumes one step.
+        #[serde(default = "default_step_cap")]
+        max_steps: u32,
+    },
+    /// Dry-run a versioned campaign manifest (R1): parse, refuse schema
+    /// violations, validate live references, and render the plan.
+    /// Executes nothing and grants no authority.
+    ResearchPlan {
+        /// Manifest file path.
+        path: String,
+    },
+    /// Run at most one coordinated campaign action (R4): reconcile,
+    /// select, reserve, execute, commit, checkpoint.
+    ResearchStep {
+        /// Manifest file path (revision-pinned to the bundle).
+        manifest: String,
+        /// Campaign bundle directory.
+        campaign: String,
+    },
+    /// Render campaign status from the bundle alone (R4). Read-only.
+    ResearchStatus {
+        /// Campaign bundle directory.
+        campaign: String,
+    },
+    /// Export the versioned campaign report (R6). Read-only projection.
+    ResearchExport {
+        /// Campaign bundle directory.
+        campaign: String,
+        /// `json` (default) or `markdown`.
+        format: Option<String>,
+    },
+}
+
+/// Default cap for [`Command::Step`]: exactly one action.
+fn default_step_cap() -> u32 {
+    1
 }
 
 impl Command {
@@ -228,6 +273,11 @@ impl Command {
             Command::Constant { .. } => "constant",
             Command::Encode { .. } => "encode",
             Command::Judge { .. } => "judge",
+            Command::Step { .. } => "step",
+            Command::ResearchPlan { .. } => "research-plan",
+            Command::ResearchStep { .. } => "research-step",
+            Command::ResearchStatus { .. } => "research-status",
+            Command::ResearchExport { .. } => "research-export",
         }
     }
 }

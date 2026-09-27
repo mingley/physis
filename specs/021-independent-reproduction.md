@@ -1,6 +1,7 @@
 # 021 - Independent reproduction
 
-Status: specified, not implemented (plan 006 C6.1).
+Status: implemented (plan 006 C6.2; checker crate, host pipeline,
+sealed P4 admission, and all acceptance cases).
 Layer: verification boundary.
 Prerequisite: [020 - Proof-carrying](020-proof-carrying.md), unchanged.
 
@@ -138,8 +139,9 @@ moving code into a second crate does not satisfy C6.2.
 
 ## Delivery
 
-C6.1 is complete when this contract and its roadmap links exist. C6.2 stays
-open until the wire format, isolated independent checker, sealed admission
-path and all acceptance cases are implemented. Durable storage and worker
-isolation are tracked as R2/R3 in [TODO.md](../TODO.md). No new runtime
-command is claimed by this specification.
+C6.1 is complete when this contract and its roadmap links exist. C6.2 is closed: the wire format (`physis-repro-check/WIRE.md`),
+isolated independent checker, sealed admission path
+(`physis-verifier::reproduce`, `ReproductionStore`, derived P4), and all
+acceptance cases are implemented. Durable storage and worker isolation
+are tracked as R2/R3 in [TODO.md](../TODO.md). No new runtime command
+is claimed by this specification.

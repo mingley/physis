@@ -6,11 +6,17 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod bundle;
+pub mod campaign;
+pub mod coordinator;
+pub mod design;
 pub mod journal;
 pub mod lab;
 pub mod protocol;
 pub mod replay;
+pub mod report;
 pub mod role;
+pub mod search;
 
 pub use journal::{Journal, JournalEvent};
 pub use lab::Lab;

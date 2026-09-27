@@ -41,6 +41,7 @@ use physis_proof::{identity_is_zero, scan_lean_source, Challenge, UntrustedProof
 use serde::Serialize;
 
 mod lean;
+pub mod reproduce;
 
 pub use lean::discover_tools;
 

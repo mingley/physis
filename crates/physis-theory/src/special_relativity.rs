@@ -455,6 +455,15 @@ impl SpecialRelativity {
                 },
             ],
             lean_ref: Some(interval.lean_type.into()),
+            // C5.1: one typed identity alongside the legacy tokens. The
+            // interval equation (index 1) carries its parsed tree; token
+            // strings stay authoritative for the other rows. Mutations
+            // append, so index 1 is stable; a token edit that desyncs
+            // the tree fails closed at encode bind time.
+            typed_equations: vec![physis_ir::TypedEquation {
+                equation: 1,
+                tree: (interval.identity)().to_string(),
+            }],
         }
     }
 
@@ -541,6 +550,9 @@ impl Knobbed for SpecialRelativity {
 }
 
 impl Theory for SpecialRelativity {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "special-relativity"
     }

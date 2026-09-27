@@ -264,6 +264,7 @@ impl CombinationalCircuit {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -354,6 +355,9 @@ impl Knobbed for CombinationalCircuit {
 }
 
 impl Theory for CombinationalCircuit {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "combinational-circuit"
     }
@@ -587,6 +591,7 @@ impl TuringMachine {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -642,6 +647,9 @@ impl Knobbed for TuringMachine {
 }
 
 impl Theory for TuringMachine {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "turing-machine"
     }
@@ -988,6 +996,7 @@ impl LandauerEngine {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -1050,6 +1059,9 @@ impl Knobbed for LandauerEngine {
 }
 
 impl Theory for LandauerEngine {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "landauer-engine"
     }

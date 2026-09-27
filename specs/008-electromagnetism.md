@@ -40,7 +40,7 @@ constants `ε₀`, `μ₀`, `c` in `physis-model::constants`.
 |---|---|---|
 | `em.wave-speed-c` | EM waves travel at c | model-internal (vacuum, evaluated); fails in a medium |
 | `em.gauss` | Gauss's law | model-internal on `maxwell-vacuum` (named domain: source-free massless Maxwell; verified numerically on a Coulomb field). `add-proca` appends `proca m2 A` and the Coulomb residual of `∇·E + m² φ` is the Proca mass term, so this cell fails. That is not a knob. Linear-medium Gauss stays a phenomenological macroscopic fact (encoding-wide). Ohm-circuit Gauss is lumped Q = CV (encoding-wide Holds) |
-| `em.faraday` | Faraday's law | model-internal on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`; verified numerically on a plane wave). `add-monopole` appends `dF = *j_m` and the plane-wave residual of `∇×E + ∂B/∂t + J_m` is the magnetic current, so this cell fails. That is not a knob. Linear-medium Faraday stays a phenomenological macroscopic fact (encoding-wide). Ohm-circuit Faraday is lumped KVL (named domain: lumped Kirchhoff voltage). `add-flux` appends `loop dPhi/dt` and the mesh residual of `∮E·dl + dΦ/dt` is `dB/dt × L²`, so this cell fails. That is not a knob |
+| `em.faraday` | Faraday's law | model-internal on `maxwell-vacuum` (named domain: source-free homogeneous `dF=0`; verified numerically on a plane wave, and the closed magnetic flux of `B = dA` through the shared DEC 2-sphere vanishes). `add-monopole` appends `dF = *j_m` and both the plane-wave residual of `∇×E + ∂B/∂t + J_m` and the 2-complex flux (+1) are the magnetic current, so this cell fails. That is not a knob. `flip-orientation` appends `orientation flip` and the Stokes pairing breaks (flux −2), so this cell fails while `d² = 0` still holds: the flux check is not a relabeled simplex identity. `add-boundary` appends `boundary open` and no closed flux exists, so this cell is inapplicable with the quantified Stokes term (−1). Neither is a knob. Linear-medium Faraday stays a phenomenological macroscopic fact (encoding-wide). Ohm-circuit Faraday is lumped KVL (named domain: lumped Kirchhoff voltage). `add-flux` appends `loop dPhi/dt` and the mesh residual of `∮E·dl + dΦ/dt` is `dB/dt × L²`, so this cell fails. That is not a knob |
 | `em.ampere` | Ampère–Maxwell law | model-internal (vacuum: verified numerically on a plane wave); phenomenological in a medium |
 | `em.charge-conservation` | ∂ρ/∂t + ∇·J = 0 | model-internal in Maxwell (backed by a numerically-verified `∇·(∇×A) = 0`); on `ohm-circuit`, Kirchhoff current law of the lumped branch netlist. Domain: lumped Kirchhoff nodes. `add-tline` appends `tline 0 1` and this cell fails. That is not a knob. Maxwell's continuity copy stays encoding-wide |
 | `em.constitutive-linear` | isotropic linear D = εE, B = μH; unique n = √(ε_r μ_r) | model-internal on `linear-medium` (named domain). `add-tellegen` appends `constitutive tellegen` and n₊ ≠ n₋, so this cell fails. `add-chiral` appends `constitutive chiral` and n_L ≠ n_R, so this cell fails. That is not a knob. `epsilon_r` still flips `em.wave-speed-c`. Maxwell vacuum Holds encoding-wide (unit medium). Ohm-circuit inapplicable |
@@ -74,11 +74,36 @@ from the source (residual ≲ 1e-4). Faraday/Ampère: a plane wave
 `E = ŷ cos(x−t)`, `B = ẑ cos(x−t)` (natural units) is checked by central finite
 differences to satisfy `∂B/∂t + ∇×E = 0` and `∂E/∂t − ∇×B = 0` to residual
 ≲ 1e-6. Homogeneous Faraday lives on the Maxwell vacuum IR package
-(`maxwell dF=0`). A magnetic current is a package mutation (`add-monopole`):
-the residual of `∂B/∂t + ∇×E + J_m` is the uniform current and Faraday fails.
-A Proca mass term is a second package mutation (`add-proca`): the Coulomb
-residual of `∇·E + m² φ` is the mass term and Gauss fails. In a medium
-Faraday/Ampère/Gauss revert to phenomenological cells (macroscopic form).
+(`maxwell dF=0`). Faraday also runs on a live 2-complex: the closed magnetic
+flux of `B = dA` through the shared DEC 2-sphere — the same `d₁` incidence
+the dec claims use, paired with the sphere's fundamental cycle — must vanish
+exactly. A magnetic current is a package mutation (`add-monopole`):
+the residual of `∂B/∂t + ∇×E + J_m` is the uniform current, the 2-complex
+flux is +1, and Faraday fails. Corrupt orientation data is a third package
+mutation (`flip-orientation`): the Stokes pairing breaks (flux −2) and
+Faraday fails while `d² = 0` still holds. Open-boundary data is a fourth
+(`add-boundary`): no closed flux exists, so the cell is inapplicable with
+the quantified Stokes term (−1). A Proca mass term is a second package
+mutation (`add-proca`): the Coulomb residual of `∇·E + m² φ` is the mass
+term and Gauss fails. In a medium Faraday/Ampère/Gauss revert to
+phenomenological cells (macroscopic form).
+
+## Proof obligations (C2.2: documented skip)
+
+The C4.2 Stokes-flux check contributes no new proof obligation, and none
+is added. The flux polynomial assembled from the live incidence data
+(sphere `d₁` rows plus fundamental signs) coincides with the catalog
+3-simplex identity `dec.d-squared-one` up to sign: the 2-sphere is the
+tetrahedron boundary, so closed-flux vanishing *is* `d₂ ∘ d₁ = 0` on
+that 3-simplex. A dedicated `em.faraday` catalog row would be a duplicate
+of existing coboundary algebra, so C2.2 closes with this note instead.
+The coincidence is pinned by test
+(`faraday_flux_obligation_is_coboundary_algebra`: the flux polynomial
+vanishes identically and sums with `tetrahedron_d2` to zero), alongside
+the topological pin (`sphere_is_the_tetrahedron_boundary`). Sign-mutation
+rejection rides on the existing machinery: `add-sign-flip` breaks `d²`
+at the dec level, and `flip-orientation` breaks the Stokes pairing
+(flux −2) at the EM evaluator level while `d² = 0` still holds.
 
 ## The theorem
 
@@ -102,7 +127,7 @@ rest frame:
 physis experiment em-vacuum
 physis set linear-medium epsilon_r 1   # n → 1, wave-speed-c and lorentz-invariance flip to holds
 physis hypothesize linear-medium       # add-tellegen and add-chiral are IR, not set
-physis hypothesize maxwell-vacuum      # add-monopole and add-proca are IR, not set
+physis hypothesize maxwell-vacuum      # add-monopole, add-proca, flip-orientation, add-boundary are IR, not set
 physis set ohm-circuit frequency_hz 1e10   # electrically short → lumped model fails
 physis hypothesize ohm-circuit             # add-tline and add-flux are IR, not set
 ```
@@ -112,9 +137,11 @@ The knob turn `epsilon_r: 2.25 → 1` flips both `em.wave-speed-c` and
 Tellegen mixing and Pasteur chirality: `em.constitutive-linear` still
 holds after the knob turn, and fails on the `add-tellegen` or
 `add-chiral` IR forks. Homogeneous Faraday
-on Maxwell fails only on the `add-monopole` IR fork. Massless Gauss
-fails only on the `add-proca` IR fork. Neither is an `ε_r` knob and
-neither is a silent linear-medium install.
+on Maxwell fails on the `add-monopole` IR fork and on the
+`flip-orientation` IR fork (flux −2 while `d² = 0` holds), and is
+inapplicable on the `add-boundary` IR fork. Massless Gauss
+fails only on the `add-proca` IR fork. None is an `ε_r` knob and
+none is a silent linear-medium install.
 
 ## Non-goals (this milestone)
 

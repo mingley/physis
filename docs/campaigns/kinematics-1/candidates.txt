@@ -1,0 +1,28 @@
+hypothesize  constrained structural mutation
+  measured/derived/fundamental-input/nuisance knobs are frozen
+  ir package mutations are not knobs and are not persisted
+  special-relativity  absolute_time: false → true  origin=chosen structural  flips=3 refuted
+    sr.invariant-interval            holds → fails
+      judgment:    logical undetermined → logical disproved
+    sr.subluminal-composition        holds → fails
+      judgment:    logical undetermined → logical disproved
+    sr.energy-momentum-invariant     holds → fails
+      judgment:    logical undetermined → logical disproved
+  special-relativity  add-binomial-gamma+add-minus-uv: package → add-binomial-gamma+add-minus-uv  origin=ir structural  flips=3 refuted
+    sr.invariant-interval            holds → fails
+      judgment:    logical undetermined → logical disproved
+    sr.subluminal-composition        holds → fails
+      judgment:    logical undetermined → logical disproved
+    sr.energy-momentum-invariant     holds → fails
+      judgment:    logical undetermined → logical disproved
+  special-relativity  add-binomial-gamma: package → add-binomial-gamma  origin=ir structural  flips=2 refuted
+    sr.invariant-interval            holds → fails
+      judgment:    logical undetermined → logical disproved
+    sr.energy-momentum-invariant     holds → fails
+      judgment:    logical undetermined → logical disproved
+  special-relativity  add-minus-uv: package → add-minus-uv  origin=ir structural  flips=1 refuted
+    sr.subluminal-composition        holds → fails
+      judgment:    logical undetermined → logical disproved
+  rejected special-relativity absolute_time=0: knob 'absolute_time' expected bool, got int
+  rejected special-relativity absolute_time=no-such-choice: knob 'absolute_time' expected bool, got choice
+candidates=4 shown=4 frozen_knobs=0 explored=4 rejected=2 refuted=4 depth=2

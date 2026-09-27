@@ -1,0 +1,182 @@
+{
+  "schema": "physis-campaign-report",
+  "version": 1,
+  "campaign": "bundle",
+  "manifest_id": "cce41e91757818481aa40eea9819df88ce585ad4b760b57832174902885a27ea",
+  "manifest_text": "{\"authority\": {\"cite\": \"provenance-auditor\", \"hypothesize\": \"explorer\", \"prove\": \"proof-searcher\"}, \"baseline\": {\"assumptions\": [\"live lab definitions\"], \"constants\": [\"k\", \"h\", \"c\"], \"datasets\": [], \"evidence\": [], \"knobs\": [{\"knob\": \"quantum\", \"theory\": \"planck\", \"value\": \"true\"}, {\"knob\": \"temperature\", \"theory\": \"planck\", \"value\": \"5000\"}], \"source_revision\": \"working-tree\", \"theory_package\": \"planck\"}, \"budget\": {\"actions\": 8, \"attempts\": 16, \"candidates\": 16, \"external_cost\": 0, \"memory_mb\": 512, \"output_bytes\": 65536, \"wall_time_secs\": 300}, \"candidate_space\": {\"max_candidates\": 8, \"operations\": [\"prove\", \"cite\", \"hypothesize\"], \"parameter_ranges\": [{\"knob\": \"temperature\", \"max\": 6000.0, \"min\": 4000.0, \"theory\": \"planck\"}], \"seed\": 7, \"structural_mutations\": [{\"label\": \"add-wien\", \"theory\": \"planck\"}, {\"label\": \"add-zero-point\", \"theory\": \"planck\"}]}, \"data\": {\"access_approval\": \"none-required: compiled-in registered inventory, no download\", \"adaptive_use\": [], \"calibration\": [], \"evaluation_inputs\": [\"quinn-martin-1985-sigma\"], \"sources\": [{\"id\": \"quinn-martin-1985-sigma\", \"license\": \"stated-in-inventory\", \"locator\": \"registered dataset inventory\"}], \"uncertainty\": \"stefan-boltzmann constant determination; planck T4 ratio is computed independent of the sigma value\"}, \"evaluation\": {\"comparison\": \"both theories evaluated against the same sigma dataset; wien peak and uv-finiteness are out-of-calibration predictions (no dataset input)\", \"controls\": [\"rayleigh-jeans classical alternative retained\"], \"evidence_required\": [\"verdict diffs\", \"dataset dossier\"], \"numeric_tolerance\": 1e-6, \"obligations\": [\"thermo.stefan-boltzmann\", \"thermo.wien-displacement\", \"thermo.uv-finite\"], \"tolerance_justification\": \"comparison is verdict-level against fixed datasets\"}, \"objective\": {\"domain\": \"cavity temperature 4000-6000 K; uv cutoff fixed\", \"failure\": \"planck fails any obligation\", \"inconclusive\": \"sigma dataset cannot discriminate planck from rayleigh-jeans\", \"observable\": \"stefan-boltzmann, wien-displacement, uv-finite verdicts\", \"question\": \"does planck hold the thermal obligations with calibration separated from evaluation while rayleigh-jeans is retained as the failed classical alternative\", \"statements\": [\"thermo.stefan-boltzmann\", \"thermo.wien-displacement\", \"thermo.uv-finite\"], \"success\": \"planck holds all three; rayleigh-jeans fails stefan-boltzmann and uv-finite with the catastrophe explained\", \"theories\": [\"planck\", \"rayleigh-jeans\"], \"units\": \"verdict-kind; W m-2 K-4\"}, \"schema\": \"physis-campaign-manifest\", \"stop\": {\"human_pause\": false, \"no_progress_limit\": 3}, \"version\": 1}",
+  "manifest": {
+    "authority": {
+      "cite": "provenance-auditor",
+      "hypothesize": "explorer",
+      "prove": "proof-searcher"
+    },
+    "baseline": {
+      "assumptions": [
+        "live lab definitions"
+      ],
+      "constants": [
+        "k",
+        "h",
+        "c"
+      ],
+      "datasets": [],
+      "evidence": [],
+      "knobs": [
+        {
+          "knob": "quantum",
+          "theory": "planck",
+          "value": "true"
+        },
+        {
+          "knob": "temperature",
+          "theory": "planck",
+          "value": "5000"
+        }
+      ],
+      "source_revision": "working-tree",
+      "theory_package": "planck"
+    },
+    "budget": {
+      "actions": 8,
+      "attempts": 16,
+      "candidates": 16,
+      "external_cost": 0,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "wall_time_secs": 300
+    },
+    "candidate_space": {
+      "max_candidates": 8,
+      "operations": [
+        "prove",
+        "cite",
+        "hypothesize"
+      ],
+      "parameter_ranges": [
+        {
+          "knob": "temperature",
+          "max": 6000.0,
+          "min": 4000.0,
+          "theory": "planck"
+        }
+      ],
+      "seed": 7,
+      "structural_mutations": [
+        {
+          "label": "add-wien",
+          "theory": "planck"
+        },
+        {
+          "label": "add-zero-point",
+          "theory": "planck"
+        }
+      ]
+    },
+    "data": {
+      "access_approval": "none-required: compiled-in registered inventory, no download",
+      "adaptive_use": [],
+      "calibration": [],
+      "evaluation_inputs": [
+        "quinn-martin-1985-sigma"
+      ],
+      "sources": [
+        {
+          "id": "quinn-martin-1985-sigma",
+          "license": "stated-in-inventory",
+          "locator": "registered dataset inventory"
+        }
+      ],
+      "uncertainty": "stefan-boltzmann constant determination; planck T4 ratio is computed independent of the sigma value"
+    },
+    "evaluation": {
+      "comparison": "both theories evaluated against the same sigma dataset; wien peak and uv-finiteness are out-of-calibration predictions (no dataset input)",
+      "controls": [
+        "rayleigh-jeans classical alternative retained"
+      ],
+      "evidence_required": [
+        "verdict diffs",
+        "dataset dossier"
+      ],
+      "numeric_tolerance": 1e-6,
+      "obligations": [
+        "thermo.stefan-boltzmann",
+        "thermo.wien-displacement",
+        "thermo.uv-finite"
+      ],
+      "tolerance_justification": "comparison is verdict-level against fixed datasets"
+    },
+    "objective": {
+      "domain": "cavity temperature 4000-6000 K; uv cutoff fixed",
+      "failure": "planck fails any obligation",
+      "inconclusive": "sigma dataset cannot discriminate planck from rayleigh-jeans",
+      "observable": "stefan-boltzmann, wien-displacement, uv-finite verdicts",
+      "question": "does planck hold the thermal obligations with calibration separated from evaluation while rayleigh-jeans is retained as the failed classical alternative",
+      "statements": [
+        "thermo.stefan-boltzmann",
+        "thermo.wien-displacement",
+        "thermo.uv-finite"
+      ],
+      "success": "planck holds all three; rayleigh-jeans fails stefan-boltzmann and uv-finite with the catastrophe explained",
+      "theories": [
+        "planck",
+        "rayleigh-jeans"
+      ],
+      "units": "verdict-kind; W m-2 K-4"
+    },
+    "schema": "physis-campaign-manifest",
+    "stop": {
+      "human_pause": false,
+      "no_progress_limit": 3
+    },
+    "version": 1
+  },
+  "state": "stopped (no-progress: no progress for 3 steps (limit 3))",
+  "stop": {
+    "reason": "no-progress",
+    "detail": "no progress for 3 steps (limit 3)"
+  },
+  "budget": {
+    "actions": {
+      "used": 0,
+      "max": 8
+    },
+    "attempts": {
+      "used": 0,
+      "max": 16
+    },
+    "wall_ms": {
+      "used": 1749,
+      "max": 300000
+    },
+    "candidates": {
+      "used": 0,
+      "max": 16
+    }
+  },
+  "no_progress_streak": 3,
+  "no_progress_limit": 3,
+  "attempts": [],
+  "blocked": [
+    {
+      "key": "blocked:planck:thermo.stefan-boltzmann:missing-theorem",
+      "inputs": "0ec617be1cd19f3e1bf9186e573fa577799db6ce9688b9dad3d22722b4a982f7"
+    },
+    {
+      "key": "blocked:planck:thermo.uv-finite:missing-theorem",
+      "inputs": "37be9445cca093cedeeb5e6d4c2219eac1fe1b3f9a4911b5ada87c1a499eb176"
+    },
+    {
+      "key": "blocked:planck:thermo.wien-displacement:missing-theorem",
+      "inputs": "33b3833890908461451412b882eb723e2580e1dc7c6c2e2ede7a66f2b48b4b45"
+    }
+  ],
+  "declared_datasets": [],
+  "data_sources": [
+    {
+      "id": "quinn-martin-1985-sigma",
+      "locator": "registered dataset inventory",
+      "license": "stated-in-inventory"
+    }
+  ],
+  "journal_tip": "a2fe68debb54dd5e8a4d6cdbbc84c9bcb1c32216aa25990d64ebcac593ca1eb1"
+}

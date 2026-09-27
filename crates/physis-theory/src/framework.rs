@@ -36,6 +36,11 @@ pub trait Theory: Knobbed + Send + Sync {
             })
             .collect()
     }
+    /// Owned evaluation fork with identical knobs and encoding. Hypothesis
+    /// search evaluates candidates only on forks; it never calls `set` on
+    /// trusted lab state, so a candidate cannot modify the baseline even
+    /// when a probe fails halfway.
+    fn fork(&self) -> Box<dyn Theory>;
     /// Constrained structural forks of the encoding (IR package / netlist),
     /// not knob probes. Each pair is `(label, mutant)`. The caller evaluates
     /// the mutant and must not install it as trusted state. Default: none.

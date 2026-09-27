@@ -295,6 +295,7 @@ impl OlbersSky {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -354,6 +355,9 @@ impl Knobbed for OlbersSky {
 }
 
 impl Theory for OlbersSky {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         self.id
     }

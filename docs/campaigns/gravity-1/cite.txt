@@ -1,0 +1,11 @@
+cite  gr.eddington-deflection  source 50a6951025b1036e005421ea907b96a41df450919fbc52d8c16fcad30796dcb5
+  kind     dataset  dyson-1920-sobral-deflection
+  work     Dyson, Eddington & Davidson, A Determination of the Deflection of Light by the Sun's Gravitational Field, from Observations Made at the Total Eclipse of May 29, 1919
+  edition  Phil. Trans. R. Soc. Lond. A 220, 291–333 (1920); doi:10.1098/rsta.1920.0009
+  version  1920
+  range    Sobral 4-inch: 1.98 ± 0.12 probable error; σ = 0.18
+  experiment Sobral expedition, May 29, 1919 eclipse
+  record    d7bfef98ea15053cac42daf01e52e42c959a577ef3abd89cb0e878193f90e173
+  not P3S; not a kernel proof; not P4; not Canonical
+  identity  06936f8684133cce8ee2e5d49477acc63099b4e1f4b52513a8b46c02d9ac8816  general-relativity
+  identity  098df815b046dacfd05bcf0c5f962876532aee7d8e05cb6362bdf532bdbb2dcb  newtonian-gravity

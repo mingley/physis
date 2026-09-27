@@ -1,0 +1,213 @@
+{
+  "schema": "physis-campaign-report",
+  "version": 1,
+  "campaign": "bundle",
+  "manifest_id": "b2d34cc2025807777e2b0fb924210ea166a153eb1af620c8317deee79d78588e",
+  "manifest_text": "{\n \"authority\": {\n  \"cite\": \"provenance-auditor\",\n  \"enclose\": \"numerical-verifier\",\n  \"formalize\": \"formalizer\",\n  \"hypothesize\": \"explorer\",\n  \"prove\": \"proof-searcher\"\n },\n \"baseline\": {\n  \"assumptions\": [\n   \"live lab definitions\"\n  ],\n  \"constants\": [\n   \"c\",\n   \"G\"\n  ],\n  \"datasets\": [\n   \"dyson-1920-sobral-deflection\"\n  ],\n  \"evidence\": [],\n  \"knobs\": [\n   {\n    \"knob\": \"dim\",\n    \"theory\": \"general-relativity\",\n    \"value\": \"4\"\n   },\n   {\n    \"knob\": \"cosmological_constant\",\n    \"theory\": \"general-relativity\",\n    \"value\": \"0\"\n   },\n   {\n    \"knob\": \"chart\",\n    \"theory\": \"general-relativity\",\n    \"value\": \"schwarzschild\"\n   },\n   {\n    \"knob\": \"r_min\",\n    \"theory\": \"general-relativity\",\n    \"value\": \"3\"\n   }\n  ],\n  \"source_revision\": \"working-tree\",\n  \"theory_package\": \"general-relativity\"\n },\n \"budget\": {\n  \"actions\": 8,\n  \"attempts\": 16,\n  \"candidates\": 16,\n  \"external_cost\": 0,\n  \"memory_mb\": 512,\n  \"output_bytes\": 65536,\n  \"wall_time_secs\": 300\n },\n \"candidate_space\": {\n  \"max_candidates\": 8,\n  \"operations\": [\n   \"prove\",\n   \"cite\",\n   \"enclose\",\n   \"hypothesize\",\n   \"formalize\"\n  ],\n  \"parameter_ranges\": [\n   {\n    \"knob\": \"r_min\",\n    \"max\": 5.0,\n    \"min\": 3.0,\n    \"theory\": \"general-relativity\"\n   }\n  ],\n  \"seed\": 7,\n  \"structural_mutations\": []\n },\n \"data\": {\n  \"access_approval\": \"none-required: compiled-in registered inventory, no download\",\n  \"adaptive_use\": [],\n  \"calibration\": [],\n  \"evaluation_inputs\": [\n   \"dyson-1920-sobral-deflection\"\n  ],\n  \"sources\": [\n   {\n    \"id\": \"dyson-1920-sobral-deflection\",\n    \"license\": \"public-domain\",\n    \"locator\": \"Phil. Trans. R. Soc. Lond. A 220, 291-333 (1920)\"\n   }\n  ],\n  \"uncertainty\": \"Sobral 4-inch: 1.98 arcsec, sigma 0.18\"\n },\n \"evaluation\": {\n  \"comparison\": \"both theories evaluated against the same registered datasets\",\n  \"controls\": [\n   \"newtonian half-angle control\"\n  ],\n  \"evidence_required\": [\n   \"verdict diffs\",\n   \"dataset dossier\"\n  ],\n  \"numeric_tolerance\": 1e-06,\n  \"obligations\": [\n   \"gr.eddington-deflection\",\n   \"gr.mercury-perihelion\"\n  ],\n  \"tolerance_justification\": \"deflection comparison is verdict-level against fixed datasets\"\n },\n \"objective\": {\n  \"domain\": \"grazing solar deflection in arcsec; Mercury perihelion in arcsec/century\",\n  \"failure\": \"neither theory matches the registered datasets\",\n  \"inconclusive\": \"datasets cannot discriminate the two theories\",\n  \"observable\": \"eddington deflection and mercury perihelion verdicts\",\n  \"question\": \"do Newton and Schwarzschild GR evaluated against the same deflection and perihelion datasets discriminate, with measured inputs frozen; blocked claims route to formalize for untrusted encodings\",\n  \"statements\": [\n   \"gr.eddington-deflection\",\n   \"gr.mercury-perihelion\"\n  ],\n  \"success\": \"GR holds both claims on the shared datasets; Newton fails with the half-angle gap explained\",\n  \"theories\": [\n   \"general-relativity\",\n   \"newtonian-gravity\"\n  ],\n  \"units\": \"arcsec; arcsec/century\"\n },\n \"schema\": \"physis-campaign-manifest\",\n \"stop\": {\n  \"human_pause\": false,\n  \"no_progress_limit\": 3\n },\n \"version\": 1\n}",
+  "manifest": {
+    "authority": {
+      "cite": "provenance-auditor",
+      "enclose": "numerical-verifier",
+      "formalize": "formalizer",
+      "hypothesize": "explorer",
+      "prove": "proof-searcher"
+    },
+    "baseline": {
+      "assumptions": [
+        "live lab definitions"
+      ],
+      "constants": [
+        "c",
+        "G"
+      ],
+      "datasets": [
+        "dyson-1920-sobral-deflection"
+      ],
+      "evidence": [],
+      "knobs": [
+        {
+          "knob": "dim",
+          "theory": "general-relativity",
+          "value": "4"
+        },
+        {
+          "knob": "cosmological_constant",
+          "theory": "general-relativity",
+          "value": "0"
+        },
+        {
+          "knob": "chart",
+          "theory": "general-relativity",
+          "value": "schwarzschild"
+        },
+        {
+          "knob": "r_min",
+          "theory": "general-relativity",
+          "value": "3"
+        }
+      ],
+      "source_revision": "working-tree",
+      "theory_package": "general-relativity"
+    },
+    "budget": {
+      "actions": 8,
+      "attempts": 16,
+      "candidates": 16,
+      "external_cost": 0,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "wall_time_secs": 300
+    },
+    "candidate_space": {
+      "max_candidates": 8,
+      "operations": [
+        "prove",
+        "cite",
+        "enclose",
+        "hypothesize",
+        "formalize"
+      ],
+      "parameter_ranges": [
+        {
+          "knob": "r_min",
+          "max": 5.0,
+          "min": 3.0,
+          "theory": "general-relativity"
+        }
+      ],
+      "seed": 7,
+      "structural_mutations": []
+    },
+    "data": {
+      "access_approval": "none-required: compiled-in registered inventory, no download",
+      "adaptive_use": [],
+      "calibration": [],
+      "evaluation_inputs": [
+        "dyson-1920-sobral-deflection"
+      ],
+      "sources": [
+        {
+          "id": "dyson-1920-sobral-deflection",
+          "license": "public-domain",
+          "locator": "Phil. Trans. R. Soc. Lond. A 220, 291-333 (1920)"
+        }
+      ],
+      "uncertainty": "Sobral 4-inch: 1.98 arcsec, sigma 0.18"
+    },
+    "evaluation": {
+      "comparison": "both theories evaluated against the same registered datasets",
+      "controls": [
+        "newtonian half-angle control"
+      ],
+      "evidence_required": [
+        "verdict diffs",
+        "dataset dossier"
+      ],
+      "numeric_tolerance": 1e-6,
+      "obligations": [
+        "gr.eddington-deflection",
+        "gr.mercury-perihelion"
+      ],
+      "tolerance_justification": "deflection comparison is verdict-level against fixed datasets"
+    },
+    "objective": {
+      "domain": "grazing solar deflection in arcsec; Mercury perihelion in arcsec/century",
+      "failure": "neither theory matches the registered datasets",
+      "inconclusive": "datasets cannot discriminate the two theories",
+      "observable": "eddington deflection and mercury perihelion verdicts",
+      "question": "do Newton and Schwarzschild GR evaluated against the same deflection and perihelion datasets discriminate, with measured inputs frozen; blocked claims route to formalize for untrusted encodings",
+      "statements": [
+        "gr.eddington-deflection",
+        "gr.mercury-perihelion"
+      ],
+      "success": "GR holds both claims on the shared datasets; Newton fails with the half-angle gap explained",
+      "theories": [
+        "general-relativity",
+        "newtonian-gravity"
+      ],
+      "units": "arcsec; arcsec/century"
+    },
+    "schema": "physis-campaign-manifest",
+    "stop": {
+      "human_pause": false,
+      "no_progress_limit": 3
+    },
+    "version": 1
+  },
+  "state": "stopped (no-progress: no progress for 3 steps (limit 3))",
+  "stop": {
+    "reason": "no-progress",
+    "detail": "no progress for 3 steps (limit 3)"
+  },
+  "budget": {
+    "actions": {
+      "used": 2,
+      "max": 8
+    },
+    "attempts": {
+      "used": 2,
+      "max": 16
+    },
+    "wall_ms": {
+      "used": 1611,
+      "max": 300000
+    },
+    "candidates": {
+      "used": 0,
+      "max": 16
+    }
+  },
+  "no_progress_streak": 3,
+  "no_progress_limit": 3,
+  "attempts": [
+    {
+      "id": "a1",
+      "op": "formalize",
+      "parent": "b333a720491d930838127a362e91e08631ebf7d7e929dc68d4a4f24f86c20812",
+      "inputs": [
+        "b581763249aa103216e418b7dbd0db19fe022cd9b1d930397d0279b252934d3b"
+      ],
+      "cost_actions": 1,
+      "state": "failed",
+      "outputs": [
+        "991aeae30df1a49a85b8254bd3f70ff9a4b508a88a0930e29c87f7787d1f9c4f"
+      ],
+      "note": "formalize gr.eddington-deflection failed: formalize gr.eddington-deflection: no catalog identity; this is not a mint"
+    },
+    {
+      "id": "a2",
+      "op": "formalize",
+      "parent": "7cde2b6178eba93c333e45a93113e197d031525cd87841cd0e535a0babc49fd2",
+      "inputs": [
+        "33d91ab31c1bab98ba8a2923404ce60fae61bf6307b08a21c1263f7c00542ac3"
+      ],
+      "cost_actions": 1,
+      "state": "failed",
+      "outputs": [
+        "e9b63038e75c1378b1ac041e70913b702cdbad5476d721139347691b1837412a"
+      ],
+      "note": "formalize gr.mercury-perihelion failed: formalize gr.mercury-perihelion: no catalog identity; this is not a mint"
+    }
+  ],
+  "blocked": [
+    {
+      "key": "formalize:general-relativity:gr.eddington-deflection:missing-theorem",
+      "inputs": "e884d0f850bdc87221b2123bfaba54c685d28927fa163afcc76989c3379dcbad"
+    },
+    {
+      "key": "formalize:general-relativity:gr.mercury-perihelion:missing-theorem",
+      "inputs": "82b88c2c98aed14f79ebb9254eb5df4c08c301bb95721833bcb192588d84f327"
+    }
+  ],
+  "declared_datasets": [
+    "dyson-1920-sobral-deflection"
+  ],
+  "data_sources": [
+    {
+      "id": "dyson-1920-sobral-deflection",
+      "locator": "Phil. Trans. R. Soc. Lond. A 220, 291-333 (1920)",
+      "license": "public-domain"
+    }
+  ],
+  "journal_tip": "ca04bcd1360b92d559c1e67873f05607eb23c602312efb55995fd24e656f125b"
+}

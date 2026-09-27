@@ -241,6 +241,7 @@ impl IdealGas {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -317,6 +318,9 @@ impl Knobbed for IdealGas {
 }
 
 impl Theory for IdealGas {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "ideal-gas"
     }

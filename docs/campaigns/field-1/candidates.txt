@@ -1,0 +1,33 @@
+hypothesize  constrained structural mutation
+  measured/derived/fundamental-input/nuisance knobs are frozen
+  ir package mutations are not knobs and are not persisted
+  de-rham  add-sign-flip+add-down-laplacian: package → add-sign-flip+add-down-laplacian  origin=ir structural  flips=2 refuted
+    dec.d-squared-zero               holds → fails
+      judgment:    logical undetermined → logical disproved
+    dec.hodge-harmonic               holds → fails
+      derivation:  cross-checked → executed
+      judgment:    logical undetermined → logical disproved
+  de-rham  shape: disk → torus  origin=chosen structural  flips=2 refuted
+    dec.closed-equals-exact          holds → fails
+      judgment:    logical undetermined → logical disproved
+    dec.fundamental-class            fails → holds
+      judgment:    logical disproved → logical undetermined
+  de-rham  add-down-laplacian: package → add-down-laplacian  origin=ir structural  flips=1 refuted
+    dec.hodge-harmonic               holds → fails
+      derivation:  cross-checked → executed
+      judgment:    logical undetermined → logical disproved
+  de-rham  add-sign-flip: package → add-sign-flip  origin=ir structural  flips=1 refuted
+    dec.d-squared-zero               holds → fails
+      judgment:    logical undetermined → logical disproved
+  de-rham  shape: disk → circle  origin=chosen structural  flips=1 refuted
+    dec.closed-equals-exact          holds → fails
+      judgment:    logical undetermined → logical disproved
+  de-rham  shape: disk → klein  origin=chosen structural  flips=1 refuted
+    dec.closed-equals-exact          holds → fails
+      judgment:    logical undetermined → logical disproved
+  de-rham  shape: disk → sphere  origin=chosen structural  flips=1
+    dec.fundamental-class            fails → holds
+      judgment:    logical disproved → logical undetermined
+  rejected de-rham shape=0: knob 'shape' expected choice, got int
+  rejected de-rham shape=no-such-choice: knob 'shape' domain: 'no-such-choice' not in ["disk", "circle", "torus", "klein", "sphere"]
+candidates=7 shown=7 frozen_knobs=0 explored=7 rejected=2 refuted=6 depth=2

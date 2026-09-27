@@ -1,0 +1,11 @@
+cite  thermo.stefan-boltzmann  source 276316422ee651715a26a5023f3c4660afc6a47f14e243fd3eeb5d673c8bbc3a
+  kind     dataset  quinn-martin-1985-sigma
+  work     Quinn & Martin, A radiometric determination of the Stefan-Boltzmann constant and thermodynamic temperatures between -40 C and +100 C
+  edition  Phil. Trans. R. Soc. Lond. A 316, 85 (1985); doi:10.1098/rsta.1985.0058
+  version  1985
+  range    σ = (5.66967 ± 0.00076)e-8 at T_tp (relative standard uncertainty 130 ppm)
+  experiment NPL cryogenic radiometer; blackbody total exitance at T_tp = 273.16 K
+  record    242e7574a4000ffd2278b6e52796a4a171f803fbbe5477099e1671f9321bd747
+  not P3S; not a kernel proof; not P4; not Canonical
+  identity  5921f798ca7c27e337489715ce7c39fba5e77060c7bec002782ea98cb2a98294  planck
+  identity  5921f798ca7c27e337489715ce7c39fba5e77060c7bec002782ea98cb2a98294  rayleigh-jeans

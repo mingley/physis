@@ -175,6 +175,43 @@ pub enum JournalEvent {
         /// rebuilds; a forged hash cannot mint the projection.
         projection_hash: String,
     },
+    /// One frozen experiment design over live verdicts. Restore is a
+    /// no-op: designs re-derive cheaply from live state, and the event
+    /// is inspectable history of what rule froze when — never a
+    /// standing permission to evaluate, and never trust by itself.
+    Design {
+        /// Unix millis.
+        t: u64,
+        /// Compared theory ids, in caller order.
+        theories: Vec<String>,
+        /// Frozen design content id hex.
+        design_hash: String,
+    },
+    /// One independent-checker run against a live identity. Restore is
+    /// a no-op: a reproduction record is fresh-session evidence, and
+    /// re-running needs a newly approved executable the journal must
+    /// not name. The event is inspectable history — including failed
+    /// attempts — never proof of a fresh checker run and never P4 by
+    /// itself.
+    Reproduce {
+        /// Unix millis.
+        t: u64,
+        /// Claim id (lab slug).
+        claim: String,
+        /// Live FormalClaim identity hex this run was bound to.
+        statement_hash: String,
+        /// Host classification (`agree`, `disagree`, `unsupported`,
+        /// `invalid`, `resource-exhausted`, `execution-failed`).
+        disposition: String,
+        /// Hex SHA-256 of the exact obligation bytes written.
+        obligation_sha256: String,
+        /// Hex SHA-256 of the executed checker bytes.
+        exe_digest: String,
+        /// Host-issued run id.
+        run_id: String,
+        /// Human diagnostic (checker detail or host refusal note).
+        detail: String,
+    },
 }
 
 /// Parse JSONL into events, counting non-blank lines that fail to deserialize.
@@ -334,6 +371,42 @@ impl JournalEvent {
             t: now_ms(),
             claim: claim.into(),
             projection_hash: projection_hash.into(),
+        }
+    }
+
+    /// One frozen experiment design, stamped with the current time.
+    /// Inspectable history only; restore re-derives rather than
+    /// replaying, and the event alone grants no authority.
+    pub fn design(theories: Vec<String>, design_hash: impl Into<String>) -> Self {
+        JournalEvent::Design {
+            t: now_ms(),
+            theories,
+            design_hash: design_hash.into(),
+        }
+    }
+
+    /// One independent-checker run, stamped with the current time.
+    /// Inspectable history only; restore does not re-run the checker
+    /// and the event alone is never P4.
+    #[allow(clippy::too_many_arguments)]
+    pub fn reproduce(
+        claim: impl Into<String>,
+        statement_hash: impl Into<String>,
+        disposition: impl Into<String>,
+        obligation_sha256: impl Into<String>,
+        exe_digest: impl Into<String>,
+        run_id: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Self {
+        JournalEvent::Reproduce {
+            t: now_ms(),
+            claim: claim.into(),
+            statement_hash: statement_hash.into(),
+            disposition: disposition.into(),
+            obligation_sha256: obligation_sha256.into(),
+            exe_digest: exe_digest.into(),
+            run_id: run_id.into(),
+            detail: detail.into(),
         }
     }
 }

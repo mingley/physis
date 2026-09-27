@@ -1,0 +1,10 @@
+compare general-relativity vs newtonian-gravity
+  gr.newton-half-deflection        fails vs holds
+    judgment:   logical disproved → logical undetermined
+  gr.eddington-deflection          holds vs fails
+    empirical:  compatible → excluded
+    judgment:   logical undetermined → logical disproved
+  gr.mercury-perihelion            holds vs fails
+    empirical:  compatible → excluded
+    judgment:   logical undetermined → logical disproved
+discriminating_claims=3

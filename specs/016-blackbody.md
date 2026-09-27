@@ -72,6 +72,13 @@ resolution fails the axiom and holds the observations. That is the challenge.
 - Stefan–Boltzmann constant `σ = 2π⁵ k⁴ / (15 h³ c²)` *derived* from exact SI
   `h`, `k_B`, `c`, typed as `Qty<StefanBoltzmann>`. Radiation constant
   `a = 4σ/c`. Photon-gas energy density `u = a T⁴` is `Qty<EnergyDensity>`.
+  The lab's `σ = (c/4)·u_∞/T⁴` from the numerical Bose integral compares
+  to the hashed Quinn & Martin 1985 radiometric measurement
+  (`quinn-martin-1985-sigma`: 5.66967 ± 0.00076 × 10⁻⁸ W m⁻² K⁻⁴ at
+  T_tp, NPL cryogenic radiometer) under the predeclared two-sigma rule;
+  the Wien fork's lower prefactor is excluded by the same rule, and
+  divergent branches withhold comparison. The dataset is the
+  measurement, not the SI combination.
 - Wien root `x = 5(1−e^{-x})` and `λ_max T = hc/(k x)`, checked against a
   ternary search on sampled `u(λ)`. Rayleigh–Jeans is a computed *absence* of
   an interior peak: the sampled maximum sits at the UV endpoint of the window.

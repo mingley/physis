@@ -313,6 +313,7 @@ impl KleinGordonField {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -382,6 +383,9 @@ impl Knobbed for KleinGordonField {
 }
 
 impl Theory for KleinGordonField {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "klein-gordon"
     }
@@ -846,6 +850,7 @@ impl DiracFermion {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -908,6 +913,9 @@ impl Knobbed for DiracFermion {
 }
 
 impl Theory for DiracFermion {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "dirac-fermion"
     }

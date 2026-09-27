@@ -22,6 +22,12 @@
 //! is no longer source-free and `em.faraday` fails. A Proca mass term is a
 //! second package mutation (`add-proca`): the Coulomb residual of
 //! `∇·E + m² φ` is no longer zero and `em.gauss` fails.
+//! Faraday also runs on a live 2-complex: the closed magnetic flux of
+//! `B = dA` through the shared DEC 2-sphere must vanish. Corrupt
+//! orientation data (`flip-orientation`) breaks the Stokes pairing and
+//! Faraday fails while `d² = 0` still holds; open-boundary data
+//! (`add-boundary`) leaves no closed flux to check (inapplicable with the
+//! quantified Stokes term).
 
 use physis_core::assumption::DomainOfValidity;
 use physis_core::claim::{Claim, ClaimClass, Verdict};
@@ -34,6 +40,7 @@ use physis_model::constants::{epsilon0, mu0, C};
 use physis_model::{GaugeGroup, Manifold, SimpleGroup, Species, Spectrum, World};
 
 use crate::critique::{report_from_rows, ExperimentReport};
+use crate::dec::{Cochain, Complex, G1};
 use crate::framework::Theory;
 
 /// EM waves in vacuum travel at c (`1/√(ε₀μ₀)`).
@@ -186,6 +193,41 @@ fn is_vacuum(epsilon_r: f64, mu_r: f64) -> bool {
     (refractive_index(epsilon_r, mu_r) - 1.0).abs() < 1e-9
 }
 
+/// Magnetic flux of `B = dA` (+ a monopole delta) through the shared 2-sphere.
+///
+/// The field computation runs on `dec::Complex::sphere` through the same `d₁`
+/// the dec claims use — shared oriented incidence data, not a second stencil.
+/// `A` is fixed benchmark data (unit potential on edge 0); the monopole fork
+/// adds `MAGNETIC_CURRENT` on triangle 0 (a point Dirac charge: closed flux
+/// `+1`). The flip fork negates triangle 0's fundamental sign (flux `−2`:
+/// the signs no longer form a cycle). The open fork drops triangle 0 from the
+/// pairing (flux `−1`: the Stokes boundary term of the missing face).
+///
+/// Returns the paired flux and, on the open fork, the dropped face's signed
+/// term; the second value is `0.0` on a closed pairing.
+fn sphere_flux(monopole: bool, orientation_flip: bool, open: bool) -> (f64, f64) {
+    let complex = Complex::sphere();
+    let mut signs = Complex::sphere_fundamental_signs();
+    if orientation_flip {
+        signs[0] = -signs[0];
+    }
+    let a = Cochain::<G1>::new(vec![1.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+    let mut b = complex.d1(&a);
+    if monopole {
+        b.values[0] += MAGNETIC_CURRENT;
+    }
+    let mut flux = 0.0;
+    let mut dropped = 0.0;
+    for (i, (s, v)) in signs.iter().zip(b.values.iter()).enumerate() {
+        if open && i == 0 {
+            dropped = s * v;
+        } else {
+            flux += s * v;
+        }
+    }
+    (flux, dropped)
+}
+
 /// Uniform magnetic current (natural units) on the `add-monopole` fork.
 const MAGNETIC_CURRENT: f64 = 1.0;
 /// Homogeneous Bianchi identity on the live Maxwell vacuum package.
@@ -194,6 +236,10 @@ const MAXWELL_DF_EQ: &str = "maxwell dF=0";
 const MONOPOLE_EQ: &str = "dF = *j_m";
 /// Proca mass term on the massive-vector fork.
 const PROCA_EQ: &str = "proca m2 A";
+/// Corrupt orientation data on the flip fork: triangle 0 changes sign.
+const ORIENTATION_FLIP_EQ: &str = "orientation flip";
+/// Open-boundary data on the boundary fork: triangle 0 drops out.
+const OPEN_BOUNDARY_EQ: &str = "boundary open";
 /// Proca m² in natural units. Not a knob; the term is the IR fork.
 const PROCA_M2: f64 = 1.0;
 /// Tellegen magnetoelectric mixing, as a dimensionless index split.
@@ -238,15 +284,19 @@ fn constitutive_domain() -> DomainOfValidity {
     )
 }
 
-fn parse_maxwell_bianchi(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
+fn parse_maxwell_bianchi(pkg: &TheoryPackage) -> Result<(bool, bool, bool, bool), String> {
     let mut homogeneous = false;
     let mut monopole = false;
     let mut proca = false;
+    let mut orientation_flip = false;
+    let mut open_boundary = false;
     for eq in &pkg.equations {
         match eq.trim() {
             MAXWELL_DF_EQ => homogeneous = true,
             MONOPOLE_EQ => monopole = true,
             PROCA_EQ => proca = true,
+            ORIENTATION_FLIP_EQ => orientation_flip = true,
+            OPEN_BOUNDARY_EQ => open_boundary = true,
             _ => {}
         }
     }
@@ -256,16 +306,20 @@ fn parse_maxwell_bianchi(pkg: &TheoryPackage) -> Result<(bool, bool), String> {
             pkg.id
         ));
     }
-    Ok((monopole, proca))
+    Ok((monopole, proca, orientation_flip, open_boundary))
 }
 
 fn faraday_domain() -> DomainOfValidity {
     DomainOfValidity::new(
         vec!["source-free homogeneous dF=0".into()],
-        vec!["no magnetic current; plane-wave Faraday residual".into()],
+        vec![
+            "no magnetic current; plane-wave Faraday residual".into(),
+            "closed magnetic flux on the shared 2-sphere".into(),
+        ],
         "Maxwell Faraday is the source-free homogeneous encoding. \
          A magnetic current dF = *j_m is a new encoding, not a silent \
-         constitutive knob.",
+         constitutive knob. So is corrupt orientation data or an open \
+         boundary on the shared 2-complex.",
     )
 }
 
@@ -348,13 +402,23 @@ fn em_claims() -> Vec<Claim> {
     ]
 }
 
+/// IR fork flags for `MaxwellVacuum`. All four are package mutations
+/// (`add-monopole`, `add-proca`, `flip-orientation`, `add-boundary`),
+/// never knobs; other EM theories pass `MaxwellForks::default()`.
+#[derive(Clone, Copy, Debug, Default)]
+struct MaxwellForks {
+    monopole: bool,
+    proca: bool,
+    orientation_flip: bool,
+    open_boundary: bool,
+}
+
 fn eval_em(
     epsilon_r: f64,
     mu_r: f64,
     tellegen: bool,
     chiral: bool,
-    monopole: bool,
-    proca: bool,
+    forks: MaxwellForks,
     claim: &Claim,
 ) -> Verdict {
     let n = refractive_index(epsilon_r, mu_r);
@@ -391,7 +455,7 @@ fn eval_em(
         }
         GAUSS => {
             if vacuum {
-                let (m2, r) = if proca {
+                let (m2, r) = if forks.proca {
                     (PROCA_M2, coulomb_gauss_law_residual(PROCA_M2))
                 } else {
                     (0.0, coulomb_gauss_residual())
@@ -418,23 +482,76 @@ fn eval_em(
         }
         FARADAY => {
             if vacuum {
-                let j_m = if monopole { MAGNETIC_CURRENT } else { 0.0 };
-                let r = plane_wave_faraday_residual(j_m);
-                if r < 1e-6 {
-                    Verdict::holds(claim, "∇×E = −∂B/∂t")
-                        .with_class(ClaimClass::ModelInternal)
-                        .with_evidence([format!(
-                            "verified numerically on a vacuum plane wave: max residual {r:.1e}"
-                        )])
-                } else {
-                    Verdict::fails(
+                if forks.open_boundary {
+                    let (flux, dropped) = sphere_flux(forks.monopole, forks.orientation_flip, true);
+                    Verdict::inapplicable(
                         claim,
-                        "homogeneous Faraday is not source-free: magnetic current J_m",
+                        "open surface: no closed magnetic flux to check",
                     )
                     .with_class(ClaimClass::ModelInternal)
                     .with_evidence([format!(
-                        "verified numerically on a vacuum plane wave: max |∂B/∂t + ∇×E + J_m| = {r:.3} (J_m = {j_m})"
+                        "open boundary: paired flux over 3 sphere faces: {flux:.3}; dropped-face Stokes term {dropped:.3}; the homogeneous equation is not tested by open data"
                     )])
+                } else {
+                    let j_m = if forks.monopole {
+                        MAGNETIC_CURRENT
+                    } else {
+                        0.0
+                    };
+                    let r = plane_wave_faraday_residual(j_m);
+                    let (flux, _) = sphere_flux(forks.monopole, forks.orientation_flip, false);
+                    if r < 1e-6 && flux.abs() < 1e-9 {
+                        Verdict::holds(claim, "∇×E = −∂B/∂t; closed magnetic flux vanishes")
+                            .with_class(ClaimClass::ModelInternal)
+                            .with_evidence([
+                                format!(
+                                    "verified numerically on a vacuum plane wave: max residual {r:.1e}"
+                                ),
+                                format!(
+                                    "closed magnetic flux on the shared 2-sphere: {flux:.1e} (exact B = dA pairs to zero)"
+                                ),
+                            ])
+                    } else if forks.monopole {
+                        Verdict::fails(
+                            claim,
+                            "homogeneous Faraday is not source-free: magnetic current J_m",
+                        )
+                        .with_class(ClaimClass::ModelInternal)
+                        .with_evidence([
+                            format!(
+                                "verified numerically on a vacuum plane wave: max |∂B/∂t + ∇×E + J_m| = {r:.3} (J_m = {j_m})"
+                            ),
+                            format!(
+                                "closed magnetic flux on the shared 2-sphere: {flux:.3} (monopole delta on triangle 0)"
+                            ),
+                        ])
+                    } else if forks.orientation_flip {
+                        Verdict::fails(
+                            claim,
+                            format!(
+                                "orientation flip breaks the fundamental cycle: computed flux {flux:.3} ≠ 0"
+                            ),
+                        )
+                        .with_class(ClaimClass::ModelInternal)
+                        .with_evidence([
+                            format!(
+                                "vacuum plane wave still passes: max residual {r:.1e}"
+                            ),
+                            "orientation data flipped on triangle 0: not a 2-cycle, so the Stokes pairing is not a closed flux"
+                                .to_string(),
+                        ])
+                    } else {
+                        // No fork is active yet a residual fails: unreachable
+                        // for the live encoding (plane wave r ≈ 1e-9, exact
+                        // flux 0). Fail closed with both numbers.
+                        Verdict::fails(
+                            claim,
+                            format!(
+                                "Faraday residuals do not vanish: plane wave {r:.1e}, sphere flux {flux:.1e}"
+                            ),
+                        )
+                        .with_class(ClaimClass::ModelInternal)
+                    }
                 }
             } else {
                 Verdict::holds(claim, "∇×E = −∂B/∂t (macroscopic form in the medium)")
@@ -538,17 +655,28 @@ fn em_world(epsilon_r: f64, mu_r: f64, note: String) -> World {
 /// A Proca mass term is a second mutation (`add-proca`): the Coulomb residual
 /// of `∇·E + m² φ` is no longer zero and `em.gauss` fails. Those forks are
 /// still this object, not a silent linear-medium install.
+/// Faraday also checks the closed magnetic flux through the shared DEC
+/// 2-sphere. Corrupt orientation data (`flip-orientation`) is a third
+/// mutation: the Stokes pairing breaks and `em.faraday` fails while
+/// `d² = 0` still holds. Open-boundary data (`add-boundary`) is a fourth:
+/// no closed flux exists, so the cell is inapplicable with the quantified
+/// Stokes term.
 /// `epsilon_r` / `mu_r` stay on linear-medium.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct MaxwellVacuum {
     monopole: bool,
     /// Proca mass term. Not a knob.
     proca: bool,
+    /// Corrupt orientation data on the shared 2-sphere. Not a knob.
+    orientation_flip: bool,
+    /// Open-boundary data on the shared 2-sphere. Not a knob.
+    open_boundary: bool,
 }
 
 impl MaxwellVacuum {
     /// IR package for this Bianchi encoding. Equations are `maxwell dF=0`
-    /// and, when forked, `dF = *j_m` and/or `proca m2 A`.
+    /// and, when forked, `dF = *j_m`, `proca m2 A`, `orientation flip`,
+    /// and/or `boundary open`.
     pub fn package(&self) -> TheoryPackage {
         let mut equations = vec![MAXWELL_DF_EQ.to_string()];
         if self.monopole {
@@ -556,6 +684,12 @@ impl MaxwellVacuum {
         }
         if self.proca {
             equations.push(PROCA_EQ.to_string());
+        }
+        if self.orientation_flip {
+            equations.push(ORIENTATION_FLIP_EQ.to_string());
+        }
+        if self.open_boundary {
+            equations.push(OPEN_BOUNDARY_EQ.to_string());
         }
         TheoryPackage {
             id: self.id().to_string(),
@@ -570,6 +704,7 @@ impl MaxwellVacuum {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -581,8 +716,13 @@ impl MaxwellVacuum {
                 pkg.id
             ));
         }
-        let (monopole, proca) = parse_maxwell_bianchi(pkg)?;
-        Ok(Self { monopole, proca })
+        let (monopole, proca, orientation_flip, open_boundary) = parse_maxwell_bianchi(pkg)?;
+        Ok(Self {
+            monopole,
+            proca,
+            orientation_flip,
+            open_boundary,
+        })
     }
 
     fn monopole_equation() -> String {
@@ -591,6 +731,14 @@ impl MaxwellVacuum {
 
     fn proca_equation() -> String {
         PROCA_EQ.to_string()
+    }
+
+    fn orientation_flip_equation() -> String {
+        ORIENTATION_FLIP_EQ.to_string()
+    }
+
+    fn open_boundary_equation() -> String {
+        OPEN_BOUNDARY_EQ.to_string()
     }
 }
 
@@ -607,6 +755,9 @@ impl Knobbed for MaxwellVacuum {
 }
 
 impl Theory for MaxwellVacuum {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "maxwell-vacuum"
     }
@@ -621,18 +772,21 @@ impl Theory for MaxwellVacuum {
          Neither fork is a silent linear-medium install."
     }
     fn world(&self) -> Option<World> {
-        Some(em_world(
-            1.0,
-            1.0,
-            match (self.monopole, self.proca) {
-                (true, true) => {
-                    "Maxwell vacuum with magnetic current dF = *j_m and Proca mass term".to_string()
-                }
-                (true, false) => "Maxwell vacuum with magnetic current dF = *j_m".to_string(),
-                (false, true) => "Maxwell vacuum with Proca mass term".to_string(),
-                (false, false) => "Maxwell vacuum".to_string(),
-            },
-        ))
+        let mut note = match (self.monopole, self.proca) {
+            (true, true) => {
+                "Maxwell vacuum with magnetic current dF = *j_m and Proca mass term".to_string()
+            }
+            (true, false) => "Maxwell vacuum with magnetic current dF = *j_m".to_string(),
+            (false, true) => "Maxwell vacuum with Proca mass term".to_string(),
+            (false, false) => "Maxwell vacuum".to_string(),
+        };
+        if self.orientation_flip {
+            note.push_str("; orientation data flipped on the shared 2-sphere");
+        }
+        if self.open_boundary {
+            note.push_str("; open boundary on the shared 2-sphere");
+        }
+        Some(em_world(1.0, 1.0, note))
     }
     fn claims(&self) -> Vec<Claim> {
         em_claims()
@@ -645,7 +799,19 @@ impl Theory for MaxwellVacuum {
             .collect()
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        eval_em(1.0, 1.0, false, false, self.monopole, self.proca, claim)
+        eval_em(
+            1.0,
+            1.0,
+            false,
+            false,
+            MaxwellForks {
+                monopole: self.monopole,
+                proca: self.proca,
+                orientation_flip: self.orientation_flip,
+                open_boundary: self.open_boundary,
+            },
+            claim,
+        )
     }
     fn ir_package(&self) -> Option<TheoryPackage> {
         Some(self.package())
@@ -655,6 +821,8 @@ impl Theory for MaxwellVacuum {
         let mut fork = self.clone();
         fork.monopole = parsed.monopole;
         fork.proca = parsed.proca;
+        fork.orientation_flip = parsed.orientation_flip;
+        fork.open_boundary = parsed.open_boundary;
         Ok(Box::new(fork))
     }
     fn structural_mutations(&self) -> Vec<(String, Box<dyn Theory>)> {
@@ -686,6 +854,32 @@ impl Theory for MaxwellVacuum {
                     let mut fork = self.clone();
                     fork.proca = true;
                     out.push(("add-proca".into(), Box::new(fork)));
+                }
+            }
+        }
+        if !self.orientation_flip {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::orientation_flip_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.orientation_flip {
+                    let mut fork = self.clone();
+                    fork.orientation_flip = true;
+                    out.push(("flip-orientation".into(), Box::new(fork)));
+                }
+            }
+        }
+        if !self.open_boundary {
+            let mutated = apply_mutation(
+                &pkg,
+                &PackageMutation::AppendEquation(Self::open_boundary_equation()),
+            );
+            if let Ok(parsed) = Self::from_package(&mutated) {
+                if parsed.open_boundary {
+                    let mut fork = self.clone();
+                    fork.open_boundary = true;
+                    out.push(("add-boundary".into(), Box::new(fork)));
                 }
             }
         }
@@ -769,6 +963,7 @@ impl LinearMedium {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -829,6 +1024,9 @@ impl Knobbed for LinearMedium {
 }
 
 impl Theory for LinearMedium {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "linear-medium"
     }
@@ -867,8 +1065,7 @@ impl Theory for LinearMedium {
             self.mu_r,
             self.tellegen,
             self.chiral,
-            false,
-            false,
+            MaxwellForks::default(),
             claim,
         )
     }
@@ -1040,6 +1237,7 @@ impl OhmCircuit {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -1112,6 +1310,9 @@ impl Knobbed for OhmCircuit {
 }
 
 impl Theory for OhmCircuit {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "ohm-circuit"
     }
@@ -1922,7 +2123,7 @@ mod tests {
             "inhomogeneous Faraday residual must be the magnetic current, got {jm}"
         );
         let probes = MaxwellVacuum::default().structural_mutations();
-        assert_eq!(probes.len(), 2);
+        assert_eq!(probes.len(), 4);
         assert!(
             probes.iter().any(|(label, _)| label == "add-monopole"),
             "live Maxwell must offer add-monopole: {:?}",
@@ -2145,6 +2346,175 @@ mod tests {
             "linear-medium must not grow add-flux"
         );
         assert_eq!(verdict(&glass, FARADAY), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn faraday_flux_vanishes_on_closed_sphere() {
+        // C4.2: live Faraday rests on the shared DEC incidence too: the
+        // verdict evidence must name the 2-complex flux.
+        let v = MaxwellVacuum::default();
+        assert_eq!(verdict(&v, FARADAY), VerdictKind::Holds);
+        let c = v
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FARADAY)
+            .unwrap();
+        let evidence = v.evaluate(&c).evidence.join("\n");
+        assert!(
+            evidence.contains("flux") && evidence.contains("sphere"),
+            "Faraday must cite the 2-complex flux: {evidence}"
+        );
+    }
+
+    #[test]
+    fn orientation_flip_fails_faraday_but_not_d2() {
+        // C4.2: corrupt orientation data breaks the Stokes pairing (flux −2)
+        // while the coboundary stencil — d² = 0 — is untouched. The EM flux
+        // check is not a relabeled simplex identity.
+        let fork = MaxwellVacuum {
+            orientation_flip: true,
+            ..MaxwellVacuum::default()
+        };
+        assert_eq!(verdict(&fork, FARADAY), VerdictKind::Fails);
+        let c = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FARADAY)
+            .unwrap();
+        let evidence = fork.evaluate(&c).evidence.join("\n");
+        assert!(
+            evidence.contains("orientation"),
+            "flip must explain itself: {evidence}"
+        );
+        let cx = crate::dec::Complex::sphere();
+        let f = crate::dec::Cochain::<crate::dec::G0>::new(vec![0.3, -1.7, 2.9, 0.5]);
+        assert!(
+            cx.d1(&cx.d0(&f)).is_zero(1e-12),
+            "d² = 0 must survive the orientation flip"
+        );
+    }
+
+    #[test]
+    fn open_boundary_is_inapplicable_with_stokes_term() {
+        // C4.2: an open surface carries no closed flux; the verdict is
+        // inapplicable with the quantified Stokes boundary term, not a
+        // false failure of the homogeneous equation.
+        let fork = MaxwellVacuum {
+            open_boundary: true,
+            ..MaxwellVacuum::default()
+        };
+        assert_eq!(verdict(&fork, FARADAY), VerdictKind::Inapplicable);
+        let c = fork
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FARADAY)
+            .unwrap();
+        let evidence = fork.evaluate(&c).evidence.join("\n");
+        assert!(
+            evidence.contains("boundary"),
+            "open surface must name its boundary term: {evidence}"
+        );
+    }
+
+    #[test]
+    fn orientation_and_boundary_are_ir_not_knobs() {
+        // C4.2: corrupt orientation data and open-boundary data are package
+        // mutations, not knobs.
+        let v = MaxwellVacuum::default();
+        assert!(
+            v.clone().set("orientation", KnobValue::Bool(true)).is_err(),
+            "orientation flip is an IR mutation, not a knob"
+        );
+        assert!(
+            v.clone().set("boundary", KnobValue::Bool(true)).is_err(),
+            "open boundary is an IR mutation, not a knob"
+        );
+        let src = render_package(&v.package());
+        let pkg = parse_package(&src).unwrap();
+        assert_eq!(
+            pkg.equations.len(),
+            1,
+            "live package must stay source-free Faraday"
+        );
+        for (make, flag) in [
+            (
+                MaxwellVacuum::orientation_flip_equation(),
+                "orientation_flip",
+            ),
+            (MaxwellVacuum::open_boundary_equation(), "open_boundary"),
+        ] {
+            let mutated = apply_mutation(&pkg, &PackageMutation::AppendEquation(make));
+            let parsed = MaxwellVacuum::from_package(&mutated).unwrap();
+            assert!(
+                (flag == "orientation_flip" && parsed.orientation_flip)
+                    || (flag == "open_boundary" && parsed.open_boundary),
+                "{flag} must parse from its equation"
+            );
+        }
+        let probes = v.structural_mutations();
+        for label in ["flip-orientation", "add-boundary"] {
+            assert!(
+                probes.iter().any(|(l, _)| l == label),
+                "live Maxwell must offer {label}: {:?}",
+                probes.iter().map(|(l, _)| l.as_str()).collect::<Vec<_>>()
+            );
+            let probe = probes.iter().find(|(l, _)| l == label).unwrap();
+            let kinds: Vec<VerdictKind> = probe
+                .1
+                .evaluate_all()
+                .into_iter()
+                .filter(|(c, _)| c.id_str() == FARADAY)
+                .map(|(_, w)| w.kind)
+                .collect();
+            assert!(
+                kinds.contains(&VerdictKind::Fails) || kinds.contains(&VerdictKind::Inapplicable),
+                "{label} must move Faraday off holds: {kinds:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn faraday_flux_obligation_is_coboundary_algebra() {
+        // C2.2 assessment: no duplicate catalog row. The Stokes-flux
+        // polynomial assembled from the LIVE incidence data (sphere d1
+        // rows + fundamental signs) vanishes identically and coincides
+        // with the catalog 3-simplex identity up to sign: the sphere is
+        // the tetrahedron boundary. See spec 008.
+        use physis_proof::catalog::tetrahedron_d2;
+        use physis_proof::expr::{add, sub, Expr};
+        use physis_proof::identity_is_zero;
+
+        let complex = crate::dec::Complex::sphere();
+        assert_eq!(
+            complex.edges,
+            vec![[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]],
+            "edge order pins the indeterminate map below"
+        );
+        let names = ["ab", "ac", "ad", "bc", "bd", "cd"];
+        let signs = crate::dec::Complex::sphere_fundamental_signs();
+        let mut flux = Expr::c(0);
+        for (i, row) in complex.d1_matrix().iter().enumerate() {
+            let mut face = Expr::c(0);
+            for (e, coef) in row.iter().enumerate() {
+                if *coef != 0.0 {
+                    let var = Expr::var(names[e]);
+                    let term = if *coef == 1.0 {
+                        var
+                    } else {
+                        sub(Expr::c(0), var)
+                    };
+                    face = add(face, term);
+                }
+            }
+            flux = if signs[i] == 1.0 {
+                add(flux, face)
+            } else {
+                sub(flux, face)
+            };
+        }
+        identity_is_zero(&flux).expect("Stokes flux must vanish identically");
+        identity_is_zero(&add(flux, tetrahedron_d2()))
+            .expect("Stokes flux must be the catalog 3-simplex identity up to sign");
     }
 
     #[test]

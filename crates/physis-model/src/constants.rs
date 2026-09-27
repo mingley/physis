@@ -19,7 +19,16 @@ use physis_core::qty::{ampere, joule, kg, meters, newton, pascal, seconds, Qty};
 /// The kilogram-joule relationship is `kg_J`.
 pub const C: Qty<Velocity> = Qty::new(299_792_458.0);
 
-/// Planck constant over 2π, J·s = kg m² s⁻¹.
+/// Planck constant over 2π, J·s = kg m² s⁻¹, CODATA 2018 truncated print.
+///
+/// This is the recommended printed UNIVERSAL value `1.054571817e-34`,
+/// not SI joule-second `h`, not Planck in eV per hertz `h_eVHz`, and
+/// not exact `h/2π` (irrational: no finite decimal is exact hbar). The
+/// versioned ledger stores the truncation preimage as a SciInterval
+/// because Ratio scale 10^43 overflows i128; this Qty is the tabulated
+/// lower edge, and the hull width is a 1ulp rounding bound, not a
+/// measured uncertainty. `h_bar`, `HBAR`, `h2pi`, `hbar_eVs`, and
+/// `reduced-planck` are not second names.
 pub fn hbar() -> Qty<Action> {
     Qty::new(1.054_571_817e-34)
 }
@@ -3696,6 +3705,43 @@ mod tests {
             "h Qty must match the SI 2019 SciExact decimal float"
         );
 
+        let hbar_l = physis_constants::reduced_planck();
+        covered.push("hbar");
+        let hbar_tabulated = SciExact::new(1_054_571_817, -43);
+        assert_eq!(
+            hbar().value(),
+            hbar_tabulated.to_f64(),
+            "hbar Qty is the CODATA 2018 truncated print, not exact h/2pi"
+        );
+        assert_eq!(
+            hbar_tabulated.to_ratio(),
+            None,
+            "hbar Qty lockstep cannot be a Ratio: 10^43 overflows i128"
+        );
+        assert!(
+            hbar_l.value.contains(SciInterval::point(hbar_tabulated)),
+            "hbar Qty tabulated value must lie in the versioned truncation hull"
+        );
+        assert_ne!(
+            hbar_l.value.lo, hbar_l.value.hi,
+            "ledger hbar stays a SciInterval; the Qty is not that hull"
+        );
+        assert_ne!(
+            hbar_l.hash,
+            physis_constants::planck_h().hash,
+            "hbar Qty lockstep is not h"
+        );
+        assert_ne!(
+            hbar_l.hash,
+            physis_constants::planck_in_ev_per_hz().hash,
+            "hbar Qty lockstep is not h_eVHz"
+        );
+        assert_ne!(
+            hbar_l.hash,
+            physis_constants::electron_mass().hash,
+            "hbar Qty lockstep is not m_e"
+        );
+
         let g = physis_constants::newtonian_g();
         covered.push("G");
         let centre = Ratio::new(667_430, 10i128.pow(16));
@@ -3956,9 +4002,12 @@ mod tests {
             alpha.value.lo, alpha.value.hi,
             "ledger alpha stays an Interval; the Qty is not that Interval"
         );
-        assert!(
-            physis_constants::lookup("hbar").is_none(),
-            "ħ is not a terminating decimal and is not a ledger entry"
+        assert_eq!(
+            physis_constants::lookup("hbar")
+                .expect("hbar is listed")
+                .name,
+            "hbar",
+            "ħ is not a terminating decimal; the ledger holds its rounding hull, not alpha"
         );
         assert!(
             physis_constants::lookup("alpha-inv").is_none(),
@@ -14958,7 +15007,7 @@ mod tests {
         }
         assert_eq!(
             physis_constants::LEDGER.len(),
-            282,
+            283,
             "LEDGER grew or shrank; cover the new entry in the lockstep test \
              or exclude it in LOCKSTEP_EXCLUDED"
         );

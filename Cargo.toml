@@ -16,6 +16,7 @@ members = [
     "crates/physis-semantic",
     "crates/physis-constants",
     "crates/physis",
+    "crates/physis-repro-check",
 ]
 
 [workspace.package]

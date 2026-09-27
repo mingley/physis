@@ -17,12 +17,14 @@ use physis_core::knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 use physis_core::ParameterOrigin;
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::{GaugeGroup, Manifold, Signature, Spectrum, Topology, World};
+use physis_proof::catalog::{first_bianchi, lookup};
 
 use crate::claims;
 use crate::framework::Theory;
 use crate::gravity::{
-    eval_solar, mercury_analytic_arcsec_per_century, mercury_arcsec_per_century, solar_claims,
-    solar_deflection_arcsec, EDDINGTON, EDDINGTON_ARCSEC, MERCURY_ARCSEC_PER_CENTURY,
+    eval_solar, mercury_analytic_arcsec_per_century, mercury_arcsec_per_century,
+    schwarzschild_bianchi, schwarzschild_reciprocal, solar_claims, solar_deflection_arcsec, Chart,
+    EDDINGTON, EDDINGTON_ARCSEC, EXTERIOR_R_MAX_M, HORIZON_R_M, MERCURY_ARCSEC_PER_CENTURY,
     MERCURY_PERIHELION, NEWTON_HALF,
 };
 
@@ -41,6 +43,16 @@ const BRANS_DICKE_OMEGA: f64 = 1.0;
 /// The cosmological constant is small in Planck units, so the Λ = 0
 /// Schwarzschild background behind the solar-system cells applies.
 pub const LAMBDA_SMALL: &str = "gr.cosmological-constant-small";
+/// On the Schwarzschild exterior domain, `g_tt·g_rr = −1` in Schwarzschild
+/// coordinates: a checked encoding of the chart, not an Einstein-equation
+/// proof. The chart and the inner domain edge are knobs.
+pub const SCHWARZSCHILD_RECIPROCAL: &str = "gr.schwarzschild-reciprocal";
+/// The computed Riemann tensor satisfies the first Bianchi identity
+/// `R^ρ_[σμν] = 0` on the domain: the live tensor expression behind the
+/// formal Bianchi obligation. Tensorial — both charts, both sides of
+/// the EF horizon.
+pub const FIRST_BIANCHI: &str = "gr.first-bianchi";
+
 /// Order-of-magnitude ceiling for [`LAMBDA_SMALL`]: |Λ| at or below this
 /// (in Planck units) counts as a flat background at the knob's own
 /// resolution. The observed Λℓ_P² ~ 10⁻¹²² is far below it; Λ = ±1 puts
@@ -136,6 +148,8 @@ fn eval_solar_brans_dicke(dim: u8, claim: &Claim) -> Verdict {
     }
 }
 
+const CHART_OPTIONS: &[&str] = &["schwarzschild", "eddington-finkelstein"];
+
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
         name: "dim",
@@ -154,6 +168,20 @@ const SPECS: &[KnobSpec] = &[
             max: 1.0,
         },
     },
+    KnobSpec {
+        name: "chart",
+        layer: LayerId::Spacetime,
+        doc: "Coordinate chart for the Schwarzschild exterior check. Schwarzschild coordinates are singular at r = 2M (a domain reaching the horizon refuses); Eddington-Finkelstein coordinates are regular there but compute g_rr = 0, so the reciprocal identity fails by computation, not by hidden convention.",
+        origin: ParameterOrigin::Chosen,
+        domain: KnobDomain::Choice(CHART_OPTIONS),
+    },
+    KnobSpec {
+        name: "r_min",
+        layer: LayerId::Spacetime,
+        doc: "Inner domain edge in units of M (outer edge fixed at 10M; r = 0 is never sampled). At or below 2M the Schwarzschild chart refuses (coordinate singularity); the EF chart computes.",
+        origin: ParameterOrigin::Chosen,
+        domain: KnobDomain::Float { min: 0.5, max: 9.0 },
+    },
 ];
 
 /// Einstein gravity.
@@ -163,8 +191,10 @@ const SPECS: &[KnobSpec] = &[
 /// uniqueness of Einstein gravity plus Λ fails. Brans–Dicke
 /// (`add-brans-dicke`) is a second package mutation: PPN γ is not 1,
 /// so Eddington and Mercury fail. `dim` / `cosmological_constant`
-/// stay knobs. The fork is still this object, not a silent Newton
-/// install.
+/// stay knobs, as do the `chart` and `r_min` inputs of the
+/// Schwarzschild reciprocal check (the identity is chart-relative;
+/// a horizon-reaching domain refuses in Schwarzschild coordinates).
+/// The fork is still this object, not a silent Newton install.
 #[derive(Clone, Debug, PartialEq)]
 pub struct GeneralRelativity {
     dim: u8,
@@ -173,6 +203,10 @@ pub struct GeneralRelativity {
     r_squared: bool,
     /// Whether the encoding includes a Brans–Dicke scalar.
     brans_dicke: bool,
+    /// Coordinate chart for the Schwarzschild exterior check.
+    chart: Chart,
+    /// Inner domain edge in units of `M` (outer edge fixed at 10M).
+    r_min: f64,
 }
 
 impl Default for GeneralRelativity {
@@ -182,8 +216,21 @@ impl Default for GeneralRelativity {
             cosmological_constant: 0.0,
             r_squared: false,
             brans_dicke: false,
+            chart: Chart::Schwarzschild,
+            r_min: 3.0,
         }
     }
+}
+
+fn reciprocal_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["4D Schwarzschild exterior".into()],
+        vec!["r_min above 2M in Schwarzschild chart; reciprocal identity".into()],
+        "Checked encoding of the Schwarzschild chart: g_tt·g_rr = −1 is a \
+         coordinate-identity computation on the exterior domain, not a proof \
+         of the Einstein equations. Chart and inner domain edge are inputs: \
+         EF coordinates and sub-horizon r_min change the verdict honestly.",
+    )
 }
 
 impl Knobbed for GeneralRelativity {
@@ -195,6 +242,8 @@ impl Knobbed for GeneralRelativity {
         match name {
             "dim" => Ok(KnobValue::UInt(self.dim as u64)),
             "cosmological_constant" => Ok(KnobValue::Float(self.cosmological_constant)),
+            "chart" => Ok(KnobValue::Choice(self.chart.name().to_string())),
+            "r_min" => Ok(KnobValue::Float(self.r_min)),
             _ => Err(CoreError::UnknownKnob { name: name.into() }),
         }
     }
@@ -203,14 +252,21 @@ impl Knobbed for GeneralRelativity {
         let spec = self.spec(name)?;
         spec.domain.check(name, &value)?;
         let old = self.get(name)?;
-        match (name, value) {
-            ("dim", KnobValue::UInt(v)) => self.dim = v as u8,
-            ("cosmological_constant", KnobValue::Float(v)) => self.cosmological_constant = v,
+        match (name, &value) {
+            ("dim", KnobValue::UInt(v)) => self.dim = *v as u8,
+            ("cosmological_constant", KnobValue::Float(v)) => self.cosmological_constant = *v,
+            ("chart", KnobValue::Choice(v)) => {
+                self.chart = Chart::from_name(v).ok_or_else(|| CoreError::Domain {
+                    name: name.into(),
+                    reason: format!("unknown chart '{v}'"),
+                })?;
+            }
+            ("r_min", KnobValue::Float(v)) => self.r_min = *v,
             _ => {
                 return Err(CoreError::TypeMismatch {
                     name: name.into(),
                     expected: spec.domain.kind_name().into(),
-                    got: old.kind_name().into(),
+                    got: value.kind_name().into(),
                 });
             }
         }
@@ -220,10 +276,14 @@ impl Knobbed for GeneralRelativity {
 
 impl GeneralRelativity {
     /// IR package for this gravitational action. Equations are
-    /// `action einstein-hilbert` and, when forked, `action r-squared`
-    /// and/or `action brans-dicke`. Dimension and Λ stay on the struct.
+    /// `action einstein-hilbert`, the Bianchi identity tree, and, when
+    /// forked, `action r-squared` and/or `action brans-dicke`. Knobs
+    /// stay on the struct. The tree is generated from the catalog
+    /// identity — never hand-transcribed — and `lean_ref` names its
+    /// catalog type, bound by `catalog_tree_binding` (not a proof).
     pub fn package(&self) -> TheoryPackage {
-        let mut equations = vec![ACTION_EH.to_string()];
+        let spec = lookup(FIRST_BIANCHI).expect("bianchi is a catalog identity");
+        let mut equations = vec![ACTION_EH.to_string(), first_bianchi().to_string()];
         if self.r_squared {
             equations.push(ACTION_R2.to_string());
         }
@@ -236,14 +296,24 @@ impl GeneralRelativity {
             parameters: vec![],
             assumptions: vec!["einstein-hilbert".into()],
             equations,
-            claims: vec![physis_ir::ClaimDecl {
-                id: claims::UNIQUE_VACUUM.into(),
-                statement:
-                    "Einstein gravity plus Λ is a unique classical theory (not a landscape).".into(),
-                layer: "spacetime".into(),
-                class: "heuristic".into(),
-            }],
-            lean_ref: None,
+            claims: vec![
+                physis_ir::ClaimDecl {
+                    id: claims::UNIQUE_VACUUM.into(),
+                    statement:
+                        "Einstein gravity plus Λ is a unique classical theory (not a landscape)."
+                            .into(),
+                    layer: "spacetime".into(),
+                    class: "heuristic".into(),
+                },
+                physis_ir::ClaimDecl {
+                    id: FIRST_BIANCHI.into(),
+                    statement: spec.statement.into(),
+                    layer: "spacetime".into(),
+                    class: "model-internal".into(),
+                },
+            ],
+            lean_ref: Some(spec.lean_type.into()),
+            typed_equations: vec![],
         }
     }
 
@@ -316,6 +386,9 @@ impl GeneralRelativity {
 }
 
 impl Theory for GeneralRelativity {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "general-relativity"
     }
@@ -398,6 +471,16 @@ impl Theory for GeneralRelativity {
                 LayerId::Spacetime,
                 ClaimClass::ModelInternal,
             ),
+            claims::c(
+                SCHWARZSCHILD_RECIPROCAL,
+                "On the Schwarzschild exterior domain, g_tt·g_rr = −1 in Schwarzschild coordinates.",
+                LayerId::Spacetime,
+                ClaimClass::ModelInternal,
+            )
+            .with_domain(reciprocal_domain()),
+            lookup(FIRST_BIANCHI)
+                .expect("bianchi is a catalog identity")
+                .lab_claim(),
         ];
         c.extend(solar_claims());
         c
@@ -488,6 +571,133 @@ impl Theory for GeneralRelativity {
                     eval_solar(true, self.dim, claim)
                 }
             }
+            SCHWARZSCHILD_RECIPROCAL => {
+                // Chart geometry, independent of the R² / Brans-Dicke action
+                // forks: those change the dynamics, not this chart check.
+                if self.dim != 4 {
+                    Verdict::inapplicable(
+                        claim,
+                        format!(
+                            "the 4D Schwarzschild chart does not apply in D = {}",
+                            self.dim
+                        ),
+                    )
+                } else {
+                    match schwarzschild_reciprocal(self.chart, self.r_min) {
+                        None => Verdict::inapplicable(
+                            claim,
+                            format!(
+                                "domain reaches the Schwarzschild-coordinate singularity: r_min = {}M ≤ {}M; switch chart or raise r_min",
+                                self.r_min, HORIZON_R_M
+                            ),
+                        ),
+                        Some(check) => match self.chart {
+                            Chart::Schwarzschild => {
+                                if check.max_dev <= 1e-12 {
+                                    Verdict::holds(
+                                        claim,
+                                        "g_tt·g_rr = −1 on the exterior domain",
+                                    )
+                                    .with_evidence([
+                                        format!(
+                                            "Schwarzschild chart, r_min = {}M to {}M over {} samples: max |g_tt·g_rr + 1| = {:.1e}",
+                                            self.r_min,
+                                            EXTERIOR_R_MAX_M,
+                                            check.n_samples,
+                                            check.max_dev
+                                        ),
+                                        "checked chart encoding, not an Einstein-equation proof"
+                                            .to_string(),
+                                    ])
+                                } else {
+                                    Verdict::fails(
+                                        claim,
+                                        format!(
+                                            "encoded Schwarzschild components violate the reciprocal identity: max dev {:.1e}",
+                                            check.max_dev
+                                        ),
+                                    )
+                                }
+                            }
+                            Chart::EddingtonFinkelstein => {
+                                if !check.transform_agrees {
+                                    Verdict::undecidable(
+                                        claim,
+                                        format!(
+                                            "Jacobian transform disagrees with direct EF components on {} samples: the EF computation is suspect, not the identity",
+                                            check.transform_samples
+                                        ),
+                                    )
+                                } else {
+                                    Verdict::fails(
+                                        claim,
+                                        "in EF coordinates g_rr = 0: no reciprocal identity",
+                                    )
+                                    .with_evidence([
+                                        format!(
+                                            "EF chart, r_min = {}M: g_vv·g_rr = {:.1e} at the inner edge (regular at the {}M horizon)",
+                                            self.r_min, check.product_at_rmin, HORIZON_R_M
+                                        ),
+                                        format!(
+                                            "Jacobian cross-check reproduces g_rr = 0 on {} samples (|r − 2M| > 0.1M)",
+                                            check.transform_samples
+                                        ),
+                                    ])
+                                }
+                            }
+                        },
+                    }
+                }
+            }
+            FIRST_BIANCHI => {
+                // Chart geometry, independent of the R² / Brans-Dicke action
+                // forks: those change the dynamics, not this tensor check.
+                if self.dim != 4 {
+                    Verdict::inapplicable(
+                        claim,
+                        format!("the 4D tensor engine does not apply in D = {}", self.dim),
+                    )
+                } else {
+                    match schwarzschild_bianchi(self.chart, self.r_min) {
+                        None => Verdict::inapplicable(
+                            claim,
+                            format!(
+                                "domain reaches the Schwarzschild-coordinate singularity: r_min = {}M ≤ {}M; switch chart or raise r_min",
+                                self.r_min, HORIZON_R_M
+                            ),
+                        ),
+                        Some(check) => {
+                            if check.max_residual <= 1e-9 {
+                                Verdict::holds(
+                                    claim,
+                                    "computed Riemann satisfies R^ρ_[σμν] = 0 on the domain",
+                                )
+                                .with_evidence([
+                                    format!(
+                                        "Bianchi residual max {:.1e} over {} samples (r_min = {}M, {} chart)",
+                                        check.max_residual,
+                                        check.n_samples,
+                                        self.r_min,
+                                        self.chart.name()
+                                    ),
+                                    format!(
+                                        "Kretschmann anchor: max rel dev {:.1e} from 48/r⁶",
+                                        check.kretschmann_rel_dev
+                                    ),
+                                ])
+                            } else {
+                                Verdict::fails(
+                                    claim,
+                                    format!(
+                                        "Bianchi residual {:.1e} exceeds 1e-9: the computed Riemann tensor violates the cyclic identity",
+                                        check.max_residual
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             _ => Verdict::inapplicable(claim, "claim not made by the GR object"),
         }
     }
@@ -548,6 +758,161 @@ mod tests {
     fn verdict(t: &dyn Theory, id: &str) -> VerdictKind {
         let c = t.claims().into_iter().find(|c| c.id_str() == id).unwrap();
         t.evaluate(&c).kind
+    }
+
+    #[test]
+    fn reciprocal_claim_holds_on_exterior() {
+        // C4.3: live GR (4D, Schwarzschild chart, r_min = 3M) checks the
+        // reciprocal identity on the exterior domain.
+        let g = GeneralRelativity::default();
+        assert_eq!(verdict(&g, SCHWARZSCHILD_RECIPROCAL), VerdictKind::Holds);
+        let c = g
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SCHWARZSCHILD_RECIPROCAL)
+            .unwrap();
+        let v = g.evaluate(&c);
+        let evidence = v.evidence.join("\n");
+        assert!(
+            evidence.contains("Schwarzschild") && evidence.contains("r_min"),
+            "verdict must name chart and domain: {evidence}"
+        );
+        assert!(
+            !c.domain().is_encoding_wide(),
+            "reciprocal cell must name the exterior domain: {:?}",
+            c.domain()
+        );
+    }
+
+    #[test]
+    fn chart_knob_flips_reciprocal() {
+        // C4.3: conventions are inputs — the EF chart computes g_rr = 0.
+        let mut g = GeneralRelativity::default();
+        g.set("chart", KnobValue::Choice("eddington-finkelstein".into()))
+            .unwrap();
+        assert_eq!(verdict(&g, SCHWARZSCHILD_RECIPROCAL), VerdictKind::Fails);
+        g.set("chart", KnobValue::Choice("schwarzschild".into()))
+            .unwrap();
+        assert_eq!(verdict(&g, SCHWARZSCHILD_RECIPROCAL), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn horizon_domain_is_chart_dependent() {
+        // C4.3: r_min = 1.5M reaches the coordinate singularity in
+        // Schwarzschild chart (inapplicable) but computes in EF chart,
+        // which is regular at the horizon (fails the identity, honestly).
+        let mut g = GeneralRelativity::default();
+        g.set("r_min", KnobValue::Float(1.5)).unwrap();
+        assert_eq!(
+            verdict(&g, SCHWARZSCHILD_RECIPROCAL),
+            VerdictKind::Inapplicable
+        );
+        g.set("chart", KnobValue::Choice("eddington-finkelstein".into()))
+            .unwrap();
+        assert_eq!(verdict(&g, SCHWARZSCHILD_RECIPROCAL), VerdictKind::Fails);
+    }
+
+    #[test]
+    fn reciprocal_is_4d_only() {
+        // C4.3: the 4D Schwarzschild chart does not apply in higher D.
+        let mut g = GeneralRelativity::default();
+        g.set("dim", KnobValue::UInt(5)).unwrap();
+        assert_eq!(
+            verdict(&g, SCHWARZSCHILD_RECIPROCAL),
+            VerdictKind::Inapplicable
+        );
+    }
+
+    #[test]
+    fn bianchi_claim_holds_live() {
+        // C2.4a: the computed Riemann tensor satisfies the first Bianchi
+        // identity on the live domain.
+        let g = GeneralRelativity::default();
+        assert_eq!(verdict(&g, FIRST_BIANCHI), VerdictKind::Holds);
+        let c = g
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FIRST_BIANCHI)
+            .unwrap();
+        let v = g.evaluate(&c);
+        let evidence = v.evidence.join("\n");
+        assert!(
+            evidence.contains("Bianchi") && evidence.contains("Kretschmann"),
+            "verdict must cite the residual and the invariant: {evidence}"
+        );
+        assert!(
+            !c.domain().is_encoding_wide(),
+            "Bianchi cell must name its domain: {:?}",
+            c.domain()
+        );
+    }
+
+    #[test]
+    fn bianchi_is_chart_independent() {
+        // C2.4a: unlike the reciprocal identity, Bianchi is tensorial — it
+        // holds in EF chart too, including through the horizon.
+        let mut g = GeneralRelativity::default();
+        g.set("chart", KnobValue::Choice("eddington-finkelstein".into()))
+            .unwrap();
+        assert_eq!(verdict(&g, FIRST_BIANCHI), VerdictKind::Holds);
+        g.set("r_min", KnobValue::Float(1.5)).unwrap();
+        assert_eq!(verdict(&g, FIRST_BIANCHI), VerdictKind::Holds);
+    }
+
+    #[test]
+    fn bianchi_refuses_horizon_in_schw_chart() {
+        // C2.4a: the engine shares the reciprocal domain rule — no silent
+        // extrapolation through the Schwarzschild-coordinate singularity.
+        let mut g = GeneralRelativity::default();
+        g.set("r_min", KnobValue::Float(1.5)).unwrap();
+        assert_eq!(verdict(&g, FIRST_BIANCHI), VerdictKind::Inapplicable);
+    }
+
+    #[test]
+    fn bianchi_is_4d_only() {
+        // C2.4a: the 4D engine does not apply in higher D.
+        let mut g = GeneralRelativity::default();
+        g.set("dim", KnobValue::UInt(5)).unwrap();
+        assert_eq!(verdict(&g, FIRST_BIANCHI), VerdictKind::Inapplicable);
+    }
+
+    #[test]
+    fn gr_package_binds_bianchi_tree() {
+        // C2.4b: the live package carries the generated Bianchi tree and a
+        // lean_ref that binds it — no cosmetic reference.
+        use physis_proof::catalog::catalog_tree_binding;
+        let pkg = GeneralRelativity::default().package();
+        let spec = catalog_tree_binding(pkg.lean_ref.as_deref(), &pkg.equations)
+            .expect("binds")
+            .expect("some spec");
+        assert_eq!(spec.claim_id, FIRST_BIANCHI);
+        // The live claim is the catalog claim: same statement hash.
+        let live = GeneralRelativity::default()
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == FIRST_BIANCHI)
+            .unwrap();
+        assert_eq!(
+            physis_core::formal::FormalClaim::from_claim(&live).statement_hash(),
+            spec.formal_claim().statement_hash(),
+            "live claim must be the catalog claim"
+        );
+    }
+
+    #[test]
+    fn gr_package_flipped_tree_fails_binding() {
+        // C2.4b: a sign-mutated Bianchi artifact is rejected at bind time.
+        use physis_proof::catalog::catalog_tree_binding;
+        let pkg = GeneralRelativity::default().package();
+        let flipped: Vec<String> = pkg
+            .equations
+            .iter()
+            .map(|e| e.replacen(" + ", " - ", 1))
+            .collect();
+        assert_ne!(flipped, pkg.equations);
+        let err = catalog_tree_binding(pkg.lean_ref.as_deref(), &flipped).unwrap_err();
+        assert!(err.contains("whose tree is not in the equations"), "{err}");
+        assert!(!err.contains("receipt"), "{err}");
     }
 
     #[test]
@@ -743,8 +1108,8 @@ mod tests {
         let pkg = parse_package(&src).unwrap();
         assert_eq!(
             pkg.equations.len(),
-            1,
-            "live package must stay action einstein-hilbert"
+            2,
+            "live package is action einstein-hilbert plus the Bianchi tree (C2.4b)"
         );
         assert_eq!(pkg.equations[0], ACTION_EH);
         assert_eq!(

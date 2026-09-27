@@ -236,6 +236,7 @@ impl BellTest {
                 class: "model-internal".into(),
             }],
             lean_ref: None,
+            typed_equations: vec![],
         }
     }
 
@@ -347,6 +348,9 @@ impl Knobbed for BellTest {
 }
 
 impl Theory for BellTest {
+    fn fork(&self) -> Box<dyn Theory> {
+        Box::new(self.clone())
+    }
     fn id(&self) -> &'static str {
         "bell-test"
     }

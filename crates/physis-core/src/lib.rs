@@ -243,6 +243,7 @@ pub mod knob;
 pub mod layer;
 pub mod qty;
 pub mod scale;
+pub mod worker;
 
 pub use artifact::ArtifactId;
 pub use assumption::{Assumption, AssumptionSet, AssumptionSetId, DomainOfValidity};
@@ -266,3 +267,7 @@ pub use knob::{KnobDomain, KnobSpec, KnobValue, Knobbed};
 pub use layer::Layer;
 pub use qty::Qty;
 pub use scale::Scale;
+pub use worker::{
+    approved_backends, enforced_guarantees, run_worker, WorkerFile, WorkerLimits, WorkerOutcome,
+    WorkerRequest, WorkerTrust, MAX_OUTPUT_FILES,
+};

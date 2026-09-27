@@ -1,0 +1,16 @@
+design (rank by discriminating claim count)
+  planck vs rayleigh-jeans: 4 discriminating claims
+experiments (frozen design 5ca8f8ad94bcab4205cab9401ccce444159975798bf0c8fabaafceb5cee6fb1e)
+  planck vs rayleigh-jeans:
+    thermo.stefan-boltzmann [quinn-martin-1985-sigma] Stefan-Boltzmann constant (blackbody total exitance at T_tp; cryogenic radiometry) (W m^{-2} K^{-4})
+      domain [566891/10000000000000, 567043/10000000000000]  rule two-sigma + exact-nll  likelihood gaussian
+      acquisition registered-archival (no download; compiled-in listing)
+      stance planck/holds/compatible nll=1225/2888
+      stance rayleigh-jeans/fails/not-applicable
+      contrast decisive  nll-gap-milli 0  prior-cite-uses 0
+comparison rules frozen: two-sigma + exact-nll (Gaussian datasets); interval-subset (one-sided limits and hull-only datasets); NLL is comparative only, no exclusion threshold
+fitted inputs: none declared
+nuisance inputs: none declared
+covariance: no covariance records; independence assumed across datasets
+adaptive use: 0 journaled cite uses (none); live evaluations reuse data every run; score does not touch datasets
+compute: 10 verdict evaluations charged

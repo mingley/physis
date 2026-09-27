@@ -14,7 +14,8 @@ use physis_core::knob::{KnobDomain, KnobValue};
 use physis_core::AxiomLedger;
 use physis_numeric::{Interval, Ratio};
 use physis_proof::{
-    catalog_tree_binding, catalog_trees_in, lookup_matching, Challenge, UntrustedProof, CATALOG,
+    catalog_tree_binding, catalog_trees_in, lookup_matching, verify_typed_equations, Challenge,
+    UntrustedProof, CATALOG,
 };
 use physis_semantic::SemanticStore;
 use physis_store::{ArtifactStore, Node, NodeKind};
@@ -39,6 +40,8 @@ use crate::journal::{Journal, JournalEvent};
 use crate::protocol::{Command, Response};
 use crate::replay::replay_journal;
 use crate::role::{ResearchBudget, Role};
+use crate::search::{domain_probes, search_theory, SearchRejection};
+use physis_verifier::reproduce::{ReproductionAttempt, ReproductionRecord, ReproductionStore};
 use physis_verifier::{discover_tools, verify, ReceiptStore, Verified, VerifyError};
 
 /// Named snapshot of every theory's knobs.
@@ -71,6 +74,11 @@ pub struct Lab {
     /// cannot mint `logical proved`.
     judged_projections:
         BTreeMap<physis_core::artifact::ArtifactId, physis_core::artifact::ArtifactId>,
+    /// Minted independent-reproduction records. Fresh-session evidence
+    /// only: restore drops them (re-running needs a newly approved
+    /// executable the journal must not name). Inserts only through
+    /// [`Lab::record_reproduction`].
+    reproductions: ReproductionStore,
 }
 
 /// The experiments the lab can run, with one-line descriptions.
@@ -138,6 +146,7 @@ impl Lab {
             cited_sources: BTreeMap::new(),
             encoded_packages: BTreeMap::new(),
             judged_projections: BTreeMap::new(),
+            reproductions: ReproductionStore::empty(),
         }
     }
 
@@ -767,6 +776,29 @@ impl Lab {
                                     );
                                 }
                             }
+                            match self.reproductions.by_statement(c.statement_hash()) {
+                                Some(r) => {
+                                    text.push_str(&format!(
+                                        "  reproduced (P4): {} by {} v{} (run {}, {} points)\n",
+                                        r.claim_id(),
+                                        r.checker_id(),
+                                        r.checker_version(),
+                                        r.run_id(),
+                                        r.evaluated_points(),
+                                    ));
+                                    text.push_str(&format!(
+                                        "    obligation {}\n    executable {}\n    assumptions {}\n",
+                                        r.obligation_sha256(),
+                                        r.exe_digest(),
+                                        r.assumption_hash(),
+                                    ));
+                                }
+                                None => {
+                                    text.push_str(
+                                        "  reproduced: none (no independent reproduction of this identity this session)\n",
+                                    );
+                                }
+                            }
                         }
                     }
                 }
@@ -810,15 +842,28 @@ impl Lab {
             Command::Branch { name } => self.branch(&name),
             Command::Checkout { name } => self.checkout(&name),
             Command::Compare { a, b } => self.compare_theories(&a, &b),
-            Command::Audit => match physis_audit::attack() {
-                Ok(()) => Response::ok("audit: red-team corpus caught (no mutation promoted)\n"),
-                Err(e) => Response::err(e),
-            },
-            Command::Design { theories } => self.design(&theories),
+            Command::Audit => {
+                match physis_audit::attack().and_then(|_| physis_audit::attack_campaign()) {
+                    Ok(()) => Response::ok(
+                        "audit: red-team + campaign corpora caught (no mutation promoted)\n",
+                    ),
+                    Err(e) => Response::err(e),
+                }
+            }
+            Command::Design { theories } => self.design_command(&theories),
             Command::Sensitivity { theory, knob } => self.sensitivity(&theory, &knob),
             Command::Hypothesize { theory } => self.hypothesize(theory.as_deref()),
             Command::Review { claim } => self.review_claim(&claim),
             Command::Loop => self.research_loop(),
+            Command::Step { scope, max_steps } => self.research_step(scope, max_steps),
+            Command::ResearchPlan { path } => self.research_plan(&path),
+            Command::ResearchStep { manifest, campaign } => {
+                self.research_step_campaign(&manifest, &campaign)
+            }
+            Command::ResearchStatus { campaign } => self.research_status_campaign(&campaign),
+            Command::ResearchExport { campaign, format } => {
+                self.research_export_campaign(&campaign, format.as_deref())
+            }
             Command::Inspect { axis, value } => self.inspect(axis.as_deref(), value.as_deref()),
             Command::Formalize { claim } => self.formalize_claim(&claim),
             Command::Reproduce { claim } => self.reproduce_claim(&claim),
@@ -874,6 +919,12 @@ impl Lab {
         }
     }
 
+    /// Deterministic identity of every theory's knob state, for
+    /// campaign blocked-set input tracking (R4).
+    pub(crate) fn knob_state_identity(&self) -> String {
+        format!("{:?}", self.snapshot_knobs())
+    }
+
     fn snapshot_knobs(&self) -> BranchState {
         let mut knobs = BTreeMap::new();
         for (id, t) in &self.theories {
@@ -898,7 +949,7 @@ impl Lab {
         }
     }
 
-    fn find_claim(&self, claim_id: &str) -> Option<physis_core::claim::Claim> {
+    pub(crate) fn find_claim(&self, claim_id: &str) -> Option<physis_core::claim::Claim> {
         for t in self.theories.values() {
             for (c, _) in t.evaluate_all() {
                 if c.id_str() == claim_id {
@@ -934,6 +985,13 @@ impl Lab {
             // NumericCertificate node. Independent Interval enclose of
             // the GQW input-interval overlay must not earn P3N.
             numeric_certificate: derivation == physis_core::DerivationAssurance::CertifiedNumeric,
+            // P4 is a minted reproduction record bound to this live
+            // identity plus the live receipt above. The in-process
+            // `reproduce` remint never touches the store.
+            reproduced: self
+                .reproductions
+                .by_statement(claim.statement_hash())
+                .is_some(),
         })
     }
 
@@ -1551,6 +1609,13 @@ impl Lab {
         }
         catalog_tree_binding(parsed.lean_ref.as_deref(), &parsed.equations)
             .map_err(|e| format!("encode {theory_id}: {e}"))?;
+        let typed_pairs: Vec<(usize, &str)> = parsed
+            .typed_equations
+            .iter()
+            .map(|t| (t.equation, t.tree.as_str()))
+            .collect();
+        let typed_bound = verify_typed_equations(&parsed.equations, &typed_pairs)
+            .map_err(|e| format!("encode {theory_id}: {e}"))?;
         let node = self.store.insert(Node::new(
             NodeKind::EncodingPackage,
             vec![],
@@ -1563,7 +1628,15 @@ impl Lab {
         text.push_str("  round-trip canonical\n");
         text.push_str("  reconstruct  ok\n");
         for spec in catalog_trees_in(&parsed.equations) {
-            text.push_str(&format!("  catalog identity tree  {}\n", spec.claim_id));
+            let marker = if typed_bound.contains(&spec.claim_id) {
+                "  typed"
+            } else {
+                ""
+            };
+            text.push_str(&format!(
+                "  catalog identity tree  {}{marker}\n",
+                spec.claim_id
+            ));
         }
         text.push_str("  not P3S; not a kernel proof; not P4; not Canonical\n");
         Ok((text, node))
@@ -1877,6 +1950,260 @@ impl Lab {
         Response::ok(text)
     }
 
+    /// Collect the eligible C7.1 gaps in scope, sorted by documented
+    /// priority plus stable statement-hash tie-break. Scope names one
+    /// theory id or one claim id; `None` scans the whole lab.
+    pub(crate) fn collect_step_candidates(
+        &self,
+        scope: Option<&str>,
+    ) -> Result<Vec<StepCandidate>, String> {
+        if let Some(s) = scope {
+            let known_theory = self.theories.contains_key(s);
+            let known_claim = self
+                .theories
+                .values()
+                .flat_map(|t| t.claims())
+                .any(|c| c.id_str() == s);
+            if !known_theory && !known_claim {
+                return Err(format!("unknown step scope '{s}'"));
+            }
+        }
+        let mut out = Vec::new();
+        for (id, t) in &self.theories {
+            if let Some(s) = scope {
+                if id != s {
+                    let in_claim_scope = t.claims().iter().any(|c| c.id_str() == s);
+                    if !in_claim_scope {
+                        continue;
+                    }
+                }
+            }
+            for (c, verdict) in t.evaluate_all() {
+                if let Some(s) = scope {
+                    if id != s && c.id_str() != s {
+                        continue;
+                    }
+                }
+                let dual = self.receipts.by_statement(c.statement_hash()).is_some();
+                let Some(gap) = gap_for(
+                    verdict.class,
+                    verdict.derivation(),
+                    verdict.kind,
+                    verdict.empirical(),
+                    dual,
+                    c.layer(),
+                    verdict.intractable(),
+                ) else {
+                    continue;
+                };
+                out.push(StepCandidate {
+                    theory: id.clone(),
+                    supported: lookup_matching(&FormalClaim::from_claim(&c)).is_some(),
+                    registered_dataset: physis_data::dataset_for_claim(c.id_str()).is_some(),
+                    encloseable: verdict.numeric_lo().is_some()
+                        && verdict.numeric_hi().is_some()
+                        && !self.numeric_certs.contains_key(&c.statement_hash()),
+                    claim: c,
+                    gap,
+                });
+            }
+        }
+        out.sort_by(|a, b| {
+            step_priority(a)
+                .0
+                .cmp(&step_priority(b).0)
+                .then_with(|| a.claim.statement_hash().cmp(&b.claim.statement_hash()))
+                .then_with(|| a.theory.cmp(&b.theory))
+                .then_with(|| a.claim.id_str().cmp(b.claim.id_str()))
+        });
+        Ok(out)
+    }
+
+    /// R1: dry-run a versioned campaign manifest (spec 022). Parses and
+    /// validates the manifest and renders the plan. Executes nothing,
+    /// mutates nothing, journals nothing, and grants no authority.
+    fn research_plan(&self, path: &str) -> Response {
+        match std::fs::read_to_string(path) {
+            Ok(text) => match crate::campaign::plan_text(path, &text, self) {
+                Ok(plan) => Response::ok(plan),
+                Err(e) => Response::err(e),
+            },
+            Err(e) => Response::err(format!("cannot read manifest '{path}': {e}")),
+        }
+    }
+
+    /// R4: run at most one coordinated campaign action (spec 022). Lab-only
+    /// through the exec role gate: dispatching prove/cite/enclose must not
+    /// be a back door for a proposer to mint.
+    fn research_step_campaign(&mut self, manifest: &str, campaign: &str) -> Response {
+        let text = match std::fs::read_to_string(manifest) {
+            Ok(t) => t,
+            Err(e) => return Response::err(format!("cannot read manifest '{manifest}': {e}")),
+        };
+        match crate::coordinator::Campaign::open(self, &text, std::path::Path::new(campaign)) {
+            Ok(mut c) => c.step_once(),
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// R4: render campaign status from the bundle alone. Read-only: no
+    /// lock, no lab mutation, no role beyond observe.
+    fn research_status_campaign(&self, campaign: &str) -> Response {
+        match crate::coordinator::status_text(std::path::Path::new(campaign)) {
+            Ok(status) => Response::ok(status),
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// R6: export the versioned campaign report. Read-only projection
+    /// over the bundle; all roles may observe.
+    fn research_export_campaign(&self, campaign: &str, format: Option<&str>) -> Response {
+        let format = match crate::report::ExportFormat::parse(format) {
+            Ok(f) => f,
+            Err(e) => return Response::err(e),
+        };
+        match crate::report::export_text(std::path::Path::new(campaign), format) {
+            Ok(report) => Response::ok(report),
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// C7.1: one gap, one justified action (spec 022). Selects the first
+    /// eligible gap in scope, runs at most one allowed existing operation
+    /// (prove, cite, or enclose) or emits an explicit blocked work item,
+    /// and reports selection, reason, action, result, and remaining steps.
+    /// Lab-only through the exec role gate. Consuming actions charge the
+    /// research budget; the step cap bounds this call to a single action.
+    fn research_step(&mut self, scope: Option<String>, max_steps: u32) -> Response {
+        let shown = scope.clone().unwrap_or_else(|| "lab".into());
+        let mut head = format!("step  scope={shown}  max-steps={max_steps}\n");
+        if max_steps == 0 {
+            head.push_str("selected: none\nstop: step cap is zero; no steps remaining\n");
+            return Response::ok(head);
+        }
+        let candidates = match self.collect_step_candidates(scope.as_deref()) {
+            Ok(c) => c,
+            Err(e) => return Response::err(e),
+        };
+        if candidates.is_empty() {
+            head.push_str("selected: none\nstop: no eligible gap in scope\n");
+            return Response::ok(head);
+        }
+        let sel = &candidates[0];
+        let (prio, prio_name) = step_priority(sel);
+        head.push_str(&format!(
+            "selected  {}  {}  {}  {}\n",
+            sel.theory,
+            sel.claim.id_str(),
+            sel.gap.as_str(),
+            sel.claim.statement_hash().to_hex()
+        ));
+        head.push_str(&format!(
+            "reason  priority {prio} ({prio_name}); {} eligible candidates; tie-break statement-hash ascending\n",
+            candidates.len()
+        ));
+        let claim_id = sel.claim.id_str().to_string();
+        let tail = self.respond_to_gap(sel);
+        match tail {
+            Ok((action, result)) => {
+                head.push_str(&format!("action  {action}\nresult  {result}\n"));
+                head.push_str(&format!("steps-remaining  {}\n", max_steps - 1));
+                Response::ok(head)
+            }
+            Err(e) => Response::err(format!("step {claim_id}: {e}")),
+        }
+    }
+
+    /// Run the spec-022 response for one selected gap. Prove charges the
+    /// budget and journals through the existing verifier path; cite and
+    /// enclose journal through their existing rebuild paths. Blocked gaps
+    /// return explicit work items, never a silent skip.
+    pub(crate) fn respond_to_gap(
+        &mut self,
+        sel: &StepCandidate,
+    ) -> Result<(String, String), String> {
+        let claim_id = sel.claim.id_str().to_string();
+        let hash = sel.claim.statement_hash().to_hex();
+        match sel.gap {
+            GapReason::MissingTheorem if sel.supported => {
+                self.budget.try_consume(&Command::Prove {
+                    claim: claim_id.clone(),
+                })?;
+                let r = self.remint_preferred(&claim_id).map_err(|e| e.to_string())?;
+                self.journal.record(JournalEvent::prove(
+                    &claim_id,
+                    r.challenge_hash.to_hex(),
+                    r.statement_hash.to_hex(),
+                ));
+                Ok((
+                    "prove".into(),
+                    format!(
+                        "prove {claim_id} minted {} via {} + {}",
+                        r.challenge_hash, r.primary_checker.checker, r.secondary_checker.checker,
+                    ),
+                ))
+            }
+            GapReason::MissingTheorem => Ok((
+                "blocked".into(),
+                format!(
+                    "formalization work item: {claim_id} ({hash}) holds under {} but has no catalog obligation; needs a new formalization, not a remint",
+                    sel.theory
+                ),
+            )),
+            GapReason::MissingDataset if sel.registered_dataset => {
+                let (out, id) = self.build_cite(&claim_id)?;
+                self.journal.record(JournalEvent::cite(&claim_id, id.to_hex()));
+                let first = out.lines().nth(1).unwrap_or("").trim().to_string();
+                Ok(("cite".into(), format!("cite {claim_id} rebuilt ({first})")))
+            }
+            GapReason::MissingDataset => Ok((
+                "blocked".into(),
+                format!(
+                    "missing-dataset work item: {claim_id} ({hash}) needs a located measurement (observable, units, uncertainty, license); no registered source; refusing to invent one"
+                ),
+            )),
+            GapReason::InsufficientPrecision if sel.encloseable => {
+                let (_, cert) = self.build_numeric_certificates(&claim_id)?;
+                self.journal
+                    .record(JournalEvent::enclose(&claim_id, cert.to_hex()));
+                Ok((
+                    "enclose".into(),
+                    format!(
+                        "enclose {claim_id} parsed ({cert}); overlap is still not support"
+                    ),
+                ))
+            }
+            GapReason::InsufficientPrecision => Ok((
+                "blocked".into(),
+                format!(
+                    "missing-method work item: no supported bounded refinement for {claim_id} ({hash}); overlap is not support"
+                ),
+            )),
+            GapReason::UnsupportedFormalPrimitive => Ok((
+                "blocked".into(),
+                format!(
+                    "encoding work item: {claim_id} ({hash}) is undecidable in this encoding; needs a new formal primitive, not a receipt"
+                ),
+            )),
+            GapReason::ComputationallyIntractable => Ok((
+                "blocked".into(),
+                format!(
+                    "resources work item: {claim_id} ({hash}) exceeds the bounded search; pose an explicitly weaker scoped question instead of relabeling it"
+                ),
+            )),
+            GapReason::LogicallyUndecidable => Ok((
+                "none".into(),
+                format!("computability record: {claim_id} ({hash}) is logically undecidable here; preserved"),
+            )),
+            GapReason::ScientificOpenProblem => Ok((
+                "none".into(),
+                format!(
+                    "scientific-open-problem preserved: {claim_id} ({hash}) stays open; no diagnostic run"
+                ),
+            )),
+        }
+    }
+
     /// Replay a prove event only when the recorded identity is the live
     /// FormalClaim and the recorded challenge is that claim's generate-only
     /// obligation. A stale slug is not P3F.
@@ -2075,6 +2402,49 @@ impl Lab {
             }
             Err(e) => Response::err(e),
         }
+    }
+
+    /// Record a minted independent reproduction. The only way P4
+    /// evidence enters the lab: the argument is a verifier-minted value,
+    /// not imported JSON. Journals the run as inspectable history.
+    pub fn record_reproduction(&mut self, verified: &Verified<ReproductionRecord>) {
+        let r = verified.artifact();
+        self.journal.record(JournalEvent::reproduce(
+            r.claim_id(),
+            r.statement_hash().to_hex(),
+            "agree",
+            r.obligation_sha256(),
+            r.exe_digest(),
+            r.run_id(),
+            format!(
+                "{} evaluated {} grid points (degree {:?}); primary {}",
+                r.checker_id(),
+                r.evaluated_points(),
+                r.grid_degree(),
+                verified.receipt().formal_backend_version,
+            ),
+        ));
+        self.reproductions.record(verified);
+    }
+
+    /// Journal a non-minting reproduction attempt as inspectable
+    /// history. Never touches the reproduction store: a disagreement,
+    /// refusal, or failure is preserved evidence, not P4.
+    pub fn record_reproduction_attempt(
+        &mut self,
+        claim_id: &str,
+        statement_hash: &str,
+        attempt: &ReproductionAttempt,
+    ) {
+        self.journal.record(JournalEvent::reproduce(
+            claim_id,
+            statement_hash,
+            attempt.disposition().as_str(),
+            attempt.obligation_sha256(),
+            attempt.exe_digest(),
+            attempt.run_id(),
+            attempt.detail(),
+        ));
     }
 
     fn research_loop(&mut self) -> Response {
@@ -2505,9 +2875,47 @@ impl Lab {
         Response::ok(text)
     }
 
+    /// R5 entry point: frozen experiment design, journaled. Pure ranking
+    /// plus the freeze record; grants no authority.
+    fn design_command(&mut self, theories: &[String]) -> Response {
+        match self.build_design(theories) {
+            Ok((pairs_text, design)) => {
+                self.journal.record(crate::journal::JournalEvent::design(
+                    theories.to_vec(),
+                    design.design_id.clone(),
+                ));
+                Response::ok(Self::render_design(pairs_text, &design))
+            }
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Pure design render for the loop: same ranking, no journal event
+    /// (the loop journals its own summary).
     fn design(&self, theories: &[String]) -> Response {
+        match self.build_design(theories) {
+            Ok((pairs_text, design)) => Response::ok(Self::render_design(pairs_text, &design)),
+            Err(e) => Response::err(e),
+        }
+    }
+
+    fn render_design(mut pairs_text: String, design: &crate::design::ExperimentDesign) -> String {
+        pairs_text.push_str(&crate::design::render(design));
+        pairs_text
+    }
+
+    /// Pair-count rows plus the ranked observable design over live
+    /// verdicts. Refuses unknown theories before evaluating anything.
+    fn build_design(
+        &self,
+        theories: &[String],
+    ) -> Result<(String, crate::design::ExperimentDesign), String> {
         if theories.len() < 2 {
-            return Response::err("design needs at least two theories");
+            return Err("design needs at least two theories".into());
+        }
+        for t in theories {
+            self.theory(t)
+                .map_err(|_| format!("unknown theory '{t}'"))?;
         }
         let mut text = String::from("design (rank by discriminating claim count)\n");
         let mut rows: Vec<(String, String, usize)> = Vec::new();
@@ -2528,7 +2936,42 @@ impl Lab {
         for (a, b, n) in rows {
             text.push_str(&format!("  {a} vs {b}: {n} discriminating claims\n"));
         }
-        Response::ok(text)
+        let mut input = crate::design::DesignInput {
+            theories: theories.to_vec(),
+            ..Default::default()
+        };
+        for id in theories {
+            let theory = self.theory(id).map_err(|e| e.to_string())?;
+            for (spec, _) in theory.snapshot() {
+                match spec.origin {
+                    physis_core::judgment::ParameterOrigin::Fitted => {
+                        input.fitted.push(format!("{id}/{}", spec.name));
+                    }
+                    physis_core::judgment::ParameterOrigin::Nuisance => {
+                        input.nuisance.push(format!("{id}/{}", spec.name));
+                    }
+                    _ => {}
+                }
+            }
+            for (claim, verdict) in theory.evaluate_all() {
+                input.compute_evaluations += 1;
+                input.verdicts.push(crate::design::VerdictView {
+                    theory: id.clone(),
+                    claim: claim.id_str().to_string(),
+                    kind: verdict.kind.as_str().to_string(),
+                    empirical: verdict.empirical().as_str().to_string(),
+                    nll: verdict.statistical_nll().map(|s| s.to_string()),
+                });
+            }
+        }
+        for event in self.journal.events() {
+            if let crate::journal::JournalEvent::Cite { claim, .. } = event {
+                if let Some(dataset) = physis_data::dataset_for_claim(claim) {
+                    *input.cite_uses.entry(dataset.id.clone()).or_insert(0) += 1;
+                }
+            }
+        }
+        Ok((text, crate::design::rank_observables(&input)))
     }
 
     fn sensitivity(&mut self, theory: &str, knob: &str) -> Response {
@@ -2589,64 +3032,36 @@ impl Lab {
             None => self.theories.keys().cloned().collect(),
         };
 
+        // Fork-only search: the engine takes `&dyn Theory`, so candidates
+        // are evaluated on owned forks and the trusted baseline (knobs,
+        // verdicts, journal) cannot be modified. No restore step exists.
         let mut frozen = 0usize;
+        let mut explored = 0usize;
+        let mut rejected_total = 0usize;
+        let mut refuted_total = 0usize;
+        let mut depth = 0usize;
+        let mut capped = false;
         let mut hits: Vec<HypothesisHit> = Vec::new();
+        let mut rejected: Vec<(String, SearchRejection)> = Vec::new();
         for id in &ids {
-            let knobs: Vec<(String, ParameterOrigin, KnobDomain, KnobValue)> = self.theories[id]
-                .snapshot()
-                .into_iter()
-                .map(|(s, v)| (s.name.to_string(), s.origin, s.domain.clone(), v))
-                .collect();
-            let baseline = self.theories[id].evaluate_all();
-            for (name, origin, domain, current) in knobs {
-                if !matches!(origin, ParameterOrigin::Chosen | ParameterOrigin::Fitted) {
-                    frozen += 1;
-                    continue;
-                }
-                for cand in domain_probes(&domain, &current) {
-                    if cand == current {
-                        continue;
-                    }
-                    {
-                        let t = self.theories.get_mut(id).unwrap();
-                        if t.set(&name, cand.clone()).is_err() {
-                            continue;
-                        }
-                    }
-                    let after = self.theories[id].evaluate_all();
-                    let diffs = diff_verdicts(&baseline, &after);
-                    {
-                        let t = self.theories.get_mut(id).unwrap();
-                        let _ = t.set(&name, current.clone());
-                    }
-                    if !diffs.is_empty() {
-                        hits.push(HypothesisHit {
-                            theory: id.clone(),
-                            knob: name.clone(),
-                            origin,
-                            from: current.display(),
-                            to: cand.display(),
-                            diffs,
-                            ir: false,
-                        });
-                    }
-                }
-            }
-            for (label, mutant) in self.theories[id].structural_mutations() {
-                let after = mutant.evaluate_all();
-                let diffs = diff_verdicts(&baseline, &after);
-                if !diffs.is_empty() {
-                    hits.push(HypothesisHit {
-                        theory: id.clone(),
-                        knob: label.clone(),
-                        origin: ParameterOrigin::Chosen,
-                        from: "package".into(),
-                        to: label,
-                        diffs,
-                        ir: true,
-                    });
-                }
-            }
+            let report = search_theory(self.theories[id].as_ref());
+            frozen += report.frozen_knobs;
+            explored += report.explored;
+            rejected_total += report.rejected.len();
+            refuted_total += report.refuted;
+            depth = depth.max(report.depth);
+            capped |= report.budget_exhausted;
+            hits.extend(report.hits.into_iter().map(|h| HypothesisHit {
+                theory: id.clone(),
+                knob: h.knob,
+                origin: h.origin,
+                from: h.from,
+                to: h.to,
+                diffs: h.diffs,
+                ir: h.ir,
+                refuted: h.refuted,
+            }));
+            rejected.extend(report.rejected.into_iter().map(|r| (id.clone(), r)));
         }
 
         hits.sort_by(|a, b| {
@@ -2657,6 +3072,11 @@ impl Lab {
                 .then_with(|| a.theory.cmp(&b.theory))
                 .then_with(|| a.knob.cmp(&b.knob))
                 .then_with(|| a.to.cmp(&b.to))
+        });
+        rejected.sort_by(|a, b| {
+            a.0.cmp(&b.0)
+                .then_with(|| a.1.knob.cmp(&b.1.knob))
+                .then_with(|| a.1.value.cmp(&b.1.value))
         });
 
         let mut text = String::from(
@@ -2677,13 +3097,14 @@ impl Lab {
                 }
             };
             text.push_str(&format!(
-                "  {}  {}: {} → {}  origin={}  flips={}\n",
+                "  {}  {}: {} → {}  origin={}  flips={}{}\n",
                 hit.theory,
                 hit.knob,
                 hit.from,
                 hit.to,
                 tag,
-                hit.diffs.len()
+                hit.diffs.len(),
+                if hit.refuted { " refuted" } else { "" },
             ));
             for d in &hit.diffs {
                 for line in d.render().lines() {
@@ -2693,10 +3114,22 @@ impl Lab {
                 }
             }
         }
+        let shown_rejected = if theory.is_some() {
+            rejected.len()
+        } else {
+            rejected.len().min(SHOW)
+        };
+        for (tid, r) in rejected.iter().take(shown_rejected) {
+            text.push_str(&format!(
+                "  rejected {tid} {}={}: {}\n",
+                r.knob, r.value, r.reason
+            ));
+        }
         text.push_str(&format!(
-            "candidates={} shown={} frozen_knobs={frozen}\n",
+            "candidates={} shown={} frozen_knobs={frozen} explored={explored} rejected={rejected_total} refuted={refuted_total} depth={depth}{}\n",
             hits.len(),
-            shown
+            shown,
+            if capped { " budget_exhausted" } else { "" },
         ));
         Response::ok(text)
     }
@@ -2710,6 +3143,7 @@ struct HypothesisHit {
     to: String,
     diffs: Vec<VerdictDiff>,
     ir: bool,
+    refuted: bool,
 }
 
 struct EvidenceRow {
@@ -2734,33 +3168,36 @@ fn origin_rank(origin: ParameterOrigin) -> u8 {
     }
 }
 
-fn domain_probes(domain: &KnobDomain, current: &KnobValue) -> Vec<KnobValue> {
-    match domain {
-        KnobDomain::Bool => vec![KnobValue::Bool(true), KnobValue::Bool(false)],
-        KnobDomain::Int { min, max } => {
-            vec![KnobValue::Int(*min), KnobValue::Int(*max), current.clone()]
-        }
-        KnobDomain::UInt { min, max } => {
-            let mut v = vec![KnobValue::UInt(*min), KnobValue::UInt(*max)];
-            if let KnobValue::UInt(x) = current {
-                if *x > *min {
-                    v.push(KnobValue::UInt(*x - 1));
-                }
-                if *x < *max {
-                    v.push(KnobValue::UInt(*x + 1));
-                }
-            }
-            v
-        }
-        KnobDomain::Float { min, max } => vec![
-            KnobValue::Float(*min),
-            KnobValue::Float(*max),
-            current.clone(),
-        ],
-        KnobDomain::Choice(opts) => opts
-            .iter()
-            .map(|s| KnobValue::Choice((*s).into()))
-            .collect(),
+/// One eligible gap for the C7.1 step selector: the live gap plus the
+/// support flags that decide which response the spec-022 table allows.
+pub(crate) struct StepCandidate {
+    pub(crate) theory: String,
+    pub(crate) claim: physis_core::claim::Claim,
+    pub(crate) gap: GapReason,
+    /// A catalog obligation exists for this exact statement.
+    pub(crate) supported: bool,
+    /// A registered dataset exists for this slug.
+    pub(crate) registered_dataset: bool,
+    /// An enclosure overlay exists that no certificate node parses yet.
+    pub(crate) encloseable: bool,
+}
+
+/// Documented C7.1 priority (lower runs first). Actionable gaps beat
+/// blocked work items; blocked items beat deliberate no-ops. Within one
+/// priority the selector tie-breaks by statement hash, then theory,
+/// then claim id.
+pub(crate) fn step_priority(c: &StepCandidate) -> (u8, &'static str) {
+    match c.gap {
+        GapReason::MissingTheorem if c.supported => (0, "supported-theorem"),
+        GapReason::MissingDataset if c.registered_dataset => (1, "registered-dataset"),
+        GapReason::InsufficientPrecision if c.encloseable => (2, "encloseable-precision"),
+        GapReason::MissingDataset => (3, "missing-dataset"),
+        GapReason::MissingTheorem => (4, "unsupported-theorem"),
+        GapReason::InsufficientPrecision => (5, "precision-blocked"),
+        GapReason::UnsupportedFormalPrimitive => (6, "encoding"),
+        GapReason::ComputationallyIntractable => (7, "resources"),
+        GapReason::LogicallyUndecidable => (8, "computability"),
+        GapReason::ScientificOpenProblem => (9, "open-problem"),
     }
 }
 
@@ -4626,6 +5063,45 @@ mod tests {
     }
 
     #[test]
+    fn prove_bianchi_mints_a_receipt_and_is_not_coboundary() {
+        // C2.4b: the formal Bianchi obligation binds end to end.
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Prove {
+                claim: "gr.first-bianchi".into(),
+            })
+            .text()
+            .to_string();
+        if physis_verifier::discover_tools().is_some() {
+            assert!(text.contains("lean-kernel"), "{text}");
+            assert!(text.contains("nanoda"), "{text}");
+        } else {
+            assert!(text.contains("expand-recursive"), "{text}");
+            assert!(text.contains("expand-postfix"), "{text}");
+        }
+        assert!(
+            !text.contains("a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784"),
+            "bianchi challenge is not the triangle challenge: {text}"
+        );
+        assert!(
+            text.contains("425adbe5967772a76f932cab8988d9b2d66844eda0aa1dadb7453ce13d3e941f"),
+            "catalog bianchi challenge hash must stay: {text}"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "gr.first-bianchi".into(),
+            })
+            .text()
+            .to_string();
+        let block = why_theory_block(&why, "general-relativity");
+        assert!(block.contains("kernel proof: receipt"), "{block}");
+        assert!(block.contains("judgment:   logical proved"), "{block}");
+        assert!(block.contains("P3F"), "{block}");
+        assert!(block.contains("torsion-free"), "{block}");
+        assert!(!block.contains("theorem"), "{block}");
+    }
+
+    #[test]
     fn prove_d2_one_mints_a_receipt_and_is_not_the_triangle() {
         let mut lab = Lab::standard();
         let text = lab
@@ -4941,6 +5417,792 @@ mod tests {
     }
 
     #[test]
+    fn prove_kinematic_trio_binds_receipts_to_exact_statements() {
+        // C2.1: one journal, three kinematic receipts, each bound to its
+        // exact statement. A knob flip moves the evaluator without minting.
+        let mut lab = Lab::standard();
+        let trio = [
+            "sr.invariant-interval",
+            "sr.subluminal-composition",
+            "sr.energy-momentum-invariant",
+        ];
+        let journal_len = lab.journal().len();
+        let mut challenges = Vec::new();
+        for slug in trio {
+            let prove = lab
+                .exec(Command::Prove { claim: slug.into() })
+                .text()
+                .to_string();
+            if physis_verifier::discover_tools().is_some() {
+                assert!(prove.contains("lean-kernel"), "{prove}");
+                assert!(prove.contains("nanoda"), "{prove}");
+            } else {
+                assert!(prove.contains("expand-recursive"), "{prove}");
+                assert!(prove.contains("expand-postfix"), "{prove}");
+            }
+            let hash = prove
+                .lines()
+                .find_map(|l| l.trim().strip_prefix("challenge "))
+                .expect("prove prints its challenge hash")
+                .split_whitespace()
+                .next()
+                .expect("challenge hash is one token")
+                .to_string();
+            challenges.push(hash);
+        }
+        assert_eq!(
+            lab.journal().len(),
+            journal_len + 3,
+            "one journal holds all three proves"
+        );
+        assert_ne!(challenges[0], challenges[1]);
+        assert_ne!(challenges[0], challenges[2]);
+        assert_ne!(challenges[1], challenges[2]);
+        assert_eq!(lab.receipts.len(), 3);
+
+        for (slug, hash) in trio.iter().zip(challenges.iter()) {
+            let why = lab
+                .exec(Command::Why {
+                    claim: slug.to_string(),
+                })
+                .text()
+                .to_string();
+            let block = why_theory_block(&why, "special-relativity");
+            assert!(block.contains("kernel proof: receipt"), "{block}");
+            assert!(block.contains(hash), "{block}");
+            assert!(block.contains("judgment:   logical proved"), "{block}");
+            assert!(block.contains("P3F"), "{block}");
+            for other in challenges.iter().filter(|h| *h != hash) {
+                assert!(
+                    !block.contains(other),
+                    "no cross-borrowing between kinematic receipts: {block}"
+                );
+            }
+        }
+        // The catalog polynomial is not the whole numerical evaluator.
+        for slug in ["sr.invariant-interval", "sr.energy-momentum-invariant"] {
+            let why = lab
+                .exec(Command::Why { claim: slug.into() })
+                .text()
+                .to_string();
+            let block = why_theory_block(&why, "special-relativity");
+            assert!(
+                block.contains("distinct kernel obligation, not this floating-point sample"),
+                "{block}"
+            );
+        }
+
+        let p3f = lab
+            .exec(Command::Inspect {
+                axis: Some("trust".into()),
+                value: Some("P3F".into()),
+            })
+            .text()
+            .to_string();
+        for slug in trio {
+            assert!(p3f.contains(slug), "{p3f}");
+        }
+        assert!(
+            p3f.lines().any(|l| l.trim() == "count 3"),
+            "exactly the trio is P3F: {p3f}"
+        );
+
+        // absolute_time flips the evaluator without forging a receipt.
+        let set = lab
+            .exec(Command::Set {
+                theory: "special-relativity".into(),
+                knob: "absolute_time".into(),
+                value: "true".into(),
+            })
+            .text()
+            .to_string();
+        for slug in trio {
+            assert!(set.contains(slug) && set.contains("holds → fails"), "{set}");
+        }
+        assert_eq!(lab.receipts.len(), 3, "a knob turn mints nothing");
+        for slug in trio {
+            let why = lab
+                .exec(Command::Why {
+                    claim: slug.to_string(),
+                })
+                .text()
+                .to_string();
+            let block = why_theory_block(&why, "special-relativity");
+            assert!(block.contains("verdict:    fails"), "{block}");
+            assert!(block.contains("judgment:   logical disproved"), "{block}");
+            assert!(
+                block.contains("kernel proof: receipt"),
+                "the receipt stays bound to its exact unchanged statement: {block}"
+            );
+        }
+    }
+
+    #[test]
+    fn journal_prove_of_a_stale_kinematic_identity_is_not_p3f() {
+        // C2.1: a changed kinematic statement cannot borrow the old receipt.
+        let mut lab = Lab::standard();
+        let stale = physis_core::claim::Claim::new(
+            "sr.invariant-interval",
+            "The spacetime interval is invariant under a Galilean boost.",
+            LayerId::Spacetime,
+            ClaimClass::ModelInternal,
+        );
+        let live = lab.find_claim("sr.invariant-interval").unwrap();
+        assert_ne!(stale.statement_hash(), live.statement_hash());
+        let challenge = Challenge::generate(&FormalClaim::from_claim(&stale));
+        let jsonl = format!(
+            r#"{{"event":"prove","t":1,"claim":"sr.invariant-interval","challenge_hash":"{}","statement_hash":"{}"}}"#,
+            challenge.challenge_hash(),
+            stale.statement_hash(),
+        );
+        *lab.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab.restore_from_journal();
+        assert!(lab.receipts.by_statement(live.statement_hash()).is_none());
+        let why = lab
+            .exec(Command::Why {
+                claim: "sr.invariant-interval".into(),
+            })
+            .text()
+            .to_string();
+        let block = why_theory_block(&why, "special-relativity");
+        assert!(block.contains("kernel proof: none"), "{block}");
+        assert!(!block.contains("P3F"), "{block}");
+    }
+
+    #[test]
+    fn eddington_why_shows_sobral_receipt_without_minting_proof() {
+        // C3.1: Sobral 1919 moves the empirical axis, never the logical one.
+        let mut lab = Lab::standard();
+        let why = lab
+            .exec(Command::Why {
+                claim: "gr.eddington-deflection".into(),
+            })
+            .text()
+            .to_string();
+        let gr = why_theory_block(&why, "general-relativity");
+        assert!(gr.contains("verdict:    holds"), "{gr}");
+        assert!(gr.contains("empirical:  compatible"), "{gr}");
+        assert!(gr.contains("dyson-1920-sobral-deflection"), "{gr}");
+        assert!(gr.contains("two-sigma"), "{gr}");
+        assert!(gr.contains("nll:"), "{gr}");
+        assert!(gr.contains("judgment:   logical undetermined"), "{gr}");
+        assert!(gr.contains("kernel proof: none"), "{gr}");
+        assert!(!gr.contains("P3F"), "{gr}");
+        assert!(!gr.contains("P3N"), "{gr}");
+        let newton = why_theory_block(&why, "newtonian-gravity");
+        assert!(newton.contains("verdict:    fails"), "{newton}");
+        assert!(newton.contains("empirical:  excluded"), "{newton}");
+        assert!(newton.contains("dyson-1920-sobral-deflection"), "{newton}");
+
+        lab.set_role(Role::ProvenanceAuditor);
+        let cite = lab
+            .exec(Command::Cite {
+                claim: "gr.eddington-deflection".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            cite.contains("kind     dataset  dyson-1920-sobral-deflection"),
+            "{cite}"
+        );
+        assert!(cite.contains("Dyson"), "{cite}");
+        assert!(cite.contains("10.1098/rsta.1920.0009"), "{cite}");
+        assert!(cite.contains("not P3S"), "{cite}");
+    }
+
+    #[test]
+    fn mercury_why_shows_clemence_receipt_without_minting_proof() {
+        // C3.2: Clemence 1947 moves the empirical axis, never the logical one.
+        let mut lab = Lab::standard();
+        let why = lab
+            .exec(Command::Why {
+                claim: "gr.mercury-perihelion".into(),
+            })
+            .text()
+            .to_string();
+        let gr = why_theory_block(&why, "general-relativity");
+        assert!(gr.contains("verdict:    holds"), "{gr}");
+        assert!(gr.contains("empirical:  compatible"), "{gr}");
+        assert!(gr.contains("clemence-1947-mercury-residual"), "{gr}");
+        assert!(gr.contains("two-sigma"), "{gr}");
+        assert!(gr.contains("nll:"), "{gr}");
+        assert!(gr.contains("judgment:   logical undetermined"), "{gr}");
+        assert!(gr.contains("kernel proof: none"), "{gr}");
+        assert!(!gr.contains("P3F"), "{gr}");
+        assert!(!gr.contains("P3N"), "{gr}");
+        let newton = why_theory_block(&why, "newtonian-gravity");
+        assert!(newton.contains("verdict:    fails"), "{newton}");
+        assert!(newton.contains("empirical:  excluded"), "{newton}");
+        assert!(
+            newton.contains("clemence-1947-mercury-residual"),
+            "{newton}"
+        );
+
+        lab.set_role(Role::ProvenanceAuditor);
+        let cite = lab
+            .exec(Command::Cite {
+                claim: "gr.mercury-perihelion".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            cite.contains("kind     dataset  clemence-1947-mercury-residual"),
+            "{cite}"
+        );
+        assert!(cite.contains("Clemence"), "{cite}");
+        assert!(cite.contains("10.1103/RevModPhys.19.361"), "{cite}");
+        assert!(cite.contains("not P3S"), "{cite}");
+    }
+
+    #[test]
+    fn stefan_why_shows_quinn_martin_receipt_without_minting_proof() {
+        // C3.3: Quinn & Martin 1985 moves the empirical axis, never the logical one.
+        let mut lab = Lab::standard();
+        let why = lab
+            .exec(Command::Why {
+                claim: "thermo.stefan-boltzmann".into(),
+            })
+            .text()
+            .to_string();
+        let planck = why_theory_block(&why, "planck");
+        assert!(planck.contains("verdict:    holds"), "{planck}");
+        assert!(planck.contains("empirical:  compatible"), "{planck}");
+        assert!(planck.contains("quinn-martin-1985-sigma"), "{planck}");
+        assert!(planck.contains("two-sigma"), "{planck}");
+        assert!(planck.contains("nll:"), "{planck}");
+        assert!(
+            planck.contains("judgment:   logical undetermined"),
+            "{planck}"
+        );
+        assert!(planck.contains("kernel proof: none"), "{planck}");
+        assert!(!planck.contains("P3F"), "{planck}");
+        assert!(!planck.contains("P3N"), "{planck}");
+        let rj = why_theory_block(&why, "rayleigh-jeans");
+        assert!(rj.contains("verdict:    fails"), "{rj}");
+        assert!(
+            rj.contains("withholding the Quinn–Martin 1985 comparison"),
+            "{rj}"
+        );
+
+        lab.set_role(Role::ProvenanceAuditor);
+        let cite = lab
+            .exec(Command::Cite {
+                claim: "thermo.stefan-boltzmann".into(),
+            })
+            .text()
+            .to_string();
+        assert!(
+            cite.contains("kind     dataset  quinn-martin-1985-sigma"),
+            "{cite}"
+        );
+        assert!(cite.contains("Quinn"), "{cite}");
+        assert!(cite.contains("10.1098/rsta.1985.0058"), "{cite}");
+        assert!(cite.contains("not P3S"), "{cite}");
+    }
+
+    /// C7.1 fixture: one untested empirical prediction. Test-only; the
+    /// live lab has no missing-dataset gap, and this stub must not leak
+    /// into `Lab::standard`.
+    #[derive(Clone)]
+    struct StubUntestedTheory;
+
+    impl physis_core::knob::Knobbed for StubUntestedTheory {
+        fn specs(&self) -> &'static [physis_core::knob::KnobSpec] {
+            &[]
+        }
+        fn get(&self, name: &str) -> Result<KnobValue, CoreError> {
+            Err(CoreError::UnknownKnob { name: name.into() })
+        }
+        fn set(&mut self, name: &str, _value: KnobValue) -> Result<KnobValue, CoreError> {
+            Err(CoreError::UnknownKnob { name: name.into() })
+        }
+    }
+
+    impl Theory for StubUntestedTheory {
+        fn fork(&self) -> Box<dyn Theory> {
+            Box::new(self.clone())
+        }
+        fn id(&self) -> &'static str {
+            "stub-untested"
+        }
+        fn name(&self) -> &'static str {
+            "Stub untested fixture"
+        }
+        fn summary(&self) -> &'static str {
+            "Test fixture: one untested empirical prediction. Not physics."
+        }
+        fn world(&self) -> Option<physis_model::World> {
+            None
+        }
+        fn claims(&self) -> Vec<physis_core::claim::Claim> {
+            vec![physis_core::claim::Claim::new(
+                "stub.untested-prediction",
+                "A stub empirical prediction with no measurement.",
+                LayerId::Effective,
+                ClaimClass::EmpiricalPrediction,
+            )]
+        }
+        fn evaluate(&self, claim: &physis_core::claim::Claim) -> physis_core::claim::Verdict {
+            physis_core::claim::Verdict::holds(claim, "stub holds")
+                .with_empirical(physis_core::EmpiricalStatus::Untested)
+        }
+    }
+
+    fn step_text(lab: &mut Lab, scope: Option<&str>, max_steps: u32) -> String {
+        lab.exec(Command::Step {
+            scope: scope.map(str::to_string),
+            max_steps,
+        })
+        .text()
+        .to_string()
+    }
+
+    #[test]
+    fn step_proves_one_supported_gap_and_no_more() {
+        let mut lab = Lab::standard();
+        let out = step_text(&mut lab, Some("dec.d-squared-zero"), 1);
+        assert!(
+            out.contains("selected  de-rham  dec.d-squared-zero  missing-theorem"),
+            "{out}"
+        );
+        assert!(out.contains("priority 0 (supported-theorem)"), "{out}");
+        assert!(out.contains("action  prove"), "{out}");
+        assert!(out.contains("steps-remaining  0"), "{out}");
+        assert_eq!(
+            lab.receipts.len(),
+            1,
+            "step proves one gap, not the catalog"
+        );
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("judgment:   logical proved"), "{why}");
+
+        let again = lab.exec(Command::Step {
+            scope: Some("dec.d-squared-zero".into()),
+            max_steps: 1,
+        });
+        assert_eq!(again.exit_code(), 0, "{}", again.text());
+        assert!(
+            again.text().contains("no eligible gap in scope"),
+            "{}",
+            again.text()
+        );
+        assert_eq!(lab.receipts.len(), 1);
+    }
+
+    #[test]
+    fn step_selection_is_deterministic_across_labs() {
+        let mut a = Lab::standard();
+        let mut b = Lab::standard();
+        let out_a = step_text(&mut a, None, 3);
+        let out_b = step_text(&mut b, None, 3);
+        let sel_a = out_a.lines().find(|l| l.starts_with("selected  ")).unwrap();
+        let sel_b = out_b.lines().find(|l| l.starts_with("selected  ")).unwrap();
+        assert_eq!(sel_a, sel_b, "{out_a}\n{out_b}");
+        assert!(out_a.contains("steps-remaining  2"), "{out_a}");
+    }
+
+    #[test]
+    fn step_unsupported_theorem_is_a_work_item_not_a_prove() {
+        let mut lab = Lab::standard();
+        let out = step_text(&mut lab, Some("gr.eddington-deflection"), 1);
+        assert!(out.contains("priority 4 (unsupported-theorem)"), "{out}");
+        assert!(out.contains("action  blocked"), "{out}");
+        assert!(out.contains("formalization work item"), "{out}");
+        assert!(out.contains("not a remint"), "{out}");
+        assert_eq!(lab.receipts.len(), 0);
+        assert!(!lab.journal().to_string().contains("\"event\":\"prove\""));
+    }
+
+    #[test]
+    fn step_missing_dataset_without_source_is_a_work_item() {
+        let mut lab = Lab::standard();
+        lab.theories
+            .insert("stub-untested".into(), Box::new(StubUntestedTheory));
+        let out = step_text(&mut lab, Some("stub-untested"), 1);
+        assert!(
+            out.contains("selected  stub-untested  stub.untested-prediction  missing-dataset"),
+            "{out}"
+        );
+        assert!(out.contains("priority 3 (missing-dataset)"), "{out}");
+        assert!(out.contains("action  blocked"), "{out}");
+        assert!(out.contains("missing-dataset work item"), "{out}");
+        assert!(
+            out.contains("observable, units, uncertainty, license"),
+            "{out}"
+        );
+        assert!(out.contains("refusing to invent one"), "{out}");
+        assert!(!out.contains("action  prove"), "{out}");
+        assert_eq!(lab.receipts.len(), 0);
+        assert!(!lab.journal().to_string().contains("\"event\":\"prove\""));
+    }
+
+    #[test]
+    fn step_missing_dataset_with_source_cites() {
+        let mut lab = Lab::standard();
+        let claim = lab.find_claim("gut.proton-lifetime-sk").unwrap();
+        let cand = StepCandidate {
+            theory: "su5-gut".into(),
+            claim,
+            gap: GapReason::MissingDataset,
+            supported: false,
+            registered_dataset: true,
+            encloseable: false,
+        };
+        let (action, result) = lab.respond_to_gap(&cand).expect("cite runs");
+        assert_eq!(action, "cite");
+        assert!(result.contains("gut.proton-lifetime-sk"), "{result}");
+        assert!(
+            lab.journal().to_string().contains("\"event\":\"cite\""),
+            "cite journals through the existing path"
+        );
+        assert_eq!(lab.receipts.len(), 0, "cite mints no receipt");
+    }
+
+    #[test]
+    fn step_insufficient_precision_encloses_without_upgrading() {
+        let mut lab = Lab::standard();
+        lab.set_knob("su5-gut", "supersymmetric", "true").unwrap();
+        let out = step_text(&mut lab, Some("gut.weinberg-angle-mz-interval"), 1);
+        assert!(out.contains("priority 2 (encloseable-precision)"), "{out}");
+        assert!(out.contains("action  enclose"), "{out}");
+        assert!(out.contains("overlap is still not support"), "{out}");
+        let gaps = lab
+            .exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some("insufficient-precision".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            gaps.contains("gut.weinberg-angle-mz-interval"),
+            "enclose parses; it does not close the precision gap: {gaps}"
+        );
+        let second = step_text(&mut lab, Some("gut.weinberg-angle-mz-interval"), 1);
+        assert!(
+            second.contains("priority 5 (precision-blocked)"),
+            "{second}"
+        );
+        assert!(second.contains("action  blocked"), "{second}");
+        assert!(second.contains("missing-method work item"), "{second}");
+    }
+
+    #[test]
+    fn step_refuses_named_roles_and_zero_cap() {
+        let mut lab = Lab::standard();
+        lab.set_role(Role::Explorer);
+        let blocked = lab.exec(Command::Step {
+            scope: None,
+            max_steps: 1,
+        });
+        assert_eq!(blocked.exit_code(), 1, "{}", blocked.text());
+        assert!(
+            blocked.text().contains("explorer cannot step"),
+            "{}",
+            blocked.text()
+        );
+
+        lab.set_role(Role::ProofSearcher);
+        let proposer = lab.exec(Command::Step {
+            scope: None,
+            max_steps: 1,
+        });
+        assert_eq!(proposer.exit_code(), 1, "{}", proposer.text());
+        assert!(
+            proposer.text().contains("proof-searcher cannot step"),
+            "selection must not lend a proposer Lab authority: {}",
+            proposer.text()
+        );
+
+        lab.set_role(Role::Lab);
+        let zero = lab.exec(Command::Step {
+            scope: None,
+            max_steps: 0,
+        });
+        assert_eq!(zero.exit_code(), 0, "{}", zero.text());
+        assert!(zero.text().contains("step cap is zero"), "{}", zero.text());
+        assert_eq!(lab.receipts.len(), 0);
+    }
+
+    #[test]
+    fn step_proof_case_honors_budget_exhaustion() {
+        let mut lab = Lab::standard();
+        lab.set_budget(ResearchBudget::limited(0, 0, 0));
+        let out = lab.exec(Command::Step {
+            scope: Some("dec.d-squared-zero".into()),
+            max_steps: 1,
+        });
+        assert_eq!(out.exit_code(), 1, "{}", out.text());
+        assert!(out.text().contains("budget exhausted"), "{}", out.text());
+        assert_eq!(lab.receipts.len(), 0);
+    }
+
+    #[test]
+    fn step_unknown_scope_errors_and_empty_scope_stops() {
+        let mut lab = Lab::standard();
+        let unknown = lab.exec(Command::Step {
+            scope: Some("nope-nope".into()),
+            max_steps: 1,
+        });
+        assert_eq!(unknown.exit_code(), 1, "{}", unknown.text());
+        assert!(
+            unknown.text().contains("unknown step scope"),
+            "{}",
+            unknown.text()
+        );
+
+        let empty = step_text(&mut lab, Some("gut.proton-lifetime-sk"), 1);
+        assert!(empty.contains("selected: none"), "{empty}");
+        assert!(empty.contains("no eligible gap in scope"), "{empty}");
+    }
+
+    #[test]
+    fn research_plan_dry_run_executes_nothing() {
+        let mut lab = Lab::standard();
+        let dir = std::env::temp_dir();
+        let path = dir.join(format!("physis-r1-plan-{}.json", std::process::id()));
+        std::fs::write(&path, crate::campaign::EXAMPLE_MANIFEST).unwrap();
+        let journal_len = lab.journal().len();
+        let before: Vec<String> = lab
+            .theory("type-iib")
+            .unwrap()
+            .snapshot()
+            .into_iter()
+            .map(|(s, v)| format!("{}={}", s.name, v.display()))
+            .collect();
+        let out = lab.exec(Command::ResearchPlan {
+            path: path.to_string_lossy().into_owned(),
+        });
+        std::fs::remove_file(&path).ok();
+        assert_eq!(out.exit_code(), 0, "{}", out.text());
+        assert!(out.text().contains("dry-run"), "{}", out.text());
+        assert!(out.text().contains("no action executed"), "{}", out.text());
+        assert_eq!(lab.journal().len(), journal_len);
+        let after: Vec<String> = lab
+            .theory("type-iib")
+            .unwrap()
+            .snapshot()
+            .into_iter()
+            .map(|(s, v)| format!("{}={}", s.name, v.display()))
+            .collect();
+        assert_eq!(before, after);
+    }
+
+    #[test]
+    fn research_plan_missing_file_is_refusal() {
+        let mut lab = Lab::standard();
+        let out = lab.exec(Command::ResearchPlan {
+            path: "no-such-manifest-r1.json".into(),
+        });
+        assert_eq!(out.exit_code(), 1, "{}", out.text());
+        assert!(
+            out.text().contains("cannot read manifest"),
+            "{}",
+            out.text()
+        );
+    }
+
+    #[test]
+    fn research_step_dispatches_and_status_observes() {
+        let mut lab = Lab::standard();
+        let dir = std::env::temp_dir();
+        let tag = std::process::id();
+        let path = dir.join(format!("physis-r4-step-{tag}.json"));
+        std::fs::write(&path, crate::campaign::EXAMPLE_MANIFEST).unwrap();
+        let camp = dir.join(format!("physis-r4-step-{tag}-camp"));
+        std::fs::remove_dir_all(&camp).ok();
+        let manifest = path.to_string_lossy().into_owned();
+        let campaign = camp.to_string_lossy().into_owned();
+        let out = lab.exec(Command::ResearchStep {
+            manifest: manifest.clone(),
+            campaign: campaign.clone(),
+        });
+        assert_eq!(out.exit_code(), 0, "{}", out.text());
+        assert!(out.text().contains("campaign step"), "{}", out.text());
+        let status = lab.exec(Command::ResearchStatus {
+            campaign: campaign.clone(),
+        });
+        assert_eq!(status.exit_code(), 0, "{}", status.text());
+        assert!(
+            status.text().contains("research status"),
+            "{}",
+            status.text()
+        );
+        assert!(status.text().contains("manifest "), "{}", status.text());
+        // An explorer may observe status but may not dispatch a step.
+        lab.set_role(Role::Explorer);
+        let observed = lab.exec(Command::ResearchStatus {
+            campaign: campaign.clone(),
+        });
+        assert_eq!(observed.exit_code(), 0, "{}", observed.text());
+        let refused = lab.exec(Command::ResearchStep { manifest, campaign });
+        assert_eq!(refused.exit_code(), 1, "{}", refused.text());
+        assert!(
+            refused.text().contains("explorer cannot research-step"),
+            "{}",
+            refused.text()
+        );
+        std::fs::remove_file(&path).ok();
+        std::fs::remove_dir_all(&camp).ok();
+    }
+
+    #[test]
+    fn research_step_missing_manifest_is_refusal() {
+        let mut lab = Lab::standard();
+        let out = lab.exec(Command::ResearchStep {
+            manifest: "no-such-manifest-r4.json".into(),
+            campaign: "no-such-campaign-r4".into(),
+        });
+        assert_eq!(out.exit_code(), 1, "{}", out.text());
+        assert!(
+            out.text().contains("cannot read manifest"),
+            "{}",
+            out.text()
+        );
+    }
+
+    #[test]
+    fn design_ranks_decisive_observable_first_and_freezes() {
+        let mut lab = Lab::standard();
+        let out = lab.exec(Command::Design {
+            theories: vec!["general-relativity".into(), "newtonian-gravity".into()],
+        });
+        assert_eq!(out.exit_code(), 0, "{}", out.text());
+        let text = out.text().to_string();
+        assert!(text.contains("discriminating claims"), "{text}");
+        assert!(text.contains("frozen design"), "{text}");
+        // Both rows are decisive (holds vs fails); Mercury's wider NLL
+        // gap ranks it first.
+        let edd = text.find("gr.eddington-deflection").expect("eddington row");
+        let mer = text.find("gr.mercury-perihelion").expect("mercury row");
+        assert!(mer < edd, "{text}");
+        assert!(text.contains("contrast decisive"), "{text}");
+        assert!(text.contains("arcsec"), "{text}");
+        assert!(text.contains("two-sigma + exact-nll"), "{text}");
+        assert!(text.contains("no download"), "{text}");
+        assert!(text.contains("fitted inputs:"), "{text}");
+        assert!(text.contains("independence assumed"), "{text}");
+        assert!(text.contains("adaptive use"), "{text}");
+        assert!(text.contains("compute:"), "{text}");
+        let jsonl = lab.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"design\""), "{jsonl}");
+        assert_eq!(jsonl.matches("\"event\":\"design\"").count(), 1);
+    }
+
+    #[test]
+    fn design_adaptive_use_counts_journaled_cites() {
+        let mut lab = Lab::standard();
+        lab.exec(Command::Cite {
+            claim: "gr.eddington-deflection".into(),
+        });
+        let out = lab.exec(Command::Design {
+            theories: vec!["general-relativity".into(), "newtonian-gravity".into()],
+        });
+        assert_eq!(out.exit_code(), 0, "{}", out.text());
+        assert!(
+            out.text().contains("dyson-1920-sobral-deflection=1"),
+            "{}",
+            out.text()
+        );
+    }
+
+    #[test]
+    fn design_refuses_unknown_theory_and_single_theory() {
+        let mut lab = Lab::standard();
+        let unknown = lab.exec(Command::Design {
+            theories: vec!["no-such-theory".into(), "general-relativity".into()],
+        });
+        assert_eq!(unknown.exit_code(), 1, "{}", unknown.text());
+        assert!(
+            unknown.text().contains("unknown theory"),
+            "{}",
+            unknown.text()
+        );
+        let single = lab.exec(Command::Design {
+            theories: vec!["general-relativity".into()],
+        });
+        assert_eq!(single.exit_code(), 1, "{}", single.text());
+        assert!(
+            single.text().contains("at least two theories"),
+            "{}",
+            single.text()
+        );
+    }
+
+    #[test]
+    fn research_export_reports_json_and_markdown() {
+        use crate::coordinator::{test_manifest, Campaign};
+        let mut lab = Lab::standard();
+        let tag = std::process::id();
+        let camp = std::env::temp_dir().join(format!("physis-r6-export-{tag}-camp"));
+        std::fs::remove_dir_all(&camp).ok();
+        let campaign = camp.to_string_lossy().into_owned();
+        let text = test_manifest(&["de-rham"], &["dec.d-squared-zero"], &["prove"]);
+        {
+            let mut c = Campaign::open(&mut lab, &text, &camp).unwrap();
+            assert_eq!(c.step_once().exit_code(), 0);
+        }
+        let json = lab.exec(Command::ResearchExport {
+            campaign: campaign.clone(),
+            format: None,
+        });
+        assert_eq!(json.exit_code(), 0, "{}", json.text());
+        assert!(
+            json.text().contains("physis-campaign-report"),
+            "{}",
+            json.text()
+        );
+        assert!(
+            json.text().contains("dec.d-squared-zero"),
+            "{}",
+            json.text()
+        );
+        let md = lab.exec(Command::ResearchExport {
+            campaign: campaign.clone(),
+            format: Some("markdown".into()),
+        });
+        assert_eq!(md.exit_code(), 0, "{}", md.text());
+        assert!(md.text().contains("# Campaign report"), "{}", md.text());
+        assert!(
+            md.text().contains("projection, not the store of truth"),
+            "{}",
+            md.text()
+        );
+        let bad = lab.exec(Command::ResearchExport {
+            campaign: campaign.clone(),
+            format: Some("yaml".into()),
+        });
+        assert_eq!(bad.exit_code(), 1, "{}", bad.text());
+        assert!(
+            bad.text().contains("unknown export format"),
+            "{}",
+            bad.text()
+        );
+        // An explorer may observe the export.
+        lab.set_role(Role::Explorer);
+        let observed = lab.exec(Command::ResearchExport {
+            campaign: campaign.clone(),
+            format: None,
+        });
+        assert_eq!(observed.exit_code(), 0, "{}", observed.text());
+        std::fs::remove_dir_all(&camp).ok();
+    }
+
+    #[test]
+    fn step_open_problem_is_preserved() {
+        let mut lab = Lab::standard();
+        let out = step_text(&mut lab, Some("predictivity.unique-vacuum"), 1);
+        assert!(out.contains("priority 9 (open-problem)"), "{out}");
+        assert!(out.contains("action  none"), "{out}");
+        assert!(out.contains("stays open; no diagnostic run"), "{out}");
+        assert_eq!(lab.receipts.len(), 0);
+    }
+
+    #[test]
     fn falsify_critical_dimension_finds_total_dim() {
         let mut lab = Lab::standard();
         let text = lab
@@ -5099,6 +6361,104 @@ mod tests {
                 .any(|(c, v)| c.id_str() == "comp.acyclic" && v.kind == VerdictKind::Holds),
             "IR mutant must not be installed"
         );
+    }
+
+    #[test]
+    fn hypothesize_search_explores_depth_two_family() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("maxwell-vacuum".into()),
+            })
+            .text()
+            .to_string();
+        assert!(
+            text.contains("add-monopole+add-proca"),
+            "bounded family must reach depth-2 combinations: {text}"
+        );
+        assert!(
+            text.contains("explored=10"),
+            "maxwell-vacuum family is 4 singles + 6 pairs, no knobs: {text}"
+        );
+        assert!(text.contains("depth=2"), "{text}");
+    }
+
+    #[test]
+    fn hypothesize_search_rejects_dimensionally_invalid_probes() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("type-iib".into()),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("rejected="), "{text}");
+        assert!(
+            text.contains("not in [2, 32]"),
+            "out-of-range total_dim probes must be rejected with reasons: {text}"
+        );
+        assert!(
+            !text.contains("observed_dim="),
+            "measured knobs are never probed, valid or invalid: {text}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_search_retains_counterexamples() {
+        let mut lab = Lab::standard();
+        let text = lab
+            .exec(Command::Hypothesize {
+                theory: Some("combinational-circuit".into()),
+            })
+            .text()
+            .to_string();
+        assert!(text.contains("refuted="), "{text}");
+        assert!(
+            text.contains("add-feedback") && text.contains("holds → fails"),
+            "refuted candidates stay in the report with their flips: {text}"
+        );
+    }
+
+    #[test]
+    fn hypothesize_search_leaves_baseline_untouched() {
+        let mut lab = Lab::standard();
+        for id in ["type-iib", "maxwell-vacuum", "linear-medium"] {
+            let before_snap: Vec<String> = lab
+                .theory(id)
+                .unwrap()
+                .snapshot()
+                .into_iter()
+                .map(|(s, v)| format!("{}={}", s.name, v.display()))
+                .collect();
+            let before_verdicts: Vec<String> = lab
+                .theory(id)
+                .unwrap()
+                .evaluate_all()
+                .into_iter()
+                .map(|(c, v)| format!("{}:{:?}", c.id_str(), v.kind))
+                .collect();
+            let journal_len = lab.journal().len();
+            let _ = lab.exec(Command::Hypothesize {
+                theory: Some(id.into()),
+            });
+            let after_snap: Vec<String> = lab
+                .theory(id)
+                .unwrap()
+                .snapshot()
+                .into_iter()
+                .map(|(s, v)| format!("{}={}", s.name, v.display()))
+                .collect();
+            let after_verdicts: Vec<String> = lab
+                .theory(id)
+                .unwrap()
+                .evaluate_all()
+                .into_iter()
+                .map(|(c, v)| format!("{}:{:?}", c.id_str(), v.kind))
+                .collect();
+            assert_eq!(before_snap, after_snap, "{id} knobs untouched");
+            assert_eq!(before_verdicts, after_verdicts, "{id} verdicts untouched");
+            assert_eq!(lab.journal().len(), journal_len, "{id} journal untouched");
+        }
     }
 
     #[test]
@@ -9968,6 +11328,160 @@ mod tests {
         assert!(why.contains("judgment:   logical proved"), "{why}");
     }
 
+    /// Locate the independently built checker binary, building it first.
+    /// Shared with the R7 campaign corpus so the red-team always runs the
+    /// same reviewed bytes the lab approves.
+    fn repro_checker() -> physis_verifier::reproduce::ApprovedChecker {
+        use physis_verifier::reproduce::ApprovedChecker;
+        let bin = physis_audit::checker_binary().expect("checker binary locates");
+        let digest = physis_core::artifact::ArtifactId::of(std::fs::read(&bin).unwrap()).to_hex();
+        ApprovedChecker::approve(&bin, &digest).unwrap()
+    }
+
+    fn d2_challenge() -> physis_proof::Challenge {
+        let claim = physis_proof::lookup("dec.d-squared-zero")
+            .unwrap()
+            .lab_claim();
+        physis_proof::Challenge::generate(&physis_core::formal::FormalClaim::from_claim(&claim))
+    }
+
+    #[test]
+    fn recorded_reproduction_is_p4_with_what_which_assumptions() {
+        use physis_verifier::reproduce::{reproduce, ReproLimits};
+        let mut lab = Lab::standard();
+        lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let challenge = d2_challenge();
+        let attempt = reproduce(
+            &challenge,
+            &physis_proof::UntrustedProof::ExactIdentity,
+            &repro_checker(),
+            "run-lab-p4-1",
+            &ReproLimits::default(),
+        )
+        .unwrap();
+        lab.record_reproduction(attempt.verified().expect("bound agree mints"));
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("P4"), "{why}");
+        assert!(why.contains("reproduced (P4): dec.d-squared-zero"), "{why}");
+        assert!(why.contains("dec-int-checker"), "{why}");
+        assert!(why.contains("run-lab-p4-1"), "{why}");
+        assert!(why.contains("obligation "), "{why}");
+        assert!(why.contains("executable "), "{why}");
+        assert!(why.contains("assumptions "), "{why}");
+        // The in-process remint still refuses P4 on the same identity.
+        let remint = lab
+            .exec(Command::Reproduce {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(remint.contains("not P4"), "{remint}");
+    }
+
+    #[test]
+    fn reproduce_remint_never_touches_the_p4_store() {
+        let mut lab = Lab::standard();
+        lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        lab.exec(Command::Reproduce {
+            claim: "dec.d-squared-zero".into(),
+        });
+        assert!(lab.reproductions.is_empty());
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("P3F"), "{why}");
+        assert!(!why.contains("P4"), "{why}");
+        assert!(why.contains("reproduced: none"), "{why}");
+    }
+
+    #[test]
+    fn failed_attempt_is_history_not_p4() {
+        use physis_verifier::reproduce::{export_obligation, run_checker, ReproLimits};
+        let mut lab = Lab::standard();
+        lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        let bytes = export_obligation(&d2_challenge(), "run-lab-fail-1").unwrap();
+        let text = String::from_utf8(bytes).unwrap();
+        let flipped = text.replacen("\"op\":\"sub\"", "\"op\":\"add\"", 1);
+        let attempt = run_checker(
+            &repro_checker(),
+            flipped.as_bytes(),
+            "run-lab-fail-1",
+            &ReproLimits::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            attempt.disposition(),
+            physis_verifier::reproduce::ReproDisposition::Disagree
+        );
+        lab.record_reproduction_attempt(
+            "dec.d-squared-zero",
+            &live.statement_hash().to_hex(),
+            &attempt,
+        );
+        assert!(lab.reproductions.is_empty());
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(!why.contains("P4"), "{why}");
+        let jsonl = lab.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"reproduce\""), "{jsonl}");
+        assert!(jsonl.contains("\"disposition\":\"disagree\""), "{jsonl}");
+    }
+
+    #[test]
+    fn restore_drops_reproduction_records() {
+        use physis_verifier::reproduce::{reproduce, ReproLimits};
+        let mut lab = Lab::standard();
+        lab.exec(Command::Prove {
+            claim: "dec.d-squared-zero".into(),
+        });
+        let challenge = d2_challenge();
+        let attempt = reproduce(
+            &challenge,
+            &physis_proof::UntrustedProof::ExactIdentity,
+            &repro_checker(),
+            "run-lab-restore-1",
+            &ReproLimits::default(),
+        )
+        .unwrap();
+        lab.record_reproduction(attempt.verified().unwrap());
+        assert!(!lab.reproductions.is_empty());
+        // A fresh lab restoring the same journal keeps the history but
+        // not the fresh-session evidence: P4 needs a new approved run.
+        let jsonl = lab.journal().to_string();
+        assert!(jsonl.contains("\"event\":\"reproduce\""), "{jsonl}");
+        let mut lab2 = Lab::standard();
+        *lab2.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab2.restore_from_journal();
+        assert!(lab2.reproductions.is_empty());
+        let why = lab2
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(why.contains("P3F"), "{why}");
+        assert!(!why.contains("P4"), "{why}");
+    }
+
     #[test]
     fn review_conjecture_is_refused() {
         let mut lab = Lab::standard();
@@ -10032,6 +11546,64 @@ mod tests {
         let block = why_theory_block(&why, "de-rham");
         assert!(block.contains("semantic:   unreviewed"), "{block}");
         assert!(!block.contains("P3S"), "{block}");
+    }
+
+    #[test]
+    fn r7_journal_prove_of_a_stale_identity_mints_nothing() {
+        // Forged-journal attack: a Prove event whose recorded identity is
+        // not the live FormalClaim restores nothing, whichever half the
+        // forger gets right.
+        let mut lab = Lab::standard();
+        let live = lab.find_claim("dec.d-squared-zero").unwrap();
+        let live_statement = live.statement_hash();
+        let live_challenge =
+            physis_proof::Challenge::generate(&physis_core::formal::FormalClaim::from_claim(&live))
+                .challenge_hash()
+                .to_hex();
+        for (challenge_hash, statement_hash) in [
+            ("0".repeat(64), live_statement.to_hex()),
+            (live_challenge, "0".repeat(64)),
+        ] {
+            let jsonl = format!(
+                r#"{{"event":"prove","t":1,"claim":"dec.d-squared-zero","challenge_hash":"{challenge_hash}","statement_hash":"{statement_hash}"}}"#,
+            );
+            *lab.journal_mut() = Journal::from_jsonl(&jsonl);
+            lab.restore_from_journal();
+            assert!(
+                lab.receipts.by_statement(live_statement).is_none(),
+                "forged prove minted"
+            );
+        }
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(!why.contains("P3F"), "{why}");
+    }
+
+    #[test]
+    fn r7_forged_reproduce_event_mints_nothing() {
+        // A fabricated agree event for a run that never happened restores
+        // no record: reproduce history is inspectable, never evidence.
+        let mut lab = Lab::standard();
+        let jsonl = format!(
+            r#"{{"event":"reproduce","t":1,"claim":"dec.d-squared-zero","statement_hash":"{}","disposition":"agree","obligation_sha256":"{}","exe_digest":"{}","run_id":"r7-forged-1","detail":"forged"}}"#,
+            "0".repeat(64),
+            "1".repeat(64),
+            "2".repeat(64),
+        );
+        *lab.journal_mut() = Journal::from_jsonl(&jsonl);
+        lab.restore_from_journal();
+        assert!(lab.reproductions.is_empty());
+        let why = lab
+            .exec(Command::Why {
+                claim: "dec.d-squared-zero".into(),
+            })
+            .text()
+            .to_string();
+        assert!(!why.contains("P4"), "{why}");
     }
 
     #[test]
@@ -10167,7 +11739,7 @@ mod tests {
             "loop must rebuild the constants ledger after cite: {text}"
         );
         assert!(
-            text.contains("constant  ledger  5425e5e17af4c1e88a7353eb911ad8a5006646a6c4ad7f6722c115531bff4b5d"),
+            text.contains("constant  ledger  e1f367c68f7b6471a5f1c85cc995f45ca4727d025d8a1cf13682e2789530d362"),
             "loop must independently rebuild the LEDGER bundle: {text}"
         );
         assert!(
@@ -11828,6 +13400,45 @@ mod tests {
         );
         assert_eq!(
             lab.store.get(tptime_id).map(|n| n.kind),
+            Some(NodeKind::VersionedConstant)
+        );
+
+        let hbar = lab
+            .exec(Command::Constant {
+                name: Some("hbar".into()),
+            })
+            .text()
+            .to_string();
+        assert!(hbar.contains("constant  hbar  node "), "{hbar}");
+        assert!(
+            hbar.contains(
+                "hash     c454642957d1b258a76e932e88ed6941c400527b53f37541d439281c295c363c"
+            ),
+            "{hbar}"
+        );
+        assert!(hbar.contains("kind     sci-interval"), "{hbar}");
+        assert!(hbar.contains("table    XXXI"), "{hbar}");
+        assert!(
+            hbar.contains("range    hbar = 1.054571817e-34 exact (truncated print)"),
+            "{hbar}"
+        );
+        assert!(hbar.contains("unit     J s"), "{hbar}");
+        assert!(
+            hbar.contains("value    [1054571817e-43, 1054571818e-43]"),
+            "{hbar}"
+        );
+        assert!(hbar.contains("rebuild  ok"), "{hbar}");
+        assert!(hbar.contains("not P3N"), "{hbar}");
+        assert!(!hbar.contains("receipt"), "{hbar}");
+        assert!(!hbar.contains("theorem"), "{hbar}");
+        let hbar_id = constant_node_id(&hbar);
+        assert_eq!(
+            hbar_id.to_hex(),
+            "e53114f4e4ae7c6d3d42a05705021797a733db9180c793dc7b4af6223bb4e9c7",
+            "journaling must not change the hbar constant payload"
+        );
+        assert_eq!(
+            lab.store.get(hbar_id).map(|n| n.kind),
             Some(NodeKind::VersionedConstant)
         );
 
@@ -22173,11 +23784,11 @@ mod tests {
         );
 
         let unknown = lab.exec(Command::Constant {
-            name: Some("hbar".into()),
+            name: Some("hbar_eVs".into()),
         });
         assert_eq!(unknown.exit_code(), 1, "{}", unknown.text());
         assert!(
-            unknown.text().contains("unknown constant 'hbar'"),
+            unknown.text().contains("unknown constant 'hbar_eVs'"),
             "{}",
             unknown.text()
         );
@@ -24470,7 +26081,7 @@ mod tests {
         let ledger_id = constant_node_id(&ledger);
         assert_eq!(
             ledger_id.to_hex(),
-            "5425e5e17af4c1e88a7353eb911ad8a5006646a6c4ad7f6722c115531bff4b5d",
+            "e1f367c68f7b6471a5f1c85cc995f45ca4727d025d8a1cf13682e2789530d362",
             "journaling must not change the LEDGER bundle payload"
         );
         assert_eq!(
@@ -25486,7 +27097,7 @@ mod tests {
             .text()
             .to_string();
         assert!(
-            sr.contains("0a91b4ad602ad187c4a2b4e06ebeaed66bd2d42be31a701042df44d5efc88f66"),
+            sr.contains("13b2a6f75c0f83a34ce86b092c34f6718ce52269ee4fd34482de1f3cc668973d"),
             "{sr}"
         );
     }
@@ -25548,7 +27159,7 @@ mod tests {
         let live = constant_node_id(&first);
         assert_eq!(
             live.to_hex(),
-            "5425e5e17af4c1e88a7353eb911ad8a5006646a6c4ad7f6722c115531bff4b5d",
+            "e1f367c68f7b6471a5f1c85cc995f45ca4727d025d8a1cf13682e2789530d362",
             "journaling must not change the LEDGER bundle payload"
         );
         assert!(first.starts_with("constant  ledger  node "), "{first}");
@@ -27966,18 +29577,18 @@ mod tests {
             })
             .text()
             .to_string();
-        assert!(gr.contains("equations  1"), "{gr}");
+        assert!(gr.contains("equations  2"), "{gr}");
         assert!(gr.contains("round-trip canonical"), "{gr}");
         assert!(gr.contains("not P3S"), "{gr}");
         assert!(!gr.contains("receipt"), "{gr}");
         assert!(
-            !gr.contains("catalog identity tree"),
-            "Einstein-Hilbert must skip the catalog tree: {gr}"
+            gr.contains("catalog identity tree  gr.first-bianchi"),
+            "GR package binds the Bianchi tree (C2.4b): {gr}"
         );
         let gr_id = encoding_package_id(&gr);
         assert_eq!(
             gr_id.to_hex(),
-            "8e99553456fa93c2774e4021eb87bb4dd0547f457cf549ec4bf11859313f7be0"
+            "d01a101f9dd66d1482cf4d27cac08b401637f0130e78b4979d16f0129b1a7a3d"
         );
         assert_ne!(gr_id, dirac_id);
         assert_ne!(gr_id, newton_id);
@@ -28018,10 +29629,20 @@ mod tests {
         assert!(!sr.contains("catalog identity tree  ok"), "{sr}");
         assert!(sr.contains("not P3S"), "{sr}");
         assert!(!sr.contains("receipt"), "{sr}");
+        // C5.1: exactly one typed identity rides alongside the tokens.
+        assert!(
+            sr.contains("catalog identity tree  sr.invariant-interval  typed"),
+            "{sr}"
+        );
+        assert_eq!(
+            sr.matches("  typed").count(),
+            1,
+            "only the interval row carries a typed tree: {sr}"
+        );
         let sr_id = encoding_package_id(&sr);
         assert_eq!(
             sr_id.to_hex(),
-            "0a91b4ad602ad187c4a2b4e06ebeaed66bd2d42be31a701042df44d5efc88f66"
+            "13b2a6f75c0f83a34ce86b092c34f6718ce52269ee4fd34482de1f3cc668973d"
         );
         assert_ne!(sr_id, gr_id);
         assert_ne!(sr_id, nand_id);
@@ -28859,6 +30480,100 @@ mod tests {
         );
     }
 
+    /// C5.1 fixture: a typed tree that does not match its tokens.
+    #[derive(Clone)]
+    struct StubBrokenTypedTheory;
+
+    impl physis_core::knob::Knobbed for StubBrokenTypedTheory {
+        fn specs(&self) -> &'static [physis_core::knob::KnobSpec] {
+            &[]
+        }
+        fn get(&self, name: &str) -> Result<KnobValue, CoreError> {
+            Err(CoreError::UnknownKnob { name: name.into() })
+        }
+        fn set(&mut self, name: &str, _value: KnobValue) -> Result<KnobValue, CoreError> {
+            Err(CoreError::UnknownKnob { name: name.into() })
+        }
+    }
+
+    impl Theory for StubBrokenTypedTheory {
+        fn fork(&self) -> Box<dyn Theory> {
+            Box::new(self.clone())
+        }
+        fn id(&self) -> &'static str {
+            "stub-broken-typed"
+        }
+        fn name(&self) -> &'static str {
+            "Stub broken typed fixture"
+        }
+        fn summary(&self) -> &'static str {
+            "Test fixture: typed tree desynced from its tokens. Not physics."
+        }
+        fn world(&self) -> Option<physis_model::World> {
+            None
+        }
+        fn claims(&self) -> Vec<physis_core::claim::Claim> {
+            vec![physis_core::claim::Claim::new(
+                "stub.broken-tree",
+                "A stub claim with a desynced typed tree.",
+                LayerId::Mathematical,
+                ClaimClass::Mathematical,
+            )]
+        }
+        fn evaluate(&self, claim: &physis_core::claim::Claim) -> physis_core::claim::Verdict {
+            physis_core::claim::Verdict::holds(claim, "stub holds")
+        }
+        fn ir_package(&self) -> Option<physis_ir::TheoryPackage> {
+            Some(physis_ir::TheoryPackage {
+                id: "stub-broken-typed".into(),
+                name: "Stub broken typed fixture".into(),
+                parameters: vec![],
+                assumptions: vec![],
+                equations: vec!["a + b".into()],
+                claims: vec![physis_ir::ClaimDecl {
+                    id: "stub.broken-tree".into(),
+                    statement: "A stub claim with a desynced typed tree.".into(),
+                    layer: "mathematical".into(),
+                    class: "mathematical".into(),
+                }],
+                lean_ref: None,
+                typed_equations: vec![physis_ir::TypedEquation {
+                    equation: 0,
+                    tree: "a * b".into(),
+                }],
+            })
+        }
+        fn reparse_package(
+            &self,
+            pkg: &physis_ir::TheoryPackage,
+        ) -> Result<Box<dyn Theory>, String> {
+            if pkg.id != "stub-broken-typed" {
+                return Err("not the stub package".into());
+            }
+            Ok(Box::new(StubBrokenTypedTheory))
+        }
+    }
+
+    #[test]
+    fn encode_typed_mismatch_fails_closed_without_receipt() {
+        // C5.1: a typed tree desynced from its tokens fails closed at
+        // bind time, without minting or naming a receipt.
+        let mut lab = Lab::standard();
+        lab.theories
+            .insert("stub-broken-typed".into(), Box::new(StubBrokenTypedTheory));
+        let out = lab.exec(Command::Encode {
+            theory: "stub-broken-typed".into(),
+        });
+        assert_eq!(out.exit_code(), 1, "{}", out.text());
+        assert!(
+            out.text().contains("does not match its tokens"),
+            "{}",
+            out.text()
+        );
+        assert!(!out.text().contains("receipt"), "{}", out.text());
+        assert!(!out.text().contains("theorem"), "{}", out.text());
+    }
+
     #[test]
     fn encoding_package_restores_by_rebuild_not_deserialize() {
         let mut lab1 = Lab::standard();
@@ -29214,7 +30929,7 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("constant  ledger  5425e5e17af4c1e88a7353eb911ad8a5006646a6c4ad7f6722c115531bff4b5d"),
+            text.contains("constant  ledger  e1f367c68f7b6471a5f1c85cc995f45ca4727d025d8a1cf13682e2789530d362"),
             "a zero prove budget must not skip the constants ledger: {text}"
         );
         let p3f = lab
@@ -29371,6 +31086,46 @@ mod tests {
             "{}",
             blocked.text()
         );
+    }
+
+    #[test]
+    fn inspect_gap_queries_every_c71_reason_from_one_graph() {
+        // C5.2: every gap kind the C7.1 selector matches on is
+        // inspectable, and inspect reads the same live graph as gaps
+        // (no second gap graph).
+        let mut lab = Lab::standard();
+        let gaps = lab.exec(Command::Gaps).text().to_string();
+        for reason in GapReason::ALL {
+            let out = lab.exec(Command::Inspect {
+                axis: Some("gap".into()),
+                value: Some(reason.as_str().into()),
+            });
+            assert_eq!(out.exit_code(), 0, "inspect gap {}", reason.as_str());
+            let text = out.text().to_string();
+            assert!(
+                text.starts_with(&format!("inspect gap {}\n", reason.as_str())),
+                "{text}"
+            );
+            for line in text.lines().skip(1) {
+                if line.trim().is_empty() || line.starts_with("count ") {
+                    continue;
+                }
+                let mut words = line.split_whitespace();
+                let theory = words.next().unwrap_or("");
+                let claim = words.next().unwrap_or("");
+                assert!(
+                    gaps.lines()
+                        .any(|g| g.contains(theory) && g.contains(claim)),
+                    "inspect row '{line}' must come from the gaps graph"
+                );
+            }
+        }
+        let bad = lab.exec(Command::Inspect {
+            axis: Some("gap".into()),
+            value: Some("not-a-reason".into()),
+        });
+        assert_ne!(bad.exit_code(), 0, "unknown gap kind must fail closed");
+        assert!(bad.text().contains("unknown gap reason"), "{}", bad.text());
     }
 
     #[test]

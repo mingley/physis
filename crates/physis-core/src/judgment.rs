@@ -506,6 +506,11 @@ pub struct TrustEvidence {
     pub dual_checked_receipt: bool,
     /// True when a numeric certificate (interval / ratio) backs a threshold.
     pub numeric_certificate: bool,
+    /// True only when a verifier-minted reproduction record binds the
+    /// live statement (`ReproductionStore::by_statement`). Never set
+    /// from imported JSON: there is no deserialization path into the
+    /// store, and P4 additionally requires a live dual-checked receipt.
+    pub reproduced: bool,
 }
 
 /// Derived trust. Fields are private: P3F cannot be manufactured by a
@@ -567,6 +572,12 @@ impl TrustProfile {
             s.p3f = true;
             s.p1 = true;
             s.p0 = false;
+        }
+        // P4 is independently reproduced *and* dual-checked: a
+        // reproduction record without live P3F evidence earns nothing,
+        // and a receipt without reproduction is P3F, not P4.
+        if ev.reproduced && ev.dual_checked_receipt {
+            s.p4 = true;
         }
         match ev.semantic {
             SemanticAssurance::Unreviewed | SemanticAssurance::SourceAnchored => {}
@@ -746,6 +757,7 @@ mod tests {
             semantic: SemanticAssurance::Unreviewed,
             dual_checked_receipt: false,
             numeric_certificate: false,
+            reproduced: false,
         });
         assert!(no.has(TrustTier::P1));
         assert!(!no.has(TrustTier::P3F));
@@ -756,10 +768,34 @@ mod tests {
             semantic: SemanticAssurance::Unreviewed,
             dual_checked_receipt: true,
             numeric_certificate: false,
+            reproduced: false,
         });
         assert!(yes.has(TrustTier::P3F));
         assert!(yes.unreviewed_proof_is_dangerous(SemanticAssurance::Unreviewed));
         assert!(!yes.has(TrustTier::P4));
+    }
+
+    #[test]
+    fn p4_requires_reproduction_and_live_receipt() {
+        let repro_only = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::Executed,
+            semantic: SemanticAssurance::Unreviewed,
+            dual_checked_receipt: false,
+            numeric_certificate: false,
+            reproduced: true,
+        });
+        assert!(!repro_only.has(TrustTier::P4));
+
+        let both = TrustProfile::derive(TrustEvidence {
+            derivation: DerivationAssurance::Executed,
+            semantic: SemanticAssurance::Unreviewed,
+            dual_checked_receipt: true,
+            numeric_certificate: false,
+            reproduced: true,
+        });
+        assert!(both.has(TrustTier::P3F));
+        assert!(both.has(TrustTier::P4));
+        assert!(both.display().contains("P4"));
     }
 
     #[test]
@@ -769,6 +805,7 @@ mod tests {
             semantic: SemanticAssurance::AdversariallyReviewed,
             dual_checked_receipt: false,
             numeric_certificate: false,
+            reproduced: false,
         });
         assert!(p.has(TrustTier::P3S));
         assert!(!p.has(TrustTier::P3F));
@@ -781,6 +818,7 @@ mod tests {
             semantic: SemanticAssurance::Unreviewed,
             dual_checked_receipt: false,
             numeric_certificate: false,
+            reproduced: false,
         });
         assert!(p.has(TrustTier::P0));
         assert!(!p.has(TrustTier::P1));
@@ -885,6 +923,7 @@ mod tests {
             semantic: SemanticAssurance::Unreviewed,
             dual_checked_receipt: false,
             numeric_certificate: true,
+            reproduced: false,
         });
         assert!(p.has(TrustTier::P1));
         assert!(p.has(TrustTier::P3N));
@@ -899,6 +938,7 @@ mod tests {
             semantic: SemanticAssurance::Unreviewed,
             dual_checked_receipt: false,
             numeric_certificate: false,
+            reproduced: false,
         });
         assert!(p.has(TrustTier::P1));
         assert!(p.has(TrustTier::P2));

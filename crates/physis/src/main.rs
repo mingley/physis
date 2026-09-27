@@ -255,6 +255,35 @@ fn parse(args: &[String]) -> Result<Command, String> {
             let claim = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Judge { claim })
         }
+        "step" => {
+            let scope = args.get(1).cloned();
+            let max_steps = match args.get(2) {
+                None => 1,
+                Some(raw) => raw.parse::<u32>().map_err(|_| usage())?,
+            };
+            Ok(Command::Step { scope, max_steps })
+        }
+        "research" => match args.get(1).map(String::as_str) {
+            Some("plan") => {
+                let path = args.get(2).ok_or_else(usage)?.clone();
+                Ok(Command::ResearchPlan { path })
+            }
+            Some("step") => {
+                let manifest = args.get(2).ok_or_else(usage)?.clone();
+                let campaign = args.get(3).ok_or_else(usage)?.clone();
+                Ok(Command::ResearchStep { manifest, campaign })
+            }
+            Some("status") => {
+                let campaign = args.get(2).ok_or_else(usage)?.clone();
+                Ok(Command::ResearchStatus { campaign })
+            }
+            Some("export") => {
+                let campaign = args.get(2).ok_or_else(usage)?.clone();
+                let format = args.get(3).cloned();
+                Ok(Command::ResearchExport { campaign, format })
+            }
+            _ => Err(usage()),
+        },
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -293,11 +322,16 @@ USAGE:
     physis review <claim-id>
     physis inspect [trust|class|origin|gap|judgment] <value>
     physis loop
+    physis step [scope] [max-steps]
     physis audit
     physis experiments
     physis experiment [string-critique | em-vacuum | computation | field-modes | gauge-lattice | thermo | blackbody | solid | gravity | olbers | bell]
     physis journal
     physis replay <journal.jsonl>
+    physis research plan <manifest.json>
+    physis research step <manifest.json> <campaign-dir>
+    physis research status <campaign-dir>
+    physis research export <campaign-dir> [json|markdown]
 
 EXAMPLES:
     physis experiment string-critique
@@ -313,4 +347,86 @@ Theories: standard-model, general-relativity, type-iib,
 Docs: specs/  plans/  docs/  AGENTS.md
 "#
     .into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn argv(words: &[&str]) -> Vec<String> {
+        words.iter().map(|w| w.to_string()).collect()
+    }
+
+    #[test]
+    fn parse_research_plan_takes_manifest_path() {
+        match parse(&argv(&["research", "plan", "m.json"])) {
+            Ok(Command::ResearchPlan { path }) => assert_eq!(path, "m.json"),
+            other => panic!("unexpected parse: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_research_plan_requires_path() {
+        assert!(parse(&argv(&["research", "plan"])).is_err());
+    }
+
+    #[test]
+    fn parse_research_step_takes_manifest_and_campaign() {
+        match parse(&argv(&["research", "step", "m.json", "camp"])) {
+            Ok(Command::ResearchStep { manifest, campaign }) => {
+                assert_eq!(manifest, "m.json");
+                assert_eq!(campaign, "camp");
+            }
+            other => panic!("unexpected parse: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_research_step_requires_both_paths() {
+        assert!(parse(&argv(&["research", "step", "m.json"])).is_err());
+        assert!(parse(&argv(&["research", "step"])).is_err());
+    }
+
+    #[test]
+    fn parse_research_status_takes_campaign() {
+        match parse(&argv(&["research", "status", "camp"])) {
+            Ok(Command::ResearchStatus { campaign }) => assert_eq!(campaign, "camp"),
+            other => panic!("unexpected parse: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_research_status_requires_path() {
+        assert!(parse(&argv(&["research", "status"])).is_err());
+    }
+
+    #[test]
+    fn parse_research_export_takes_campaign_and_optional_format() {
+        match parse(&argv(&["research", "export", "camp"])) {
+            Ok(Command::ResearchExport { campaign, format }) => {
+                assert_eq!(campaign, "camp");
+                assert_eq!(format, None);
+            }
+            other => panic!("unexpected parse: {other:?}"),
+        }
+        match parse(&argv(&["research", "export", "camp", "markdown"])) {
+            Ok(Command::ResearchExport { campaign, format }) => {
+                assert_eq!(campaign, "camp");
+                assert_eq!(format, Some("markdown".to_string()));
+            }
+            other => panic!("unexpected parse: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_research_export_requires_path() {
+        assert!(parse(&argv(&["research", "export"])).is_err());
+    }
+
+    #[test]
+    fn parse_research_rejects_unknown_subcommand() {
+        // No `publish` subcommand: campaigns never publish by themselves.
+        assert!(parse(&argv(&["research", "publish", "camp"])).is_err());
+        assert!(parse(&argv(&["research"])).is_err());
+    }
 }

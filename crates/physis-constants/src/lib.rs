@@ -4,6 +4,11 @@
 //! `c`, `Δν_Cs`, `e`, `k`, `N_A`, and `K_cd`. Planck's `h` is SI-exact
 //! [`physis_numeric::SciExact`] `662607015e-42` J s: the reduced
 //! denominator does not fit in `i128`, so it is not a Ratio. CODATA 2018
+//! reduced Planck `hbar` is a truncation [`SciInterval`]
+//! `[1054571817e-43, 1054571818e-43]` J s (JPCRD table XXXI UNIVERSAL):
+//! the exact print is non-terminating, so the ledger stores the 1ulp
+//! rounding preimage, not a sigma hull and not exact hbar; `10^{43}`
+//! overflows `i128`. CODATA 2018
 //! Planck constant in eV/Hz `h_eVHz` is an exact [`Ratio`] `h/e` from
 //! JPCRD table XXXI UNIVERSAL: SI-exact, not a terminating SciExact
 //! (reduced denominator keeps 2, 3, 5, 19, 389, and 12043). CODATA 2018
@@ -556,6 +561,51 @@ pub fn planck_h() -> Constant<SciExact> {
         SciExact::new(662_607_015, -42),
         "J s",
         si_brochure(),
+        ConstantRelease::Si2019Codata2018,
+    )
+}
+
+fn codata_2018_reduced_planck_source() -> SourceRecord {
+    codata_2018_jpcrd(
+        "UNIVERSAL",
+        "hbar = 1.054571817e-34 exact (truncated print)",
+    )
+}
+
+fn codata_2018_reduced_planck_interval() -> SciInterval {
+    SciInterval::new(
+        SciExact::new(1_054_571_817, -43),
+        SciExact::new(1_054_571_818, -43),
+    )
+}
+
+/// Reduced Planck constant ħ, CODATA 2018 truncated-print rounding enclosure.
+///
+/// This is the JPCRD table XXXI UNIVERSAL row listed as Planck constant
+/// over 2 pi, printed `1.054 571 817… × 10^{-34}` J s (exact,
+/// non-terminating print), not SI joule-second `h`, not Planck in eV per
+/// hertz `h_eVHz`, not reduced Planck in eV s (not stored), not an SI
+/// defining [`Ratio`] (`h/2π` is irrational: no finite decimal is exact
+/// ħ), not a terminating [`SciExact`] (that would certify a decimal as
+/// exact hbar), not a measured one-sigma hull (SI-exact `h` carries no
+/// uncertainty; the hull width is a 1ulp rounding bound, not σ), and not
+/// a FormalClaim of equality to `h/(2π)` (the lab stores no π). The table
+/// truncates the exact print (correct rounding would print `818`); the
+/// ledger stores the truncation preimage
+/// `[1054571817e-43, 1054571818e-43]` as [`SciInterval`] (Ratio scale
+/// `10^{43}` overflows `i128`, same reason electron `m_e` is SciInterval).
+/// The `physis_model` Qty is the tabulated lower edge. This is not P3N.
+/// The ledger name is `hbar`. `h_bar`, `HBAR`, `h2pi`, `hbar_eVs`, and
+/// `reduced-planck` are not second names. Magnetic flux quantum `Phi0`,
+/// conductance quantum `G0`, Thomson cross section, and gyromagnetic
+/// ratios still cite π and ħ and are not stored: this entry does not flip
+/// them. Theories still use `physis_model` `f64` Qty.
+pub fn reduced_planck() -> Constant<SciInterval> {
+    Constant::new(
+        "hbar",
+        codata_2018_reduced_planck_interval(),
+        "J s",
+        codata_2018_reduced_planck_source(),
         ConstantRelease::Si2019Codata2018,
     )
 }
@@ -10521,6 +10571,7 @@ pub const LEDGER: &[&str] = &[
     "N_A",
     "K_cd",
     "h",
+    "hbar",
     "h_eVHz",
     "kg_J",
     "J_kg",
@@ -10823,6 +10874,7 @@ pub fn lookup(name: &str) -> Option<ConstantListing> {
         "N_A" => Some(listing(avogadro(), "ratio")),
         "K_cd" => Some(listing(luminous_efficacy(), "ratio")),
         "h" => Some(listing(planck_h(), "sci-exact")),
+        "hbar" => Some(listing(reduced_planck(), "sci-interval")),
         "h_eVHz" => Some(listing(planck_in_ev_per_hz(), "ratio")),
         "kg_J" => Some(listing(kilogram_in_joule(), "ratio")),
         "J_kg" => Some(listing(joule_in_kilogram(), "ratio")),
@@ -11356,6 +11408,111 @@ mod tests {
     }
 
     #[test]
+    fn codata_2018_reduced_planck_is_a_truncation_sci_interval() {
+        let r = reduced_planck();
+        let lo = SciExact::new(1_054_571_817, -43);
+        let hi = SciExact::new(1_054_571_818, -43);
+        let tabulated = SciExact::new(1_054_571_817, -43);
+        assert_eq!(r.name, "hbar");
+        assert_eq!(r.unit, "J s");
+        assert_eq!(r.release, ConstantRelease::Si2019Codata2018);
+        assert_eq!(r.provenance.locator.table.as_deref(), Some("XXXI"));
+        assert_eq!(r.provenance.locator.section.as_deref(), Some("UNIVERSAL"));
+        assert_eq!(
+            r.provenance.locator.dataset_range.as_deref(),
+            Some("hbar = 1.054571817e-34 exact (truncated print)")
+        );
+        assert_eq!(r.value, SciInterval::new(lo, hi));
+        assert_ne!(
+            r.value.lo, r.value.hi,
+            "hbar is not a finite decimal, so the ledger stores a hull, not a point"
+        );
+        assert!(
+            r.value.contains(SciInterval::point(tabulated)),
+            "the tabulated print sits on the truncation hull (closed lower edge)"
+        );
+        assert!(!r.value.contains(SciInterval::point(SciExact::new(0, 0))));
+        assert!(
+            r.value.lo > SciExact::new(0, 0),
+            "CODATA hbar is a positive hull, not h under a second name"
+        );
+        // The hull is a 1ulp rounding bound, not a sigma: exactly one
+        // last-place step wide, with no measured uncertainty anywhere.
+        assert_eq!(
+            r.value.hi.exp10, r.value.lo.exp10,
+            "truncation edges share the printed decade"
+        );
+        assert_eq!(
+            r.value.hi.significand - r.value.lo.significand,
+            1,
+            "truncation preimage is exactly 1ulp wide"
+        );
+        assert_eq!(
+            tabulated.to_ratio(),
+            None,
+            "hbar Ratio scale 10^43 overflows i128"
+        );
+        assert!(10i128.checked_pow(43).is_none());
+        assert!(
+            10i128.checked_pow(38).is_some() && 10i128.checked_pow(39).is_none(),
+            "i128 Ratio decades stop at 10^38; hbar needs 10^43"
+        );
+        // Correct rounding would print 818: the table truncates, so the
+        // upper edge is the next print, not the tabulated value.
+        let rounded_up = SciExact::new(1_054_571_818, -43);
+        assert_eq!(r.value.hi, rounded_up);
+        assert!(
+            r.value.contains(SciInterval::point(rounded_up)),
+            "upper edge is closed: the next print is still in the preimage"
+        );
+        let ten_x = SciExact::new(1_054_571_817, -42);
+        assert_ne!(
+            ten_x, tabulated,
+            "exp -42 is the 10x trap, not the stored decade"
+        );
+        assert!(
+            !r.value.contains(SciInterval::point(ten_x)),
+            "10x-trap value 1.054e-33 lies outside the hbar hull"
+        );
+        assert_eq!(r.value.to_string(), "[1054571817e-43, 1054571818e-43]");
+        assert_eq!(
+            SciInterval::parse_display(&r.value.to_string()),
+            Some(r.value)
+        );
+        assert_eq!(r.hash, reduced_planck().hash);
+        assert_eq!(
+            r.hash,
+            Constant::new(
+                "hbar",
+                codata_2018_reduced_planck_interval(),
+                "J s",
+                codata_2018_reduced_planck_source(),
+                ConstantRelease::Si2019Codata2018,
+            )
+            .hash
+        );
+        assert_ne!(r.hash, planck_h().hash, "hbar is not h");
+        assert_ne!(r.hash, planck_in_ev_per_hz().hash, "hbar is not h_eVHz");
+        assert_ne!(r.hash, electron_mass().hash, "hbar is not m_e");
+        assert_ne!(
+            r.provenance.source_hash,
+            planck_h().provenance.source_hash,
+            "hbar range is not the h range"
+        );
+        let listed = lookup("hbar").expect("listed reduced Planck");
+        assert_eq!(listed.kind, "sci-interval");
+        assert_eq!(listed.unit, "J s");
+        assert_eq!(listed.table.as_deref(), Some("XXXI"));
+        assert!(r.provenance.recheck().is_ok());
+        assert!(lookup("h_bar").is_none());
+        assert!(lookup("HBAR").is_none());
+        assert!(lookup("h2pi").is_none());
+        assert!(lookup("hbar_eVs").is_none());
+        assert!(lookup("reduced-planck").is_none());
+        assert!(lookup("h").is_some());
+    }
+
+    #[test]
     fn codata_2018_g_is_a_one_sigma_interval() {
         let g = newtonian_g();
         let scale = 10i128.pow(16);
@@ -11480,7 +11637,7 @@ mod tests {
         assert!(lookup("Planck_mass").is_none());
         assert!(lookup("planck-mass").is_none());
         assert!(lookup("mPlanck").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mP").is_some());
         assert!(lookup("mPc2").is_some());
         assert!(lookup("TP").is_some());
@@ -11593,7 +11750,7 @@ mod tests {
         assert!(lookup("mP_GeV").is_none());
         assert!(lookup("Planck_mass_energy").is_none());
         assert!(lookup("mPGeV").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("mPc2").is_some());
         assert!(lookup("TP").is_some());
@@ -11715,7 +11872,7 @@ mod tests {
         assert!(lookup("planck-temperature").is_none());
         assert!(lookup("TPlanck").is_none());
         assert!(lookup("T").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("TP").is_some());
         assert!(lookup("lP").is_some());
@@ -11851,7 +12008,7 @@ mod tests {
         assert!(lookup("Planck_length").is_none());
         assert!(lookup("planck-length").is_none());
         assert!(lookup("lPlanck").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("lP").is_some());
         assert!(lookup("tP").is_some());
@@ -11992,7 +12149,7 @@ mod tests {
         assert!(lookup("Planck_time").is_none());
         assert!(lookup("planck-time").is_none());
         assert!(lookup("tPlanck").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("tP").is_some());
         assert!(lookup("barn").is_some());
@@ -50912,7 +51069,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -51327,7 +51484,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -51631,7 +51788,7 @@ mod tests {
         assert!(lookup("k/hc").is_none());
         assert!(lookup("k/h").is_none());
         assert!(lookup("k_eVK").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -51853,7 +52010,7 @@ mod tests {
         assert!(lookup("kg_J").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("m_eV").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -52099,7 +52256,7 @@ mod tests {
         assert!(lookup("kg_J").is_some());
         assert!(lookup("m_J").is_some());
         assert!(lookup("m_eV").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -52326,7 +52483,7 @@ mod tests {
             "h_eVHz = h/e uses 10^14; that decade fits i128"
         );
         assert!(lookup("h_eV").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_some());
@@ -52551,7 +52708,7 @@ mod tests {
         assert!(lookup("c^2").is_none());
         assert!(lookup("c_sq").is_none());
         assert!(lookup("kgJ").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_some());
@@ -52770,7 +52927,7 @@ mod tests {
         assert!(lookup("m").is_none());
         assert!(lookup("hc").is_none());
         assert!(lookup("mJ").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_some());
@@ -53004,7 +53161,7 @@ mod tests {
         assert!(r.provenance.recheck().is_ok());
         assert!(lookup("meV").is_none());
         assert!(lookup("mEV").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("m_e").is_some());
@@ -53228,7 +53385,7 @@ mod tests {
         assert!(lookup("eV_inv").is_none());
         assert!(lookup("Joule-eV").is_none());
         assert!(lookup("kg_eV").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -53453,7 +53610,7 @@ mod tests {
         assert!(lookup("k_inv").is_none());
         assert!(lookup("Joule-K").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -53702,7 +53859,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -53928,7 +54085,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -54168,7 +54325,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -54412,7 +54569,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -54656,7 +54813,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -54912,7 +55069,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -55157,7 +55314,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -55402,7 +55559,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -55647,7 +55804,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -55899,7 +56056,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -56148,7 +56305,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -56396,7 +56553,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -56638,7 +56795,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -56874,7 +57031,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -57147,7 +57304,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -57411,7 +57568,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -57678,7 +57835,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -57938,7 +58095,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -58207,7 +58364,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -58469,7 +58626,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -58751,7 +58908,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -59017,7 +59174,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -59282,7 +59439,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -59511,7 +59668,7 @@ mod tests {
         assert!(lookup("hartree_kg").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -59731,7 +59888,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -59956,7 +60113,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -60270,7 +60427,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -60545,7 +60702,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -60778,7 +60935,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -61005,7 +61162,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -61232,7 +61389,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -61464,7 +61621,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -61704,7 +61861,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -61964,7 +62121,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -62226,7 +62383,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -62504,7 +62661,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -62782,7 +62939,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -63055,7 +63212,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -63286,7 +63443,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -63514,7 +63671,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -63754,7 +63911,7 @@ mod tests {
         assert!(lookup("d_220").is_none());
         assert!(lookup("Hz_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("hbar_eV").is_none());
         assert!(lookup("g0p").is_none());
         assert!(lookup("Phi0").is_none());
@@ -64084,7 +64241,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -64464,7 +64621,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("p^0").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -64843,7 +65000,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("bar").is_none());
         assert!(lookup("p^0").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -65244,7 +65401,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -65645,7 +65802,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -66042,7 +66199,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -66534,7 +66691,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("Torr").is_none());
         assert!(lookup("mmHg").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -67012,7 +67169,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -67385,7 +67542,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -67979,7 +68136,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -68473,7 +68630,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -69056,7 +69213,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -69747,7 +69904,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -70451,7 +70608,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -71165,7 +71322,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -71880,7 +72037,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -72606,7 +72763,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -73238,7 +73395,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -73883,7 +74040,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -74533,7 +74690,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -75197,7 +75354,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -75870,7 +76027,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -76547,7 +76704,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -77410,7 +77567,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -78257,7 +78414,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("g0p").is_none());
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
@@ -79011,7 +79168,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_some());
@@ -79698,7 +79855,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_some());
@@ -80387,7 +80544,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_some());
@@ -81000,7 +81157,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_some());
@@ -81648,7 +81805,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mn_mt").is_none());
         assert!(lookup("sigma_e").is_none());
         assert!(lookup("m_e").is_some());
@@ -82127,7 +82284,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());
@@ -82497,7 +82654,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());
@@ -82798,7 +82955,7 @@ mod tests {
         assert!(lookup("Phi0").is_none());
         assert!(lookup("G0").is_none());
         assert!(lookup("g0p").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());
@@ -83155,7 +83312,7 @@ mod tests {
         assert!(lookup("are").is_some());
         assert!(lookup("E_h").is_none());
         assert!(lookup("hartree").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());
@@ -83443,7 +83600,7 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("E_h").is_none());
         assert!(lookup("hartree").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());
@@ -83810,7 +83967,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("Ar_e").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("m_e_u").is_some());
         assert!(lookup("m_e_c2").is_some());
         assert!(lookup("m_e_c2_MeV").is_some());
@@ -84096,7 +84253,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("Ar_e").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("E_e").is_none());
         assert!(lookup("mec2").is_none());
         assert!(lookup("m_e_c2_MeV").is_some());
@@ -84465,7 +84622,7 @@ mod tests {
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
         assert!(lookup("Ar_e").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("E_e").is_none());
         assert!(lookup("mec2").is_none());
         assert!(lookup("m_e_c2/MeV").is_none());
@@ -84702,7 +84859,7 @@ mod tests {
         assert!(lookup("g0p").is_none());
         assert!(lookup("me").is_none());
         assert!(lookup("Ar_e").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("atomic-unit-of-mass").is_none());
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
@@ -84973,7 +85130,7 @@ mod tests {
         assert!(lookup("hectare").is_some());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("atomic-unit-of-mass").is_none());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());
@@ -85167,7 +85324,7 @@ mod tests {
         assert!(lookup("F_h").is_none());
         assert!(lookup("Eh_a0").is_none());
         assert!(lookup("atomic-unit-of-force").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("au_F").is_some());
         assert!(lookup("au_v").is_some());
         assert!(lookup("au_eps").is_some());
@@ -85347,7 +85504,7 @@ mod tests {
         assert!(lookup("alphac").is_none());
         assert!(lookup("v_au").is_none());
         assert!(lookup("atomic-unit-of-velocity").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("au_v").is_some());
         assert!(lookup("au_eps").is_some());
         assert!(lookup("au_p").is_some());
@@ -85540,7 +85697,7 @@ mod tests {
         assert!(lookup("4pi_eps").is_none());
         assert!(lookup("atomic-unit-of-permittivity").is_none());
         assert!(lookup("Y0").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("au_eps").is_some());
         assert!(lookup("au_p").is_some());
         assert!(lookup("nu_t").is_some());
@@ -85729,7 +85886,7 @@ mod tests {
         assert!(lookup("hbar_a0").is_none());
         assert!(lookup("atomic-unit-of-momentum").is_none());
         assert!(lookup("p_e").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("au_p").is_some());
         assert!(lookup("nu_t").is_some());
         assert!(lookup("J_eV").is_some());
@@ -85916,7 +86073,7 @@ mod tests {
         assert!(lookup("hbar_mec2").is_none());
         assert!(lookup("natural-unit-of-time").is_none());
         assert!(lookup("atomic-unit-of-time").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("nu_t").is_some());
         assert!(lookup("J_eV").is_some());
         assert!(lookup("J_K").is_some());
@@ -86152,7 +86309,7 @@ mod tests {
         assert!(lookup("bn").is_none());
         assert!(lookup("barns").is_none());
         assert!(lookup("sigma_e").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("barn").is_some());
         assert!(lookup("angstrom").is_some());
@@ -86255,7 +86412,7 @@ mod tests {
         assert!(lookup("ang").is_none());
         assert!(lookup("angstroms").is_none());
         assert!(lookup("AA").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("b").is_none());
         assert!(lookup("angstrom").is_some());
@@ -86339,7 +86496,7 @@ mod tests {
         assert!(lookup("g").is_none());
         assert!(lookup("Gals").is_none());
         assert!(lookup("galileo").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("b").is_none());
         assert!(lookup("A").is_none());
@@ -86431,7 +86588,7 @@ mod tests {
         assert!(lookup("nautical-mile").is_none());
         assert!(lookup("knot").is_some());
         assert!(lookup("are").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("b").is_none());
         assert!(lookup("g").is_none());
@@ -86510,7 +86667,7 @@ mod tests {
         assert!(lookup("a").is_none());
         assert!(lookup("are").is_some());
         assert!(lookup("hectares").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("b").is_none());
         assert!(lookup("g").is_none());
@@ -86591,7 +86748,7 @@ mod tests {
         assert!(lookup("kt").is_none());
         assert!(lookup("knots").is_none());
         assert!(lookup("kns").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("b").is_none());
         assert!(lookup("g").is_none());
@@ -86670,7 +86827,7 @@ mod tests {
         assert!(lookup("ha").is_none());
         assert!(lookup("ares").is_none());
         assert!(lookup("hectares").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("mp").is_none());
         assert!(lookup("b").is_none());
         assert!(lookup("g").is_none());
@@ -86888,7 +87045,7 @@ mod tests {
         assert!(lookup("NAe").is_some());
         assert!(lookup("S0_R").is_some());
         assert!(lookup("sigma").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -86972,7 +87129,7 @@ mod tests {
         assert!(lookup("GM_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87086,7 +87243,7 @@ mod tests {
         assert!(lookup("GM_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87177,7 +87334,7 @@ mod tests {
         assert!(lookup("GM_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87271,7 +87428,7 @@ mod tests {
         assert!(lookup("GM_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87362,7 +87519,7 @@ mod tests {
         assert!(lookup("GM_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87449,7 +87606,7 @@ mod tests {
         assert!(lookup("R_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87532,7 +87689,7 @@ mod tests {
         assert!(lookup("R_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87615,7 +87772,7 @@ mod tests {
         assert!(lookup("T_sun").is_some());
         assert!(lookup("sigma_h").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87699,7 +87856,7 @@ mod tests {
         assert!(lookup("gn").is_some());
         assert!(lookup("atm").is_some());
         assert!(lookup("NAe").is_some());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
     }
 
     #[test]
@@ -87819,7 +87976,7 @@ mod tests {
         assert!(lookup("1/m_eV").is_none());
         assert!(lookup("m_eV_inv").is_none());
         assert!(lookup("eV_kg").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("eV_m").is_some());
         assert!(lookup("J_kg").is_some());
         assert!(lookup("u_eV").is_some());
@@ -87941,7 +88098,7 @@ mod tests {
         assert!(lookup("J_Hz").is_none());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("Hz_kg").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("J_kg").is_some());
         assert!(lookup("u_eV").is_some());
         assert!(lookup("au_t").is_some());
@@ -88094,7 +88251,7 @@ mod tests {
         assert!(lookup("u_J").is_none());
         assert!(lookup("eV_kg").is_none());
         assert!(lookup("J_Hz").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("u_eV").is_some());
         assert!(lookup("au_t").is_some());
         assert!(lookup("mP").is_some());
@@ -88233,7 +88390,7 @@ mod tests {
         assert!(lookup("hbar_Eh").is_none());
         assert!(lookup("au_V").is_none());
         assert!(lookup("d220").is_none());
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("au_t").is_some());
         assert!(lookup("mP").is_some());
         assert!(lookup("mPc2").is_some());
@@ -88255,7 +88412,7 @@ mod tests {
 
     #[test]
     fn lookup_rebuilds_the_live_ledger_and_rejects_unknown_names() {
-        assert_eq!(LEDGER.len(), 282);
+        assert_eq!(LEDGER.len(), 283);
         for name in LEDGER {
             let live = lookup(name).expect(name);
             let again = lookup(name).expect(name);
@@ -88269,6 +88426,11 @@ mod tests {
         assert_eq!(
             lookup("h").unwrap().hash.to_hex(),
             "50a96a8715769547a90cba69b0775d8892d79f2fa32465ad13a6d73b2d111eef"
+        );
+        assert_eq!(lookup("hbar").unwrap().kind, "sci-interval");
+        assert_eq!(
+            lookup("hbar").unwrap().hash.to_hex(),
+            "c454642957d1b258a76e932e88ed6941c400527b53f37541d439281c295c363c"
         );
         assert_eq!(lookup("h_eVHz").unwrap().kind, "ratio");
         assert_eq!(
@@ -89631,7 +89793,7 @@ mod tests {
             lookup("L_0").unwrap().hash.to_hex(),
             "b913459b9de403e5040bba4f1ab82c2619c782230d6cf21816ab70beb994e71b"
         );
-        assert!(lookup("hbar").is_none());
+        assert_eq!(lookup("hbar").expect("hbar is listed").name, "hbar");
         assert!(lookup("m_e").is_some());
         assert!(lookup("nu_p").is_some());
         assert!(lookup("au_F").is_some());

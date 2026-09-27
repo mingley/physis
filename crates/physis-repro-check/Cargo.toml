@@ -1,0 +1,22 @@
+[package]
+name = "physis-repro-check"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Independent integer-identity checker for C6.2 reproduction. Links no physis crates."
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10"
+
+[lib]
+name = "physis_repro_check"
+path = "src/lib.rs"
+
+[[bin]]
+name = "physis-repro-check"
+path = "src/main.rs"

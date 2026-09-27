@@ -70,3 +70,19 @@ theorem matrix_det_product (a11 a12 a21 a22 b11 b12 b21 b22 : Int) :
       - (((a11 * a22) - (a12 * a21)) * ((b11 * b22) - (b12 * b21))))
       = 0 := by
   grind
+
+/-- First Bianchi identity component `R^t_[rθφ] = 0`: the cyclic sum
+`R^t_rθφ + R^t_θφr + R^t_φrθ` with `R^ρ_σμν` expanded in folded
+`(Γ, ∂Γ)` indeterminates (lower Γ pairs shared: torsion-free).
+21 indeterminates, 30 terms; vanishes by the ΓΓ pairing. Not the
+coboundary algebra and not the cross-product Jacobi. -/
+theorem first_bianchi (DHTRP DPTRH DRTHP GHHP GHRH GHRP GPHP GPRH GPRP GRHP GRRH GRRP GTHH GTHP GTPP GTRH GTRP GTRR GTTH GTTP GTTR : Int) :
+    (((((((((((((((((((((((((((((DHTRP - DPTRH) + (GTTH * GTRP)) - (GTTP * GTRH))
+      + (GTRH * GRRP)) - (GTRP * GRRH)) + (GTHH * GHRP)) - (GTHP * GHRH))
+      + (GTHP * GPRP)) - (GTPP * GPRH)) + DPTRH) - DRTHP) + (GTTP * GTRH))
+      - (GTTR * GTHP)) + (GTRP * GRRH)) - (GTRR * GRHP)) + (GTHP * GHRH))
+      - (GTRH * GHHP)) + (GTPP * GPRH)) - (GTRP * GPHP)) + DRTHP) - DHTRP)
+      + (GTTR * GTHP)) - (GTTH * GTRP)) + (GTRR * GRHP)) - (GTRH * GRRP))
+      + (GTRH * GHHP)) - (GTHH * GHRP)) + (GTRP * GPHP)) - (GTHP * GPRP))
+      = 0 := by
+  ring

@@ -1,0 +1,11 @@
+compare planck vs rayleigh-jeans
+  thermo.mode-equipartition        fails vs holds
+    judgment:   logical disproved → logical undetermined
+  thermo.uv-finite                 holds vs fails
+    judgment:   logical undetermined → logical disproved
+  thermo.stefan-boltzmann          holds vs fails
+    empirical:  compatible → not-applicable
+    judgment:   logical undetermined → logical disproved
+  thermo.wien-displacement         holds vs fails
+    judgment:   logical undetermined → logical disproved
+discriminating_claims=4

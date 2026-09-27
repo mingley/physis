@@ -1,0 +1,171 @@
+{
+  "schema": "physis-campaign-report",
+  "version": 1,
+  "campaign": "bundle",
+  "manifest_id": "541291ac65bca0d4099900654b93df9f78c44873b880f8d37594a467fbc58a21",
+  "manifest_text": "{\"authority\": {\"hypothesize\": \"explorer\", \"prove\": \"proof-searcher\"}, \"baseline\": {\"assumptions\": [\"live lab definitions\", \"disk topology b1=0 b2=0\"], \"constants\": [], \"datasets\": [], \"evidence\": [], \"knobs\": [{\"knob\": \"shape\", \"theory\": \"de-rham\", \"value\": \"disk\"}], \"source_revision\": \"working-tree\", \"theory_package\": \"de-rham\"}, \"budget\": {\"actions\": 8, \"attempts\": 16, \"candidates\": 16, \"external_cost\": 0, \"memory_mb\": 512, \"output_bytes\": 65536, \"wall_time_secs\": 300}, \"candidate_space\": {\"max_candidates\": 8, \"operations\": [\"hypothesize\", \"prove\"], \"parameter_ranges\": [], \"seed\": 7, \"structural_mutations\": [{\"label\": \"add-sign-flip\", \"theory\": \"de-rham\"}, {\"label\": \"add-down-laplacian\", \"theory\": \"de-rham\"}]}, \"data\": {\"access_approval\": \"none-required: synthetic dry run\", \"adaptive_use\": [], \"calibration\": [], \"evaluation_inputs\": [], \"sources\": [{\"id\": \"none\", \"license\": \"n/a\", \"locator\": \"synthetic dry run\"}], \"uncertainty\": \"no empirical inputs\"}, \"evaluation\": {\"comparison\": \"diff verdicts against the retained disk baseline per mutation\", \"controls\": [\"unmutated disk baseline\"], \"evidence_required\": [\"verdict diffs\", \"changed encoding label\"], \"numeric_tolerance\": 1e-6, \"obligations\": [\"dec.d-squared-zero\", \"dec.closed-equals-exact\"], \"tolerance_justification\": \"verdict flips are exact; tolerance is a formality\"}, \"objective\": {\"domain\": \"shape in {disk, circle, torus, klein, sphere}; package mutations add-sign-flip, add-down-laplacian\", \"failure\": \"disk baseline fails either claim\", \"inconclusive\": \"verdict is undecidable or inapplicable\", \"observable\": \"d-squared-zero and closed-equals-exact verdicts\", \"question\": \"does the disk DEC encoding keep d-squared-zero and closed-equals-exact holding while orientation and boundary mutations fail with the changed encoding identified\", \"statements\": [\"dec.d-squared-zero\", \"dec.closed-equals-exact\"], \"success\": \"disk baseline holds both claims; each mutation fails with a minimal counterexample naming the changed encoding\", \"theories\": [\"de-rham\"], \"units\": \"verdict-kind\"}, \"schema\": \"physis-campaign-manifest\", \"stop\": {\"human_pause\": false, \"no_progress_limit\": 3}, \"version\": 1}",
+  "manifest": {
+    "authority": {
+      "hypothesize": "explorer",
+      "prove": "proof-searcher"
+    },
+    "baseline": {
+      "assumptions": [
+        "live lab definitions",
+        "disk topology b1=0 b2=0"
+      ],
+      "constants": [],
+      "datasets": [],
+      "evidence": [],
+      "knobs": [
+        {
+          "knob": "shape",
+          "theory": "de-rham",
+          "value": "disk"
+        }
+      ],
+      "source_revision": "working-tree",
+      "theory_package": "de-rham"
+    },
+    "budget": {
+      "actions": 8,
+      "attempts": 16,
+      "candidates": 16,
+      "external_cost": 0,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "wall_time_secs": 300
+    },
+    "candidate_space": {
+      "max_candidates": 8,
+      "operations": [
+        "hypothesize",
+        "prove"
+      ],
+      "parameter_ranges": [],
+      "seed": 7,
+      "structural_mutations": [
+        {
+          "label": "add-sign-flip",
+          "theory": "de-rham"
+        },
+        {
+          "label": "add-down-laplacian",
+          "theory": "de-rham"
+        }
+      ]
+    },
+    "data": {
+      "access_approval": "none-required: synthetic dry run",
+      "adaptive_use": [],
+      "calibration": [],
+      "evaluation_inputs": [],
+      "sources": [
+        {
+          "id": "none",
+          "license": "n/a",
+          "locator": "synthetic dry run"
+        }
+      ],
+      "uncertainty": "no empirical inputs"
+    },
+    "evaluation": {
+      "comparison": "diff verdicts against the retained disk baseline per mutation",
+      "controls": [
+        "unmutated disk baseline"
+      ],
+      "evidence_required": [
+        "verdict diffs",
+        "changed encoding label"
+      ],
+      "numeric_tolerance": 1e-6,
+      "obligations": [
+        "dec.d-squared-zero",
+        "dec.closed-equals-exact"
+      ],
+      "tolerance_justification": "verdict flips are exact; tolerance is a formality"
+    },
+    "objective": {
+      "domain": "shape in {disk, circle, torus, klein, sphere}; package mutations add-sign-flip, add-down-laplacian",
+      "failure": "disk baseline fails either claim",
+      "inconclusive": "verdict is undecidable or inapplicable",
+      "observable": "d-squared-zero and closed-equals-exact verdicts",
+      "question": "does the disk DEC encoding keep d-squared-zero and closed-equals-exact holding while orientation and boundary mutations fail with the changed encoding identified",
+      "statements": [
+        "dec.d-squared-zero",
+        "dec.closed-equals-exact"
+      ],
+      "success": "disk baseline holds both claims; each mutation fails with a minimal counterexample naming the changed encoding",
+      "theories": [
+        "de-rham"
+      ],
+      "units": "verdict-kind"
+    },
+    "schema": "physis-campaign-manifest",
+    "stop": {
+      "human_pause": false,
+      "no_progress_limit": 3
+    },
+    "version": 1
+  },
+  "state": "stopped (no-progress: no progress for 3 steps (limit 3))",
+  "stop": {
+    "reason": "no-progress",
+    "detail": "no progress for 3 steps (limit 3)"
+  },
+  "budget": {
+    "actions": {
+      "used": 1,
+      "max": 8
+    },
+    "attempts": {
+      "used": 1,
+      "max": 16
+    },
+    "wall_ms": {
+      "used": 1527,
+      "max": 300000
+    },
+    "candidates": {
+      "used": 0,
+      "max": 16
+    }
+  },
+  "no_progress_streak": 3,
+  "no_progress_limit": 3,
+  "attempts": [
+    {
+      "id": "a1",
+      "op": "prove",
+      "parent": "2f73d7e05827dcc3782bb4d4e8d33e5f9991ab24f90c9eaac74bd40dcc1430ed",
+      "inputs": [
+        "789d0f9645d4f4ab1f816ac1fcd1944266b2584c12edc443d6504043284b236e"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "c55485062efe0095ee6c40c6ecf408e38eec75291c536da1e5e59a5d80ade07a"
+      ],
+      "note": "prove dec.d-squared-zero minted a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784 via expand-recursive + expand-postfix"
+    }
+  ],
+  "blocked": [
+    {
+      "key": "blocked:de-rham:dec.closed-equals-exact:missing-theorem",
+      "inputs": "4f4b201e8f00096d1630640c4fd765ed3cf0a79cac63a3e2a3694deb045bbcbd"
+    },
+    {
+      "key": "prove:de-rham:dec.d-squared-zero:missing-theorem",
+      "inputs": "664360fe60e25784a092f1877eff13a9e29ae071797f62eebb5c3c91de5b4fec"
+    }
+  ],
+  "declared_datasets": [],
+  "data_sources": [
+    {
+      "id": "none",
+      "locator": "synthetic dry run",
+      "license": "n/a"
+    }
+  ],
+  "journal_tip": "746d96e862d46a3a9df4198ed1f413fce703e91634ff5b312d9a4b3542e7d3e6"
+}

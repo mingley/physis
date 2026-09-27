@@ -10,6 +10,363 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Theory
+
+- **C2.4: substantive GR formalization (first Bianchi).** The live
+  tensor expression comes first: a Schwarzschild Γ/Riemann engine
+  (numeric derivatives, generic 4×4 inverse) contracts the
+  first-Bianchi cyclic sum over the shared exterior domain, anchored
+  by Kretschmann `48M²/r⁶` in both charts; new `gr.first-bianchi`
+  claim (tensorial: holds in both charts, both sides of the EF
+  horizon; same horizon refusal as the reciprocal check). The
+  matching formal obligation is the `R^t_[rθφ]` component as a
+  21-indeterminate, 30-term integer polynomial (torsion-free
+  folding), a new catalog identity with a physlib `first_bianchi`
+  theorem (`ring`); the live GR package carries the generated
+  tree plus a bound `lean_ref` (new package hash), with
+  sign-mutated artifacts rejected by expansion and at bind time,
+  a semantic dossier (MTW), and an end-to-end `prove` receipt
+  test. The contracted `∇·G = 0` stays out: it needs
+  differential hypotheses outside the polynomial fragment. No
+  Einstein-equation proof is claimed.
+
+- **C4.3: named GR geometry computation.** New
+  `gr.schwarzschild-reciprocal` claim on `general-relativity`:
+  `g_tt·g_rr = −1` sampled at 8 points over `[r_min, 10M]`
+  (geometric units, signature `−+++`) in the selected chart.
+  Conventions are knobs, not hidden assumptions: the `chart`
+  knob (`schwarzschild` vs `eddington-finkelstein`) and the
+  `r_min` knob (0.5–9M) drive the verdict — EF computes
+  `g_rr = 0` (fails, with a Jacobian cross-check), and a
+  Schwarzschild-chart domain with `r_min ≤ 2M` is refused
+  (inapplicable, never extrapolated). The `r = 0` singularity
+  is never sampled; D ≠ 4 is inapplicable. A checked chart
+  encoding, explicitly not an Einstein-equation proof; the
+  token EH action stays.
+
+- **C2.2: Faraday proof obligation skipped as duplicate (documented).**
+  The C4.2 Stokes-flux polynomial from live incidence data coincides
+  with catalog `dec.d-squared-one` up to sign (the sphere is the
+  tetrahedron boundary), so no new catalog row is added. Pinned by
+  `faraday_flux_obligation_is_coboundary_algebra`; sign-mutation
+  rejection stays with the existing `add-sign-flip` (dec) and
+  `flip-orientation` (EM evaluator) machinery. See spec 008.
+
+- **C4.2: Maxwell on a live 2-complex.** `em.faraday` on
+  `maxwell-vacuum` now also checks the closed magnetic flux of
+  `B = dA` through the shared DEC 2-sphere: the same `d₁`
+  incidence the dec claims use, paired with the sphere's
+  fundamental cycle (new shared orientation data in `dec.rs`;
+  no 3-mesh, no 4-simplex). Live flux is exactly 0; the monopole
+  fork reads +1. Two new IR forks give explained diffs:
+  `flip-orientation` breaks the Stokes pairing (flux −2, Faraday
+  fails while `d² = 0` still holds — not a relabeled simplex
+  identity) and `add-boundary` drops a face (no closed flux, so
+  inapplicable with the quantified Stokes term −1). The live
+  package stays one equation; Proca still touches only Gauss.
+
+- **C4.1: computed 2D gauge benchmark.** The U(1)
+  `gauge.exact-area-law-2d` verdict now rests on a single-cell
+  transfer-matrix computation: the character ratio c₁/c₀ from
+  grid quadrature (single-plaquette volume, periodic-θ boundary,
+  open-boundary 2D factorization; no finite volume simulated, no 1/V
+  correction claimed) must agree with the independent Bessel-series
+  reference I₁/I₀ to 1e-9 with σ > 0. Grid doubling to 1e-12 (cap
+  4096) converges by grid 256 across β ∈ [0, 100]; disagreement is
+  `undecidable` numerics, never a verdict on the theorem. A
+  charge-2 character and a sign-flipped Boltzmann weight fail the
+  same benchmark path the verdict uses. SU(N) keeps its exact
+  Casimir tension; 4D confinement stays heuristic/conjecture and no
+  mass-gap claim is made.
+
+### IR
+
+- **C5.1: typed catalog expressions in IR.** Theory packages may
+  attach parsed trees (`typed <index> <tree>`) alongside legacy
+  token strings, with round-trip through the line dialect
+  (`certify_round_trip` stays token-structural). Bind time verifies
+  each tree against its tokens and the catalog: a missing index, an
+  unparsable tree, or a tree/token mismatch fails closed without
+  naming a receipt. The live SR package attaches the interval tree;
+  `encode` lists bound identities by claim id with a `typed` marker
+  and never claims proof. Token-only packages render byte-identical.
+
+### Empirical
+
+- **C3.3: measured Stefan-Boltzmann σ.** New
+  `quinn-martin-1985-sigma` dataset (5.66967 ± 0.00076 × 10⁻⁸
+  W m⁻² K⁻⁴ at T_tp, NPL cryogenic radiometer, 130 ppm standard
+  uncertainty; electrical-substitution calibration independent of σ)
+  under the same predeclared two-sigma rule. The Stefan evaluator
+  compares the lab's numerically integrated σ = (c/4)·u_∞/T⁴: Planck
+  branch compatible (NLL 1225/2888), Wien fork excluded
+  (NLL 1854077481/11552) despite its T⁴ kind holding, divergent
+  branches withhold. Verdict kinds stay model-internal; no trust
+  tier is promoted. The dataset is the measurement, not the SI
+  2π⁵k⁴/(15h³c²) combination.
+
+- **C3.2: measured Mercury perihelion.** New
+  `clemence-1947-mercury-residual` dataset (42.56 ± 0.94 probable
+  error per Julian century, moving equinox, σ = 1880/1349 per the
+  paper's stated convention; verified against the primary paper's
+  observed 5599.74±0.41 minus computed 5557.18±0.85 breakdown) under
+  the same predeclared two-sigma rule as C3.1. The shared Mercury
+  evaluator compares GR (compatible, NLL 322543349041/7068800000000)
+  and Newton (excluded, NLL 3296148192992281/7068800000000); verdict
+  kinds stay model-internal, coarse samples withhold comparison, and
+  no trust tier is promoted. The dataset is the measured residual,
+  not the total and not Clemence's Table I 43.03.
+
+### Constants
+
+- **C1.4: stored reduced Planck constant.** New `hbar` ledger entry:
+  CODATA 2018 JPCRD table XXXI UNIVERSAL truncated-print rounding
+  enclosure `[1054571817e-43, 1054571818e-43]` J s as `SciInterval`
+  (Ratio scale 10^43 overflows i128). The width is a 1ulp rounding
+  bound, not a measured uncertainty (SI-exact `h` carries none); not a
+  terminating `SciExact`, not a FormalClaim of `h/(2π)` (no π is
+  stored), not P3N. The `physis_model` Qty is the tabulated lower
+  edge, lockstepped bit-exact. No sibling constants: Thomson, Φ₀, G₀,
+  gyromagnetics, and hbar-in-eV-s stay unstored. Note: spec 020's
+  constants row still says `ħ` is not stored; 020 is frozen by plan
+  006, so that line goes stale until the freeze lifts.
+
+### Agent
+
+- **R8 gate evaluated, not cleared (`docs/campaigns/r8-gate.md`).**
+  Sweep-1 minted all 9 catalogued theorems serially (9 actions,
+  4.6s wall, clean stop) for timing evidence: every campaign op
+  is sub-second and boot-dominated, serial runs at 1 useful
+  result per action, and R2 refuses concurrent bundle writers by
+  design — so bounded parallel workers cannot beat serial
+  useful-results-per-budget with the current op set. R8 stays
+  deferred with explicit reopen criteria (a wall-dominated
+  campaign op, wall-bound serial evidence, a no-double-charge
+  multi-writer design).
+
+- **Recorded acceptance campaigns (`docs/campaigns/`).** All four
+  R4–R7 acceptance scenarios run end-to-end with manifests, stopped
+  bundles, JSON + Markdown exports, and replay notes: kinematics-1
+  (2 proves minted; Galilean/truncated candidates refuted with
+  explanations), gravity-1 (empirical claims honestly blocked, then
+  2 failed formalize attempts retained; GR vs Newton discriminated
+  on shared datasets), field-1 (1 prove minted; orientation and
+  boundary mutations refuted naming the changed encoding),
+  thermal-1 (3 blocked with zero spend; frozen design with
+  calibration/evaluation split and the RJ alternative retained).
+  Serial baseline for the R8 gate: 3 receipts, 2 retained failures,
+  7 blocked items, 10 refutations, 10 discriminating claims,
+  1 frozen design, 2 dossiers for 5 actions and ~6s wall; replay
+  from a recorded manifest reproduces the identical receipt.
+
+- **R7: adversarial campaign regression suite.** New `physis-audit`
+  campaign corpus (`campaign_corpus` + `attack_campaign`, run by
+  `physis audit` after the red-team corpus): stale receipt and stale
+  sealed-reproduction bindings miss under a rotated statement hash,
+  obligation export refuses an empty run id and an uncatalogued claim,
+  an approved-then-tampered executable is refused at spawn time, zero
+  wall time and empty run ids are refused before spawn, and
+  `run_checker` never mints — not on honest agree bytes (asserted
+  agree, still unsealed) and not on tampered bytes (hash binding
+  checked). The checker-binary locator is shared with the agent
+  regression tests so the red-team runs the reviewed bytes. Seven
+  attack-adjacent pins beside the code they attack: reopen-after-
+  exhaustion stays stopped, negative/overflowing `explored` footers
+  count zero, adaptive dataset reuse is disclosed on every row and in
+  the render, negative and zero resource budgets are refused, wrong
+  bundle meta schemas are refused, and forged Prove/Reproduce journal
+  events restore nothing. No finding promoted: every attack was
+  already refused; R7 pins the refusals. Pinned by 1 corpus test (7
+  attacks) and 7 agent regression tests.
+
+- **R6: inspectable research report (`research export`).** New
+  `physis-agent::report` projection over the campaign bundle: versioned
+  JSON (`physis-campaign-report` v1) with objective, assumptions,
+  candidate lineage, every attempt (failures and reconciled
+  interruptions included), budget bounds, dataset ids, receipt-bearing
+  notes, blocked inputs, stop record, journal tip, and the byte-exact
+  pinned manifest for replay. Markdown rendering is labeled a
+  projection, not the store of truth. Read-only (no lock, no lab); all
+  roles may observe. Pinned by 5 projection tests (schema, corrupt and
+  manifest-less bundles, markdown label, manifest replay-or-blocker), 1
+  lab exec test, 2 CLI parse tests, and 1 smoke test.
+
+- **R5: empirical experiment design in `design`.** New pure ranking core
+  (`physis-agent::design`) over live verdicts plus the registered dataset
+  inventory: per theory pair, observables rank by contrast class
+  (verdict-kind split, then empirical-status contrast, then Gaussian NLL
+  gap), bounded to 16 rows, each with units, reachable measurement domain,
+  frozen comparison rule (two-sigma + exact NLL for Gaussian datasets,
+  interval-subset for limits), acquisition class, and prior cite uses.
+  The frozen design id is journaled before any evaluation; disclosures
+  cover fitted/nuisance knobs, missing covariance records (independence
+  assumed), adaptive reuse (journaled cites plus the structural note that
+  live evaluations reuse data every run and score never touches
+  datasets), and measured compute cost. No downloads: the inventory is
+  compiled-in and stated on every row. Pinned by 7 ranking unit tests, 3
+  lab tests, and 1 smoke test.
+
+- **R4: resumable serial campaigns (`research step` / `research status`).**
+  New `physis-agent::coordinator` dispatching on the R1 manifest, R2
+  bundle, and C7.1 gap selector: manifest revision pinned to the bundle
+  (create-or-open; a changed manifest is refused, never a silent budget
+  reset), interrupted attempts reconciled unresolved before dispatch,
+  deterministic selection (C7.1 priority plus statement-hash tie-break,
+  filtered by scope, operations, and a persisted blocked set), attempt
+  reservation before execution through the existing role/trust/budget
+  gates, result commit, and checkpointed usage (wall time, candidates,
+  no-progress streak, blocked inputs, sticky stop). Blocked work is not
+  retried until a relevant input changes (statement, eligibility flags,
+  role, knob state); repeats grow the streak toward the manifest's
+  no-progress limit. Explicit stops: budget-exhausted, no-eligible-action,
+  no-progress, operational-failure, human-pause. `research step` is
+  lab-only; `research status` renders read-only from the bundle alone.
+  Pinned by 13 coordinator tests (prove dispatch, revision refusal,
+  pause, determinism, budget/no-eligible/no-progress stops, crash
+  resume with lock break, blocked non-retry, authority block + role
+  change, hypothesize charging, stop branches, footer parsing), 2 lab
+  exec tests, 4 CLI parse tests, and 2 smoke tests.
+
+- **C6.2: independent reproduction + sealed P4 admission.** New
+  unsafe-free `physis-repro-check` crate (own JSON parser and grid
+  evaluator; links no `physis-*`; only the `WIRE.md` format, serde,
+  and sha2 are shared; allowlist + independence rationale + automated
+  dependency-boundary tests) and a trusted host pipeline in
+  `physis-verifier::reproduce`: obligation export from the live
+  challenge, digest-bound checker approval with spawn-time re-hash,
+  execution through the R3 worker boundary, strict verdict parsing,
+  and binding to run/bundle/obligation/executable before
+  `Verified<ReproductionRecord>` mints — `run_checker` probes but
+  never mints. P4 derives only from a live dual-checked receipt plus
+  a store-bound record (`TrustEvidence.reproduced`; no setter, no
+  Deserialize); the lab records minted values via API only (no new
+  command), journals attempts as inspectable history, shows
+  what/which/assumptions in `why`, and drops records on restore
+  (fresh-session evidence). In-process `reproduce` still refuses P4.
+  Pinned by 21 checker + 5 boundary + 5 CLI tests, 17 pipeline
+  unit tests (verdict bindings, timeout/crash/cap mappings), 19
+  pipeline e2e tests (live agree + mint, sign-flip disagree, stale
+  statement, foreign identity, copied/swapped executables, fake
+  verdicts, crash/no-output cases), 4 lab tests, and 1 trust
+  derivation test.
+
+- **R3: isolated worker boundary + verifier subprocess routing.** New
+  `physis-core::worker` (single home for the host process boundary;
+  no new crate per spec 022): two trust modes, host-selected
+  absolute programs only (no proposer executable paths), wall-time
+  kill, per-stream and output-dir byte caps, scrubbed env
+  (`PATH`/`SCRATCH_DIR` plus host additions), private scratch cwd,
+  null stdin, and input-integrity refusal, with scratch always
+  removed. Memory limits are refused as unenforceable rather than
+  silently accepted, and `Untrusted` is always refused — R3 ships
+  no OS backend. The Lean pipeline (`lake build` + `lean4export` +
+  `--version`) now runs through the boundary as reviewed-local:
+  one `sh -c` run with quoted `$LAKE`/`$LEAN4EXPORT`/`$THM`
+  (no PATH-resolved tools, no interpolated untrusted text),
+  finite generous limits, and bounded rejection text. Residuals
+  documented, not silent: host networking for reviewed tools, no
+  process-group kill, memory/network need a backend. Pinned by 17
+  worker tests (real fixtures: echo/pwd/env/cat/sleep/yes/sh)
+  and 6 lean mapping/script tests (toolchain-independent).
+
+- **R2: durable bundles and crash recovery (substrate, no CLI yet).**
+  New `physis-store::DurableStore` (append-only content-addressed
+  blobs; atomic temp+fsync+rename writes; reads rehash and refuse on
+  mismatch) and `physis-agent::Bundle` (frozen `meta.json`,
+  hash-chained fsynced `journal.jsonl` of intents/results,
+  `objects/`). Write protocol: reserve budget and append intent
+  before dispatch, validate output objects and commit the result
+  under the same attempt id after; retries use new ids, identical
+  re-commits are ignored without double charge, conflicts are
+  refused. Resume distinguishes completed/failed/interrupted/
+  never-started with charges kept; opening verifies meta version,
+  chain, and every referenced object, and refuses concurrent writers
+  (stale crash locks break explicitly). Loading bytes never restores
+  trust: only verified bytes and ids cross the API. The lab JSONL
+  journal and set-knob replay are deliberately untouched (separate
+  strict history for campaign execution). Pinned by 5 store + 18
+  bundle tests, including kill-between-boundaries restarts via drop
+  and `mem::forget` (kill -9 faithful for the lockfile).
+
+- **R1: versioned campaign manifest + dry-run plan.** New
+  `physis-agent::campaign` and `physis research plan <manifest.json>`
+  (spec 022): typed v1 manifest (objective, baseline, candidate
+  space, evaluation/data/authority policies, finite budgets, stop
+  conditions) with schema refusal — unknown version/fields/operations,
+  duplicate keys (custom pre-parse scanner, escape-aware), vacuous
+  budgets, nonzero external cost, calibration/evaluation overlap —
+  plus live validation against the lab (theory ids, claim-id
+  resolution, knob pins parsed in-domain, ranges on chosen/fitted
+  knobs inside live domains, structural labels from
+  `structural_mutations`, every operation covered by a role that
+  permits it). The dry run renders the plan with its content id,
+  executes nothing, mutates nothing, journals nothing, and grants no
+  authority (all roles may plan). Pinned by 37 campaign unit tests,
+  2 lab tests (dry-run purity, missing file), 3 CLI parse tests, and
+  2 smoke tests.
+
+- **C7.2: typed hypothesis search (bounded family, fork-only).**
+  New `physis-agent::search` engine behind `hypothesize`: breadth-first
+  structural-mutation closure to depth 2 (deduped by flag set, e.g.
+  `add-monopole+add-proca`) plus chosen/fitted knob probes, all
+  evaluated on owned `Theory::fork` forks — the engine takes `&dyn
+  Theory`, so candidates cannot modify the trusted baseline and no
+  restore step exists. A type gate rejects dimensionally invalid
+  candidates before evaluation (range, kind, fork `set`, frozen-knob
+  drift) with reasons; refuted candidates (baseline-`Holds` broken)
+  are retained with their counterexample diffs, never promoted or
+  dropped. Footer reports
+  `explored/rejected/refuted/depth` with a 32-candidate budget and an
+  explicit `budget_exhausted` marker. Pinned by four lab tests
+  (depth-2 maxwell family `explored=10`, typed rejection reasons,
+  counterexample retention, snapshot/verdict/journal stability) and
+  two engine stub tests (depth cap, budget cap).
+
+- **C5.2: gap-query completeness (evidence close, no new code).** All
+  seven gap kinds the C7.1 selector matches on
+  (`step_priority` is exhaustive over `GapReason`) are queryable
+  via `inspect gap <kind>`, which dispatches over the same
+  `GapReason::ALL` universe and the same live `gap_for` graph as
+  `gaps` — no second gap graph was built. Pinned by
+  `inspect_gap_queries_every_c71_reason_from_one_graph` (each
+  kind succeeds with a header, every inspect row appears in
+  `gaps`, unknown kinds fail closed).
+
+- **C7.1: one gap-driven research step.** New lab-only `step [scope]
+  [max-steps]` command (spec 022): deterministic selector over the live
+  gap graph (documented priority, statement-hash tie-break) that runs
+  at most one allowed existing operation (prove, cite, or enclose) or
+  emits an explicit blocked work item. Unsupported theorems become
+  formalization items, unregistered datasets become measurement
+  requests (never invented), precision gaps enclose once without
+  upgrading, open problems stay preserved. Role, trust, and budget
+  gates preserved; selection lends no authority.
+
+### Empirical
+
+- **C3.1: measured light deflection.** New `dyson-1920-sobral-deflection`
+  dataset (Sobral 4-inch 1.98″ ± 0.12″ probable error, σ = 0.18″,
+  public domain, DOI locator) with a predeclared two-sigma comparison
+  rule (`EmpiricalReceipt::compare_two_sigma`: μ±2σ interval-subset
+  plus exact Gaussian NLL; 1σ hulls are stored honestly and are not the
+  exclusion rule; one-sided limits are refused). The shared Eddington
+  evaluator compares GR (compatible, NLL 52441/64800) and Soldner
+  (excluded, NLL 4232/225) under that one rule; verdict kinds stay
+  model-internal, coarse samples withhold comparison, and no trust tier
+  is promoted. Principe is documented and not registered.
+
+### Tests
+
+- **C2.1: live kinematic receipt binding.** Two new lab tests pin that
+  one journal proving `sr.invariant-interval`,
+  `sr.subluminal-composition`, and `sr.energy-momentum-invariant`
+  binds each receipt to its exact statement (`logical proved`, P3F,
+  distinct challenge hashes, no cross-borrowing), that `why` keeps the
+  catalog polynomial distinct from the floating-point sample, and that
+  `absolute_time` flips the evaluator to `logical disproved` without
+  minting. A stale kinematic identity restored from a journal stays
+  non-P3F. Test-only; no behavior change.
+
 ### CI
 
 - **U8: MSRV story documented.** CONTRIBUTING gains the floor (Rust 1.85

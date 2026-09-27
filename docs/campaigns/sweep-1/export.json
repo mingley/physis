@@ -1,0 +1,308 @@
+{
+  "schema": "physis-campaign-report",
+  "version": 1,
+  "campaign": "bundle",
+  "manifest_id": "0d02156744096a6a909e0e89b1dbb4526601936043c12fe620b3bc34a3a6296f",
+  "manifest_text": "{\"authority\": {\"prove\": \"proof-searcher\"}, \"baseline\": {\"assumptions\": [\"live lab definitions\"], \"constants\": [], \"datasets\": [], \"evidence\": [], \"knobs\": [], \"source_revision\": \"working-tree\", \"theory_package\": \"special-relativity\"}, \"budget\": {\"actions\": 12, \"attempts\": 16, \"candidates\": 16, \"external_cost\": 0, \"memory_mb\": 512, \"output_bytes\": 65536, \"wall_time_secs\": 300}, \"candidate_space\": {\"max_candidates\": 8, \"operations\": [\"prove\"], \"parameter_ranges\": [], \"seed\": 7, \"structural_mutations\": []}, \"data\": {\"access_approval\": \"none-required: synthetic dry run\", \"adaptive_use\": [], \"calibration\": [], \"evaluation_inputs\": [], \"sources\": [{\"id\": \"none\", \"license\": \"n/a\", \"locator\": \"synthetic dry run\"}], \"uncertainty\": \"no empirical inputs\"}, \"evaluation\": {\"comparison\": \"each supported theorem minted once; repeats blocked\", \"controls\": [\"unmutated baseline\"], \"evidence_required\": [\"receipts\"], \"numeric_tolerance\": 1e-6, \"obligations\": [\"dec.d-squared-zero\", \"dec.d-squared-one\", \"sr.invariant-interval\", \"sr.subluminal-composition\", \"sr.energy-momentum-invariant\", \"sr.cross-product-jacobi\", \"sr.lagrange-identity\", \"sr.matrix-det-product\", \"gr.first-bianchi\"], \"tolerance_justification\": \"receipts are exact; tolerance is a formality\"}, \"objective\": {\"domain\": \"all catalogued exact identities\", \"failure\": \"any supported theorem fails to mint\", \"inconclusive\": \"none expected\", \"observable\": \"prove receipts\", \"question\": \"sweep all supported theorems serially for timing evidence toward the R8 gate\", \"statements\": [\"dec.d-squared-zero\", \"dec.d-squared-one\", \"sr.invariant-interval\", \"sr.subluminal-composition\", \"sr.energy-momentum-invariant\", \"sr.cross-product-jacobi\", \"sr.lagrange-identity\", \"sr.matrix-det-product\", \"gr.first-bianchi\"], \"success\": \"all 9 supported theorems minted exactly once\", \"theories\": [\"special-relativity\", \"de-rham\", \"general-relativity\"], \"units\": \"receipts\"}, \"schema\": \"physis-campaign-manifest\", \"stop\": {\"human_pause\": false, \"no_progress_limit\": 3}, \"version\": 1}",
+  "manifest": {
+    "authority": {
+      "prove": "proof-searcher"
+    },
+    "baseline": {
+      "assumptions": [
+        "live lab definitions"
+      ],
+      "constants": [],
+      "datasets": [],
+      "evidence": [],
+      "knobs": [],
+      "source_revision": "working-tree",
+      "theory_package": "special-relativity"
+    },
+    "budget": {
+      "actions": 12,
+      "attempts": 16,
+      "candidates": 16,
+      "external_cost": 0,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "wall_time_secs": 300
+    },
+    "candidate_space": {
+      "max_candidates": 8,
+      "operations": [
+        "prove"
+      ],
+      "parameter_ranges": [],
+      "seed": 7,
+      "structural_mutations": []
+    },
+    "data": {
+      "access_approval": "none-required: synthetic dry run",
+      "adaptive_use": [],
+      "calibration": [],
+      "evaluation_inputs": [],
+      "sources": [
+        {
+          "id": "none",
+          "license": "n/a",
+          "locator": "synthetic dry run"
+        }
+      ],
+      "uncertainty": "no empirical inputs"
+    },
+    "evaluation": {
+      "comparison": "each supported theorem minted once; repeats blocked",
+      "controls": [
+        "unmutated baseline"
+      ],
+      "evidence_required": [
+        "receipts"
+      ],
+      "numeric_tolerance": 1e-6,
+      "obligations": [
+        "dec.d-squared-zero",
+        "dec.d-squared-one",
+        "sr.invariant-interval",
+        "sr.subluminal-composition",
+        "sr.energy-momentum-invariant",
+        "sr.cross-product-jacobi",
+        "sr.lagrange-identity",
+        "sr.matrix-det-product",
+        "gr.first-bianchi"
+      ],
+      "tolerance_justification": "receipts are exact; tolerance is a formality"
+    },
+    "objective": {
+      "domain": "all catalogued exact identities",
+      "failure": "any supported theorem fails to mint",
+      "inconclusive": "none expected",
+      "observable": "prove receipts",
+      "question": "sweep all supported theorems serially for timing evidence toward the R8 gate",
+      "statements": [
+        "dec.d-squared-zero",
+        "dec.d-squared-one",
+        "sr.invariant-interval",
+        "sr.subluminal-composition",
+        "sr.energy-momentum-invariant",
+        "sr.cross-product-jacobi",
+        "sr.lagrange-identity",
+        "sr.matrix-det-product",
+        "gr.first-bianchi"
+      ],
+      "success": "all 9 supported theorems minted exactly once",
+      "theories": [
+        "special-relativity",
+        "de-rham",
+        "general-relativity"
+      ],
+      "units": "receipts"
+    },
+    "schema": "physis-campaign-manifest",
+    "stop": {
+      "human_pause": false,
+      "no_progress_limit": 3
+    },
+    "version": 1
+  },
+  "state": "stopped (no-progress: no progress for 3 steps (limit 3))",
+  "stop": {
+    "reason": "no-progress",
+    "detail": "no progress for 3 steps (limit 3)"
+  },
+  "budget": {
+    "actions": {
+      "used": 9,
+      "max": 12
+    },
+    "attempts": {
+      "used": 9,
+      "max": 16
+    },
+    "wall_ms": {
+      "used": 4570,
+      "max": 300000
+    },
+    "candidates": {
+      "used": 0,
+      "max": 16
+    }
+  },
+  "no_progress_streak": 3,
+  "no_progress_limit": 3,
+  "attempts": [
+    {
+      "id": "a1",
+      "op": "prove",
+      "parent": "cac7a8113c4c9048a1d2ac67ca92f2be47f0de51e88f63725a564c9ed7cb5f5d",
+      "inputs": [
+        "d41455f09ccc93bebee90b76e0ca229225282d4c359e491215b0ab69be0e6322"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "68b0f86ddbfd0ee897f64b7ae968f2bc372c3cc6834e397ff7501e61aa698655"
+      ],
+      "note": "prove sr.matrix-det-product minted 5dcff626dfe9c46648862bc77d042dbad844b15fa91b7a77d32f49a615bb7659 via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a2",
+      "op": "prove",
+      "parent": "e0430bd24afc9694e8f842ebb577156c67b27b652ba081618a926a4c09680731",
+      "inputs": [
+        "4ca445b2e5fa93de9b3a177b53ad4eb3788f83c3dfd7e32eec91d336c82b52ef"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "cc5f827ca9a5d2f89da5c07d20c5482d1b8eccf228cf9ca8d774fb4a3866f634"
+      ],
+      "note": "prove sr.cross-product-jacobi minted 37944a1f3985a9b3459d12183d261f23253a3db519a86b38f82612d22b138660 via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a3",
+      "op": "prove",
+      "parent": "f53ee135814b5bbd60412213418b0df4ccf979e3b241952e12cd8a726c9051c0",
+      "inputs": [
+        "a2cf41480daea88616356f1278e83b75353595ba94c02ccd6029d1040beaaca4"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "aad92e87d073ef11f133a7882e9f323b077f4ee9c25cedd2b93b0693835ebd3a"
+      ],
+      "note": "prove sr.subluminal-composition minted 49d8f0376cc93e0fd81992547ed7aa8d298217a903f7545546cfbbfe487791c4 via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a4",
+      "op": "prove",
+      "parent": "17ab96f4b6098e4ed50160bf91e66f181324312d2116105cfd7e98e7b9af5fee",
+      "inputs": [
+        "a84d446a47d3a858755092cc08057a0ea1672a8483d13afd12221b686e652523"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "8603c61742a0c0787776b0da9c712e7d7bfa4ccdc56384c182fc658865593c1e"
+      ],
+      "note": "prove sr.energy-momentum-invariant minted d299697162a71d5777a71ff8e989e5282a65fcab66723cdeb5b0d8992ef1c48a via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a5",
+      "op": "prove",
+      "parent": "933eff56130a4ee796b80224aac309c6eaec12455f9efb95ad4aa78f18e935a0",
+      "inputs": [
+        "3d99f579ed8956ef5ab616d0f66e667ead0a6fb0fbe84ba3f3d0ea7acc0aed46"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "c19452210fb2a4238357e0c4c3db56f3226130f77372cb754f57585a3ab5aa52"
+      ],
+      "note": "prove gr.first-bianchi minted 425adbe5967772a76f932cab8988d9b2d66844eda0aa1dadb7453ce13d3e941f via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a6",
+      "op": "prove",
+      "parent": "26589ad97a48d4acdb348a1e96bff9cc82630b916e96456fd3610898315a53ec",
+      "inputs": [
+        "90bd5efdfa14c21a9d83e76d7d0ef2d1f54f1a95a6f8227f1f7831a3f7ec5b69"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "2ac67dc453514676708ac4cc97cc2d40285fe5c89107ebb94430e4c702458378"
+      ],
+      "note": "prove dec.d-squared-one minted 5d693193c780ded74e0f4123368f795a26d345ed2657127040e55dddae4fd207 via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a7",
+      "op": "prove",
+      "parent": "66c9ecfd4d9b221ef2baf1d9cba450f9fb7322bf2f1f3693824d95459b467ed4",
+      "inputs": [
+        "480ee0d52a43423783b54532bd90b3c0d21d9a8ac8cbf84ce522985f698eb3e3"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "e1d3d4f1eccb7dcb3fa88ee044e561fd3cf47d4b2aa815c71482fe76f07161c5"
+      ],
+      "note": "prove sr.lagrange-identity minted 0c48d1a5eecfdd56e7111764f3403c555888f918826ec176c6b2d286831896f4 via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a8",
+      "op": "prove",
+      "parent": "d6422bfeae91eae165b53abc32ce3b5e08a2393d2d21d6913a6e9ceb243f2044",
+      "inputs": [
+        "144c45776d692505a36c6a3c8a5963672344734931773dc249cc46317ce61082"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "57be85edc7bacf70f042f1f8f826891060ad74ff120bfc9da05f5ca9ebe94e03"
+      ],
+      "note": "prove sr.invariant-interval minted 472f7b1f98919c02780df0389a47272161f9ec9f890e61b878f72395e79ac091 via expand-recursive + expand-postfix"
+    },
+    {
+      "id": "a9",
+      "op": "prove",
+      "parent": "38533d3a97864ac6d1f731f9c493165141fc9b5b47549846e2d957edcb57a2fb",
+      "inputs": [
+        "789d0f9645d4f4ab1f816ac1fcd1944266b2584c12edc443d6504043284b236e"
+      ],
+      "cost_actions": 1,
+      "state": "completed",
+      "outputs": [
+        "606d12fcd833f7e0182779596d41a8e44605ac8ccbfc53294ce63987cb24e926"
+      ],
+      "note": "prove dec.d-squared-zero minted a7550c13c258971352452a071a190bb4580b60fd79fc8ad3f1394b0a75c48784 via expand-recursive + expand-postfix"
+    }
+  ],
+  "blocked": [
+    {
+      "key": "prove:de-rham:dec.d-squared-one:missing-theorem",
+      "inputs": "4caf059771e2399874d6fb131d9ff5420ee648d1e2b9697bed60525b2516fdfe"
+    },
+    {
+      "key": "prove:de-rham:dec.d-squared-zero:missing-theorem",
+      "inputs": "664360fe60e25784a092f1877eff13a9e29ae071797f62eebb5c3c91de5b4fec"
+    },
+    {
+      "key": "prove:general-relativity:gr.first-bianchi:missing-theorem",
+      "inputs": "385f2a329b19ef3285151773bffe5af1b1d1e2062a0eb3f048da75881ab921dd"
+    },
+    {
+      "key": "prove:special-relativity:sr.cross-product-jacobi:missing-theorem",
+      "inputs": "a1dbd8d6d282f55ad1858b934b8ee77f834a4734f1078166c7645b8b7c0e921e"
+    },
+    {
+      "key": "prove:special-relativity:sr.energy-momentum-invariant:missing-theorem",
+      "inputs": "1e6ea795afc34b5c86db3f36f0f87bd6c67cbb166dd7e1c210a6d4b29cc4ad5e"
+    },
+    {
+      "key": "prove:special-relativity:sr.invariant-interval:missing-theorem",
+      "inputs": "d02c5c59842af26aa9e12bed72c40c8023391a68b1b1bf22d70c8246ae2d2a88"
+    },
+    {
+      "key": "prove:special-relativity:sr.lagrange-identity:missing-theorem",
+      "inputs": "d2fedc3fa6b66ef18038d390ab27ead49c90f8b34e6385d8d4e3abf56df9c5b8"
+    },
+    {
+      "key": "prove:special-relativity:sr.matrix-det-product:missing-theorem",
+      "inputs": "53b704ea776a1066839840bac4fa2ac3d651073cc03c9a942e9665f2ac556144"
+    },
+    {
+      "key": "prove:special-relativity:sr.subluminal-composition:missing-theorem",
+      "inputs": "c3500bd15bd1a2dd87775c4a0453b7d65cf7221792327ed30de9e81959983252"
+    }
+  ],
+  "declared_datasets": [],
+  "data_sources": [
+    {
+      "id": "none",
+      "locator": "synthetic dry run",
+      "license": "n/a"
+    }
+  ],
+  "journal_tip": "a567405cdaab8450902ac54869d37b6fe11c199b8242230f22871cf333384901"
+}
