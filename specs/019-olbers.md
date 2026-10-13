@@ -53,6 +53,11 @@ Tired light stays `olbers-static`; it is not a silent horizon install.
 | `astro.shell-cancellation` | `dF/dr` independent of `r`. On `olbers-static` this names inverse-square Euclidean shells | **holds** (axiom) | **holds** (same Euclidean shells; expansion is the knob that breaks this) | **fails** (`dF ∝ e^{-Hr/c} dr`). That is not a knob |
 | `astro.sky-finite` | integrated brightness stays finite as the radial cutoff is removed | **fails** (`F ∝ R`, `F(2R)/F(R) = 2` at `R = c t`, independent of cutoff) | **holds** (`F = ρ_L c t`) | **holds** (`F = (ρ_L c/H)[1 − e^{−Hr/c}]`) |
 | `astro.night-sky-dark` | night sky far dimmer than a stellar photosphere (`τ ≪ 1`) | **fails** (`τ = n σ R → ∞`) | **holds** (`τ ~ 10⁻¹⁵` at a Hubble time) | **fails** (covering still diverges) |
+| `astro.seeliger-shell` | Newtonian `d\|φ\|/dr ∝ r` for the same uniform star field | **holds** (ratio 2) | **holds** | **holds** (gravity is not the photon law) |
+| `astro.seeliger-potential-finite` | `\|φ\|` of a uniform ball stays finite as `R` is removed | **fails** (`φ ∝ R²`, doubling ratio 4) | **holds** (mass integral stops at `c t`) | **fails** (photon cutoff, mass integral still `∝ R²`) |
+| `astro.seeliger-newtonian` | `\|φ\|/c² < 0.01` so the stellar field is still a Newtonian perturbation | **fails** (improper integral unbounded) | **holds** at a Hubble time; **fails** if `age_yr` is large enough that the ball is deep | **fails** (same improper mass integral) |
+
+Hubble dimming matches tired light on these three gravitational rows: it caps photons and leaves `φ ∝ R²`. The mass model is one solar mass per solar luminosity via `GM_☉`, the same star count the optical depth already uses. It is not the critical density.
 
 The standing theory holds its own axiom and fails the observations. A finite
 age keeps the axiom and holds the observations. Hubble dimming **fails** the

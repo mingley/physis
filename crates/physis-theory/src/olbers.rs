@@ -38,7 +38,7 @@ use physis_core::ParameterOrigin;
 use physis_core::{Dimensionless, Irradiance, Length};
 use physis_ir::{apply_mutation, parse_package, render_package, PackageMutation, TheoryPackage};
 use physis_model::constants::{
-    cosmic_luminosity_density, hubble_constant, solar_luminosity, solar_radius,
+    cosmic_luminosity_density, hubble_constant, solar_gm, solar_luminosity, solar_radius,
     stefan_boltzmann_constant, C,
 };
 use physis_model::World;
@@ -52,10 +52,23 @@ pub const SHELL_CANCELLATION: &str = "astro.shell-cancellation";
 pub const SKY_FINITE: &str = "astro.sky-finite";
 /// The night sky is far dimmer than a stellar photosphere (`τ ≪ 1`).
 pub const NIGHT_SKY_DARK: &str = "astro.night-sky-dark";
+/// Newtonian potential of a uniform shell grows with radius (`d|φ|/dr ∝ r`).
+pub const SEELIGER_SHELL: &str = "astro.seeliger-shell";
+/// That potential stays finite as the ball's radius is removed.
+pub const SEELIGER_FINITE: &str = "astro.seeliger-potential-finite";
+/// `|φ|/c²` inside the horizon is still a Newtonian perturbation.
+pub const SEELIGER_NEWTONIAN: &str = "astro.seeliger-newtonian";
 
 /// Matrix rows for the Olbers lab.
-pub fn olbers_rows() -> [&'static str; 3] {
-    [SHELL_CANCELLATION, SKY_FINITE, NIGHT_SKY_DARK]
+pub fn olbers_rows() -> [&'static str; 6] {
+    [
+        SHELL_CANCELLATION,
+        SKY_FINITE,
+        NIGHT_SKY_DARK,
+        SEELIGER_SHELL,
+        SEELIGER_FINITE,
+        SEELIGER_NEWTONIAN,
+    ]
 }
 
 /// Julian year, seconds.
@@ -71,6 +84,8 @@ const STAR_T_K: f64 = 5772.0;
 const TAU_DARK: f64 = 0.01;
 /// Sky / photosphere irradiance ratio below this counts as dark.
 const IRRADIANCE_DARK: f64 = 1.0e-6;
+/// `|φ|/c²` below this still counts as a Newtonian perturbation.
+const NEWTONIAN_DEPTH: f64 = 0.01;
 
 const SPECS: &[KnobSpec] = &[
     KnobSpec {
@@ -139,6 +154,17 @@ fn shell_cancellation_domain() -> DomainOfValidity {
         vec!["dF = rho dr independent of r".into()],
         "Cancellation here is the inverse-square Euclidean shell law. Tired \
          light is a new encoding, not a silent expanding or finite_age knob.",
+    )
+}
+
+fn seeliger_domain() -> DomainOfValidity {
+    DomainOfValidity::new(
+        vec!["uniform Euclidean star field".into()],
+        vec!["one solar mass per solar luminosity".into()],
+        "Newtonian potential of a uniform ball with the boundary set to zero. \
+         Mass follows the lab luminosity density through GM_sun. Hubble \
+         dimming and tired light act on photons, not on this mass integral. \
+         Critical density is a different integral.",
     )
 }
 
@@ -268,6 +294,23 @@ impl OlbersSky {
     fn stellar_surface(&self) -> Qty<Irradiance> {
         let t = kelvin(STAR_T_K);
         stefan_boltzmann_constant() * t * t * t * t
+    }
+
+    /// `|φ(0) − φ(R)| = 2π n GM_☉ R²` in m² s⁻², for a uniform ball
+    /// with `φ(R) = 0`. `G` cancels because the mass is `GM_☉` per
+    /// solar luminosity. This is the stellar field traced by the lab's
+    /// luminosity density, not the critical density.
+    fn potential_depth(&self, r: Qty<Length>) -> f64 {
+        (cosmic_luminosity_density() / solar_luminosity() * solar_gm() * r * r * (2.0 * PI)).value()
+    }
+
+    /// Shell law `d|φ|/dr = 4π n GM_☉ r`, in m s⁻². Grows with `r`.
+    fn potential_shell_slope(&self, r: Qty<Length>) -> f64 {
+        (cosmic_luminosity_density() / solar_luminosity() * solar_gm() * r * (4.0 * PI)).value()
+    }
+
+    fn depth_over_c2(&self, r: Qty<Length>) -> f64 {
+        self.potential_depth(r) / (C * C).value()
     }
 
     fn is_unbounded_static(&self) -> bool {
@@ -420,6 +463,27 @@ impl Theory for OlbersSky {
                 LayerId::Statistical,
                 ClaimClass::ModelInternal,
             ),
+            Claim::new(
+                SEELIGER_SHELL,
+                "The Newtonian potential of a uniform shell grows with radius.",
+                LayerId::Spacetime,
+                ClaimClass::ModelInternal,
+            )
+            .with_domain(seeliger_domain()),
+            Claim::new(
+                SEELIGER_FINITE,
+                "The Newtonian potential of the stellar field stays finite as the ball radius is removed.",
+                LayerId::Spacetime,
+                ClaimClass::ModelInternal,
+            )
+            .with_domain(seeliger_domain()),
+            Claim::new(
+                SEELIGER_NEWTONIAN,
+                "Inside the horizon, the stellar field's Newtonian potential is a small fraction of c².",
+                LayerId::Spacetime,
+                ClaimClass::ModelInternal,
+            )
+            .with_domain(seeliger_domain()),
         ]
     }
     fn evaluate(&self, claim: &Claim) -> Verdict {
@@ -427,6 +491,9 @@ impl Theory for OlbersSky {
             SHELL_CANCELLATION => eval_shell(self, claim),
             SKY_FINITE => eval_sky_finite(self, claim),
             NIGHT_SKY_DARK => eval_dark(self, claim),
+            SEELIGER_SHELL => eval_seeliger_shell(self, claim),
+            SEELIGER_FINITE => eval_seeliger_finite(self, claim),
+            SEELIGER_NEWTONIAN => eval_seeliger_newtonian(self, claim),
             _ => Verdict::inapplicable(claim, "claim not made by an Olbers-sky object"),
         }
     }
@@ -556,6 +623,94 @@ fn eval_sky_finite(sky: &OlbersSky, claim: &Claim) -> Verdict {
     }
 }
 
+fn eval_seeliger_shell(sky: &OlbersSky, claim: &Claim) -> Verdict {
+    let r = sky.hubble_length() * 0.1;
+    let gravity = sky.potential_shell_slope(r * 2.0) / sky.potential_shell_slope(r);
+    let light = sky.shell_density_at(r * 2.0) / sky.shell_density_at(r);
+    if (gravity - 2.0).abs() < 0.02 {
+        Verdict::holds(
+            claim,
+            "d|φ|/dr grows with r: a gravitational shell does not cancel the way starlight does",
+        )
+        .with_evidence([format!(
+            "d|φ|/dr(2r)/d|φ|/dr(r) = {gravity:.4}; dF/dr(2r)/dF/dr(r) = {light:.4} at r = 0.1 c/H (one solar mass per solar luminosity)"
+        )])
+    } else {
+        Verdict::fails(
+            claim,
+            "the gravitational shell law is not the uniform-ball d|φ|/dr ∝ r",
+        )
+        .with_evidence([format!(
+            "d|φ|/dr(2r)/d|φ|/dr(r) = {gravity:.4} (uniform ball requires 2)"
+        )])
+    }
+}
+
+fn eval_seeliger_finite(sky: &OlbersSky, claim: &Claim) -> Verdict {
+    if sky.finite_age {
+        let r = sky.age_horizon();
+        let depth = sky.depth_over_c2(r);
+        Verdict::holds(
+            claim,
+            "a finite age stops the mass integral at c t, so the Newtonian potential is finite",
+        )
+        .with_evidence([format!(
+            "|φ|(c t)/c² = {depth:.3e} at t = {:.3e} yr (Hubble dimming and tired light do not enter this integral)",
+            sky.age_yr
+        )])
+    } else {
+        let r = sky.age_horizon();
+        let ratio = sky.potential_depth(r * 2.0) / sky.potential_depth(r);
+        let photon = if sky.expanding {
+            "Hubble dimming caps the photon integral and leaves φ ∝ R²"
+        } else if sky.tired {
+            "tired light caps the photon integral and leaves φ ∝ R²"
+        } else {
+            "static Euclidean starlight and its Newtonian potential both diverge"
+        };
+        Verdict::fails(
+            claim,
+            "the Newtonian potential of a uniform ball grows as R²",
+        )
+        .with_evidence([format!("φ(2R)/φ(R) = {ratio:.3} at R = c t ({photon})")])
+    }
+}
+
+fn eval_seeliger_newtonian(sky: &OlbersSky, claim: &Claim) -> Verdict {
+    if !sky.finite_age {
+        let r = sky.hubble_length();
+        let probe = sky.depth_over_c2(r);
+        Verdict::fails(
+            claim,
+            "without a horizon the potential integral diverges, so Newtonian cosmology of this star field is inconsistent",
+        )
+        .with_evidence([format!(
+            "|φ|(c/H)/c² = {probe:.3e} is only the Hubble-radius probe; φ(2R)/φ(R) = 4 so the improper integral is unbounded"
+        )])
+    } else {
+        let r = sky.age_horizon();
+        let depth = sky.depth_over_c2(r);
+        if depth.abs() < NEWTONIAN_DEPTH {
+            Verdict::holds(
+                claim,
+                "inside this horizon the stellar field is still a Newtonian perturbation",
+            )
+            .with_evidence([format!(
+                "|φ|(c t)/c² = {depth:.3e} < {NEWTONIAN_DEPTH} (one solar mass per solar luminosity; not critical density)"
+            )])
+        } else {
+            Verdict::fails(
+                claim,
+                "the horizon is far enough that the stellar potential is not a small fraction of c²",
+            )
+            .with_evidence([format!(
+                "|φ|(c t)/c² = {depth:.3e} ≥ {NEWTONIAN_DEPTH} at t = {:.3e} yr",
+                sky.age_yr
+            )])
+        }
+    }
+}
+
 fn eval_dark(sky: &OlbersSky, claim: &Claim) -> Verdict {
     if sky.is_unbounded_static() {
         Verdict::fails(
@@ -614,6 +769,8 @@ pub fn olbers() -> ExperimentReport {
             "`astro.night-sky-dark` fails for R → ∞ (τ diverges) and holds for a Hubble-time universe (τ ~ 10⁻¹⁵).".into(),
             "`hypothesize olbers-static`: add-tired-light is IR, not set. finite_age and expanding stay knobs. Covering still diverges.".into(),
             "`set olbers-horizon age_yr 1e26` makes τ ≳ 1: a finite but ancient sky is photosphere-bright.".into(),
+            "`astro.seeliger-shell` grows as r, while starlight's dF/dr does not. Hubble dimming and tired light leave that gravitational shell law in place.".into(),
+            "`astro.seeliger-potential-finite` fails unless a finite age stops the mass integral. A photon cutoff is not a mass cutoff.".into(),
         ],
         &olbers_rows(),
         vec![
@@ -956,6 +1113,69 @@ mod tests {
             !note.contains("1.000e28"),
             "note must not quote the cutoff as R_eff, got {note}"
         );
+    }
+
+    #[test]
+    fn seeliger_potential_diverges_where_photon_cutoffs_succeed() {
+        let static_sky = OlbersSky::static_euclidean();
+        assert_eq!(verdict(&static_sky, SEELIGER_SHELL), VerdictKind::Holds);
+        assert_eq!(verdict(&static_sky, SEELIGER_FINITE), VerdictKind::Fails);
+        assert_eq!(verdict(&static_sky, SEELIGER_NEWTONIAN), VerdictKind::Fails);
+
+        let mut expanding = OlbersSky::static_euclidean();
+        expanding.set("expanding", KnobValue::Bool(true)).unwrap();
+        assert_eq!(verdict(&expanding, SKY_FINITE), VerdictKind::Holds);
+        assert_eq!(verdict(&expanding, SEELIGER_FINITE), VerdictKind::Fails);
+        assert_eq!(verdict(&expanding, SEELIGER_SHELL), VerdictKind::Holds);
+        let expanding_claim = expanding
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SEELIGER_FINITE)
+            .unwrap();
+        let expanding_v = expanding.evaluate(&expanding_claim);
+        assert!(
+            expanding_v.evidence.join("\n").contains("Hubble dimming"),
+            "{}",
+            expanding_v.evidence.join("\n")
+        );
+
+        let mut tired = OlbersSky::static_euclidean();
+        tired.tired = true;
+        assert_eq!(verdict(&tired, SKY_FINITE), VerdictKind::Holds);
+        assert_eq!(verdict(&tired, NIGHT_SKY_DARK), VerdictKind::Fails);
+        assert_eq!(verdict(&tired, SEELIGER_FINITE), VerdictKind::Fails);
+        assert_eq!(verdict(&tired, SEELIGER_SHELL), VerdictKind::Holds);
+        let shell = tired
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SEELIGER_SHELL)
+            .unwrap();
+        let shell_v = tired.evaluate(&shell);
+        let blob = shell_v.evidence.join("\n");
+        assert!(blob.contains("d|φ|/dr(2r)/d|φ|/dr(r) = 2"), "{blob}");
+        assert!(
+            blob.contains("dF/dr(2r)/dF/dr(r)"),
+            "the photon ratio is recorded beside the gravitational one: {blob}"
+        );
+
+        let horizon = OlbersSky::finite_age();
+        assert_eq!(verdict(&horizon, SEELIGER_FINITE), VerdictKind::Holds);
+        assert_eq!(verdict(&horizon, SEELIGER_NEWTONIAN), VerdictKind::Holds);
+        let newton = horizon
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == SEELIGER_NEWTONIAN)
+            .unwrap();
+        let newton_v = horizon.evaluate(&newton);
+        let depth_blob = newton_v.evidence.join("\n");
+        assert!(depth_blob.contains("|φ|(c t)/c²"), "{depth_blob}");
+        assert!(depth_blob.contains("not critical density"), "{depth_blob}");
+
+        let mut ancient = OlbersSky::finite_age();
+        ancient.set("age_yr", KnobValue::Float(1.0e26)).unwrap();
+        assert_eq!(verdict(&ancient, SEELIGER_FINITE), VerdictKind::Holds);
+        assert_eq!(verdict(&ancient, SEELIGER_NEWTONIAN), VerdictKind::Fails);
+        assert_eq!(verdict(&ancient, NIGHT_SKY_DARK), VerdictKind::Fails);
     }
 
     #[test]

@@ -12,6 +12,18 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ### Theory
 
+- **Seeliger's gravitational paradox, beside Olbers.** On the same
+  Euclidean star field, `astro.seeliger-shell` computes
+  `d|φ|/dr ∝ r` (doubling ratio 2) while starlight's `dF/dr` cancels.
+  `astro.seeliger-potential-finite` fails for the improper ball
+  (`φ ∝ R²`) and holds only when a finite age stops the mass integral.
+  Hubble dimming and tired light cap the photon integral and leave the
+  potential divergent. `astro.seeliger-newtonian` holds for a
+  Hubble-time horizon (`|φ|/c² < 0.01` at one solar mass per solar
+  luminosity) and fails for the improper limit and for an ancient
+  horizon. Mass is `GM_☉` traced by the lab luminosity density, not
+  the critical density.
+
 - **C2.4: substantive GR formalization (first Bianchi).** The live
   tensor expression comes first: a Schwarzschild Γ/Riemann engine
   (numeric derivatives, generic 4×4 inverse) contracts the
