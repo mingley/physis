@@ -55,6 +55,8 @@ use crate::relativity::GeneralRelativity;
 
 /// Grazing solar light deflection is 1.75″ (Eddington / full GR).
 pub const EDDINGTON: &str = "gr.eddington-deflection";
+/// Same 1.75″ model check, compared with the 1919 Principe plates.
+pub const PRINCIPE: &str = "gr.principe-deflection";
 /// Mercury's extra perihelion advance is 43″ per century.
 pub const MERCURY_PERIHELION: &str = "gr.mercury-perihelion";
 /// Light deflection is the Newtonian/1911 value 2 GM/(c² b).
@@ -837,7 +839,7 @@ fn attach_sobral_receipt(
                     physis_data::DYSON_1920_SOBRAL_DEFLECTION
                 ),
                 format!(
-                    "dataset {} hash {} license {} unit arcsec (Sobral 4-inch only; Principe 1.61±0.30 p.e. not registered)",
+                    "dataset {} hash {} license {} unit arcsec (Sobral 4-inch; companion plates are gr.principe-deflection)",
                     dataset.id,
                     dataset.artifact_hash.to_hex(),
                     dataset.license.as_deref().unwrap_or("unknown"),
@@ -848,6 +850,59 @@ fn attach_sobral_receipt(
                 ),
                 format!(
                     "gaussian-nll {} at x={x} (exact Ratio; Sobral μ=1.98 σ=0.18)",
+                    rec.nll
+                        .map(|n| n.to_string())
+                        .unwrap_or_else(|| "none".into())
+                ),
+            ];
+            let v = verdict.with_empirical(rec.status()).with_evidence(evidence);
+            match rec.nll {
+                Some(nll) => v.with_statistical_nll(nll),
+                None => v,
+            }
+        }
+        Err(e) => verdict.with_evidence([format!("empirical comparison refused: {e}")]),
+    }
+}
+
+/// Overlay the Principe 1919 comparison. The verdict kind stays the 1.75″
+/// truncation decision. The empirical axis uses the same two-sigma rule
+/// as Sobral, on `dyson-1920-principe-deflection` (1.61″ ± 0.30″ probable
+/// error, σ = 0.45″).
+fn attach_principe_receipt(
+    verdict: Verdict,
+    delta: f64,
+    n_light: usize,
+    relation: ResidualRelation,
+) -> Verdict {
+    if matches!(relation, ResidualRelation::OverlapsWithoutContainment) {
+        return verdict.with_evidence([
+            "numeric unresolved: withholding the Principe 1919 comparison (no decided prediction to compare)"
+                .to_string(),
+        ]);
+    }
+    let dataset = physis_data::dyson_1920_principe_deflection();
+    let prediction = snapped_hull(delta, light_truncation_arcsec(n_light), ARCSEC_SNAP);
+    let x = Ratio::nearest(delta, ARCSEC_SNAP);
+    match physis_data::EmpiricalReceipt::compare_two_sigma(prediction, &dataset, Some(x)) {
+        Ok(rec) => {
+            let evidence = vec![
+                format!(
+                    "prediction δ = {delta:.4}″ → {prediction} (0.001″ snap; diagnostic h⁴ width, not a remainder certificate) vs {} 2σ hull",
+                    physis_data::DYSON_1920_PRINCIPE_DEFLECTION
+                ),
+                format!(
+                    "dataset {} hash {} license {} unit arcsec (Principe plates; σ = 0.45 from probable error 0.30 by the Sobral ×3/2 convention)",
+                    dataset.id,
+                    dataset.artifact_hash.to_hex(),
+                    dataset.license.as_deref().unwrap_or("unknown"),
+                ),
+                format!(
+                    "two-sigma excluded={} compatible={} inconclusive={} (1σ hull is not an exclusion rule)",
+                    rec.excluded, rec.compatible, rec.inconclusive
+                ),
+                format!(
+                    "gaussian-nll {} at x={x} (exact Ratio; Principe μ=1.61 σ=0.45)",
                     rec.nll
                         .map(|n| n.to_string())
                         .unwrap_or_else(|| "none".into())
@@ -995,6 +1050,31 @@ pub(crate) fn eval_solar_with_steps(
             );
             attach_sobral_receipt(v, delta, n_light, relation)
         }
+        PRINCIPE => {
+            let delta = solar_deflection_arcsec_n(gr, n_light);
+            let residual =
+                relative_residual_hull(delta, EDDINGTON_ARCSEC, light_truncation_arcsec(n_light));
+            let band = eddington_rel_band();
+            let relation = residual_relation(residual, band);
+            let mut evidence = solar_error_budget_evidence(n_light, n_mercury);
+            evidence.push(format!(
+                "δ = {delta:.4}\" (analytic 4GM/c²R = {:.4}\"; Newtonian 2GM/c²R = {:.4}\")",
+                analytic_four_gm_arcsec(),
+                analytic_two_gm_arcsec()
+            ));
+            evidence.push(format!(
+                "truncation residual hull {residual} vs relative 3% Eddington band {band} ({relation}); overlap is not equality"
+            ));
+            let v = decide_truncation_residual(
+                claim,
+                relation,
+                residual,
+                "grazing solar deflection is 1.75″ (Eddington / Schwarzschild)",
+                "grazing deflection is not 1.75″ (Newtonian / 1911 half-angle)",
+                evidence,
+            );
+            attach_principe_receipt(v, delta, n_light, relation)
+        }
         MERCURY_PERIHELION => {
             let extra = mercury_arcsec_per_century_n(gr, n_mercury);
             let analytic = mercury_analytic_arcsec_per_century();
@@ -1037,6 +1117,12 @@ pub(crate) fn solar_claims() -> Vec<Claim> {
         Claim::new(
             EDDINGTON,
             "Grazing solar light deflection is 1.75″ (Eddington 1919 / full GR).",
+            LayerId::Spacetime,
+            ClaimClass::ModelInternal,
+        ),
+        Claim::new(
+            PRINCIPE,
+            "Grazing solar light deflection is 1.75″, compared with the 1919 Principe plates under the Sobral two-sigma rule.",
             LayerId::Spacetime,
             ClaimClass::ModelInternal,
         ),
@@ -1850,7 +1936,7 @@ mod tests {
                 DEFAULT_LIGHT_STEPS,
                 DEFAULT_MERCURY_STEPS,
             );
-            if id != EDDINGTON && id != MERCURY_PERIHELION {
+            if id != EDDINGTON && id != PRINCIPE && id != MERCURY_PERIHELION {
                 assert_no_dataset_contact(&v, id);
             }
         }
@@ -1898,7 +1984,7 @@ mod tests {
             assert!(blob.contains("1σ hull is not an exclusion rule"), "{blob}");
             assert!(blob.contains("public-domain"), "{blob}");
             assert!(
-                blob.contains("Principe 1.61±0.30 p.e. not registered"),
+                blob.contains("companion plates are gr.principe-deflection"),
                 "{blob}"
             );
             let x = Ratio::nearest(delta, ARCSEC_SNAP);
@@ -1917,6 +2003,65 @@ mod tests {
             );
         }
         assert_ne!(n_v.statistical_nll(), g_v.statistical_nll());
+    }
+
+    #[test]
+    fn principe_compares_gr_and_soldner_under_the_sobral_rule() {
+        // Same two-sigma rule as Sobral, on the Principe plates
+        // (1.61″ ± 0.30″ probable error, σ = 0.45″). The 2σ hull
+        // contains both live predictions, so neither theory is excluded.
+        let newton = NewtonianGravity::default();
+        let gr = GeneralRelativity::default();
+        let n_claim = newton
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == PRINCIPE)
+            .unwrap();
+        let g_claim = gr
+            .claims()
+            .into_iter()
+            .find(|c| c.id_str() == PRINCIPE)
+            .unwrap();
+        let n_v = newton.evaluate(&n_claim);
+        let g_v = gr.evaluate(&g_claim);
+        assert_eq!(n_v.kind, VerdictKind::Fails);
+        assert_eq!(n_v.empirical(), EmpiricalStatus::Compatible);
+        assert_eq!(g_v.kind, VerdictKind::Holds);
+        assert_eq!(g_v.empirical(), EmpiricalStatus::Compatible);
+        for (v, delta) in [
+            (&n_v, solar_deflection_arcsec(false)),
+            (&g_v, solar_deflection_arcsec(true)),
+        ] {
+            assert_not_certified(v);
+            let blob = evidence_blob(v);
+            assert!(blob.contains("dyson-1920-principe-deflection"), "{blob}");
+            assert!(blob.contains("two-sigma"), "{blob}");
+            assert!(blob.contains("1σ hull is not an exclusion rule"), "{blob}");
+            assert!(blob.contains("public-domain"), "{blob}");
+            assert!(blob.contains("σ = 0.45"), "{blob}");
+            let x = Ratio::nearest(delta, ARCSEC_SNAP);
+            let expected = x.gaussian_nll(Ratio::new(161, 100), Ratio::new(45, 100));
+            assert!(
+                blob.contains(&format!("gaussian-nll {expected} at x={x}")),
+                "NLL is derived from the live prediction: {blob}"
+            );
+            assert_eq!(v.statistical_nll(), Some(expected.to_string()).as_deref());
+        }
+    }
+
+    #[test]
+    fn coarse_principe_withholds_the_comparison() {
+        let principe = solar_claim(PRINCIPE);
+        let v = eval_solar_with_steps(true, 4, &principe, 50, DEFAULT_MERCURY_STEPS);
+        assert_eq!(v.kind, VerdictKind::Undecidable);
+        assert_eq!(v.empirical(), EmpiricalStatus::Inconclusive);
+        let blob = evidence_blob(&v);
+        assert!(
+            blob.contains("withholding the Principe 1919 comparison"),
+            "{blob}"
+        );
+        assert!(!blob.contains("two-sigma"), "{blob}");
+        assert!(v.statistical_nll().is_none());
     }
 
     #[test]

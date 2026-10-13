@@ -1180,4 +1180,18 @@ mod tests {
         let err = catalog_tree_binding(Some(spec.lean_type), &[flipped]).unwrap_err();
         assert!(err.contains("whose tree is not in the equations"), "{err}");
     }
+
+    #[test]
+    fn no_extra_catalog_row_while_the_next_obligations_are_blocked() {
+        // Nine identities. Faraday flux is the tetrahedron coboundary up
+        // to sign (C2.2 skip). Contracted Bianchi needs differential
+        // hypotheses outside this polynomial fragment (C2.4 deferral).
+        assert_eq!(CATALOG.len(), 9);
+        assert!(lookup("em.faraday-flux").is_none());
+        assert!(lookup("gr.contracted-bianchi").is_none());
+        let ids: Vec<&str> = CATALOG.iter().map(|s| s.claim_id).collect();
+        assert!(ids.contains(&"dec.d-squared-zero"));
+        assert!(ids.contains(&"gr.first-bianchi"));
+        assert_eq!(ids.iter().filter(|id| id.starts_with("sr.")).count(), 6);
+    }
 }

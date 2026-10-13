@@ -25,7 +25,7 @@ use crate::gravity::{
     eval_solar, mercury_analytic_arcsec_per_century, mercury_arcsec_per_century,
     schwarzschild_bianchi, schwarzschild_reciprocal, solar_claims, solar_deflection_arcsec, Chart,
     EDDINGTON, EDDINGTON_ARCSEC, EXTERIOR_R_MAX_M, HORIZON_R_M, MERCURY_ARCSEC_PER_CENTURY,
-    MERCURY_PERIHELION, NEWTON_HALF,
+    MERCURY_PERIHELION, NEWTON_HALF, PRINCIPE,
 };
 
 /// Einstein–Hilbert action on the live GR package.
@@ -110,7 +110,7 @@ fn eval_solar_brans_dicke(dim: u8, claim: &Claim) -> Verdict {
                 ),
             ])
         }
-        EDDINGTON => {
+        EDDINGTON | PRINCIPE => {
             let gr = solar_deflection_arcsec(true);
             let delta = gr * light;
             if (delta - EDDINGTON_ARCSEC).abs() / EDDINGTON_ARCSEC < 0.03 {
@@ -564,7 +564,7 @@ impl Theory for GeneralRelativity {
                     )])
                 }
             }
-            NEWTON_HALF | EDDINGTON | MERCURY_PERIHELION => {
+            NEWTON_HALF | EDDINGTON | PRINCIPE | MERCURY_PERIHELION => {
                 if self.brans_dicke {
                     eval_solar_brans_dicke(self.dim, claim)
                 } else {

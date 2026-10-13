@@ -357,6 +357,55 @@ pub fn dyson_1920_sobral_deflection() -> Dataset {
     .with_license("public-domain")
 }
 
+/// Dataset id for Dyson et al. 1920 Principe deflection.
+pub const DYSON_1920_PRINCIPE_DEFLECTION: &str = "dyson-1920-principe-deflection";
+
+/// Dyson, Eddington & Davidson 1920 Principe result: 1.61″ with published
+/// probable error 0.30″.
+///
+/// The Sobral listing converts probable error to a standard deviation by
+/// the same factor that sends 0.12″ to σ = 0.18″ (× 3/2), so this listing
+/// stores σ = 0.45″. The 1σ hull is `[1.16, 2.06]`. The 2σ comparison
+/// rule is the one already used for Sobral. The plates are the Principe
+/// expedition only. License `public-domain`: published January 1920
+/// (Phil. Trans. R. Soc. Lond. A 220, 291–333;
+/// doi:10.1098/rsta.1920.0009), and the listing itself is a fact.
+pub fn dyson_1920_principe_deflection() -> Dataset {
+    let source = SourceRecord::new(
+        Citation {
+            work: "Dyson, Eddington & Davidson, A Determination of the Deflection \
+                 of Light by the Sun's Gravitational Field, from Observations Made \
+                 at the Total Eclipse of May 29, 1919"
+                .into(),
+            edition: "Phil. Trans. R. Soc. Lond. A 220, 291–333 (1920); doi:10.1098/rsta.1920.0009"
+                .into(),
+        },
+        "1920",
+        SourceLocator {
+            page: None,
+            section: None,
+            equation: None,
+            figure: None,
+            table: None,
+            dataset_range: Some("Principe: 1.61 ± 0.30 probable error; σ = 0.45".into()),
+            experiment: Some("Principe expedition, May 29, 1919 eclipse".into()),
+        },
+        ArtifactId::of(b"dyson-1920-principe-deflection"),
+        None,
+    )
+    .expect("Principe locator names experiment and dataset range");
+    Dataset::new(
+        DYSON_1920_PRINCIPE_DEFLECTION,
+        "grazing solar light deflection",
+        "arcsec",
+        Interval::new(Ratio::new(116, 100), Ratio::new(206, 100)),
+        None,
+        source,
+    )
+    .with_gaussian(Ratio::new(161, 100), Ratio::new(45, 100))
+    .with_license("public-domain")
+}
+
 /// Dataset id for Clemence 1947 Mercury residual precession.
 pub const CLEMENCE_1947_MERCURY_RESIDUAL: &str = "clemence-1947-mercury-residual";
 
@@ -483,8 +532,9 @@ pub fn quinn_martin_1985_sigma() -> Dataset {
 /// to the PDG 2022 `α_s` listing. One-loop `α_em⁻¹(M_Z)` compares to the
 /// PDG 2022 `α_em⁻¹` listing. The complementary PDG listings are
 /// *inputs* to those predictions, not this map. Solar light deflection
-/// compares to the Dyson et al. 1920 Sobral 4-inch listing. Mercury
-/// extra-precession compares to the Clemence 1947 residual listing.
+/// on `gr.eddington-deflection` compares to the Dyson et al. 1920 Sobral
+/// 4-inch listing. The Principe plates compare on `gr.principe-deflection`.
+/// Mercury extra-precession compares to the Clemence 1947 residual listing.
 /// Stefan-Boltzmann σ compares to the Quinn & Martin 1985 listing.
 pub fn dataset_for_claim(claim_id: &str) -> Option<Dataset> {
     match claim_id {
@@ -493,6 +543,7 @@ pub fn dataset_for_claim(claim_id: &str) -> Option<Dataset> {
         "gut.inverse-alpha-em-mz-interval" => Some(pdg_2022_inv_alpha_em_mz()),
         "gut.proton-lifetime-sk" => Some(super_kamiokande_proton_lifetime()),
         "gr.eddington-deflection" => Some(dyson_1920_sobral_deflection()),
+        "gr.principe-deflection" => Some(dyson_1920_principe_deflection()),
         "gr.mercury-perihelion" => Some(clemence_1947_mercury_residual()),
         "thermo.stefan-boltzmann" => Some(quinn_martin_1985_sigma()),
         _ => None,
@@ -840,6 +891,43 @@ mod tests {
         assert_eq!(super_kamiokande_proton_lifetime().license, None);
         let edd = dataset_for_claim("gr.eddington-deflection").expect("Eddington cell");
         assert_eq!(edd.id, DYSON_1920_SOBRAL_DEFLECTION);
+        let principe = dyson_1920_principe_deflection();
+        assert_eq!(principe.id, DYSON_1920_PRINCIPE_DEFLECTION);
+        assert_eq!(principe.unit, "arcsec");
+        assert_eq!(
+            principe.statistical,
+            Interval::new(Ratio::new(116, 100), Ratio::new(206, 100))
+        );
+        assert!(matches!(
+            principe.likelihood,
+            LikelihoodModel::Gaussian { mu, sigma }
+                if mu == Ratio::new(161, 100) && sigma == Ratio::new(45, 100)
+        ));
+        assert_eq!(principe.license.as_deref(), Some("public-domain"));
+        assert!(principe
+            .source
+            .locator
+            .experiment
+            .as_deref()
+            .unwrap()
+            .contains("Principe"));
+        assert!(principe.source.recheck().is_ok());
+        let linked = dataset_for_claim("gr.principe-deflection").expect("Principe cell");
+        assert_eq!(linked.id, DYSON_1920_PRINCIPE_DEFLECTION);
+        // Same snapped centres as the Sobral test. The 2σ hull [0.71, 2.51]
+        // contains both, so the plates do not exclude Soldner.
+        let gr_x = Ratio::new(1751, 1000);
+        let gr = EmpiricalReceipt::compare_two_sigma(Interval::point(gr_x), &principe, Some(gr_x))
+            .expect("Principe is Gaussian");
+        assert_eq!(gr.status(), EmpiricalStatus::Compatible);
+        let newton_x = Ratio::new(876, 1000);
+        let newton = EmpiricalReceipt::compare_two_sigma(
+            Interval::point(newton_x),
+            &principe,
+            Some(newton_x),
+        )
+        .expect("Principe is Gaussian");
+        assert_eq!(newton.status(), EmpiricalStatus::Compatible);
     }
 
     #[test]

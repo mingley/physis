@@ -322,9 +322,13 @@ impl Blackbody {
     }
 
     fn planck_u_to(&self, nu_max: f64) -> Qty<EnergyDensity> {
+        self.planck_u_to_n(nu_max, BOSE_PANELS)
+    }
+
+    fn planck_u_to_n(&self, nu_max: f64, n: usize) -> Qty<EnergyDensity> {
         let nu_t = self.thermal_frequency().value();
         let xmax = (nu_max / nu_t).min(PLANCK_X_TAIL);
-        let integral = integrate_bose_x3(xmax);
+        let integral = integrate_bose_x3_n(xmax, n);
         let nu = hertz(nu_t);
         let nu4 = nu * nu * nu * nu;
         planck_h() * nu4 / (C * C * C) * (8.0 * PI * integral)
@@ -357,13 +361,33 @@ impl Blackbody {
     /// T-independent by construction (the T⁴ ratio); evaluated at the
     /// live temperature knob.
     fn stefan_sigma_prediction(&self) -> Option<f64> {
+        self.stefan_sigma_at_panels(BOSE_PANELS)
+    }
+
+    /// σ and a diagnostic truncation half-width at panel count `n`.
+    ///
+    /// The half-width is `|σ(n) − σ(n/2)|`. It is a convergence diagnostic,
+    /// not a remainder certificate. Input (`h`, `c`, `k` model floats),
+    /// rounding (`f64`), and this truncation stay separate.
+    pub(crate) fn stefan_sigma_enclosure(&self, n: usize) -> Option<(f64, f64)> {
+        let n = n.max(2);
+        let center = if n == BOSE_PANELS {
+            self.stefan_sigma_prediction()
+        } else {
+            self.stefan_sigma_at_panels(n)
+        }?;
+        let coarse = self.stefan_sigma_at_panels(n / 2)?;
+        Some((center, (center - coarse).abs()))
+    }
+
+    fn stefan_sigma_at_panels(&self, n: usize) -> Option<f64> {
         if self.zero_point || !self.quantum {
             return None;
         }
         let u = if self.wien_occupation() {
-            self.full_wien_u()
+            self.wien_u_to(f64::INFINITY)
         } else {
-            self.full_planck_u()
+            self.planck_u_to_n(f64::INFINITY, n)
         };
         Some(C.value() / 4.0 * u.value() / self.temperature_k.powi(4))
     }
@@ -419,12 +443,15 @@ impl Blackbody {
     }
 }
 
-/// ∫_0^xmax x³ / (e^x − 1) dx by trapezoidal rule.
-fn integrate_bose_x3(xmax: f64) -> f64 {
+/// Production panel count for the Bose trapezoid.
+const BOSE_PANELS: usize = 4000;
+
+/// Trapezoidal Bose integral at an explicit panel count.
+fn integrate_bose_x3_n(xmax: f64, n: usize) -> f64 {
     if xmax <= 0.0 {
         return 0.0;
     }
-    let n = 4000_usize;
+    let n = n.max(1);
     let dx = xmax / n as f64;
     let mut s = 0.0;
     for i in 0..=n {
@@ -495,9 +522,47 @@ const SIGMA_SNAP_DEN: i128 = 10_000_000_000_000;
 /// there is no prediction to compare. The quadrature has no certified
 /// remainder (trapezoid n=4000, x-tail 40); the comparison is
 /// data-derived, not a numerical certificate.
+fn truncation_dominates_measurement(halfwidth: f64, dataset: &physis_data::Dataset) -> bool {
+    match dataset.likelihood {
+        physis_data::LikelihoodModel::Gaussian { sigma, .. } => {
+            Ratio::nearest(halfwidth.abs(), SIGMA_SNAP_DEN) > Ratio::int(2) * sigma
+        }
+        physis_data::LikelihoodModel::IntervalSubset => false,
+    }
+}
+
+/// Empirical status of a σ enclosure under the Quinn–Martin two-sigma rule.
+/// A truncation wider than that 2σ band is inconclusive.
+pub(crate) fn stefan_measurement_status(
+    center: f64,
+    halfwidth: f64,
+) -> physis_core::EmpiricalStatus {
+    let dataset = physis_data::quinn_martin_1985_sigma();
+    if truncation_dominates_measurement(halfwidth, &dataset) {
+        return physis_core::EmpiricalStatus::Inconclusive;
+    }
+    let prediction = snapped_hull(center, halfwidth, SIGMA_SNAP_DEN);
+    let x = Ratio::nearest(center, SIGMA_SNAP_DEN);
+    match physis_data::EmpiricalReceipt::compare_two_sigma(prediction, &dataset, Some(x)) {
+        Ok(rec) => rec.status(),
+        Err(_) => physis_core::EmpiricalStatus::Inconclusive,
+    }
+}
+
+fn stefan_error_budget(n: usize, halfwidth: f64) -> Vec<String> {
+    vec![
+        "input: h, c, k are model floats lockstep with the versioned ledger; not a dataset".into(),
+        "rounding: f64 trapezoid / NumericTier::Approximate; not a certificate".into(),
+        format!(
+            "truncation: trapezoid n={n} x-tail {PLANCK_X_TAIL}; diagnostic |σ(n)−σ(n/2)| = {halfwidth:.4e}; not a remainder certificate"
+        ),
+    ]
+}
+
 fn attach_quinn_martin_receipt(
     verdict: Verdict,
     sigma_pred: Option<f64>,
+    truncation_halfwidth: f64,
     temperature_k: f64,
 ) -> Verdict {
     let Some(sigma) = sigma_pred else {
@@ -507,32 +572,41 @@ fn attach_quinn_martin_receipt(
         ]);
     };
     let dataset = physis_data::quinn_martin_1985_sigma();
-    let prediction = snapped_hull(sigma, 0.0, SIGMA_SNAP_DEN);
+    if truncation_dominates_measurement(truncation_halfwidth, &dataset) {
+        let mut evidence = stefan_error_budget(BOSE_PANELS, truncation_halfwidth);
+        evidence.push(
+            "truncation wider than the 2σ measurement; withholding the Quinn–Martin comparison (overlap is not equality, and a coarse integral is not an exclusion)"
+                .into(),
+        );
+        return verdict
+            .with_empirical(stefan_measurement_status(sigma, truncation_halfwidth))
+            .with_evidence(evidence);
+    }
+    let prediction = snapped_hull(sigma, truncation_halfwidth, SIGMA_SNAP_DEN);
     let x = Ratio::nearest(sigma, SIGMA_SNAP_DEN);
     match physis_data::EmpiricalReceipt::compare_two_sigma(prediction, &dataset, Some(x)) {
         Ok(rec) => {
-            let evidence = vec![
-                format!(
-                    "prediction σ = (c/4)·u_∞/T⁴ = {sigma:.4e} → {prediction} (T = {temperature_k} K live knob; σ is T-independent by construction; trapezoid n=4000 x-tail 40, no certified remainder) vs {} 2σ hull",
-                    physis_data::QUINN_MARTIN_1985_SIGMA
-                ),
-                format!(
-                    "dataset {} hash {} license {} unit W m^{{-2}} K^{{-4}} (NPL cryogenic radiometry at T_tp; electrical-substitution calibration independent of σ; not SI 2π⁵k⁴/(15h³c²))",
-                    dataset.id,
-                    dataset.artifact_hash.to_hex(),
-                    dataset.license.as_deref().unwrap_or("unknown"),
-                ),
-                format!(
-                    "two-sigma excluded={} compatible={} inconclusive={} (1σ hull is not an exclusion rule)",
-                    rec.excluded, rec.compatible, rec.inconclusive
-                ),
-                format!(
-                    "gaussian-nll {} at x={x} (exact Ratio; Quinn–Martin μ=5.66967e-8 σ=7.6e-12)",
-                    rec.nll
-                        .map(|n| n.to_string())
-                        .unwrap_or_else(|| "none".into())
-                ),
-            ];
+            let mut evidence = stefan_error_budget(BOSE_PANELS, truncation_halfwidth);
+            evidence.push(format!(
+                "prediction σ = (c/4)·u_∞/T⁴ = {sigma:.4e} → {prediction} (T = {temperature_k} K live knob; σ is T-independent by construction; trapezoid n={BOSE_PANELS} x-tail {PLANCK_X_TAIL}, no certified remainder) vs {} 2σ hull",
+                physis_data::QUINN_MARTIN_1985_SIGMA
+            ));
+            evidence.push(format!(
+                "dataset {} hash {} license {} unit W m^{{-2}} K^{{-4}} (NPL cryogenic radiometry at T_tp; electrical-substitution calibration independent of σ; not SI 2π⁵k⁴/(15h³c²))",
+                dataset.id,
+                dataset.artifact_hash.to_hex(),
+                dataset.license.as_deref().unwrap_or("unknown"),
+            ));
+            evidence.push(format!(
+                "two-sigma excluded={} compatible={} inconclusive={} (1σ hull is not an exclusion rule)",
+                rec.excluded, rec.compatible, rec.inconclusive
+            ));
+            evidence.push(format!(
+                "gaussian-nll {} at x={x} (exact Ratio; Quinn–Martin μ=5.66967e-8 σ=7.6e-12)",
+                rec.nll
+                    .map(|n| n.to_string())
+                    .unwrap_or_else(|| "none".into())
+            ));
             let v = verdict.with_empirical(rec.status()).with_evidence(evidence);
             match rec.nll {
                 Some(nll) => v.with_statistical_nll(nll),
@@ -770,7 +844,9 @@ impl Theory for Blackbody {
                 }
             }
             STEFAN_BOLTZMANN => {
-                let sigma_pred = self.stefan_sigma_prediction();
+                let enclosure = self.stefan_sigma_enclosure(BOSE_PANELS);
+                let sigma_pred = enclosure.map(|(center, _)| center);
+                let truncation = enclosure.map(|(_, half)| half).unwrap_or(0.0);
                 let v = if self.zero_point && self.quantum {
                     let u_t = self.energy_density_to(self.cutoff_hz);
                     let mut hot = self.clone();
@@ -830,7 +906,7 @@ impl Theory for Blackbody {
                         "u(2T)/u(T) = {ratio:.3} at fixed ν_max (Stefan–Boltzmann requires 16)"
                     )])
                 };
-                attach_quinn_martin_receipt(v, sigma_pred, self.temperature_k)
+                attach_quinn_martin_receipt(v, sigma_pred, truncation, self.temperature_k)
             }
             WIEN_DISPLACEMENT => {
                 if self.zero_point && self.quantum {
@@ -1028,7 +1104,7 @@ mod tests {
 
     #[test]
     fn bose_integral_matches_pi4_over_15() {
-        let i = integrate_bose_x3(PLANCK_X_TAIL);
+        let i = integrate_bose_x3_n(PLANCK_X_TAIL, BOSE_PANELS);
         let exact = PI.powi(4) / 15.0;
         assert!(
             (i - exact).abs() / exact < 1e-5,
@@ -1143,6 +1219,45 @@ mod tests {
         assert!(blob.contains("electrical-substitution"), "{blob}");
         assert!(blob.contains("not SI 2π⁵k⁴/(15h³c²)"), "{blob}");
         assert_sigma_nll_wiring(&p, &v, &blob);
+        assert!(blob.contains("input: h, c, k"), "{blob}");
+        assert!(blob.contains("rounding: f64 trapezoid"), "{blob}");
+        assert!(blob.contains("truncation: trapezoid n=4000"), "{blob}");
+        assert!(blob.contains("not a remainder certificate"), "{blob}");
+        let (center, half) = p.stefan_sigma_enclosure(super::BOSE_PANELS).unwrap();
+        let hull = super::snapped_hull(center, half, SIGMA_SNAP_DEN);
+        assert!(
+            blob.contains(&hull.to_string()),
+            "live evidence carries the enclosure {hull}: {blob}"
+        );
+    }
+
+    #[test]
+    fn coarse_stefan_panels_overlap_without_containment() {
+        // A 4-panel trapezoid is too coarse to certify σ. The diagnostic
+        // hull must not be treated as equality with the Quinn–Martin 2σ band.
+        let p = Blackbody::planck();
+        let (center, half) = p.stefan_sigma_enclosure(4).unwrap();
+        assert!(half > 0.0, "coarse panels must move σ");
+        let hull = super::snapped_hull(center, half, SIGMA_SNAP_DEN);
+        let dataset = physis_data::quinn_martin_1985_sigma();
+        let x = Ratio::nearest(center, SIGMA_SNAP_DEN);
+        let raw = physis_data::EmpiricalReceipt::compare_two_sigma(hull, &dataset, Some(x))
+            .expect("Quinn–Martin is Gaussian");
+        assert_ne!(
+            raw.status(),
+            EmpiricalStatus::Compatible,
+            "a 4-panel hull must not count as agreement: {hull}"
+        );
+        assert_eq!(
+            super::stefan_measurement_status(center, half),
+            EmpiricalStatus::Inconclusive,
+            "truncation wider than the measurement is not an exclusion"
+        );
+        let fine = p.stefan_sigma_enclosure(super::BOSE_PANELS).unwrap();
+        assert_eq!(
+            super::stefan_measurement_status(fine.0, fine.1),
+            EmpiricalStatus::Compatible
+        );
     }
 
     #[test]

@@ -53,6 +53,7 @@ are inputs of the reciprocal check, not hidden assumptions.
 |---|---|---|---|
 | `gr.newton-half-deflection` | grazing δ = `2 GM/(c² R)` ≈ 0.87″ | **holds** | **fails** (twice that) |
 | `gr.eddington-deflection` | grazing δ = 1.75″ | **fails** | **holds** |
+| `gr.principe-deflection` | same 1.75″ check against the Principe plates | **fails** (model); empirical **compatible** at 2σ | **holds** (model); empirical **compatible** at 2σ |
 | `gr.mercury-perihelion` | extra Δω = 43″/century | **fails** (closed ellipses) | **holds** |
 | `gr.schwarzschild-reciprocal` | `g_tt·g_rr = −1` on the exterior domain | n/a (GR object only) | **holds** (Schwarzschild chart, `r_min > 2M`); **fails** (EF chart, `g_rr = 0`); **inapplicable** (`r_min ≤ 2M` in Schwarzschild chart, or D ≠ 4) |
 | `gr.first-bianchi` | computed `R^ρ_[σμν] = 0` on the domain | n/a (GR object only) | **holds** (both charts, both sides of the EF horizon); **inapplicable** (`r_min ≤ 2M` in Schwarzschild chart, or D ≠ 4). Catalog identity + physlib `first_bianchi`, bound on the live package |
@@ -92,7 +93,13 @@ public domain) under the predeclared two-sigma rule
 (`EmpiricalReceipt::compare_two_sigma`: interval-subset against the μ±2σ
 hull plus the exact Gaussian NLL), applied identically to the GR and
 Soldner predictions; a numerically undecided sample withholds comparison.
-The 1σ hull is honestly stored and is not the exclusion rule. 42.98″
+The 1σ hull is honestly stored and is not the exclusion rule. The
+companion Principe listing (`dyson-1920-principe-deflection`: 1.61″ ±
+0.30″ probable error, σ = 0.45″ by the same ×3/2 conversion, public
+domain) is `gr.principe-deflection`, under that same two-sigma rule.
+The 2σ hull contains both the Schwarzschild and Soldner predictions,
+so both empirical axes are compatible: the plates do not discriminate.
+A numerically undecided sample withholds that comparison too. 42.98″
 compares to the hashed Clemence 1947 residual dataset
 (`clemence-1947-mercury-residual`: 42.56 ± 0.94 probable error per
 Julian century, moving equinox, σ = 1880/1349) under the same
