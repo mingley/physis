@@ -224,6 +224,18 @@ pub fn identity_is_zero(expr: &Expr) -> Result<(), String> {
     Ok(())
 }
 
+/// Dual expansion of an untrusted candidate. `Ok(true)` means both
+/// expanders agree the polynomial is identically zero. Disagreement is
+/// an error. This does not mint a receipt.
+pub fn dual_expand(expr: &Expr) -> Result<bool, String> {
+    let a = expand_recursive(expr);
+    let b = expand_postfix(expr);
+    if a.align(&b.vars).terms != b.align(&a.vars).terms {
+        return Err("expanders disagree".into());
+    }
+    Ok(a.is_zero())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
