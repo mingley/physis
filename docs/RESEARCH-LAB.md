@@ -6,10 +6,11 @@ it predicts, searches for a counterexample, and records what survived. Rust
 constrains the program; a verifier checks a scoped deduction; measurements
 test the physical interpretation.
 
-This is a research environment under construction. The current CLI supports
-typed experiments, mutations, receipts and journaled knob changes. Durable
-campaign orchestration and independent reproduction are specified, not shipped.
-Start implementation work from [TODO.md](../TODO.md).
+The CLI supports typed experiments, mutations, receipts, journaled knob
+changes, and serial campaigns (`research plan`, `step`, `status`, `export`,
+`follow`). In-process `reproduce` remints and does not assign P4. Independent
+checking of `dec.d-squared-zero` is the C6.2 checker. R8 parallel workers
+stayed closed. Start implementation work from [TODO.md](../TODO.md).
 
 ## What makes a useful research task
 
@@ -57,8 +58,15 @@ cargo run -p physis -- replay knob-session.jsonl
 ```
 
 That checks recorded `set-knob` diffs. It does not certify the complete
-research history, external execution, independent replication or nature.
-Likewise, `reproduce` is an in-process remint, not P4.
+research history, external execution, or nature.
+`reproduce` is an in-process remint and does not assign P4.
+`research follow <manifest> <campaign> <child.json>` writes a new manifest
+from a stopped campaign's blocker. The child is a new campaign id; opening
+it against the parent directory is a revision refusal, and the parent
+attempt log is left in place.
+`propose <theory> <unit> <expr> <campaign>` dual-expands a polynomial,
+checks the unit against that theory's observable, and stores the record in
+the bundle. It does not install the expression and it does not mint a receipt.
 
 ## Read the evidence before the verdict
 
@@ -70,7 +78,7 @@ Likewise, `reproduce` is an in-process remint, not P4.
 | Are numbers defensible? | Units, versioned inputs, numerical bounds and their justification |
 | Was anything measured? | Dataset identity, locator, calibration history and statistical interpretation |
 | Does the encoding mean what we say? | Semantic review, independent encoding and unresolved assumptions |
-| Can another implementation reproduce it? | Currently a gap; follow spec 021 rather than calling a remint independent |
+| Can another implementation reproduce it? | `physis-repro-check` under spec 021 for `dec.d-squared-zero`. In-process `reproduce` is a remint and does not assign P4 |
 
 `Holds` is local to an encoding. A checked theorem can concern a poor model.
 An empirically excluded model can have impeccable algebra. A conjecture that

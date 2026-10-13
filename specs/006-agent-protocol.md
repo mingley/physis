@@ -42,6 +42,8 @@ Layer: agent
 | `research step <manifest> <campaign>` | run at most one coordinated campaign action (R4, spec 022): reconcile interrupted attempts, enforce persisted stop state and budgets, select one eligible gap deterministically, reserve the attempt, execute through the existing role/trust/budget gates, commit, and checkpoint. Lab-only |
 | `research status <campaign>` | render campaign status from the bundle alone (R4, spec 022): state, manifest id, budget usage, attempts, blocked set, stop record. Read-only; all roles may observe |
 | `research export <campaign> [json\|markdown]` | export the versioned campaign report (R6, spec 022): objective, assumptions, candidate lineage, all attempts with negative results, bounds, dataset ids, receipt-bearing notes, unresolved gaps, and the replayable manifest bytes. Read-only projection; all roles may observe |
+| `research follow <manifest> <campaign> <child>` | write a new manifest from a stopped campaign's blocker. The child is a new manifest id. Opening it against the parent directory is a revision refusal. The parent attempt log stays. All roles may follow |
+| `propose <theory> <unit> <expr> <campaign>` | dual-expand a dimensioned polynomial, store it in the campaign bundle as an agent action, and leave the baseline package installed as it was. A unit outside that theory's observable is refused. Explorer may propose. The record is not a receipt and there is no promote command |
 
 CLI tokens map 1:1 onto `physis_agent::Command`.
 

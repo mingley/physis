@@ -10,6 +10,38 @@ The project keeps `unsafe`-free pure Rust and honest epistemic tags.
 
 ## [Unreleased]
 
+### Agent
+
+- **Question ledger.** `research follow` writes a new manifest from a
+  stopped campaign's blocker. The child has a new manifest id. Opening
+  it against the parent directory is a revision refusal, and the parent
+  attempt log is left in place.
+- **Candidate encodings.** `propose` dual-expands a dimensioned
+  polynomial, checks the unit against the theory's observable, and
+  stores the record in the campaign bundle. The baseline package is
+  unchanged. There is no promote command, and the record is not a
+  receipt.
+
+### Theory
+
+- **Principe 1919 plates.** `dyson-1920-principe-deflection` stores
+  1.61″ ± 0.30″ probable error (σ = 0.45″ by the Sobral ×3/2
+  conversion). `gr.principe-deflection` uses the same two-sigma rule.
+  Both the Schwarzschild and Soldner predictions sit inside the 2σ
+  hull, so both empirical axes are compatible.
+- **Stefan–Boltzmann error budget.** The Quinn–Martin comparison now
+  names input (`h`, `c`, `k` model floats), rounding (`f64`), and
+  truncation (`|σ(n)−σ(n/2)|`) separately. A 4-panel trapezoid overlaps
+  the 2σ hull without containment and stays inconclusive.
+- **Kernel skip.** The catalog stays at nine identities. Faraday flux
+  remains the tetrahedron coboundary up to sign, and contracted Bianchi
+  still needs differential hypotheses outside the polynomial fragment.
+
+### Docs
+
+- Entry docs now match shipped R1–R7 and the C6.2 checker. In-process
+  `reproduce` still does not assign P4.
+
 ### Theory
 
 - **C2.4: substantive GR formalization (first Bianchi).** The live

@@ -864,6 +864,17 @@ impl Lab {
             Command::ResearchExport { campaign, format } => {
                 self.research_export_campaign(&campaign, format.as_deref())
             }
+            Command::ResearchFollow {
+                manifest,
+                campaign,
+                child,
+            } => self.research_follow(&manifest, &campaign, &child),
+            Command::Propose {
+                theory,
+                unit,
+                expression,
+                campaign,
+            } => self.propose_candidate(&theory, &unit, &expression, &campaign),
             Command::Inspect { axis, value } => self.inspect(axis.as_deref(), value.as_deref()),
             Command::Formalize { claim } => self.formalize_claim(&claim),
             Command::Reproduce { claim } => self.reproduce_claim(&claim),
@@ -2066,6 +2077,63 @@ impl Lab {
             Ok(report) => Response::ok(report),
             Err(e) => Response::err(e),
         }
+    }
+
+    /// Stopped campaign → new manifest. Read-only on the parent bundle.
+    fn research_follow(&self, manifest: &str, campaign: &str, child: &str) -> Response {
+        match crate::coordinator::follow_campaign(
+            std::path::Path::new(manifest),
+            std::path::Path::new(campaign),
+            std::path::Path::new(child),
+        ) {
+            Ok(text) => Response::ok(text),
+            Err(e) => Response::err(e),
+        }
+    }
+
+    /// Store a dimensioned candidate in `campaign` without installing it.
+    fn propose_candidate(
+        &mut self,
+        theory: &str,
+        unit: &str,
+        expression: &str,
+        campaign: &str,
+    ) -> Response {
+        let before = match self.theory(theory) {
+            Ok(t) => t.ir_package().map(|p| physis_ir::render_package(&p)),
+            Err(e) => return Response::err(e.to_string()),
+        };
+        let candidate = match crate::propose::evaluate(theory, unit, expression) {
+            Ok(c) => c,
+            Err(e) => return Response::err(e),
+        };
+        let body = crate::propose::payload(&candidate);
+        let bundle = match crate::bundle::Bundle::open(std::path::Path::new(campaign)) {
+            Ok(b) => b,
+            Err(e) => return Response::err(e),
+        };
+        let stored = match bundle.put_object(body.as_bytes()) {
+            Ok(id) => id,
+            Err(e) => return Response::err(e),
+        };
+        drop(bundle);
+        let node = self
+            .store
+            .insert(Node::new(NodeKind::AgentAction, vec![], body.as_bytes()));
+        let after = self
+            .theory(theory)
+            .ok()
+            .and_then(|t| t.ir_package())
+            .map(|p| physis_ir::render_package(&p));
+        if before != after {
+            return Response::err("propose changed the baseline package");
+        }
+        Response::ok(format!(
+            "propose  {theory}  unit {unit}\nexpression {expression}\nidentically-zero {}\nstored {}\nlab-node {}\ninstalled false\nreceipt false\n",
+            candidate.identically_zero,
+            stored.to_hex(),
+            node.to_hex()
+        ))
     }
 
     /// C7.1: one gap, one justified action (spec 022). Selects the first
@@ -7931,8 +7999,8 @@ mod tests {
             "add-brans-dicke is not the Newton half-angle fork: {bd_block}"
         );
         assert!(
-            bd_block.matches("holds → fails").count() == 3,
-            "add-brans-dicke should flip uniqueness, Eddington, and Mercury: {bd_block}"
+            bd_block.matches("holds → fails").count() == 4,
+            "add-brans-dicke should flip uniqueness, Eddington, Principe, and Mercury: {bd_block}"
         );
         assert!(
             text.contains("add-r-squared"),

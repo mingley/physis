@@ -12,6 +12,7 @@ pub mod coordinator;
 pub mod design;
 pub mod journal;
 pub mod lab;
+pub mod propose;
 pub mod protocol;
 pub mod replay;
 pub mod report;

@@ -228,6 +228,29 @@ pub enum Command {
         /// `json` (default) or `markdown`.
         format: Option<String>,
     },
+    /// Write a child manifest from a stopped campaign. Does not reset
+    /// the parent budget or erase its attempts.
+    ResearchFollow {
+        /// Parent manifest path.
+        manifest: String,
+        /// Parent campaign directory.
+        campaign: String,
+        /// Path of the new manifest. Must sit outside the parent directory.
+        child: String,
+    },
+    /// Submit a dimensioned polynomial. Dual-expand it, store the record
+    /// in the campaign bundle, and leave the baseline theory installed
+    /// as it was. Not a receipt.
+    Propose {
+        /// Theory id.
+        theory: String,
+        /// Observable unit. Refused when it is not that theory's unit.
+        unit: String,
+        /// Polynomial source.
+        expression: String,
+        /// Campaign bundle that stores the untrusted record.
+        campaign: String,
+    },
 }
 
 /// Default cap for [`Command::Step`]: exactly one action.
@@ -278,6 +301,8 @@ impl Command {
             Command::ResearchStep { .. } => "research-step",
             Command::ResearchStatus { .. } => "research-status",
             Command::ResearchExport { .. } => "research-export",
+            Command::ResearchFollow { .. } => "research-follow",
+            Command::Propose { .. } => "propose",
         }
     }
 }

@@ -282,8 +282,30 @@ fn parse(args: &[String]) -> Result<Command, String> {
                 let format = args.get(3).cloned();
                 Ok(Command::ResearchExport { campaign, format })
             }
+            Some("follow") => {
+                let manifest = args.get(2).ok_or_else(usage)?.clone();
+                let campaign = args.get(3).ok_or_else(usage)?.clone();
+                let child = args.get(4).ok_or_else(usage)?.clone();
+                Ok(Command::ResearchFollow {
+                    manifest,
+                    campaign,
+                    child,
+                })
+            }
             _ => Err(usage()),
         },
+        "propose" => {
+            let theory = args.get(1).ok_or_else(usage)?.clone();
+            let unit = args.get(2).ok_or_else(usage)?.clone();
+            let expression = args.get(3).ok_or_else(usage)?.clone();
+            let campaign = args.get(4).ok_or_else(usage)?.clone();
+            Ok(Command::Propose {
+                theory,
+                unit,
+                expression,
+                campaign,
+            })
+        }
         other => Err(format!("unknown command '{other}'\n{}", usage())),
     }
 }
@@ -332,6 +354,8 @@ USAGE:
     physis research step <manifest.json> <campaign-dir>
     physis research status <campaign-dir>
     physis research export <campaign-dir> [json|markdown]
+    physis research follow <manifest.json> <campaign-dir> <child.json>
+    physis propose <theory> <unit> <expression> <campaign-dir>
 
 EXAMPLES:
     physis experiment string-critique
@@ -421,6 +445,55 @@ mod tests {
     #[test]
     fn parse_research_export_requires_path() {
         assert!(parse(&argv(&["research", "export"])).is_err());
+    }
+
+    #[test]
+    fn parse_research_follow_takes_three_paths() {
+        match parse(&argv(&[
+            "research",
+            "follow",
+            "m.json",
+            "camp",
+            "child.json",
+        ])) {
+            Ok(Command::ResearchFollow {
+                manifest,
+                campaign,
+                child,
+            }) => {
+                assert_eq!(manifest, "m.json");
+                assert_eq!(campaign, "camp");
+                assert_eq!(child, "child.json");
+            }
+            other => panic!("unexpected parse: {other:?}"),
+        }
+        assert!(parse(&argv(&["research", "follow", "m.json", "camp"])).is_err());
+    }
+
+    #[test]
+    fn parse_propose_takes_theory_unit_expression_and_campaign() {
+        match parse(&argv(&[
+            "propose",
+            "newtonian-gravity",
+            "arcsec",
+            "(a - a)",
+            "camp",
+        ])) {
+            Ok(Command::Propose {
+                theory,
+                unit,
+                expression,
+                campaign,
+            }) => {
+                assert_eq!(theory, "newtonian-gravity");
+                assert_eq!(unit, "arcsec");
+                assert_eq!(expression, "(a - a)");
+                assert_eq!(campaign, "camp");
+            }
+            other => panic!("unexpected parse: {other:?}"),
+        }
+        assert!(parse(&argv(&["propose", "newtonian-gravity"])).is_err());
+        assert!(parse(&argv(&["promote", "newtonian-gravity"])).is_err());
     }
 
     #[test]

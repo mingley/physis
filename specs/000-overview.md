@@ -44,8 +44,8 @@ The workspace is reusable across scientific domains. The first domain is fundame
 ## Related
 
 - [Agentic research task queue](../TODO.md)
-- [Independent reproduction (specified, not implemented)](021-independent-reproduction.md)
-- [Research campaigns (specified, not implemented)](022-research-campaigns.md)
+- [Independent reproduction](021-independent-reproduction.md) (C6.2 checker admits P4 only for `dec.d-squared-zero`; in-process remint does not)
+- [Research campaigns](022-research-campaigns.md) (R1–R7 shipped; R8 parallel workers stayed closed)
 - `specs/001-type-system.md`
 - `specs/004-theories-and-claims.md`
 - `specs/005-string-critique.md`

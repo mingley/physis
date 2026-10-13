@@ -793,6 +793,109 @@ pub fn status_text(dir: &Path) -> Result<String, String> {
     ))
 }
 
+/// Write a new campaign manifest from a stopped parent.
+///
+/// The child names the stop reason and the blocked keys. It is a new
+/// manifest id. This function does not open the parent for writing, does
+/// not change its attempt log, and refuses to place the child inside the
+/// parent directory or on top of the parent manifest.
+pub fn follow_campaign(
+    manifest_path: &Path,
+    campaign_dir: &Path,
+    child_path: &Path,
+) -> Result<String, String> {
+    if child_path.exists() {
+        return Err(format!(
+            "follow-up '{}' already exists",
+            child_path.display()
+        ));
+    }
+    if manifest_path == child_path {
+        return Err("follow-up path is the parent manifest".into());
+    }
+    if let Ok(camp) = campaign_dir.canonicalize() {
+        let child_abs = if child_path.is_absolute() {
+            child_path.to_path_buf()
+        } else {
+            std::env::current_dir()
+                .map_err(|e| format!("follow-up cwd: {e}"))?
+                .join(child_path)
+        };
+        if child_abs.starts_with(&camp) {
+            return Err("follow-up manifest must not be written inside the parent campaign".into());
+        }
+    }
+    let text = std::fs::read_to_string(manifest_path)
+        .map_err(|e| format!("cannot read manifest '{}': {e}", manifest_path.display()))?;
+    let bundle = Bundle::open_read_only(campaign_dir)?;
+    let attempts_before = bundle.attempts_in_order().len();
+    let pinned = bundle
+        .manifest_id()
+        .ok_or_else(|| "bundle has no pinned manifest".to_string())?
+        .to_string();
+    let checkpoint = bundle.latest_checkpoint().cloned().unwrap_or_default();
+    let stop = checkpoint.stopped.clone().ok_or_else(|| {
+        "campaign is not stopped; a follow-up requires a recorded stop reason".to_string()
+    })?;
+    let mut value: serde_json::Value =
+        serde_json::from_str(&text).map_err(|e| format!("parent manifest is not JSON: {e}"))?;
+    let parent_question = value["objective"]["question"]
+        .as_str()
+        .unwrap_or("")
+        .to_string();
+    let blocked: Vec<String> = checkpoint.blocked.keys().cloned().collect();
+    let blocked_text = if blocked.is_empty() {
+        "none".to_string()
+    } else {
+        blocked.join(",")
+    };
+    value["objective"]["question"] = serde_json::Value::String(format!(
+        "Follow-up of {pinned}. Stop {}: {}. Parent question: {parent_question}. Blocked: {blocked_text}.",
+        stop.reason.as_str(),
+        stop.detail
+    ));
+    let assumptions = value["baseline"]["assumptions"]
+        .as_array_mut()
+        .ok_or_else(|| "parent manifest baseline.assumptions is not an array".to_string())?;
+    assumptions.push(serde_json::Value::String(format!(
+        "parent-manifest:{pinned}"
+    )));
+    assumptions.push(serde_json::Value::String(format!(
+        "parent-stop:{}",
+        stop.reason.as_str()
+    )));
+    let child =
+        serde_json::to_string_pretty(&value).map_err(|e| format!("follow-up encode: {e}"))?;
+    let (parsed, child_id) = parse_manifest(&child)?;
+    if child_id.to_hex() == pinned {
+        return Err("follow-up manifest id matches the parent; refusing to alias it".into());
+    }
+    if let Some(parent) = child_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent).map_err(|e| format!("follow-up io: {e}"))?;
+        }
+    }
+    std::fs::write(child_path, child.as_bytes()).map_err(|e| format!("follow-up io: {e}"))?;
+    let again = Bundle::open_read_only(campaign_dir)?;
+    if again.attempts_in_order().len() != attempts_before {
+        return Err("follow-up changed the parent attempt log".into());
+    }
+    if again
+        .latest_checkpoint()
+        .and_then(|c| c.stopped.as_ref())
+        .map(|s| s.reason)
+        != Some(stop.reason)
+    {
+        return Err("follow-up changed the parent stop record".into());
+    }
+    Ok(format!(
+        "research follow  child {}  parent {pinned}  stop {}  attempts {attempts_before} unchanged\nquestion {}\n",
+        child_id.to_hex(),
+        stop.reason.as_str(),
+        parsed.objective.question
+    ))
+}
+
 /// Shared renderer for live and read-only status.
 fn render_status(bundle: &Bundle, manifest: &Manifest, manifest_hex: &str, version: u32) -> String {
     let checkpoint = bundle.latest_checkpoint().cloned().unwrap_or_default();
@@ -1335,5 +1438,53 @@ mod tests {
             let status = campaign.status();
             assert!(status.contains("state stopped"), "{status}");
         }
+    }
+
+    #[test]
+    fn follow_up_is_a_new_manifest_and_leaves_the_parent_log() {
+        let mut lab = Lab::standard();
+        let dir = campaign_dir("follow");
+        let text = manifest_for(&["de-rham"], &["dec.d-squared-zero"], &["prove"]);
+        let text = text.replace("\"human_pause\": false", "\"human_pause\": true");
+        let manifest_path = std::env::temp_dir().join(format!(
+            "physis-follow-manifest-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&manifest_path, &text).unwrap();
+        let child_path =
+            std::env::temp_dir().join(format!("physis-follow-child-{}.json", std::process::id()));
+        std::fs::remove_file(&child_path).ok();
+        {
+            let campaign = Campaign::open(&mut lab, &text, &dir).unwrap();
+            drop(campaign);
+        }
+        let early = follow_campaign(&manifest_path, &dir, &child_path);
+        assert!(
+            early.unwrap_err().contains("not stopped"),
+            "a campaign with no stop record has no follow-up"
+        );
+        {
+            let mut campaign = Campaign::open(&mut lab, &text, &dir).unwrap();
+            let out = campaign.step_once();
+            assert!(out.text().contains("human-pause"), "{}", out.text());
+        }
+        let summary = follow_campaign(&manifest_path, &dir, &child_path).unwrap();
+        assert!(summary.contains("attempts 0 unchanged"), "{summary}");
+        assert!(summary.contains("stop human-pause"), "{summary}");
+        let child = std::fs::read_to_string(&child_path).unwrap();
+        assert!(child.contains("parent-stop:human-pause"), "{child}");
+        assert!(child.contains("Follow-up of"), "{child}");
+        let err = Campaign::open(&mut lab, &child, &dir)
+            .err()
+            .expect("child manifest must not reset the parent");
+        assert!(err.contains("revision"), "{err}");
+        let inside = dir.join("child.json");
+        let refused = follow_campaign(&manifest_path, &dir, &inside).unwrap_err();
+        assert!(refused.contains("inside the parent"), "{refused}");
+        let status = status_text(&dir).unwrap();
+        assert!(status.contains("attempts 0/"), "{status}");
+        assert!(status.contains("state stopped"), "{status}");
+        std::fs::remove_file(&manifest_path).ok();
+        std::fs::remove_file(&child_path).ok();
     }
 }

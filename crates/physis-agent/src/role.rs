@@ -134,6 +134,7 @@ impl Role {
                 | Command::ResearchPlan { .. }
                 | Command::ResearchStatus { .. }
                 | Command::ResearchExport { .. }
+                | Command::ResearchFollow { .. }
         )
     }
 
@@ -170,7 +171,8 @@ impl Role {
             }
             Role::EncodingAuditor => matches!(cmd, Command::Encode { .. }),
             Role::Judge => matches!(cmd, Command::Judge { .. }),
-            Role::Explorer | Role::Lab => false,
+            Role::Explorer => matches!(cmd, Command::Propose { .. }),
+            Role::Lab => false,
         }
     }
 }
@@ -294,6 +296,18 @@ mod tests {
         }));
         assert!(Role::Explorer.permits(&Command::Gaps));
         assert!(Role::Explorer.permits(&Command::Hypothesize { theory: None }));
+        assert!(Role::Explorer.permits(&Command::Propose {
+            theory: "newtonian-gravity".into(),
+            unit: "arcsec".into(),
+            expression: "(a - a)".into(),
+            campaign: "camp".into(),
+        }));
+        assert!(!Role::ProofSearcher.permits(&Command::Propose {
+            theory: "newtonian-gravity".into(),
+            unit: "arcsec".into(),
+            expression: "(a - a)".into(),
+            campaign: "camp".into(),
+        }));
         assert!(Role::Explorer.permits(&Command::ResearchPlan {
             path: "m.json".into(),
         }));

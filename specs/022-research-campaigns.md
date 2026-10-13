@@ -196,7 +196,7 @@ R1 shipped `research plan <manifest>` (dry run only; CLI parsing tests in
 spec 006). R4 shipped `research step <manifest> <campaign>` and
 `research status <campaign>` with the same coverage. R6 shipped `research export <campaign> [json|markdown]` with the same
 coverage.
-`plan` is a dry run; `step` performs at most one action. No background daemon,
+`plan` is a dry run; `step` performs at most one action. `follow` writes a child manifest from a stopped campaign and refuses to replace the parent revision. `propose` stores a dual-expanded candidate in a bundle without installing it. No background daemon,
 automatic network access or model-provider dependency is required.
 
 Versioned JSON responses carry campaign/action IDs, selected gap and reason,

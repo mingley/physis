@@ -85,32 +85,45 @@ JSON import may manufacture `Verified`, a trusted judgment or P4.
 
 ## Persistence and replay today
 
-`ArtifactStore` is an in-memory DAG, not an on-disk research database.
+`ArtifactStore` is an in-memory DAG of the live lab session.
 `Journal` records JSONL events and maintains a hash-linked in-memory history;
-hashing is not authentication or a complete crash-recovery protocol.
-The CLI `--journal` path restores knob state and rebuilds selected receipts
-and evidence against live definitions rather than deserializing authority.
+hashing is not authentication. The CLI `--journal` path restores knob state
+and rebuilds selected receipts and evidence against live definitions rather
+than deserializing authority.
 
 `replay_journal` checks recorded `set-knob` diffs on a fresh lab. It does not
 reproduce every proof, external process or empirical calculation in the
-history. `reproduce` remints in-process and explicitly does not assign P4.
+history. In-process `reproduce` remints and does not assign P4.
 Do not share an active journal between concurrent writers.
+
+Campaign bundles are a separate on-disk history (`physis-store::DurableStore`,
+`physis-agent::Bundle`). R2 persists content-addressed objects and a
+hash-chained intent/result journal, and recovers across write boundaries.
+Loading those bytes rehashes and checks them; it does not restore trust.
+`research step`, `research status`, and `research export` are the R4/R6
+surface. A stopped campaign can emit a child manifest with `research follow`;
+that file is a new campaign and cannot replace the parent revision or its
+attempt log.
 
 ## Agent boundary today and target
 
 Roles are application-level permissions. They are not authenticated worker
-identities, process isolation or an OS sandbox. The existing prove/review/set
-budgets are not wall-time, memory, output-size or financial limits.
-Likewise, a temporary directory for formal tools is not confinement.
+identities. R3 (`physis-core::worker`) runs reviewed-local tools with a
+wall-time kill, output caps, a scrubbed environment, and a private scratch
+directory. `approved_backends()` is empty, so untrusted execution and memory
+caps are refused. The prove/review/set budgets are research caps, not a proof.
 
-Today, `hypothesize` explores predefined mutations without installing them;
-`gaps` exposes research needs; `loop` runs a largely fixed cycle.
-The target is a bounded, gap-driven serial campaign with typed proposals,
-durable artifacts, explicit failure/stop reasons, enforced worker isolation
-and independent reproduction. That target is specified in
+`hypothesize` explores predefined mutations without installing them.
+`propose` submits a dimensioned polynomial, dual-expands it, and stores the
+record in a campaign bundle as an agent action. The baseline package is left
+unchanged, and the record is not a receipt. `gaps` exposes research needs.
+`loop` and `research step` select work from the live gap graph.
+Independent reproduction of `dec.d-squared-zero` is the C6.2 checker
+(`physis-repro-check`); that path is the one that may admit P4. R8 parallel
+workers stayed closed: serial campaigns were already one result per action.
+The contracts are
 [research campaigns](../specs/022-research-campaigns.md) and
 [independent reproduction](../specs/021-independent-reproduction.md).
-Neither is implemented by this documentation change.
 
 Keep the trusted layer small. Model generation and search may grow above it,
 but agent orchestration, report prose and persisted bytes never become new
