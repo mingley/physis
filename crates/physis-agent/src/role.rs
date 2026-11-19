@@ -131,6 +131,7 @@ impl Role {
                 | Command::Compare { .. }
                 | Command::Design { .. }
                 | Command::Hypothesize { .. }
+                | Command::Conditions { .. }
                 | Command::ResearchPlan { .. }
                 | Command::ResearchStatus { .. }
                 | Command::ResearchExport { .. }

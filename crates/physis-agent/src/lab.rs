@@ -25,6 +25,7 @@ use physis_theory::continuum::{DiracFermion, KleinGordonField};
 use physis_theory::critique::diff_verdicts;
 use physis_theory::dec::DeRham;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
+use physis_theory::excursion::ExcursionNetwork;
 use physis_theory::gauge_field::{WilsonSun, WilsonU1};
 use physis_theory::gravity::NewtonianGravity;
 use physis_theory::olbers::OlbersSky;
@@ -184,6 +185,7 @@ impl Lab {
         lab.insert(Box::new(WilsonSun::su3()));
         // Fourth domain: thermodynamics on the statistical layer.
         lab.insert(Box::new(IdealGas::default()));
+        lab.insert(Box::new(ExcursionNetwork::default()));
         // Standing 19th-c theory on trial: Rayleigh–Jeans vs Planck.
         lab.insert(Box::new(Blackbody::rayleigh_jeans()));
         lab.insert(Box::new(Blackbody::planck()));
@@ -541,6 +543,7 @@ impl Lab {
                         text,
                         report: None,
                         diffs: Some(diffs),
+                        conditions: None,
                     }
                 }
                 Err(e) => Response::err(e.to_string()),
@@ -821,6 +824,7 @@ impl Lab {
                     text: report.render(),
                     report: Some(Box::new(report)),
                     diffs: None,
+                    conditions: None,
                 },
                 Err(e) => Response::err(e.to_string()),
             },
@@ -834,6 +838,25 @@ impl Lab {
             },
             Command::Prove { claim } => self.prove_claim(&claim),
             Command::Falsify { claim } => self.falsify_claim(&claim),
+            Command::Conditions {
+                theory,
+                claim,
+                axes,
+            } => {
+                let t = match self.theory(&theory) {
+                    Ok(t) => t,
+                    Err(e) => return Response::err(e.to_string()),
+                };
+                match crate::conditions::search_conditions(t, &claim, &axes) {
+                    Ok(grid) => Response::Ok {
+                        text: grid.render(),
+                        conditions: Some(Box::new(grid)),
+                        report: None,
+                        diffs: None,
+                    },
+                    Err(e) => Response::err(e),
+                }
+            }
             Command::Sweep {
                 theory,
                 knob,

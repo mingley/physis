@@ -165,6 +165,30 @@ fn parse(args: &[String]) -> Result<Command, String> {
             let claim = args.get(1).ok_or_else(usage)?.clone();
             Ok(Command::Falsify { claim })
         }
+        "conditions" => {
+            let [_, theory, claim, first, rest @ ..] = args else {
+                return Err(usage());
+            };
+            let axes = std::iter::once(first)
+                .chain(rest)
+                .map(|axis| {
+                    let (knob, raw) = axis.split_once('=').ok_or_else(usage)?;
+                    let values: Vec<_> = raw.split(',').map(|s| s.trim().to_string()).collect();
+                    if knob.is_empty() || values.iter().any(String::is_empty) {
+                        return Err(usage());
+                    }
+                    Ok(physis_agent::conditions::ConditionAxis {
+                        knob: knob.into(),
+                        values,
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+            Ok(Command::Conditions {
+                theory: theory.clone(),
+                claim: claim.clone(),
+                axes,
+            })
+        }
         "sweep" => {
             if args.len() < 4 {
                 return Err(usage());
@@ -313,6 +337,7 @@ USAGE:
     physis judge <claim-id>
     physis falsify <claim-id>
     physis sweep <theory> <knob> <v1,v2,...>
+    physis conditions <theory> <claim> <knob=v1,v2,...> [...]
     physis branch <name>
     physis checkout <name>
     physis compare <theory-a> <theory-b>

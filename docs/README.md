@@ -12,6 +12,7 @@
 |---|---|
 | [RESEARCH-LAB.md](RESEARCH-LAB.md) | Research approach, current CLI session, evidence reading and agent handoff |
 | [Excursion counts and hidden entropy](research/excursion-counts/RESULT.md) | Sharp three-state dissipation bounds, recovery from timing, and a test for unknown hidden state count |
+| [Hidden entropy from immediate returns and mean jump activity](research/excursion-activity/RESULT.md) | Sharp minimum across all finite state counts, the smallest compatible hidden state count, and a replayable joint knob search |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crate diagram and knob-turn data flow |
 | [LAYERS.md](LAYERS.md) | Ontology tower and smallest empirical stuff |
 | [KNOBS.md](KNOBS.md) | Inventory of default-lab knobs |
@@ -21,7 +22,6 @@
 
 Contracts live in `/specs`. Sequencing lives in `/plans`. Standing orders live in `/AGENTS.md`.
 
-For implementation, start at [TODO.md](../TODO.md). The next-stage contracts
-are [independent reproduction](../specs/021-independent-reproduction.md)
-and [research campaigns](../specs/022-research-campaigns.md); both describe
-work still to be implemented, not additional current CLI commands.
+For implementation status, see [TODO.md](../TODO.md). The contracts cover
+[independent reproduction](../specs/021-independent-reproduction.md)
+and [research campaigns](../specs/022-research-campaigns.md).

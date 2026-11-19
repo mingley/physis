@@ -3,10 +3,9 @@
 See `specs/006-agent-protocol.md` and `AGENTS.md`.
 
 For task selection and handoffs, use [TODO.md](../TODO.md) and
-[the research workflow](RESEARCH-LAB.md). The proposed campaign protocol is
-in [spec 022](../specs/022-research-campaigns.md); its `research` commands
-are not available yet. Existing role flags are application permissions,
-not process isolation.
+[the research workflow](RESEARCH-LAB.md). The `research plan`, `step`,
+`status` and `export` commands implement the campaign protocol. Role flags
+control permissions within the running lab. [Campaign specification](../specs/022-research-campaigns.md)
 
 ## CLI
 
@@ -17,6 +16,7 @@ cargo run -p physis -- knobs type-iib
 cargo run -p physis -- run type-iib
 cargo run -p physis -- set type-iib total_dim 9
 cargo run -p physis -- hypothesize type-iib
+cargo run -p physis -- conditions excursion-counts excursion.floor-attained second_mean_jumps=1 second_winding_quarters=-2,2
 cargo run -p physis -- evidence predictivity.unique-vacuum
 cargo run -p physis -- experiment string-critique
 cargo run -p physis -- score heterotic-e8e8

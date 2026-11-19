@@ -21,6 +21,7 @@ with a temperature.
 | `dulong-petit` | classical lattice oscillators (see `specs/017`) |
 | `einstein-solid` | Einstein (1907) Bose oscillators (see `specs/017`) |
 | `debye-solid` | Debye (1912) phonon continuum (see `specs/017`) |
+| `excursion-counts` | stationary hidden-jump counter on two triangles sharing one visible state |
 
 ## Knobs
 
@@ -68,6 +69,21 @@ package mutation: Sommerfeld `C_V` is not `(3/2) N k`.
 - A real equation-of-state solver or Monte-Carlo; the laws here are the encoded
   results with the computed pieces (C_v, ΔS, low-T Bose entropy) checked.
 - Converting Einstein-solid `quantum` / `spectrum` into this IR.
+
+## Hidden-jump counter
+
+On `excursion-counts` all holding rates are one per model time unit. Branch
+one has mean one hidden jump and mean winding one half turn per excursion.
+The chosen `first_percent` sets its entry fraction from 1 to 99 percent
+(default 1). `second_mean_jumps` ranges from 1 to 9999 (default 9999).
+`second_winding_quarters` ranges from −2 to 2 in quarter turns (default 0).
+
+`excursion.positive-floor` tests whether the measured immediate-return
+fraction and mean force positive entropy. `excursion.floor-attained` tests
+whether the current network attains it. `excursion.triangle-mean` tests
+whether its first two count tails give its mean under the triangle
+recurrence. The evaluator uses rational stationary fluxes for all three
+model-internal decisions. [Definitions, equality conditions and proof](../docs/research/excursion-activity/RESULT.md)
 
 ## Related
 

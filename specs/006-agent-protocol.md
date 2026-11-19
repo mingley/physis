@@ -19,6 +19,7 @@ Layer: agent
 | `falsify <claim>` | search knobs for a failing evaluation |
 | `hypothesize [theory]` | constrained structural mutation: chosen/fitted knob probes **and** IR package forks (`Theory::structural_mutations`); measured/derived knobs stay frozen; package mutants are not installed; does not persist or mint. `add-feedback` (NAND cycle), `add-contention` (NAND multi-driven net), `add-next-nearest` (Klein–Gordon locality and Dirac hopping), `add-quartic` (Klein–Gordon minus-φ⁴), `add-rectangle` (Wilson U(1)/SU(2)/SU(3) 2×1 loops), `add-higgs` (Wilson fundamental Higgs screening), `add-tline` (ohm-circuit transmission-line delay), `add-flux` (ohm-circuit unlumped mesh flux), `add-product` (bell-test product ket), `add-pr-box` (bell-test PR-box correlator), `add-schwarzschild` (newtonian-gravity 3GM u² Binet term), `add-yukawa` (newtonian-gravity Yukawa Soldner suppression), `add-tellegen` (linear-medium magnetoelectric mixing), `add-chiral` (linear-medium Pasteur chirality), `add-monopole` (maxwell-vacuum magnetic current), `add-proca` (maxwell-vacuum Proca mass), `add-bose` (ideal-gas Bose statistics), `add-fermi` (ideal-gas degenerate Fermi), `add-kt` (landauer-engine dropped ln2), `add-demon` (landauer-engine Maxwell demon), and `add-wilson` (dirac-fermion Wilson r term), and `add-r-squared` (general-relativity Starobinsky R²), and `add-brans-dicke` (general-relativity Brans-Dicke PPN), and `add-binomial-gamma` (special-relativity truncated γ), and `add-minus-uv` (special-relativity minus-uv composition), and `add-wien` (planck Wien occupation), and `add-zero-point` (planck zero-point vacuum), and `add-sign-flip` (de-rham coboundary first minus), and `add-down-laplacian` (de-rham down Laplacian), and `add-oracle` (turing-machine halt oracle), and `add-tired-light` (olbers-static exponential energy loss), and `add-missing-10` (su5-gut incomplete generation), and `add-2d` (debye-solid 2D phonon continuum), and `add-missing-eR` (standard-model incomplete generation), and `add-missing-spin10` (observer-geometry missing Spin(10)), and `add-quartic` (dulong-petit quartic virial), and `add-missing-e8` (heterotic-e8e8 missing E8), and `add-so16` (heterotic-so32 SO(16)), and `add-chan-paton-16` (type-i Chan-Paton SO(16)) are not knobs |
 | `sweep <theory> <knob> <v,v,…>` | evaluate many values; report changed claims |
+| `conditions <theory> <claim> <knob=v1,v2,…> […]` | evaluate a Cartesian grid of joint changes to chosen or fitted knobs and identify minimal repairs of the same statement |
 | `branch` / `checkout` | snapshot / restore knob state |
 | `compare` / `design` | discriminating claims; rank theory pairs; `design` also ranks discriminating observables with units, domains, frozen comparison rules and disclosures (R5, spec 022) and journals the frozen design id |
 | `sensitivity` | perturb one knob, count flips |
@@ -44,6 +45,17 @@ Layer: agent
 | `research export <campaign> [json\|markdown]` | export the versioned campaign report (R6, spec 022): objective, assumptions, candidate lineage, all attempts with negative results, bounds, dataset ids, receipt-bearing notes, unresolved gaps, and the replayable manifest bytes. Read-only projection; all roles may observe |
 
 CLI tokens map 1:1 onto `physis_agent::Command`.
+
+`conditions` includes the live baseline value on each axis and deduplicates
+typed values. The product may contain at most 256 points. Each changed point
+runs on a fresh fork with setters applied in the supplied order. The result
+records every assignment, the original statement hash, its ordinary verdict
+or the reason for rejection. Drift of any knob or loss of the original
+statement rejects that point. A holding row is a **minimal repair** exactly
+when every proper subset of its exact assignments, including the baseline,
+was evaluated and failed. An inconclusive or rejected subset cannot establish
+minimality. Named roles can observe the grid. To persist a selected path use
+`set` with `--journal` and replay it. [Excursion campaign](../docs/research/excursion-activity/CAMPAIGN.md)
 
 `--role explorer|formalizer|proof-searcher|falsifier|reviewer|auditor|replication-agent|empirical-analyst|numerical-verifier|provenance-auditor|encoding-auditor|judge`
 gates which ops `exec` will dispatch. Named roles may observe (including `hypothesize`); each may
@@ -71,13 +83,13 @@ does not. Observation is free. A trust refusal does not spend budget.
 
 ## Responses
 
-`Response::Ok { text, report, diffs }` or `Response::Err { message }`.
+`Response::Ok { text, report, diffs, conditions }` or `Response::Err { message }`.
 
 Text is for humans and for agents that just want a buffer. `report` / `diffs` are structured.
 
-The CLI `--json` flag emits the whole `Response` as JSON (status, text, and the
-structured `report`/`diffs`), so an agent gets typed matrices and verdict diffs
-rather than parsing prose. Example: `physis --json set type-iib total_dim 9`.
+The CLI `--json` flag emits the status, text and any structured `report`,
+`diffs` or `conditions` fields present for that command. An agent can read
+typed matrices, verdict diffs and complete condition grids directly.
 
 ## Journal events
 

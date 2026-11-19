@@ -1,5 +1,6 @@
 //! Commands an agent can issue, and responses the lab returns.
 
+use crate::conditions::{ConditionAxis, ConditionGrid};
 use physis_theory::{ExperimentReport, VerdictDiff};
 use serde::{Deserialize, Serialize};
 
@@ -73,6 +74,15 @@ pub enum Command {
     Falsify {
         /// Claim id.
         claim: String,
+    },
+    /// Evaluate joint knob assignments on forks of a fixed claim.
+    Conditions {
+        /// Theory and claim to evaluate.
+        theory: String,
+        /// Claim slug within the selected theory.
+        claim: String,
+        /// Ordered knobs and their candidate values.
+        axes: Vec<ConditionAxis>,
     },
     /// Evaluate a knob at many values; report verdict diffs.
     Sweep {
@@ -254,6 +264,7 @@ impl Command {
             Command::Score { .. } => "score",
             Command::Prove { .. } => "prove",
             Command::Falsify { .. } => "falsify",
+            Command::Conditions { .. } => "conditions",
             Command::Sweep { .. } => "sweep",
             Command::Branch { .. } => "branch",
             Command::Checkout { .. } => "checkout",
@@ -297,6 +308,9 @@ pub enum Response {
         /// Optional verdict diffs.
         #[serde(skip_serializing_if = "Option::is_none")]
         diffs: Option<Vec<VerdictDiff>>,
+        /// Finite condition grid, including controls and rejected points.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        conditions: Option<Box<ConditionGrid>>,
     },
     /// Failure.
     Err {
@@ -312,6 +326,7 @@ impl Response {
             text: text.into(),
             report: None,
             diffs: None,
+            conditions: None,
         }
     }
 

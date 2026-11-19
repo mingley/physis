@@ -179,6 +179,10 @@ overestimate dissipation by an unbounded factor. Measuring the fourth count
 tail detects that construction. Sharpness of the general bound across hidden
 state counts is open. [Proof and five-state counterexample](HIDDEN-ORDER.md)
 
+Adding the mean number of hidden jumps gives an exact condition under which
+the triangle minimum holds at any finite order. The immediate-return fraction
+and mean alone also have a sharp minimum of their own. [Mean jump activity and hidden entropy](../excursion-activity/RESULT.md)
+
 Ehrich optimizes over hidden jump networks using return probabilities
 indexed by step number, including a two-visible-state unicyclic recovery
 result. Skinner and Dunkel bound dissipation using waiting-time statistics.

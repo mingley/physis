@@ -20,6 +20,7 @@ pub mod continuum;
 pub mod critique;
 pub mod dec;
 pub mod em;
+pub mod excursion;
 pub mod framework;
 pub mod gauge_field;
 pub mod geometry;

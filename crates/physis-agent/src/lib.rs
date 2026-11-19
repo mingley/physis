@@ -8,6 +8,7 @@
 
 pub mod bundle;
 pub mod campaign;
+pub mod conditions;
 pub mod coordinator;
 pub mod design;
 pub mod journal;
