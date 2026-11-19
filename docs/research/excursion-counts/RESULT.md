@@ -222,7 +222,7 @@ LEAN_PATH=. lean4export Excursions -- \
   Excursions.floor_slack Excursions.inverse_two_hops Excursions.inverse_first_path \
   Excursions.moment_determinants Excursions.mixture_deficit Excursions.mixture_fourth > identities.ndjson
 cat > check.json <<'EOF'
-{"export_file_path":"identities.ndjson","permitted_axioms":["propext","Quot.sound","Classical.choice"],"unpermitted_axiom_hard_error":true,"print_success_message":true,"nat_extension":true,"string_extension":true,"num_threads":1}
+{"export_file_path":"identities.ndjson","permitted_axioms":["propext","Quot.sound","Classical.choice"],"unpermitted_axiom_hard_error":true,"print_success_message":true,"print_axioms":false,"nat_extension":true,"string_extension":true,"num_threads":1}
 EOF
 nanoda_bin check.json
 ```
