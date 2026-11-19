@@ -45,6 +45,10 @@ jobs:
           echo "LEAN4EXPORT=$bin" >> "$GITHUB_ENV"
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Check excursion-count identities
+        run: lean -DwarningAsError=true docs/research/excursion-counts/Excursions.lean
+        env:
+          ELAN_TOOLCHAIN: ${{ env.LEAN_TOOLCHAIN }}
       - run: cargo test --workspace
       - run: cargo run -p physis -- experiment string-critique
       - run: cargo run -p physis -- prove dec.d-squared-zero

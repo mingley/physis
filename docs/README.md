@@ -11,6 +11,7 @@
 | Doc | Contents |
 |---|---|
 | [RESEARCH-LAB.md](RESEARCH-LAB.md) | Research approach, current CLI session, evidence reading and agent handoff |
+| [Excursion counts and hidden entropy](research/excursion-counts/RESULT.md) | Sharp three-state dissipation bounds, recovery from timing, and a test for unknown hidden state count |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crate diagram and knob-turn data flow |
 | [LAYERS.md](LAYERS.md) | Ontology tower and smallest empirical stuff |
 | [KNOBS.md](KNOBS.md) | Inventory of default-lab knobs |
