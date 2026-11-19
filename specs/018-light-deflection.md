@@ -138,7 +138,7 @@ as an integer polynomial in folded `(Γ, ∂Γ)` indeterminates (lower
 Γ pairs shared: torsion-free), 21 indeterminates and 30 terms,
 vanishing by the ΓΓ pairing. It is a catalog identity
 (`gr.first-bianchi`, `integer-arithmetic`) with a physlib
-`first_bianchi` theorem closed by `ring`; the live GR package
+`first_bianchi` theorem closed by `grind`; the live GR package
 carries the generated tree plus a bound `lean_ref`, and
 sign-mutated artifacts are rejected by expansion and at bind time.
 The contracted Bianchi `∇·G = 0` is not formalized: its proof needs

@@ -85,4 +85,4 @@ theorem first_bianchi (DHTRP DPTRH DRTHP GHHP GHRH GHRP GPHP GPRH GPRP GRHP GRRH
       + (GTTR * GTHP)) - (GTTH * GTRP)) + (GTRR * GRHP)) - (GTRH * GRRP))
       + (GTRH * GHHP)) - (GTHH * GHRP)) + (GTRP * GPHP)) - (GTHP * GPRP))
       = 0 := by
-  ring
+  grind

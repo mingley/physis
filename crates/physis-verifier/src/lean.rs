@@ -239,9 +239,9 @@ const LAKEFILE_TOML: &str =
 const LEAN_BUILD_WALL_SECS: u64 = 1200;
 /// Export wall time: replay input, not a build.
 const LEAN_EXPORT_WALL_SECS: u64 = 600;
-/// Combined build+export output cap: failures are kilobytes, Physlib
-/// exports are kilobytes; megabytes fail closed.
-const LEAN_EXPORT_OUTPUT: u64 = 8 << 20;
+/// The pinned exporter includes theorem dependencies. The catalog's
+/// largest export is 9,710,600 bytes (cross_product_jacobi).
+const LEAN_EXPORT_OUTPUT: u64 = 12 << 20;
 /// `--version` is instant or broken.
 const LEAN_VERSION_WALL_SECS: u64 = 30;
 /// `--version` prints one line.
@@ -254,7 +254,7 @@ const LEAN_ERROR_HEAD: usize = 4096;
 /// the theorem name via `$THM`, always double-quoted, so untrusted
 /// source text cannot inject shell commands and no tool is PATH-resolved.
 fn lake_script() -> &'static str {
-    "set -e\n\"$LAKE\" build\n\"$LAKE\" env \"$LEAN4EXPORT\" Physlib -- \"$THM\"\n"
+    "set -e\n\"$LAKE\" build >&2\n\"$LAKE\" env \"$LEAN4EXPORT\" Physlib -- \"$THM\"\n"
 }
 
 /// Host-selected environment additions for the lake pipeline: pinned
