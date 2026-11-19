@@ -22,6 +22,7 @@ with a temperature.
 | `einstein-solid` | Einstein (1907) Bose oscillators (see `specs/017`) |
 | `debye-solid` | Debye (1912) phonon continuum (see `specs/017`) |
 | `excursion-counts` | stationary hidden-jump counter on two triangles sharing one visible state |
+| `excursion-ring` | hidden-jump counter on a four-site ring with clockwise, anticlockwise and opposite jumps |
 
 ## Knobs
 
@@ -84,6 +85,13 @@ whether the current network attains it. `excursion.triangle-mean` tests
 whether its first two count tails give its mean under the triangle
 recurrence. The evaluator uses rational stationary fluxes for all three
 model-internal decisions. [Definitions, equality conditions and proof](../docs/research/excursion-activity/RESULT.md)
+
+On `excursion-ring`, `clockwise`, `anticlockwise` and `opposite` are chosen
+integer edge weights from 1 through 8, all initially 1. Normalize the three
+weights by their sum for unit exit rates. The exact rational verdict for
+`excursion.only-joint-detects` tests whether each pair of the first tail,
+second tail and mean admits equilibrium while their joint inequality forces
+dissipation. [Joint inequality and reversible controls](../docs/research/excursion-activity/JOINT.md)
 
 ## Related
 

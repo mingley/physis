@@ -53,6 +53,8 @@ jobs:
           ELAN_TOOLCHAIN: ${{ env.LEAN_TOOLCHAIN }}
       - run: cargo test --workspace
       - name: Replay hidden-excursion knob changes
-        run: cargo run --locked -p physis -- replay docs/research/excursion-activity/knobs.jsonl
+        run: |
+          cargo run --locked -p physis -- replay docs/research/excursion-activity/knobs.jsonl
+          cargo run --locked -p physis -- replay docs/research/excursion-activity/ring-knobs.jsonl
       - run: cargo run -p physis -- experiment string-critique
       - run: cargo run -p physis -- prove dec.d-squared-zero

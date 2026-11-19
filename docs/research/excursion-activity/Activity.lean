@@ -72,4 +72,12 @@ theorem reversible_mixture (w a n q : K) (h : w*(1-a)=1-q) (h' : a*n=1-q) :
 theorem lift_entropy_increment (f p X Y : K) :
     f*p*(X+Y) + f*(1-p)*(X-Y) = f*X + f*(2*p-1)*Y := by grind
 
+/-- The even-return path mixture reaches the equilibrium activity ceiling at w=1. -/
+theorem even_pair_slack (a w r n : K) (h : n*(1-a)=2*r) (hw : w*a=r) :
+    (n-(n+2)*r)*(1-a) = 2*r*a*(1-w) := by grind
+
+/-- Exact joint-observation gap on the four-state 4:2:1 ring, with denominators cleared. -/
+theorem joint_ring_control (m r n : K) (hm : 49*m=32) (hr : 343*r=164) (hn : n=2) :
+    2401*((1+m)^2-(1+2*n)*(1-r))=296 := by grind
+
 end ExcursionActivity

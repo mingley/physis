@@ -58,6 +58,11 @@ The same data put a sharp lower bound on the size of the hidden set.
 | $qn=2(1-q)$ | 0 | 2, necessarily arranged in a path with 0 at one end |
 | $qn>2(1-q)$ | 0 | 3 |
 
+Adding the two-jump tail can give strictly more information than any pair
+of measurements. A four-state ring has an equilibrium fit for **every pair**
+among the immediate-return fraction, two-jump tail and mean. Their joint
+values force at least $0.00150108\,k_B$ per excursion. [Joint inequality and three explicit equilibrium controls](JOINT.md)
+
 ### Why extra hidden states cannot lower the floor
 
 Use stationary edge traversals per excursion, $f_{ij}=\pi_i Q_{ij}/\nu$
