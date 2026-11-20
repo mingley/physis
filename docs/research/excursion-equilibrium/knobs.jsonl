@@ -1,0 +1,3 @@
+{"event":"set-knob","t":1795149935454,"theory":"excursion-ring","knob":"clockwise","from":{"kind":"u-int","value":1},"to":{"kind":"u-int","value":3},"diffs":[]}
+{"event":"set-knob","t":1795149935457,"theory":"excursion-ring","knob":"anticlockwise","from":{"kind":"u-int","value":1},"to":{"kind":"u-int","value":2},"diffs":[{"claim":"excursion.beyond-joint-bound","from":"fails","to":"holds","statement_hash":"77a4a186a991afcaa8c97696a71ef61e51a15df3a62cf2916310a6f9e94894b3","from_derivation":"executed","to_derivation":"executed","from_empirical":"not-applicable","to_empirical":"not-applicable","from_judgment":"logical disproved","to_judgment":"logical undetermined"}]}
+{"event":"run","t":1795149935459,"theory":"excursion-ring","holds":1,"fails":1,"other":0}

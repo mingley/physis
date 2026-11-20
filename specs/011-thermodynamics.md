@@ -93,6 +93,12 @@ weights by their sum for unit exit rates. The exact rational verdict for
 second tail and mean admits equilibrium while their joint inequality forces
 dissipation. [Joint inequality and reversible controls](../docs/research/excursion-activity/JOINT.md)
 
+On the same ring, `excursion.beyond-joint-bound` requires that all pairwise
+tests and the earlier joint inequality pass while the exact three-statistic
+test forces a positive entropy floor. The full classifier also accepts
+arbitrary canonical rational count inputs through the `excursion_equilibrium`
+research example. [Exact classification and replay](../docs/research/excursion-equilibrium/CAMPAIGN.md)
+
 ## Related
 
 - `specs/002-ontology-layers.md` (the `statistical` layer)

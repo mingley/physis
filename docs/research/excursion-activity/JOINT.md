@@ -43,6 +43,9 @@ $n=m/(1-m)$. Define $G=(1+m)^2-(1+2n)(1-r)$. A positive $G$ excludes
 equilibrium at every finite hidden order. This is a sufficient test. The
 complete minimum at arbitrary triples remains open.
 
+A subsequent calculation gives the exact conditions for an equilibrium fit,
+including a boundary with an unattained zero entropy infimum. [Equilibrium feasibility and the minimum mean](../excursion-equilibrium/RESULT.md)
+
 ## Converting the violation into an entropy bound
 
 For any allowed directed network, write $f_{ij}$ for its stationary edge

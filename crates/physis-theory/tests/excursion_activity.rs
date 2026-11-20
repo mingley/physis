@@ -5,6 +5,7 @@
 use physis_core::claim::VerdictKind;
 use physis_core::knob::{KnobValue, Knobbed};
 use physis_numeric::Ratio;
+use physis_theory::excursion::equilibrium::{equilibrium_fit, EquilibriumFit};
 use physis_theory::excursion::ring::ExcursionRing;
 use physis_theory::Theory;
 
@@ -88,6 +89,205 @@ fn ring(clockwise: i128, anticlockwise: i128, opposite: i128) -> Traffic {
                 .collect()
         })
         .collect()
+}
+
+// The two tests below use constructive upper witnesses and supporting lower
+// planes independently of the cubic-discriminant decision in the factory.
+fn support_mean(a: Ratio, m: Ratio, r: Ratio) -> Ratio {
+    let two = Ratio::int(2);
+    let chord = ONE + a - a.pow(2);
+    let b = ONE + two * a - a.pow(2);
+    let scale = (ONE + a).pow(2) * (ONE - a.pow(2)).pow(2);
+    ((two * chord.pow(2) - b) * m + b * r - two * a.pow(6)) / scale
+}
+
+fn branch_mean(m: Ratio, r: Ratio, y: Ratio) -> Ratio {
+    let g = m - y;
+    let t = (r - y) / g;
+    let w = g / t;
+    let s = y / (ONE - w);
+    assert!((ZERO..ONE).contains(&s) && (ZERO..ONE).contains(&t));
+    assert!(w > ZERO && w < ONE);
+    assert_eq!(w * t + (ONE - w) * s, m);
+    assert_eq!(w * t.pow(2) + (ONE - w) * s, r);
+    w * t / (ONE - t) + (ONE - w) * Ratio::int(2) * s / (ONE - s)
+}
+
+#[test]
+fn exact_equilibrium_decision_agrees_with_constructive_certificates_on_all_rings() {
+    let mut counts = [0; 3];
+    for a in 1..=8 {
+        for b in 1..=8 {
+            for c in 1..=8 {
+                let measured = measure(&ring(a, b, c));
+                let m = ONE - measured.q;
+                let r = measured.r;
+                let n = measured.mean;
+                let v = r - m.pow(2);
+                let expected = if v < ZERO {
+                    EquilibriumFit::PositiveFloor
+                } else if v == ZERO {
+                    assert_eq!(n * (ONE - m), m);
+                    EquilibriumFit::Attained
+                } else {
+                    let k = ONE - Ratio::int(2) * m + r;
+                    let grid = (0..16).map(|i| Ratio::new(i, 16));
+                    let lower = grid.clone().any(|p| support_mean(p, m, r) > n);
+                    let upper = grid.clone().any(|p| branch_mean(m, r, p * v / k) <= n);
+                    assert_ne!(lower, upper, "no decisive certificate at {a},{b},{c}");
+                    if lower {
+                        EquilibriumFit::PositiveFloor
+                    } else {
+                        EquilibriumFit::Attained
+                    }
+                };
+                assert_eq!(equilibrium_fit(m, r, n), expected);
+                counts[match (expected, a == b) {
+                    (EquilibriumFit::Attained, true) => 0,
+                    (EquilibriumFit::Attained, false) => 1,
+                    (EquilibriumFit::PositiveFloor, false) => 2,
+                    _ => panic!("misclassified symmetric ring {a},{b},{c}"),
+                }] += 1;
+            }
+        }
+    }
+    assert_eq!(counts, [64, 128, 320]);
+}
+
+#[test]
+fn rational_contacts_and_nearby_means_include_the_double_root() {
+    for a in [Ratio::new(1, 3), Ratio::new(1, 2), Ratio::new(4, 5)] {
+        for w in [Ratio::new(1, 9), Ratio::new(1, 2), Ratio::new(7, 8)] {
+            let t = a.pow(2);
+            let s = a.pow(3) / (ONE + a - t);
+            let m = w * t + (ONE - w) * s;
+            let r = w * t.pow(2) + (ONE - w) * s;
+            let n = w * t / (ONE - t) + (ONE - w) * Ratio::int(2) * s / (ONE - s);
+            assert_eq!(support_mean(a, m, r), n);
+            assert_eq!(equilibrium_fit(m, r, n), EquilibriumFit::Attained);
+            let eps = Ratio::new(1, 10_i128.pow(25));
+            assert_eq!(
+                equilibrium_fit(m, r, n - eps),
+                EquilibriumFit::PositiveFloor
+            );
+            assert_eq!(equilibrium_fit(m, r, n + eps), EquilibriumFit::Attained);
+        }
+    }
+    let m = Ratio::new(23, 36);
+    let r = Ratio::new(11, 24);
+    assert!(support_mean(Ratio::new(20513, 25000), m, r) > Ratio::new(202408322, 100000000));
+    assert!(branch_mean(m, r, Ratio::new(863, 10000)) < Ratio::new(202408323, 100000000));
+}
+
+#[test]
+fn reversible_sparse_networks_including_interior_edges_admit_equilibrium() {
+    for size in 3..=8 {
+        for mask in 0_u32..64 {
+            let mut traffic = vec![vec![ZERO; size]; size];
+            for (i, row) in traffic.iter_mut().enumerate() {
+                for (j, edge) in row.iter_mut().enumerate() {
+                    let (lo, hi) = (i.min(j), i.max(j));
+                    if lo != hi && (lo + 1 == hi || mask & (1 << ((i + j) % 6)) != 0) {
+                        *edge = Ratio::int(1 + ((3 * hi + lo + mask as usize) % 7) as i128);
+                    }
+                }
+            }
+            let data = measure(&traffic);
+            assert_eq!(data.entropy, 0.0);
+            assert_eq!(
+                equilibrium_fit(ONE - data.q, data.r, data.mean),
+                EquilibriumFit::Attained
+            );
+        }
+    }
+}
+
+#[test]
+fn geometric_tail_boundary_has_zero_infimum_at_fixed_excess_mean() {
+    let m = Ratio::new(1, 2);
+    let r = m.pow(2);
+    let n = Ratio::int(2);
+    assert_eq!(equilibrium_fit(m, r, n), EquilibriumFit::ZeroInfimum);
+    assert_eq!(equilibrium_fit(m, r, ONE), EquilibriumFit::Attained);
+    assert_eq!(
+        equilibrium_fit(m, r, Ratio::new(9, 10)),
+        EquilibriumFit::PositiveFloor
+    );
+
+    let mut previous = f64::INFINITY;
+    for denominator in [100, 1000, 10000, 100000] {
+        let t = ONE - Ratio::new(1, denominator);
+        let w = (ONE - t) * (n * (ONE - r) - m - r)
+            / (t.pow(3) - r - m * (ONE - t) + n * (ONE - t) * (ONE - t.pow(2)));
+        let short_m = (m - w * t) / (ONE - w);
+        let short_r = (r - w * t.pow(2)) / (ONE - w);
+        let short_n = (short_m + short_r) / (ONE - short_r);
+        assert!(ZERO < w && w < ONE && ZERO < short_r && short_r < short_m && short_m < ONE);
+        assert_eq!(
+            (
+                (ONE - w) * short_m + w * t,
+                (ONE - w) * short_r + w * t.pow(2)
+            ),
+            (m, r)
+        );
+        assert_eq!((ONE - w) * short_n + w * t / (ONE - t), n);
+        assert_eq!(short_m.pow(2) - short_r, w * ((t - m) / (ONE - w)).pow(2));
+        let s = (short_m - short_r).to_f64();
+        let delta = ((ONE - short_r) * (short_m.pow(2) - short_r))
+            .to_f64()
+            .sqrt();
+        let entropy = (ONE - w).to_f64() * delta / (ONE - short_r).to_f64()
+            * ((s + delta) / (s - delta)).ln();
+        // Reconstruct both jump branches, then sum their directed stationary
+        // edge entropies independently of the triangle minimum formula.
+        let (weight, cont, r_a) = (w.to_f64(), t.to_f64(), short_r.to_f64());
+        let zero_path = (1.0 - short_m.to_f64()) / 2.0;
+        let (f, b) = ((s + delta) / 2.0, (s - delta) / 2.0);
+        let p = (zero_path + f) / (1.0 - r_a);
+        let x = (f + r_a * zero_path) / (zero_path + f);
+        let y = (b + r_a * zero_path) / (zero_path + b);
+        assert!((x * y - r_a).abs() < 1e-14);
+        let mut edge_entropy = 0.0;
+        let mut measured = [0.0; 3];
+        for (mass, entry, x, y) in [(1.0 - weight, p, x, y), (weight, 0.5, cont, cont)] {
+            let h1 = mass * (entry + (1.0 - entry) * y) / (1.0 - x * y);
+            let h2 = mass * (1.0 - entry + entry * x) / (1.0 - x * y);
+            let edges = [
+                (mass * entry, h1 * (1.0 - x)),
+                (mass * (1.0 - entry), h2 * (1.0 - y)),
+                (h1 * x, h2 * y),
+            ];
+            for (forward, reverse) in edges {
+                assert!(forward > 0.0 && reverse > 0.0);
+                edge_entropy += (forward - reverse) * (forward / reverse).ln();
+            }
+            measured[0] += mass * (entry * x + (1.0 - entry) * y);
+            measured[1] += mass * x * y;
+            measured[2] += h1 + h2 - mass;
+        }
+        for (actual, target) in measured.into_iter().zip([0.5, 0.25, 2.0]) {
+            assert!((actual - target).abs() < 2e-11);
+        }
+        assert!((edge_entropy - entropy).abs() < 1e-12);
+        assert!(entropy > 0.0 && entropy < previous);
+        previous = entropy;
+    }
+    assert!(previous < 0.00003);
+    assert_eq!(
+        equilibrium_fit(m, m, Ratio::int(2)),
+        EquilibriumFit::Attained
+    );
+    assert_eq!(
+        equilibrium_fit(m, m, Ratio::new(3, 2)),
+        EquilibriumFit::PositiveFloor
+    );
+    assert_eq!(equilibrium_fit(ZERO, ZERO, ZERO), EquilibriumFit::Attained);
+    for data in [(ONE, m, n), (m, ZERO, n), (m, r, m + r), (ZERO, ZERO, n)] {
+        assert_eq!(
+            equilibrium_fit(data.0, data.1, data.2),
+            EquilibriumFit::InvalidCounts
+        );
+    }
 }
 
 #[test]

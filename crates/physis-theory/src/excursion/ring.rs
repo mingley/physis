@@ -1,5 +1,6 @@
 //! Pairwise equilibrium fits and joint dissipation detection on a four-state ring.
 
+use super::equilibrium::{equilibrium_fit, EquilibriumFit};
 use super::{ONE, ZERO};
 use crate::Theory;
 use physis_core::assumption::DomainOfValidity;
@@ -12,6 +13,7 @@ use physis_model::World;
 use physis_numeric::Ratio;
 
 const CLAIM: &str = "excursion.only-joint-detects";
+const BEYOND: &str = "excursion.beyond-joint-bound";
 const WEIGHTS: [KnobSpec; 3] = [
     weight("clockwise", "Weight of a clockwise jump from each site."),
     weight(
@@ -52,7 +54,7 @@ impl ExcursionRing {
             .ok_or_else(|| CoreError::UnknownKnob { name: name.into() })
     }
 
-    fn observation(&self) -> (bool, String) {
+    fn observation(&self, claim: &str) -> (bool, String) {
         let [a, b, c] = self.weights.map(|w| Ratio::int(w.into()));
         let total = a + b + c;
         // Enumerate closed walks of length two and three from site zero.
@@ -64,7 +66,14 @@ impl ExcursionRing {
         let pairs_admit_equilibrium =
             m.pow(2) <= r && Ratio::int(3) * q >= ONE && Ratio::int(2) * r <= ONE;
         let summary = format!("P(N>=1)={m} P(N>=2)={r} E[N]=2 joint_gap={gap} each_pair_admits_equilibrium={pairs_admit_equilibrium}");
-        (pairs_admit_equilibrium && gap > ZERO, summary)
+        if claim == BEYOND {
+            let fit = equilibrium_fit(m, r, Ratio::int(2));
+            let holds =
+                pairs_admit_equilibrium && gap <= ZERO && fit == EquilibriumFit::PositiveFloor;
+            (holds, format!("{summary} exact_triple={}", fit.as_str()))
+        } else {
+            (pairs_admit_equilibrium && gap > ZERO, summary)
+        }
     }
 }
 
@@ -104,7 +113,7 @@ impl Theory for ExcursionRing {
         None
     }
     fn note(&self) -> String {
-        self.observation().1
+        self.observation(CLAIM).1
     }
     fn fork(&self) -> Box<dyn Theory> {
         Box::new(self.clone())
@@ -116,14 +125,18 @@ impl Theory for ExcursionRing {
             vec!["four-state circulant generator with unit exit rates; competing fits may have any finite hidden order".into()],
             "Complete excursions. The joint test is (1+m)^2 > (1+2n)(1-r), with m=P(N>=1), r=P(N>=2), n=E[N].",
         );
-        vec![Claim::new(CLAIM, "Every pair of count statistics admits equilibrium and the joint inequality forces positive entropy production.", LayerId::Statistical, ClaimClass::ModelInternal).with_domain(domain)]
+        let old = Claim::new(CLAIM, "Every pair of count statistics admits equilibrium and the joint inequality forces positive entropy production.", LayerId::Statistical, ClaimClass::ModelInternal).with_domain(domain.clone());
+        let new = Claim::new(BEYOND,
+            "Every pair admits equilibrium and the joint inequality passes, yet the exact three-statistic test forces a positive entropy floor.",
+            LayerId::Statistical, ClaimClass::ModelInternal).with_domain(domain);
+        vec![old, new]
     }
 
     fn evaluate(&self, claim: &Claim) -> Verdict {
-        if claim.id_str() != CLAIM {
+        if !matches!(claim.id_str(), CLAIM | BEYOND) {
             return Verdict::inapplicable(claim, "claim outside the excursion ring");
         }
-        let (holds, summary) = self.observation();
+        let (holds, summary) = self.observation(claim.id_str());
         if holds {
             Verdict::holds(claim, summary)
         } else {

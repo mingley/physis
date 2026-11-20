@@ -49,6 +49,7 @@ jobs:
         run: |
           lean -DwarningAsError=true docs/research/excursion-counts/Excursions.lean
           lean -DwarningAsError=true docs/research/excursion-activity/Activity.lean
+          lean -DwarningAsError=true docs/research/excursion-equilibrium/Equilibrium.lean
         env:
           ELAN_TOOLCHAIN: ${{ env.LEAN_TOOLCHAIN }}
       - run: cargo test --workspace
@@ -56,5 +57,6 @@ jobs:
         run: |
           cargo run --locked -p physis -- replay docs/research/excursion-activity/knobs.jsonl
           cargo run --locked -p physis -- replay docs/research/excursion-activity/ring-knobs.jsonl
+          cargo run --locked -p physis -- replay docs/research/excursion-equilibrium/knobs.jsonl
       - run: cargo run -p physis -- experiment string-critique
       - run: cargo run -p physis -- prove dec.d-squared-zero

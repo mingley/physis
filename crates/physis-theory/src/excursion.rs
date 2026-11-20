@@ -2,6 +2,7 @@
 //! edge traversals per excursion. All exit rates are one per model time unit.
 //! See docs/research/excursion-activity/RESULT.md for the all-order bound.
 
+pub mod equilibrium;
 pub mod ring;
 
 use physis_core::assumption::DomainOfValidity;

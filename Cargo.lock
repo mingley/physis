@@ -305,6 +305,7 @@ dependencies = [
 name = "physis-theory"
 version = "0.1.0"
 dependencies = [
+ "num-rational",
  "physis-constants",
  "physis-core",
  "physis-data",
