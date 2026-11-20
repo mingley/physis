@@ -11,3 +11,4 @@ description = "Validated numerics: intervals, ratios, and checkable certificates
 [dependencies]
 physis-core.workspace = true
 serde.workspace = true
+num-rational.workspace = true

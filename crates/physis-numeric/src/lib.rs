@@ -15,6 +15,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+use num_rational::BigRational;
 use physis_core::artifact::ArtifactId;
 use serde::{Deserialize, Serialize};
 
@@ -57,7 +58,8 @@ pub struct Ratio {
 }
 
 impl Ratio {
-    /// Construct and reduce. Panics if den == 0 (a programming error).
+    /// Construct and reduce. Panics for a zero denominator or if the
+    /// normalized numerator or positive denominator cannot fit in i128.
     pub const fn new(num: i128, den: i128) -> Self {
         assert!(den != 0, "ratio denominator must be nonzero");
         let (n, d) = reduce(num, den);
@@ -67,6 +69,67 @@ impl Ratio {
     /// Integer.
     pub const fn int(n: i128) -> Self {
         Self { num: n, den: 1 }
+    }
+
+    /// Exact sum, or None if the reduced result is outside this representation.
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        let num = self
+            .num
+            .checked_mul(rhs.den)
+            .and_then(|x| x.checked_add(rhs.num.checked_mul(self.den)?));
+        Self::checked_result(num, self.den.checked_mul(rhs.den), || {
+            BigRational::from(self) + BigRational::from(rhs)
+        })
+    }
+
+    /// Exact difference, or None if the reduced result cannot fit.
+    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
+        if let Some(num) = rhs.num.checked_neg() {
+            self.checked_add(Self { num, den: rhs.den })
+        } else {
+            Self::narrow(BigRational::from(self) - BigRational::from(rhs))
+        }
+    }
+
+    /// Exact product, or None if the reduced result cannot fit.
+    pub fn checked_mul(self, rhs: Self) -> Option<Self> {
+        Self::checked_result(
+            self.num.checked_mul(rhs.num),
+            self.den.checked_mul(rhs.den),
+            || BigRational::from(self) * BigRational::from(rhs),
+        )
+    }
+
+    /// Exact quotient, or None for division by zero or an unrepresentable result.
+    pub fn checked_div(self, rhs: Self) -> Option<Self> {
+        if rhs.is_zero() {
+            return None;
+        }
+        Self::checked_result(
+            self.num.checked_mul(rhs.den),
+            self.den.checked_mul(rhs.num),
+            || BigRational::from(self) / BigRational::from(rhs),
+        )
+    }
+
+    fn checked_result(
+        num: Option<i128>,
+        den: Option<i128>,
+        wide: impl FnOnce() -> BigRational,
+    ) -> Option<Self> {
+        if let (Some(n), Some(d)) = (num, den) {
+            if d > 0 {
+                return Some(Self::new(n, d));
+            }
+        }
+        Self::narrow(wide())
+    }
+
+    fn narrow(x: BigRational) -> Option<Self> {
+        Some(Self {
+            num: x.numer().try_into().ok()?,
+            den: x.denom().try_into().ok()?,
+        })
     }
 
     /// Inclusive interval enclosure (exact).
@@ -158,21 +221,24 @@ impl Ratio {
 impl std::ops::Add for Ratio {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        add_ratio(self, rhs)
+        self.checked_add(rhs)
+            .expect("exact sum exceeds Ratio capacity")
     }
 }
 
 impl std::ops::Sub for Ratio {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
-        sub_ratio(self, rhs)
+        self.checked_sub(rhs)
+            .expect("exact difference exceeds Ratio capacity")
     }
 }
 
 impl std::ops::Mul for Ratio {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
-        mul_ratio(self, rhs)
+        self.checked_mul(rhs)
+            .expect("exact product exceeds Ratio capacity")
     }
 }
 
@@ -180,14 +246,27 @@ impl std::ops::Div for Ratio {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
         assert!(!rhs.is_zero(), "ratio denominator must be nonzero");
-        self * Ratio::new(rhs.den, rhs.num)
+        self.checked_div(rhs)
+            .expect("exact quotient exceeds Ratio capacity")
     }
 }
 
 impl std::ops::Neg for Ratio {
     type Output = Self;
     fn neg(self) -> Self {
-        Ratio::new(-self.num, self.den)
+        Self {
+            num: self
+                .num
+                .checked_neg()
+                .expect("exact negation exceeds Ratio capacity"),
+            den: self.den,
+        }
+    }
+}
+
+impl From<Ratio> for BigRational {
+    fn from(x: Ratio) -> Self {
+        Self::new(x.num.into(), x.den.into())
     }
 }
 
@@ -393,9 +472,7 @@ fn parse_sci_exact_raw(s: &str) -> Option<SciExact> {
     Some(SciExact::new(significand, exp10))
 }
 
-const fn gcd(mut a: i128, mut b: i128) -> i128 {
-    a = a.abs();
-    b = b.abs();
+const fn gcd(mut a: u128, mut b: u128) -> u128 {
     while b != 0 {
         let t = a % b;
         a = b;
@@ -405,11 +482,25 @@ const fn gcd(mut a: i128, mut b: i128) -> i128 {
 }
 
 const fn reduce(num: i128, den: i128) -> (i128, i128) {
-    let s = if den < 0 { -1 } else { 1 };
-    let n = num * s;
-    let d = den.abs();
+    let n = num.unsigned_abs();
+    let d = den.unsigned_abs();
     let g = gcd(n, d);
-    (n / g, d / g)
+    let magnitude = n / g;
+    let denominator = d / g;
+    assert!(
+        denominator <= i128::MAX as u128,
+        "positive denominator exceeds Ratio capacity"
+    );
+    let numerator = if (num < 0) != (den < 0) {
+        (magnitude as i128).wrapping_neg()
+    } else {
+        assert!(
+            magnitude <= i128::MAX as u128,
+            "positive numerator exceeds Ratio capacity"
+        );
+        magnitude as i128
+    };
+    (numerator, denominator as i128)
 }
 
 /// Integer square root when `n` is a perfect square.
@@ -502,12 +593,11 @@ impl Interval {
     /// non-negative interval. `rel` is a relative half-width (3/100 is ±3%).
     pub fn relative_envelope(self, rel: Ratio) -> Self {
         let one = Ratio::int(1);
-        self.scaled(sub_ratio(one, rel))
-            .hull(self.scaled(add_ratio(one, rel)))
+        self.scaled(one - rel).hull(self.scaled(one + rel))
     }
 
     fn scaled(self, factor: Ratio) -> Self {
-        Self::new(mul_ratio(self.lo, factor), mul_ratio(self.hi, factor))
+        Self::new(self.lo * factor, self.hi * factor)
     }
 
     /// True when `0` lies in the closed interval.
@@ -561,7 +651,7 @@ impl Interval {
             let n = sign * (frac as i128);
             let ulp = Ratio::new(1, 1i128 << 62); // coarser than 2^-1074; we widen extra
             let p = Ratio::new(n, 1i128 << 52);
-            return Self::new(sub_ratio(p, ulp), add_ratio(p, ulp));
+            return Self::new(p - ulp, p + ulp);
         }
         let m = (frac as i128) | (1i128 << 52);
         let e = exp - 1023 - 52;
@@ -575,7 +665,7 @@ impl Interval {
         } else {
             Ratio::new(1, 1i128 << ((-e) as u32).min(120))
         };
-        Self::new(sub_ratio(p, ulp), add_ratio(p, ulp))
+        Self::new(p - ulp, p + ulp)
     }
 }
 
@@ -804,23 +894,6 @@ fn u128_digits(n: u128) -> u32 {
     d
 }
 
-fn add_ratio(a: Ratio, b: Ratio) -> Ratio {
-    Ratio::new(
-        a.num
-            .saturating_mul(b.den)
-            .saturating_add(b.num.saturating_mul(a.den)),
-        a.den.saturating_mul(b.den),
-    )
-}
-
-fn sub_ratio(a: Ratio, b: Ratio) -> Ratio {
-    add_ratio(a, Ratio::new(-b.num, b.den))
-}
-
-fn mul_ratio(a: Ratio, b: Ratio) -> Ratio {
-    Ratio::new(a.num.saturating_mul(b.num), a.den.saturating_mul(b.den))
-}
-
 /// A computation that returns a checkable certificate.
 pub trait CertifiedComputation {
     /// Input.
@@ -843,6 +916,33 @@ pub fn certificate_hash(bytes: &[u8]) -> ArtifactId {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn overflowing_intermediate_products_preserve_representable_exact_results() {
+        let k = i128::MAX;
+        let a = Ratio::new(k - 1, k);
+        let b = Ratio::new(1, k);
+        assert_eq!(b + b, Ratio::new(2, k));
+        assert_eq!(a - Ratio::new(k - 2, k), b);
+        assert_eq!(a * Ratio::new(k, k - 2), Ratio::new(k - 1, k - 2));
+        assert_eq!(a / Ratio::new(k - 2, k), Ratio::new(k - 1, k - 2));
+        assert_eq!(a + b, Ratio::int(1));
+        assert_eq!(a - a, Ratio::int(0));
+        assert_eq!(a * Ratio::new(k, k - 1), Ratio::int(1));
+        assert_eq!(a / a, Ratio::int(1));
+        assert_eq!(Ratio::new(i128::MIN, i128::MIN), Ratio::int(1));
+        assert_eq!(Ratio::new(i128::MIN, 2), Ratio::int(i128::MIN / 2));
+        assert_eq!(Ratio::int(i128::MIN) - Ratio::int(i128::MIN), Ratio::int(0));
+        assert_eq!(
+            Ratio::parse_display(&i128::MIN.to_string()),
+            Some(Ratio::int(i128::MIN))
+        );
+        assert_eq!(Ratio::int(k).checked_add(Ratio::int(1)), None);
+        assert_eq!(Ratio::int(i128::MIN).checked_sub(Ratio::int(1)), None);
+        assert_eq!(b.checked_mul(b), None);
+        assert_eq!(Ratio::int(1).checked_div(Ratio::int(i128::MIN)), None);
+        assert_eq!(b.checked_div(Ratio::int(0)), None);
+    }
 
     #[test]
     fn three_eighths_does_not_cover_weinberg_at_mz() {
