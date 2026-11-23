@@ -46,7 +46,9 @@ physis-constants = { path = "crates/physis-constants", version = "0.1.0" }
 typenum = { version = "1.17", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+num-bigint = "0.4.8"
 num-rational = "0.4.2"
+num-traits = "0.2.19"
 
 [profile.release]
 lto = true

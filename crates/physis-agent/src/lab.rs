@@ -26,6 +26,7 @@ use physis_theory::critique::diff_verdicts;
 use physis_theory::dec::DeRham;
 use physis_theory::em::{LinearMedium, MaxwellVacuum, OhmCircuit};
 use physis_theory::excursion::ring::ExcursionRing;
+use physis_theory::excursion::square::ExcursionSquare;
 use physis_theory::excursion::ExcursionNetwork;
 use physis_theory::gauge_field::{WilsonSun, WilsonU1};
 use physis_theory::gravity::NewtonianGravity;
@@ -188,6 +189,7 @@ impl Lab {
         lab.insert(Box::new(IdealGas::default()));
         lab.insert(Box::new(ExcursionNetwork::default()));
         lab.insert(Box::new(ExcursionRing::default()));
+        lab.insert(Box::new(ExcursionSquare::default()));
         // Standing 19th-c theory on trial: Rayleigh–Jeans vs Planck.
         lab.insert(Box::new(Blackbody::rayleigh_jeans()));
         lab.insert(Box::new(Blackbody::planck()));

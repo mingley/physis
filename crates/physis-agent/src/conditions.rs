@@ -167,38 +167,35 @@ pub fn search_conditions(
         },
         minimal_repair: false,
     });
+    let mut all_subsets_fail = Vec::with_capacity(points);
+    all_subsets_fail.push(rows[0].kind() == Some(VerdictKind::Fails));
     for index in 1..points {
         let mut digits = index;
         let mut changes = BTreeMap::new();
+        let mut stride = 1;
+        let mut proper_subsets_fail = true;
         for (name, values) in &coordinates {
-            let value = &values[digits % values.len()];
-            digits /= values.len();
-            if value != &baseline[name] {
-                changes.insert(name.clone(), value.clone());
+            let digit = digits % values.len();
+            if digit != 0 {
+                changes.insert(name.clone(), values[digit].clone());
+                // Every proper subset omits at least one changed coordinate.
+                proper_subsets_fail &= all_subsets_fail[index - digit * stride];
             }
+            digits /= values.len();
+            stride *= values.len();
         }
         let outcome = match evaluate_point(theory, claim, hash, &baseline, axes, &changes) {
             Ok(verdict) => ConditionOutcome::Evaluated { verdict },
             Err(reason) => ConditionOutcome::Rejected { reason },
         };
-        // Returning any nonzero digit to zero strictly reduces the mixed-radix
-        // index. All proper subsets of these exact assignments are already present.
         let mut row = ConditionRow {
             changes,
             outcome,
             minimal_repair: false,
         };
-        row.minimal_repair = row.kind() == Some(VerdictKind::Holds)
-            && rows
-                .iter()
-                .filter(|other| {
-                    other.changes.len() < row.changes.len()
-                        && other
-                            .changes
-                            .iter()
-                            .all(|(k, v)| row.changes.get(k) == Some(v))
-                })
-                .all(|other| other.kind() == Some(VerdictKind::Fails));
+        let kind = row.kind();
+        row.minimal_repair = kind == Some(VerdictKind::Holds) && proper_subsets_fail;
+        all_subsets_fail.push(kind == Some(VerdictKind::Fails) && proper_subsets_fail);
         rows.push(row);
     }
     Ok(ConditionGrid {
@@ -297,6 +294,37 @@ mod tests {
         );
         assert_eq!(lab.journal().len(), journal_len);
         assert_eq!(lab.theory("excursion-counts").unwrap().snapshot(), original);
+    }
+
+    #[test]
+    fn grid_minimality_agrees_with_checking_every_proper_assignment_subset() {
+        let lab = Lab::standard();
+        let theory = lab.theory("excursion-counts").unwrap();
+        let axes = [
+            axis("first_percent", &["1", "25", "50", "75", "99"]),
+            axis("second_mean_jumps", &["1", "2", "3", "5", "100"]),
+            axis("second_winding_quarters", &["-2", "-1", "0", "1", "2"]),
+        ];
+        for claim in theory.claims() {
+            let grid = search_conditions(theory, claim.id_str(), &axes).unwrap();
+            assert_eq!(grid.rows.len(), 150);
+            for row in &grid.rows {
+                let expected = !row.changes.is_empty()
+                    && row.kind() == Some(VerdictKind::Holds)
+                    && grid
+                        .rows
+                        .iter()
+                        .filter(|other| {
+                            other.changes.len() < row.changes.len()
+                                && other
+                                    .changes
+                                    .iter()
+                                    .all(|(k, v)| row.changes.get(k) == Some(v))
+                        })
+                        .all(|other| other.kind() == Some(VerdictKind::Fails));
+                assert_eq!(row.minimal_repair, expected);
+            }
+        }
     }
 
     #[test]

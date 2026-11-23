@@ -535,3 +535,6 @@ fn splitting_hidden_states_preserves_every_projected_rate_and_adds_the_predicted
         assert!((lifted.entropy - base_counts.entropy - cost).abs() < 1e-12);
     }
 }
+
+#[path = "excursion_activity/entropy.rs"]
+mod entropy;

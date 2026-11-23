@@ -34,7 +34,8 @@ connected support is a star with $S=0$.
 
 Wherever equilibrium is attained in the nontrivial domain, every finite
 $S\ge0$ is attainable at the same data, by the earlier hidden-state lift.
-The actual positive minimum in the excluded region is still open.
+A subsequent four-state construction gives the sharp positive minimum and the entire interval at $r=m$. The general interior positive minimum remains open.
+[Sharp minimum for a missing one-jump count](../excursion-entropy/RESULT.md) · [Linear bound for general triples](../excursion-entropy/LINEAR.md) ·
 [Lift preserving the entire jump clock](../excursion-activity/RESULT.md#why-even-a-complete-jump-clock-has-no-finite-upper-bound) · [Unattained zero and positive bounds](BOUNDARY.md)
 
 For $m^2<r<m$, take the unique positive root $a$ of

@@ -23,6 +23,7 @@ with a temperature.
 | `debye-solid` | Debye (1912) phonon continuum (see `specs/017`) |
 | `excursion-counts` | stationary hidden-jump counter on two triangles sharing one visible state |
 | `excursion-ring` | hidden-jump counter on a four-site ring with clockwise, anticlockwise and opposite jumps |
+| `excursion-square` | unit-rate cycle with one visible site, a missing one-jump count and uniform occupations |
 
 ## Knobs
 
@@ -98,6 +99,14 @@ tests and the earlier joint inequality pass while the exact three-statistic
 test forces a positive entropy floor. The full classifier also accepts
 arbitrary canonical rational count inputs through the `excursion_equilibrium`
 research example. [Exact classification and replay](../docs/research/excursion-equilibrium/CAMPAIGN.md)
+
+On `excursion-square`, `entry_bias` and `continuation_bias` are chosen
+integers from −11 to 11 in units of 1/24. The entry and continuation
+probabilities start at one half. The two complementary rows keep the four
+occupations at 1/4. The product of the two biases fixes the complete
+observed jump clock. The two executed claims test whether that clock's two
+tails and mean force positive entropy at arbitrary finite hidden order and
+whether the square attains that minimum. [Construction and factory replay](../docs/research/excursion-entropy/CAMPAIGN.md)
 
 ## Related
 

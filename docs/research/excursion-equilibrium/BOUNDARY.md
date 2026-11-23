@@ -71,3 +71,7 @@ and $n<n_0$, the immediate-return fraction and mean give a positive bound.
 When $r=m$ and $n<2m/(1-m)$, the second-tail and mean estimate gives one.
 These cover every positive-floor entry in the table.
 [Path comparison](../excursion-activity/JOINT.md#converting-the-violation-into-an-entropy-bound) · [Two-tail estimate](../excursion-counts/HIDDEN-ORDER.md) · [Immediate-return and mean bound](../excursion-activity/RESULT.md)
+
+A subsequent flux comparison gives a linear bound in the positive plane
+violation and quantifies the effect of simultaneous uncertainty in the counts.
+[Linear bound and order-optimal family](../excursion-entropy/LINEAR.md)
